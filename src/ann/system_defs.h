@@ -28,7 +28,7 @@
 */
 //#include <strstream>
 #include <iomanip>
-using namespace std;
+//using namespace std;
 //#endif /* __cplusplus */
 
 /* C headers */

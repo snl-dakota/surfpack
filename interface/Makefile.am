@@ -1,7 +1,6 @@
 bin_PROGRAMS = surfpack
 surfpack_SOURCES = main.cpp
 surfpack_LDADD = $(top_builddir)/src/libsurfpack.la \
-		 $(top_builddir)/src/ann/libann.la \
 		 $(top_builddir)/src/mars/libmars.la \
 		 $(top_builddir)/src/kriging/libkriging.la \
 		 $(top_builddir)/src/conmin/libconmin.la \

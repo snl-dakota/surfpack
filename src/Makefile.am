@@ -1,4 +1,4 @@
-SUBDIRS = ann conmin kriging mars 
+SUBDIRS = conmin kriging mars
 lib_LTLIBRARIES = libsurfpack.la
 libsurfpack_la_SOURCES = SurfPoint.cpp \
 			SurfPoint.h \
@@ -19,7 +19,26 @@ libsurfpack_la_SOURCES = SurfPoint.cpp \
 			surfpack.cpp \
 			surfpack.h \
 			SurfaceFactory.cpp \
-			SurfaceFactory.h
-INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/surfaces -I$(top_srcdir)/src/ann
+			SurfaceFactory.h \
+			ann/ann.cpp \
+			ann/ann.h  \
+			ann/client.cpp \
+			ann/client.h \
+			ann/allocate.cpp \
+			ann/allocate.h \
+			ann/convert.cpp \
+			ann/convert.h \
+			ann/dsvd2.cpp \
+			ann/dsvd2.h \
+			ann/gen_drno.cpp \
+			ann/gen_drno.h \
+			ann/random.cpp \
+			ann/random.h \
+			ann/system_defs.h \
+			ann/utilities.cpp \
+			ann/utilities.h \
+			ann/vector_enhancements.cpp \
+			ann/vector_enhancements.h
+INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src -I$(top_srcdir)/src/surfaces -I$(top_srcdir)/src/ann
 CLEANFILES = *.bb *.bbg *.da *.gcov *.ii *.s
 		
