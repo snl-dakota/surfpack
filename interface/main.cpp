@@ -373,9 +373,29 @@ void computeErrorMetric(vector< string>& args)
 
 void conversion(vector< string>& args)
 {
-  Surface* s = createSurface(args[1]);
-  s->write(args[2]);
-  delete s;
+  if (args[1].find(".txt") == args[1].size() - 4 || 
+      args[2].find(".txt") == args[2].size() - 4) {
+    if (args[1].find(".sd") == args[1].size() - 3 || 
+        args[2].find(".sd") == args[2].size() - 3) {
+      cout << "Converting SurfData..." << endl;
+      SurfData sd(args[1]);
+      sd.write(args[2]);
+    } else if (args[1].find(".srf") == args[1].size() - 4 || 
+        args[2].find(".srf") == args[2].size() - 4) {
+      cout << "Converting Surface..." << endl;
+      Surface* s = createSurface(args[1]);
+      s->write(args[2]);
+      delete s;
+    } else {
+      cerr << "One of the files must be .txt.  "
+           << "The other must be .sd (SurfData) or "
+           << " .srf (Surface)." << endl;
+    }
+  } else {
+    cerr << "One of the files must be .txt.  "
+         << "The other must be .sd (SurfData) or "
+         << " .srf (Surface)." << endl;
+  }
 }
 
 void executeCommand(vector< string >& args) 
@@ -472,8 +492,9 @@ void printHelp()
   cout << "Usage: " << endl
        << "gridpoints <spec file> <output file>" << endl
        << "create <data file> <output file> <surface type> [<surface arguments> ...]" << endl
-       << "evalute <data file> <output file> <surface file>" << endl
-       << "error <metric name> <surface file> " << endl;
+       << "evaluate <data file> <output file> <surface file>" << endl
+       << "error <metric name> <surface file> " << endl
+       << "convert <input file> <output file> " << endl;
 }
        
        
