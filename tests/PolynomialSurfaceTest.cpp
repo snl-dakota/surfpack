@@ -355,7 +355,7 @@ void PolynomialSurfaceTest::build()
   SurfData sd(fullPath("oneDimQuadratic.txt"));
   PolynomialSurface ps(&sd, 2);
   ps.createModel();
-  ps.write("oneDQpoly2.txt");
+  ps.write(fullPath("oneDQpoly2.txt"));
   CPPUNIT_ASSERT(ps.coefficients.size() == 3);
   CPPUNIT_ASSERT(matches(ps.coefficients[0],0.0));
   CPPUNIT_ASSERT(matches(ps.coefficients[1],0.0));

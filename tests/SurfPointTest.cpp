@@ -243,10 +243,10 @@ void SurfPointTest::testFAssignBadIndex()
 // I/O
 void SurfPointTest::testWriteBinary()
 {
-  ofstream outfile("writePoint.sp",ios::out | ios::binary);
+  ofstream outfile(fullPath("writePoint.sp").c_str(),ios::out | ios::binary);
   spPtr2->writeBinary(outfile);
   outfile.close();
-  ifstream infile("writePoint.sp",ios::in | ios::binary);
+  ifstream infile(fullPath("writePoint.sp").c_str(),ios::in | ios::binary);
   SurfPoint sp(1, 2, infile, true);
   SurfPoint sp2(x2, f1);
   CPPUNIT_ASSERT(sp == sp2);
@@ -254,10 +254,10 @@ void SurfPointTest::testWriteBinary()
 
 void SurfPointTest::testWriteText()
 {
-  ofstream outfile("writePoint.txt",ios::out);
+  ofstream outfile(fullPath("writePoint.txt").c_str(),ios::out);
   spPtr2->writeText(outfile);
   outfile.close();
-  ifstream infile("writePoint.txt",ios::in);
+  ifstream infile(fullPath("writePoint.txt").c_str(),ios::in);
   SurfPoint sp(1, 2, infile, false);
   SurfPoint sp2(x2, f1);
   CPPUNIT_ASSERT(sp == sp2);

@@ -248,6 +248,6 @@ void SurfaceTest::print()
   // only checking for non-crashing behavior
   ostringstream os;
   os << *polysurf << endl;
-  cout << "End PolynomialSurfaceTest" << endl;
+  cout << "End SurfaceTest" << endl;
 }
 

@@ -189,7 +189,7 @@ void SurfDataTest::testConstructorIStreamBinary()
   const string filename = fullPath("rast100.sd");
   ifstream infile(filename.c_str(), ios::in | ios::binary);
   SurfData sd(infile, true);
-  sd.write("frombinary.txt");
+  sd.write(fullPath("frombinary.txt"));
   infile.close();
 
   // Read it in as text as well and make sure the values are the same
@@ -197,7 +197,7 @@ void SurfDataTest::testConstructorIStreamBinary()
   ifstream infileText(filenameText.c_str(), ios::in);
   SurfData sdText(infileText, false);
   infileText.close();
-  sdText.write("fromtext.txt");
+  sdText.write(fullPath("fromtext.txt"));
 
   CPPUNIT_ASSERT_EQUAL(sd.points.size(), pointsInFile);
   CPPUNIT_ASSERT_EQUAL(sd.xsize, static_cast<unsigned>(2));
