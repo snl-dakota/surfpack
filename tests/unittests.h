@@ -11,8 +11,6 @@
 #include <string>
 
 
-// DATADIR is defined in configure.ac as $(top_srcdir)/share
-const std::string dpath = DATADIR;
 const std::string fullPath(const std::string filename);
 const unsigned unsignedZero = 0;
 const double doubleZero = 0.0;

@@ -1,6 +1,9 @@
 # Specifies a list of executables that should be built and run when the user
-# types "make check."
-check_PROGRAMS = srftest
+# types "make check."  If TESTS is not defined and the names of the executables
+# are listed directly under check_PROGRAMS.  Those executables will be built
+# on a "make check" command but will not execute automatically.
+TESTS = srftest
+check_PROGRAMS = $(TESTS) 
 
 # These are the source files needed for the srftest target.
 srftest_SOURCES = SurfPointTest.h \
@@ -25,9 +28,6 @@ srftest_LDFLAGS = -L$(top_builddir)/../../lib
 # Specifies what libraries are necessary for the srftest build
 # LAPACK_LIBS, BLAS_LIBS, and FLIBS would be set by the configure script.
 srftest_LDADD = $(top_builddir)/src/libsurfpack.la $(CPPUNIT_LIBS) \
-                $(top_builddir)/src/mars/libmars.la \
-		$(top_builddir)/src/kriging/libkriging.la \
-		$(top_builddir)/src/conmin/libconmin.la \
 		$(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS)
 
 # Specifies additional places to look for files requested via #include
