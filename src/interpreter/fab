@@ -1,0 +1,4 @@
+flex++ lexer.lex
+bison -d surfparse.y
+mv lex.yy.cc lex.yy.cpp
+mv surfparse.tab.c surfparse.tab.cpp
