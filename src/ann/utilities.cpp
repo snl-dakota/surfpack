@@ -23,6 +23,8 @@
 //#include "data_types.h"
 #include "system_defs.h"
 #include "utilities.h"
+#include <cmath>
+using namespace std;
 
 /*
  * Function: my_atanh

@@ -40,6 +40,9 @@
 #include "system_defs.h"
 #include "allocate.h"
 #include "dsvd2.h"
+#include <cmath>
+
+using namespace std;
 
 
 void dsvd2(double **a, int m, int n, double **u,double *w,double **v)
