@@ -10,10 +10,10 @@
 
 class SurfPoint;
 class SurfData;
-struct surfpack::ErrorStruct;
 
 /// \todo Eliminate the dependency on SurfpackParser.h in Surface.h
 #include "SurfpackParser.h"
+#include "surfpack.h"
 
 
 /// Abstract base class for implementation of a surface-fitting algorithm.  

@@ -23,7 +23,7 @@ srftest_SOURCES = SurfPointTest.h \
 srftest_CXXFLAGS = $(CPPUNIT_CFLAGS)
 
 # Specifies flags for the srftest link line.
-srftest_LDFLAGS = -L$(top_builddir)/../../lib 
+srftest_LDFLAGS = -L$(HOME)/local/lib 
 
 # Specifies what libraries are necessary for the srftest build
 # LAPACK_LIBS, BLAS_LIBS, and FLIBS would be set by the configure script.
@@ -32,7 +32,7 @@ srftest_LDADD = $(top_builddir)/src/libsurfpack.la $(CPPUNIT_LIBS) \
 
 # Specifies additional places to look for files requested via #include
 INCLUDES = -I$(top_srcdir)/src -I$(top_srcdir)/src/surfaces \
-	   -I$(top_srcdir)/src/interpreter
+	   -I$(top_srcdir)/src/interpreter -I$(HOME)/local/include
 
 
 # The Makefiles produces by automake create a target named "clean" which 

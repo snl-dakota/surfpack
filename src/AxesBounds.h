@@ -23,16 +23,22 @@ class SurfPoint;
 /// from that hypergrid of points.
 class AxesBounds
 {
-
 public:
-  /// Values for one dimension.  The pts field is used to specify the number
-  /// of points along the dimension.  The interval field can be used to compute
-  /// the increment that must be used to get the right number of points between
-  /// the minimum and maximum values.
+  /// Values for one dimension For random samples, only bounds are used.  For
+  /// hyper-gridding, the pts and interval fields are also used.  
   struct Axis {
+      /// Minimum value along this dimension.
       double min;
+
+      /// Maximum value along this dimension.
       double max;
+
+      /// The number of raster points along the dimension (used for 
+      /// hyper-gridding).
       int pts;
+
+      /// The spacing needed between max and min to fit pts points along this 
+      /// dimension.
       double interval;
   };
 
@@ -44,8 +50,9 @@ public:
 
   /// No special behavior
   ~AxesBounds();
-  /// Return a hypergrid data set.  Client is responsible to deallocate the
-  /// memory.
+
+  /// Return a hypergrid data set as a SurfData object.  The client is 
+  /// responsible to deallocate the memory.
   SurfData* sampleGrid(const std::vector<std::string>& testFunctions);
 
   /// Return a data set with numPts SurfPoints.  Parameter testFunctions
@@ -55,16 +62,25 @@ public:
   SurfData* sampleMonteCarlo(unsigned numPts, 
     const std::vector<std::string>& testFunctions);
 
-  /// Reset the counter used to iterate through dimensions for grid data
+  /// Reset the counter used to iterate through dimensions for grid data.
+  /// The next point to be added to the data set would be (axes[0].min, 
+  /// axes[1].min, ..., axes[ndims - 1].min).
   void initialize();
 
-  /// Advance the counter used to iterate through dimensions for grid data
+  /// Advance the counter used to iterate through dimensions for grid data.
+  /// For example, if the client has requested a 10 x 10 grid, and the point
+  /// data member currently holds (3,9), it will be advanced (not unlike an
+  /// odometer) to (4,0).  This will signify that the next point to be added
+  /// should be (axes[0].min+4*axes[0].interval, axes[1].min+0*axes[1].interval.
   void nextPoint();
 
 protected:
   /// Counter used to iterate through the dimensions for grid data.  The 
   /// sampleGrid method uses it in conjunction with the min, max, and interval
-  /// values along each axis to create a SurfData object.
+  /// values along each axis to create a SurfData object.  For example, if
+  /// a value of (3,2) for the point data member would signify that the next
+  /// point to be added to the grid should be (axes[0].min+3*axes[0].interval,
+  /// axes[1].min+2*axes[1].interval
   std::vector<int> point;
 
   /// Used during the iteration that creates a SurfData set.  It holds the
@@ -74,7 +90,11 @@ protected:
   /// The set of <minimum, maximum, #intervals> specifications for each
   /// dimension
   std::vector<Axis> axes;
+
+  /// Number of dimensions in the data set
   unsigned ndims;
+
+  /// Number of points to be in the SurfData object returned by sampleGrid
   unsigned npts;
 };
   

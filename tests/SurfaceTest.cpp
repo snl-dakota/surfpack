@@ -122,7 +122,7 @@ void SurfaceTest::getValueSurfData()
 
 void SurfaceTest::getValueErrorStructs()
 {
-  vector<ErrorStruct> es;
+  vector<surfpack::ErrorStruct> es;
   polysurf->getValue(*surfd, es);
   CPPUNIT_ASSERT(es.size() == 7);
   CPPUNIT_ASSERT(matches(es[0].estimated, es[0].observed));

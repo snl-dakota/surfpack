@@ -9,6 +9,7 @@
 #define SURFACE_TEST_H 
 
 #include <cppunit/extensions/HelperMacros.h>
+#include <string>
 #include "surfpack.h"
 #include "PolynomialSurface.h"
 #include "Surface.h"
@@ -26,7 +27,7 @@ class SurfaceTest : public CppUnit::TestFixture
   CPPUNIT_TEST( getValueSurfData );
   CPPUNIT_TEST( getValueErrorStructs );
   CPPUNIT_TEST( goodnessOfFit );
-  CPPUNIT_TEST_EXCEPTION( goodnessOfFitException, Surface::bad_metric );
+  CPPUNIT_TEST_EXCEPTION( goodnessOfFitException, std::string);
   CPPUNIT_TEST( press );
   CPPUNIT_TEST_EXCEPTION( pressExceptionInsufficient, SurfData::bad_surf_data );
   CPPUNIT_TEST( rSquared );
