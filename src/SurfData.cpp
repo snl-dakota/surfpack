@@ -285,16 +285,16 @@ const double* SurfData::getYVector() const
 }
   
 /// Returns true if the filename extension is .sd.
-bool SurfData::hasBinaryExtension(const std::string& filename)
-{
-  return (filename.find(".sd") == filename.size() - 3);
-}
-
-/// Returns true if the filename extension is .txt.
-bool SurfData::hasTextExtension(const std::string& filename)
-{
-  return (filename.find(".txt") == filename.size() - 4);
-}
+//bool SurfData::hasBinaryExtension(const std::string& filename)
+//{
+//  return (filename.find(".sd") == filename.size() - 3);
+//}
+//
+///// Returns true if the filename extension is .txt.
+//bool SurfData::hasTextExtension(const std::string& filename)
+//{
+//  return (filename.find(".txt") == filename.size() - 4);
+//}
   
 
 // ____________________________________________________________________________
@@ -616,9 +616,9 @@ ostream& operator<<(ostream& os, const SurfData& sd)
 /// in text mode.  If file cannot be opened, an exception is thrown.
 bool SurfData::testFileExtension(const std::string& filename) const
 {
-  if (hasBinaryExtension(filename)) {
+  if (surfpack::hasExtension(filename,".sd")) {
     return true;
-  } else if (hasTextExtension(filename)) {
+  } else if (surfpack::hasExtension(filename,".txt")) {
     return false;
   } else {
     throw surfpack::io_exception(

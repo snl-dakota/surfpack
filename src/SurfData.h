@@ -137,10 +137,10 @@ public:
   const double* getYVector() const;
 
   /// Returns true if the filename extension is .sd.
-  static bool hasBinaryExtension(const std::string& filename);
+//  static bool hasBinaryExtension(const std::string& filename);
   
   /// Returns true if the filename extension is .txt.
-  static bool hasTextExtension(const std::string& filename);
+//  static bool hasTextExtension(const std::string& filename);
   
   
 

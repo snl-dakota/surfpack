@@ -227,7 +227,7 @@ void SurfPoint::readBinary(istream& is)
        is.read(reinterpret_cast<char*>(&f[fValsRead]),sizeof(f[fValsRead]));
     }
   } catch (surfpack::io_exception&) {
-    cerr << "Expected on this line: " << x.size() << " domain value(s) "
+    cerr << "\nExpected on this line: " << x.size() << " domain value(s) "
          << "and " << f.size() << " response value(s)." << endl
          << "Found: " << xValsRead << " domain value(s) and " 
          << fValsRead << " response value(s)." << endl;
@@ -257,7 +257,7 @@ void SurfPoint::readText(istream& is)
        streamline >> f[fValsRead];
     }
   } catch (surfpack::io_exception&) {
-    cerr << "Expected on this line: " << x.size() << " domain value(s) "
+    cerr << "\nExpected on this line: " << x.size() << " domain value(s) "
          << "and " << f.size() << " response value(s)." << endl
          << "Found: " << xValsRead << " domain value(s) and " 
          << fValsRead << " response value(s)." << endl;
