@@ -497,10 +497,11 @@ void readEvalPrint()
 void printHelp()
 {
   cout << "Usage: " << endl
-       << "gridpoints <spec file> <output file>" << endl
-       << "create <data file> <output file> <surface type> [<surface arguments> ...]" << endl
+       << "gridpoints <spec file> <output file> [<test function>]" << endl
+       << "randomsample <spec file> <output file> [<test function>]" << endl
+       << "create <data file> <output file> <surface type> [<surface argument> ...]" << endl
        << "evaluate <data file> <output file> <surface file>" << endl
-       << "error <metric name> <surface file> " << endl
+       << "fitness <metric name> <surface file> " << endl
        << "convert <input file> <output file> " << endl;
 }
        
