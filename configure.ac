@@ -134,16 +134,11 @@ fi
 # appropriate Makefile.in files are created.  The .in suffixes are not listed
 # explicitly here, but that's what happens.  Autoconf creates the Makefile.in
 # files, and then configure creates the Makefiles from the Makefile.in files.
-AC_CONFIG_FILES([Makefile
-		 src/Makefile
-		 src/conmin/Makefile
-		 src/kriging/Makefile
-		 src/mars/Makefile
-		 interface/Makefile])
+AC_CONFIG_FILES([Makefile src/Makefile])
 
 # Macro written by Mark Richards.  This macro tells autoconf to generate an
 # additional Makefile, if and only if the test for CPP Unit succeeded.
-MDR_CPPUNIT_MAKEFILE([tests/Makefile])
+#MDR_CPPUNIT_MAKEFILE([tests/Makefile])
 
 # For good measure, print out the $LIBS variable at the end.  Any library 
 # listed in LIBS is automatically linked against for every executable that is

@@ -11,7 +11,7 @@ endif
 
 # Specifies that make should also descend into these subdirectories during the
 # build process.
-SUBDIRS = src interface $(test_dirs)
+SUBDIRS = src $(test_dirs)
 
 # Specifies that the files in the examples subdirectory should be included in 
 # the distribution tarball, even though they are not involved in the build
