@@ -10,6 +10,14 @@ AC_CONFIG_SRCDIR([src/Surface.cpp])
 
 # Checks for programs.
 #AC_PROG_AWK
+AC_PROG_F77([xlf f77 g77])
+if test "$F77" = "f77"
+then
+  echo "Compiling fortran 77 with f77"
+  FFLAGS="-g -O2 -fpe3"
+fi
+MDR_C2F77_UNDERSCORE
+
 AC_PROG_CXX([CC cxx xlC g++ c++ gcc])
 #AC_CXX_NAMESPACES
 #AC_CXX_HAVE_STL
@@ -65,7 +73,6 @@ MDR_CXX_CPPUNIT
 AC_DEFINE([__TESTING_MODE__],[],[1])
 
 
-AC_PROG_F77
 #AC_PROG_CC
 #AC_PROG_INSTALL
 #AC_PROG_LN_S
@@ -76,7 +83,7 @@ AC_PROG_LIBTOOL
 CPPFLAGS="-DDATADIR='\"\$(top_srcdir)/share\"' "
 #CXXFLAGS="-fprofile-arcs -ftest-coverage -g -save-temps"
 CXXFLAGS="-g "
-if test $CXX = "cxx"
+if test "$CXX" = "cxx"
 then
   echo "Compiling with cxx"
   AC_DEFINE([__USE_STD_IOSTREAM],[],[Define if sstream is used with cxx])
