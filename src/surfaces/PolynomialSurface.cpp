@@ -1,12 +1,13 @@
+#include <cmath>
 #include <iostream>
+#include <iomanip>
 #include <sstream>
 #include <fstream>
 #include <vector>
-#include "PolynomialSurface.h"
 #include "SurfData.h"
+#include "SurfDataIterator.h"
+#include "PolynomialSurface.h"
 
-#include <cmath>
-#include <iostream>
 extern "C" void dgels_(char&, int&, int&, int&, double*,
                        int&, double*, int&, double*, int&, int&);
 
@@ -17,192 +18,428 @@ extern "C" void dgemv_(char&, int&, int&, double&, double*, int&, double*,
 
 using namespace std;
 
-//PolynomialSurface::PolynomialSurface(const std::vector<double> & coeff)
-//   : Surface("PolynomialSurface",coeff) { needsRebuild = false; }
+const string PolynomialSurface::name = "Polynomial";
 
-PolynomialSurface::PolynomialSurface(string filename) : Surface(0, -1), k(0), n(0), numCoeff(0)
+// ____________________________________________________________________________
+// Creation, Destruction, Initialization 
+// ____________________________________________________________________________
+
+PolynomialSurface::PolynomialSurface(SurfData& sd, unsigned order, 
+  unsigned responseIndex) : Surface(0),  
+  xsize(sd.xSize()), order(order), digits(order) 
 {
-    loadBinary(filename);
+#ifdef __TESTING_MODE__
+  constructCount++;
+#endif
+  dataItr = new SurfDataIterator(sd, responseIndex);
+  resetTermCounter();
+  build();
+}  
+  
+PolynomialSurface::PolynomialSurface(unsigned xsize, unsigned order, 
+  std::vector<double> coefficients) : Surface(0), 
+  xsize(xsize), order(order), coefficients(coefficients),
+  digits(order)
+{
+#ifdef __TESTING_MODE__
+  constructCount++;
+#endif
+  resetTermCounter();
+  build();
 }
 
-PolynomialSurface::PolynomialSurface(int numvars, int order, std::vector<double> coefficients)
-   : Surface(0, -1), k(order), n(numvars), numCoeff(coefficients.size())
+PolynomialSurface::PolynomialSurface(string filename) : Surface(0)
 {
-    digits.resize(k);
-    resetTermCounter();
-    this->coefficients = coefficients;
+#ifdef __TESTING_MODE__
+  constructCount++;
+#endif
+  read(filename);
 }
 
-PolynomialSurface::PolynomialSurface(istream& is, int responseIndex)
-   : Surface(0, responseIndex)
+PolynomialSurface::~PolynomialSurface()
 {
-    const int MAX_CHAR = 200;
-    char line[MAX_CHAR];
-    is.getline(line, MAX_CHAR);    // throw away first line; header info only
-    is.getline(line, MAX_CHAR);   
-    string sline(line);
-    istringstream streamline(sline);
-    streamline >> k; 		// kth order polynomial
-    is.getline(line, MAX_CHAR);   
-    sline = line;
-    streamline.str(sline);
-    streamline >> n;		// n variables
-    is.getline(line, MAX_CHAR);   
-    sline = line;
-    streamline.str(sline);
-    streamline >> numCoeff;		// number of coefficients
-    coefficients.resize(numCoeff);
-    for (int i = 0; i < numCoeff; i++) {
-        is.getline(line, MAX_CHAR);   
-        sline = line;
-        streamline.str(sline);
-        streamline >> coefficients[i];		// read each coefficient; ignore the label, if any, to the right 
-    }
-    digits.resize(k);
-    resetTermCounter();
-    needsRebuild = false;
+#ifdef __TESTING_MODE__
+  destructCount++;
+#endif
 }
 
-PolynomialSurface::PolynomialSurface(SurfData * data, int order, int responseIndex)
-   : Surface(data, responseIndex), k(order) 
+// ____________________________________________________________________________
+// Queries 
+// ____________________________________________________________________________
+
+const string PolynomialSurface::surfaceName() const
+{
+  return name;
+}
+
+unsigned PolynomialSurface::minPointsRequired(unsigned xsize, unsigned order)
+{
+  return nChooseR(xsize + order, order);
+}
+
+unsigned PolynomialSurface::minPointsRequired() const
 { 
-    n = data->getDimension();
-    digits.resize(k);
-    resetTermCounter();
-    numCoeff = PolynomialSurface::getMinPointCount(k,n);
-    responseIndex = 0;
-
+  return minPointsRequired(xsize, order);
 }
+
+double PolynomialSurface::evaluate(const std::vector<double> & x)
+{ 
+  double sum = 0;
+  resetTermCounter();
+  for (unsigned i = 0; i < coefficients.size(); i++) {
+    sum += coefficients[i] * computeTerm(x);
+    nextTerm();
+  }
+  return sum;
+}
+
+double PolynomialSurface::errorMetric(string metricName)
+{
+  if (metricName == "press") {
+    cout << "Call Press from Polynomial" << endl;
+    return press();
+  } else if (metricName == "rsquared") {
+    cout << "Call rSquared from Polynomial" << endl;
+    return rSquared();
+  } else {
+    return Surface::errorMetric(metricName);	
+  }
+  return 0;
+}
+
+double PolynomialSurface::press()
+{
+  cout << "Polynomial::press" << endl;
+  return 0;
+}
+
+double PolynomialSurface::rSquared(AbstractSurfDataIterator* iter)
+{
+  if(!iter) {
+    iter = this->dataItr;
+    if (!iter) {
+      cerr << "Cannot compute R^2 without data" << endl;
+      return 0.0;
+    }
+  }
+
+  int pts = iter->elementCount();
+  int lwork = pts * coefficients.size() * 2;
+
+  // allocate space for the matrices
+  double* a = new double[coefficients.size()*pts];
+  double* a2 = new double[coefficients.size()*pts];
+  double* b = new double[pts];
+  double* y = new double[pts];
+  double* yhat = new double[pts];
+  double* work = new double[lwork];
+
+  double ysum = 0.0;
+  // populate the A and B matrices in preparation for Ax=b
+  iter->toFront();
+  unsigned point = 0;
+  while(!iter->isEnd()) {
+    resetTermCounter();
+    while (termIndex < coefficients.size()) {
+          a[point+termIndex*pts] = computeTerm(iter->currentElement().X());
+          a2[point+termIndex*pts] = computeTerm(iter->currentElement().X());
+          //cout << "a[" << point+termIndex*pts << "] = " << a[point+termIndex*pts] << endl;
+        nextTerm();
+    }
+    b[point] = iter->currentElement().F(iter->responseIndex());
+    y[point] = b[point];
+    ysum += y[point];
+    iter->nextElement();
+    point++;
+  }
+  double ysumSquared = ysum * ysum;
+  int inc = 1;
+  double ydoty = ddot_(pts,y,inc,y,inc);
+  // values must be passed by reference to Fortran, so variables must be declared for info, nrhs, trans
+  int info;
+  int nrhs=1;
+  char trans = 'N';
+  int numCoeff = static_cast<int>(coefficients.size());
+  //cout << "A Matrix: " << endl;
+  //writeMatrix(a,pts,numCoeff,cout);
+  //cout << "B Vector: " << endl;
+  //long defaultPrecision = cout.precision();
+  //cout.precision(30);
+  //writeMatrix(b,pts,1,cout);
+  //cout.precision(defaultPrecision);
+  dgels_(trans,pts,numCoeff,nrhs,a,pts,b,pts,work,lwork,info);
+  //cout << "A Matrix after: " << endl;
+  //writeMatrix(a,pts,numCoeff,cout);
+  if (info < 0) {
+          cerr << "dgels_ returned with an error" << endl;
+  }
+  double noScale = 1.0;
+  double noExist = 0.0;
+  dgemv_(trans,pts,numCoeff,noScale,a2,pts,b,inc,noExist,yhat,inc);
+  //cout << "Yhat vector: " << endl;
+  //cout.precision(30);
+  //writeMatrix(yhat,pts,1,cout);
+  //cout.precision(defaultPrecision);
+  double yhatDoty = ddot_(pts,yhat,inc,y,inc);
+  double Syy = ydoty - ysumSquared;
+  double SSe = ydoty - yhatDoty;
+  double r2 = 1.0 - SSe/Syy;
+  
+  delete [] work;
+  delete [] b;
+  delete [] a;
+  delete [] a2;
+  delete [] yhat;
+  delete [] y;
+  cout << "ysumSquared: " << ysumSquared << " ydoty: " << ydoty << endl;
+  return r2;
+}
+
+// ____________________________________________________________________________
+// Commands 
+// ____________________________________________________________________________
+
+void PolynomialSurface::build()
+{
+  if (!acceptableData()) {
+    cerr << "Cannot build surface.  Data are not acceptable" << endl;
+  } else {
+    int pts = dataItr->elementCount();
+    int lwork = pts * coefficients.size() * 2;
+
+    // allocate space for the matrices
+    double* a = new double[coefficients.size()*pts];
+    double* b = new double[pts];
+    double* work = new double[lwork];
+
+    // populate the A and B matrices in preparation for Ax=b
+    dataItr->toFront();
+    unsigned point = 0;
+    while(!dataItr->isEnd()) {
+      resetTermCounter();
+      while (termIndex < coefficients.size()) {
+        a[point+termIndex*pts] = computeTerm(dataItr->currentElement().X());
+        nextTerm();
+      }
+      b[point] = dataItr->currentElement().F(dataItr->responseIndex());
+      dataItr->nextElement();
+      point++;
+    }
+
+    // values must be passed by reference to Fortran, so variables must be declared for info, nrhs, trans
+    int info;
+    int nrhs=1;
+    char trans = 'N';
+    int numCoeff = static_cast<int>(coefficients.size());
+    //cout << "A Matrix: " << endl;
+    //writeMatrix(a,pts,coefficients.size(),cout);
+    //cout << "B Vector: " << endl;
+    //writeMatrix(b,pts,1,cout);
+    dgels_(trans,pts,numCoeff,nrhs,a,pts,b,pts,work,lwork,info);
+    //cout << "A Matrix after: " << endl;
+    //writeMatrix(a,pts,numCoeff,cout);
+    if (info < 0) {
+            cerr << "dgels_ returned with an error" << endl;
+    }
+
+    for(unsigned i=0;i<coefficients.size();i++) {
+      coefficients[i] = b[i];
+      double approx = floor(coefficients[i]+.5);
+      if (abs(approx-coefficients[i]) < 1.0e-5) {
+      	coefficients[i] = approx;
+      }
+    }
+
+    delete [] work;
+    delete [] b;
+    delete [] a;
+  }
+}
+
+// ____________________________________________________________________________
+// Helper methods 
+// ____________________________________________________________________________
+
+unsigned PolynomialSurface::fact(unsigned x)
+{
+  if (x > 12) {
+    cerr << x << "! exceeds the size of an integer. Don't do it." << endl;
+    return 1;
+  }
+
+  unsigned result = 1;
+  for (unsigned i = 1; i <= x; i++) {
+    result *= i;
+  }
+  return result;
+}
+
+unsigned PolynomialSurface::nChooseR(unsigned n, unsigned r)
+{
+  //return fact(n) / (fact(n-r)*fact(r));
+  unsigned num = 1;
+  unsigned den = 1;
+  unsigned lim = (n-r) < r ? n-r : r;
+  for (unsigned i = 0; i < lim; i++) {
+    num *= (n-i);
+    den *= i+1;
+  }
+  return num/den;
+}
+	   
+void PolynomialSurface::resetTermCounter()
+{
+  for (unsigned i = 0; i < digits.size(); i++) {
+    digits[i] = 0;
+  }
+  termIndex = 0;
+}
+
+double PolynomialSurface::computeTerm(const std::vector<double>& x)
+{
+  double product = 1.0;
+  for (unsigned i = 0; i < digits.size(); i++) {
+    if (digits[i] != 0) {
+      if (digits[i] - 1 >= x.size()) {
+	cerr << "dimension mismatch in PolynomialSurface::computeTerm" << endl;
+	return 0.0;
+      }
+      product *= x[digits[i]-1];
+    }
+  }
+  return product;
+}
+
+void PolynomialSurface::nextTerm()
+{
+  unsigned curDig = 0;
+  while (digits[curDig] == xsize && curDig < order) {
+    curDig++;
+  }
+  // Don't go past last term
+  if (curDig < order) {
+    digits[curDig]++;
+    while(curDig > 0) {
+      curDig--;
+      digits[curDig] = digits[curDig+1];
+    }
+    termIndex++;
+  }
+}
+
+// ____________________________________________________________________________
+// I/O 
+// ____________________________________________________________________________
 
 /// Save the surface to a file in binary format
-void PolynomialSurface::saveBinary(std::string filename)
+void PolynomialSurface::writeBinary(ostream& os)
 {
-    ofstream outfile(filename.c_str(),ios::out | ios::binary);
-    if (!outfile) {
-	    cerr << "Could not open " << filename << " for writing." << endl;
-	    return;
+  unsigned nameSize = name.size();
+  os.write(reinterpret_cast<char*>(&nameSize),sizeof(nameSize));
+  os.write(name.c_str(),nameSize);
+  os.write(reinterpret_cast<char*>(&xsize),sizeof(xsize));
+  os.write(reinterpret_cast<char*>(&order),sizeof(order));
+  for (unsigned i = 0; i < coefficients.size(); i++) {
+    os.write(reinterpret_cast<char*>(&coefficients[i]),sizeof(coefficients[i]));
+  }
+  // figure out what to do with data
+}
+
+void PolynomialSurface::writeText(ostream& os) 
+{
+  resetTermCounter();
+  os << name << endl;
+  os << xsize << " dimensions" << endl;
+  os << order << " order" << endl;
+  os.setf(ios::left);
+  for (unsigned i = 0; i < coefficients.size(); i++) {
+    os << setprecision(17) << setw(26) << coefficients[i];
+    printTermLabel(os);
+    nextTerm();
+    if (i+1 < coefficients.size()) {
+      os << " +";
     }
-	
-    int tempID = Surface::polynomialSurfaceID;
-    outfile.write((char*)(&tempID),sizeof(int));
-    outfile.write((char*)(&k),sizeof(int));
-    outfile.write((char*)(&n),sizeof(int));
-    outfile.write((char*)(&numCoeff),sizeof(int));
-    for (int i = 0; i < numCoeff; i++) {
-	outfile.write((char*)(&coefficients[i]),sizeof(double));
-    }
-    surfData->write(outfile, true); // binary write
-    outfile.close();
+    os << endl;
+  }
+  os.unsetf(ios::left);
 }
 
 /// Load the surface from a file
-void PolynomialSurface::loadBinary(std::string filename)
+void PolynomialSurface::readBinary(istream& is)
 {
-    ifstream infile(filename.c_str(),ios::in | ios::binary);
-    if (!infile) {
-	    cerr << "Could not open " << filename << " for reading." << endl;
-	    return;
-    }
-	
-    int tempID; // = Surface::polynomialSurfaceID;
-    infile.read((char*)(&tempID),sizeof(int));
-    if (tempID != Surface::polynomialSurfaceID) {
-	    cerr << "ID in surface file does not specify Polynomial" << endl;
-	    return;
-    }
-    infile.read((char*)(&k),sizeof(int));
-    infile.read((char*)(&n),sizeof(int));
-    infile.read((char*)(&numCoeff),sizeof(int));
-    coefficients.resize(numCoeff);
-    for (int i = 0; i < numCoeff; i++) {
-	infile.read((char*)(&coefficients[i]),sizeof(double));
-    }
-    delete surfData;
-    surfData = new SurfData;
-    surfData->read(infile,true); // binary read
-    //surfData->write(cout); // text write
-    infile.close();
-    digits.resize(k);
-    resetTermCounter();
-    needsRebuild = false;
+  unsigned nameSize;
+  is.read(reinterpret_cast<char*>(&nameSize),sizeof(nameSize));
+  char* surfaceType = new char[nameSize+1];
+  is.read(surfaceType,nameSize);
+  surfaceType[nameSize] = '\0';
+  string nameInFile(surfaceType);
+  if (nameInFile != name) {
+    cerr << "Surface name in file is not 'Polynomial'." << endl;
+    cerr << "Cannot build surface." << endl;
+    return;
+  }
+  is.read(reinterpret_cast<char*>(&xsize),sizeof(xsize));
+  is.read(reinterpret_cast<char*>(&order),sizeof(order));
+  coefficients.resize(minPointsRequired());
+  for (unsigned i = 0; i < coefficients.size(); i++) {
+    is.read(reinterpret_cast<char*>(&coefficients[i]),sizeof(coefficients[i]));
+  }
+  digits.resize(order);
+  resetTermCounter();
+  valid = true;
+  originalData = false;
 }
 
-void PolynomialSurface::save(std::string filename)
+void PolynomialSurface::readText(istream& is)
 {
-    ofstream outfile(filename.c_str(),ios::out);
-    if (!outfile) {
-	    cerr << "Could not open " << filename << " for writing." << endl;
-	    return;
-    }
-
-    outfile << "Polynomial Surface Fit" << endl;
-    outfile << k << "   order" << endl
-	    << n << "   variables" << endl
-	    << numCoeff << "   number of coefficients" << endl;
-    write(outfile);
-    outfile.close();
+  const int MAX_CHAR = 2000;
+  char line[MAX_CHAR];
+  // throw away first line; header info only
+  is.getline(line, MAX_CHAR);    
+  string sline(line);
+  istringstream streamline(sline);
+  string nameInFile;
+  streamline >> nameInFile;
+  if (nameInFile != name) {
+    cerr << "Surface name in file is not 'Polynomial'." << endl;
+    cerr << "Cannot build surface." << endl;
+    return;
+  }
+  // read in the number of dimensions
+  is.getline(line, MAX_CHAR);   
+  sline = line;
+  streamline.str(sline);
+  streamline >> xsize; 		 
+  // read in the order of the model
+  is.getline(line, MAX_CHAR);   
+  sline = line;
+  streamline.str(sline);
+  streamline >> order;
+  // determine the number of terms that should be in the file
+  coefficients.resize(minPointsRequired());
+  for (unsigned i = 0; i < coefficients.size(); i++) {
+    is.getline(line, MAX_CHAR);   
+    sline = line;
+    streamline.str(sline);
+    // read each coefficient; ignore the label, if any, to the right 
+    streamline >> coefficients[i];		
+  }
+  digits.resize(order);
+  resetTermCounter();
+  valid = true;
+  originalData = false;
 }
-
-//PolynomialSurface::PolynomialSurface(const PolynomialSurface & surf)
-//   : Surface(surf) { needsRebuild = false; }
-
-PolynomialSurface::~PolynomialSurface() {}
-
-
-
-int PolynomialSurface::fact(int x)
-{
-   if (x > 12) {
-	   cerr << x << "! exceeds the size of an integer. Don't do it." << endl;
-	   return 1;
-   }
-   int result = 1;
-   for (int i = 1; i <= x; i++) {
-       result *= i;
-   }
-   return result;
-}
-
-int PolynomialSurface::nChooseR(int n, int r)
-{
-    //return fact(n) / (fact(n-r)*fact(r));
-    unsigned num = 1;
-    unsigned den = 1;
-    unsigned lim = (n-r) < r ? n-r : r;
-    for (unsigned i = 0; i < lim; i++) {
-        num *= (n-i);
-        den *= i+1;
-    }
-    return num/den;
-}
-	   
-
-void PolynomialSurface::resetTermCounter()
-{
-	for (unsigned i = 0; i < digits.size(); i++) {
-		digits[i] = 0;
-	}
-	current = 0;
-}
-
-//void print()
-//{
-//    for (vector<int>::reverse_iterator it = digits.rbegin(); it != digits.rend(); ++it) {
-//        cout << *it;
-//    }
-//    cout << "  "; // endl;
-//}
 
 void PolynomialSurface::printTermLabel(ostream& os)
 {
-    ostringstream labelStream;
-    bool needStar = false;
-    int i = 0;
-    while (i < k) {
+  ostringstream labelStream;
+  bool needStar = false;
+  unsigned i = 0;
+  while (i < order) {
 	if (digits[i] != 0) {
-            int var = digits[i];
-	    int count = 1;
-	    while (i+1 < k && digits[i+1] == var) {
+          unsigned var = digits[i];
+	    unsigned count = 1;
+	    while (i+1 < order && digits[i+1] == var) {
 		i++;
 		count++;
 	    }
@@ -217,317 +454,30 @@ void PolynomialSurface::printTermLabel(ostream& os)
 	    }	
 	}
 	i++;
+  }
+  string label = labelStream.str();
+  os << label;
+}
+
+  
+ostream& PolynomialSurface::writeMatrix(double* mat, unsigned rows, unsigned columns, ostream& os)
+{
+  for (unsigned r = 0; r < rows; r++) {
+    for (unsigned c = 0; c < columns; c++) {
+      os << setw(15) << mat[r + c*rows];
     }
-    string label = labelStream.str();
-    os << label;
+    os << endl;
+  }
+  return os;
 }
 
-double PolynomialSurface::computeTerm(const std::vector<double>& x)
-{
-    double product = 1.0;
-    for (unsigned i = 0; i < digits.size(); i++) {
-        if (digits[i] != 0) {
-	    if (static_cast<unsigned>(digits[i]) - 1 >= x.size()) {
-		cerr << "dimension mismatch in PolynomialSurface::computeTerm" << endl;
-		return 0.0;
-	    }
-	    product *= x[digits[i]-1];
-	}
-    }
-    return product;
-}
+// ____________________________________________________________________________
+// Testing 
+// ____________________________________________________________________________
 
-void PolynomialSurface::nextTerm()
-{
-    int curDig = 0;
-    while (digits[curDig] >= n && curDig < k) {
-        curDig++;
-    }
-    if (curDig < k) {
-	digits[curDig]++;
-	while(curDig > 0) {
-	    curDig--;
-	    digits[curDig] = digits[curDig+1];
-	}
-    }
-    current++;
-}
+#ifdef __TESTING_MODE__
+  int SurfData::constructCount = 0;
+  int SurfData::copyCount = 0;
+  int SurfData::destructCount = 0;
+#endif
 
-//int main() 
-//{
-//	numCoeff = nChooseR(n+k,k);
-//	reset();
-//	do {
-//	    print();
-//	    printLabel();
-//	    cout << endl;
-//	    next();
-//	} while (current < numCoeff);
-//	cout << "numCoefficients: " << numCoeff << endl;
-//
-//	return 0;
-//}
-//
-
-
-int PolynomialSurface::getMinPointCount(int order, int numvars)
-{
-    return nChooseR(order+numvars, order);
-}
-
-int PolynomialSurface::getMinPointCount(int val) const
-{ 
-    int result = PolynomialSurface::getMinPointCount(val,n);
-    return result;
-}
-
-int PolynomialSurface::getDimension() const
-{
-    return n; // number of dimensions set in constructor
-}
-   
-//double PolynomialSurface::getError(int code) const
-//{ return 0; }
-
-double PolynomialSurface::calculate(const std::vector<double> & x)
-   throw(SurfException)
-{ 
-    double sum = 0;
-    resetTermCounter();
-    for (int i = 0; i < numCoeff; i++) {
-        sum += coefficients[i] * computeTerm(x);
-	nextTerm();
-    }
-    return sum;
-}
-    
-void PolynomialSurface::calculateInternals(AbstractSurfDataIterator* iter)
-{
-   if(surfData==0) return;
-
-   // m = pts
-   // n = coeffCnt
-
-   //int dim = surfData->getDimension();
-   int pts = iter->getElementCount();
-   int lwork = pts * numCoeff * 2;
-
-   // allocate space for the matrices
-   double* a = new double[numCoeff*pts];
-   double* b = new double[pts];
-   double* work = new double[lwork];
-
-   // populate the A and B matrices in preparation for Ax=b
-   iter->toFront();
-   int point = 0;
-   while(!iter->isEnd()) {
-       resetTermCounter();
-       while (current < numCoeff) {
-	   a[point+current*pts] = computeTerm(iter->currentElement()->getX());
-	   //cout << "a[" << point+current*pts << "] = " << a[point+current*pts] << endl;
-           nextTerm();
-       }
-       b[point] = iter->currentElement()->getF(responseIndex);
-       iter->nextElement();
-       point++;
-   }
-
-   // values must be passed by reference to Fortran, so variables must be declared for info, nrhs, trans
-   int info;
-   int nrhs=1;
-   char trans = 'N';
-   //cout << "A Matrix: " << endl;
-   //writeMatrix(a,pts,numCoeff,cout);
-   //cout << "B Vector: " << endl;
-   //writeMatrix(b,pts,1,cout);
-   dgels_(trans,pts,numCoeff,nrhs,a,pts,b,pts,work,lwork,info);
-   //cout << "A Matrix after: " << endl;
-   //writeMatrix(a,pts,numCoeff,cout);
-   if (info < 0) {
-	   cerr << "dgels_ returned with an error" << endl;
-   }
-
-   coefficients.clear();
-   coefficients.resize(numCoeff);
-
-   for(int i=0;i<numCoeff;i++) {
-       coefficients[i] = b[i];
-       double approx = floor(coefficients[i]+.5);
-       if (abs(approx-coefficients[i]) < 1.0e-5) {
-       	coefficients[i] = approx;
-       }
-   }
-
-   delete [] work;
-   delete [] b;
-   delete [] a;
-}
-
-double PolynomialSurface::rSquared(AbstractSurfDataIterator* iter)
-{
-   if(!surfData) {
-	  cerr << "Cannot compute R^2 without data" << endl;
-	  return 0.0;
-   }
-
-   bool deleteIter = false;
-   if (!iter) {
-	   iter = new SurfDataIterator(surfData);
-	   deleteIter = true;
-   }
-
-   
-   int pts = iter->getElementCount();
-   int lwork = pts * numCoeff * 2;
-
-   // allocate space for the matrices
-   double* a = new double[numCoeff*pts];
-   double* a2 = new double[numCoeff*pts];
-   double* b = new double[pts];
-   double* y = new double[pts];
-   double* yhat = new double[pts];
-   double* work = new double[lwork];
-
-   double ysum = 0.0;
-   // populate the A and B matrices in preparation for Ax=b
-   iter->toFront();
-   int point = 0;
-   while(!iter->isEnd()) {
-       resetTermCounter();
-       while (current < numCoeff) {
-	   a[point+current*pts] = computeTerm(iter->currentElement()->getX());
-	   a2[point+current*pts] = computeTerm(iter->currentElement()->getX());
-	   //cout << "a[" << point+current*pts << "] = " << a[point+current*pts] << endl;
-           nextTerm();
-       }
-       b[point] = iter->currentElement()->getF(responseIndex);
-       y[point] = b[point];
-       ysum += y[point];
-       iter->nextElement();
-       point++;
-   }
-   double ysumSquared = ysum * ysum;
-   int inc = 1;
-   double ydoty = ddot_(pts,y,inc,y,inc);
-   // values must be passed by reference to Fortran, so variables must be declared for info, nrhs, trans
-   int info;
-   int nrhs=1;
-   char trans = 'N';
-   //cout << "A Matrix: " << endl;
-   //writeMatrix(a,pts,numCoeff,cout);
-   //cout << "B Vector: " << endl;
-   //long defaultPrecision = cout.precision();
-   //cout.precision(30);
-   //writeMatrix(b,pts,1,cout);
-   //cout.precision(defaultPrecision);
-   dgels_(trans,pts,numCoeff,nrhs,a,pts,b,pts,work,lwork,info);
-   //cout << "A Matrix after: " << endl;
-   //writeMatrix(a,pts,numCoeff,cout);
-   if (info < 0) {
-	   cerr << "dgels_ returned with an error" << endl;
-   }
-   double noScale = 1.0;
-   double noExist = 0.0;
-   dgemv_(trans,pts,numCoeff,noScale,a2,pts,b,inc,noExist,yhat,inc);
-   //cout << "Yhat vector: " << endl;
-   //cout.precision(30);
-   //writeMatrix(yhat,pts,1,cout);
-   //cout.precision(defaultPrecision);
-   double yhatDoty = ddot_(pts,yhat,inc,y,inc);
-   double Syy = ydoty - ysumSquared;
-   double SSe = ydoty - yhatDoty;
-   double r2 = 1.0 - SSe/Syy;
-   
-   delete [] work;
-   delete [] b;
-   delete [] a;
-   delete [] a2;
-   delete [] yhat;
-   delete [] y;
-   cout << "ysumSquared: " << ysumSquared << " ydoty: " << ydoty << endl;
-   if (deleteIter) {
-	   delete iter;
-   }
-   return r2;
-}
-
-
-//ostream & PolynomialSurface::writeClean(ostream & os) throw(SurfException)
-//{
-//    resetTermCounter();
-//    os.setf(ios::left);
-//    for (int i = 0; i < numCoeff; i++) {
-//        os << setprecision(25) << setw(35) << coefficients[i];
-//	printTermLabel(os);
-//	nextTerm();
-//	if (i+1 < numCoeff) {
-//		os << " +";
-//	}
-//	os << endl;
-//    }
-//    os.unsetf(ios::left);
-//    return os;
-//}
-
-ostream& PolynomialSurface::write(ostream& os) 
-{
-    resetTermCounter();
-    os.setf(ios::left);
-    for (int i = 0; i < numCoeff; i++) {
-        os << setprecision(25) << setw(35) << coefficients[i];
-	printTermLabel(os);
-	nextTerm();
-	if (i+1 < numCoeff) {
-		os << " +";
-	}
-	os << endl;
-    }
-    os.unsetf(ios::left);
-    return os;
-    //return writeClean(os);
-}
-
-string PolynomialSurface::getType() const
-{
-    return "Polynomial";
-}
-   
-ostream& PolynomialSurface::writeMatrix(double* mat, int rows, int columns, ostream& os)
-{
-    for (int r = 0; r < rows; r++) {
-	for (int c = 0; c < columns; c++) {
-	    os << setw(15) << mat[r + c*rows];
-	}
-	os << endl;
-    }
-    return os;
-}
-
-double PolynomialSurface::errorMetric(string metricName)
-{
-	if (metricName == "press") {
-		cout << "Call Press from Polynomial" << endl;
-		return computePressStatistic();
-	} else if (metricName == "rsquared") {
-		cout << "Call rSquared from Polynomial" << endl;
-		return rSquared();
-	} else {
-		return Surface::errorMetric(metricName);	
-	}
-	return 0;
-
-}
-
-double PolynomialSurface::press()
-{
-	cout << "Polynomial::press" << endl;
-	return 0;
-
-}
-
-double PolynomialSurface::rsquared()
-{
-	cout << "Polynomial::rsquared" << endl;
-	return 0;
-
-}

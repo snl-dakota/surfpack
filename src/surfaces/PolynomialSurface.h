@@ -24,73 +24,95 @@
 
 class PolynomialSurface : public Surface
 {
+
+// ____________________________________________________________________________
+// Creation, Destruction, Initialization 
+// ____________________________________________________________________________
+
+public:
+  
+  PolynomialSurface(SurfData& sd, unsigned order, unsigned responseIndex = 0);
+  PolynomialSurface(unsigned xsize, unsigned order, std::vector<double> coefficients);
+  PolynomialSurface(std::string filename);
+  //PolynomialSurface(const PolynomialSurface&);
+  virtual ~PolynomialSurface(); 
+
 private:
-   double average;
-   PolynomialSurface() {}
+   /// explicitly disallow default constructor
+   PolynomialSurface(); 
+
+// ____________________________________________________________________________
+// Queries 
+// ____________________________________________________________________________
 
 public:
 
-// constructor/destructor
-////////////////////////////////
+  virtual const std::string surfaceName() const;
+  static unsigned minPointsRequired(unsigned xsize, unsigned order);
+  virtual unsigned minPointsRequired() const;
+  virtual double evaluate(const std::vector<double>& x); 
+  virtual double errorMetric(std::string metricName);
+  virtual double press();
+  virtual double rSquared(AbstractSurfDataIterator* iter = 0);
 
-   //PolynomialSurface(const std::vector<double> &);
-   PolynomialSurface(std::istream& is, int responseIndex = 0);
-   PolynomialSurface(SurfData *, int order, int responseIndex = 0);
-   PolynomialSurface(int numvars, int order, std::vector<double> coefficients);
-   PolynomialSurface(string filename);
-   //PolynomialSurface(const PolynomialSurface &);
-   
-   // a do nothing destructor
-   //
-   virtual ~PolynomialSurface(); 
+// ____________________________________________________________________________
+// Commands 
+// ____________________________________________________________________________
 
-// member functions
-////////////////////////////////
+  virtual void build();
 
-   // get the error for this surface using the method specified
-   // code: specifies the method used to calculate the error
-   //virtual double getError(int code) const; 
+// ____________________________________________________________________________
+// Helper methods 
+// ____________________________________________________________________________
 
-   virtual int getMinPointCount(int dim) const;
-
-   virtual int getDimension() const;
-   //virtual ostream & writeClean(std::ostream & os = std::cout) throw(SurfException);
-   virtual ostream& write(std::ostream& os = std::cout); 
-   static int getMinPointCount(int order, int numvars);
-   std::string getType() const;
-   virtual void save(std::string filename);
-    /// Save the surface to a file in binary format
-   virtual void saveBinary(std::string filename);
-
-   /// Load the surface from a file
-   virtual void loadBinary(std::string filename);
-   
-   virtual double rSquared(AbstractSurfDataIterator* iter = 0);
-   
-   virtual double errorMetric(string metricName);
-   virtual double press();
-   virtual double rsquared();
+  static unsigned fact(unsigned x);
+  static unsigned nChooseR(unsigned n, unsigned r); 
+  void resetTermCounter();
+  double computeTerm(const std::vector<double>& x);
+  void nextTerm();
+// ____________________________________________________________________________
+// Data members 
+// ____________________________________________________________________________
 
 protected:
-
-    int k;
-    int n;
-    int numCoeff;
-    std::vector<int> digits;
-    std::vector<double> coefficients;
-    int current;
+  static const std::string name;
+  unsigned xsize;
+  unsigned order;
+  
+  std::vector<double> coefficients;
+  std::vector<unsigned> digits;
+  unsigned termIndex;
    
-    virtual double calculate(const std::vector<double> & x) 
-      throw(SurfException);
+// ____________________________________________________________________________
+// I/O 
+// ____________________________________________________________________________
 
-   virtual void calculateInternals(AbstractSurfDataIterator* iter);
-   void resetTermCounter();
-   void nextTerm();
-   double computeTerm(const std::vector<double>& x);
-   void printTermLabel(std::ostream& os = std::cout);
-   static int fact(int x);
-   static int nChooseR(int n, int r); 
-   ostream& writeMatrix(double* mat, int rows, int columns, ostream& os);
+   /// Save the surface to a file in binary format
+  virtual void writeBinary(std::ostream& os);
+
+  virtual void writeText(std::ostream& os);
+
+  /// Load the surface from a file
+  virtual void readBinary(std::istream& is);
+
+  virtual void readText(std::istream& is);
+
+  virtual void printTermLabel(std::ostream& os = std::cout);
+
+// ____________________________________________________________________________
+// Testing 
+// ____________________________________________________________________________
+  std::ostream& writeMatrix(double* mat, unsigned rows, unsigned columns, std::ostream& os);
+
+#ifdef __TESTING_MODE__ 
+  friend class SurfDataUnitTest;
+  friend class SurfaceUnitTest;
+
+public:
+  static int constructCount;
+  static int copyCount;
+  static int destructCount;
+#endif
 };
 
 #endif
