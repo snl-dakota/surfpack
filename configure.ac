@@ -37,6 +37,8 @@ then
 else
   WHOLE_LIB_PATH=
 fi
+
+AC_CHECK_LIB([fl], [yywrap])
 #Check for linear algebra libraries needed on the AIX
 #AC_CHECK_LIB([essl], [dgels_])
 #
@@ -84,7 +86,7 @@ AC_DEFINE([__TESTING_MODE__],[],[1])
 AC_PROG_LIBTOOL
 
 CPPFLAGS="-DDATADIR='\"\$(top_srcdir)/share\"' "
-CXXFLAGS="-fprofile-arcs -ftest-coverage -g -save-temps"
+#CXXFLAGS="-fprofile-arcs -ftest-coverage -g -save-temps"
 #CXXFLAGS="-g "
 if test "$CXX" = "cxx"
 then
