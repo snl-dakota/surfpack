@@ -52,6 +52,7 @@ public:
 
   virtual void build(SurfData& data);
   
+  virtual void config(const SurfpackParser::ArgList& arglist);
   /// Create a surface of the same type as 'this.'  This objects data should
   /// be replaced with the dataItr passed in, but all other attributes should
   /// be the same (e.g., a second-order polynomial should return another 
@@ -77,6 +78,9 @@ public:
 protected:
   static const std::string name;
   ANNApprox* annObject;
+  double norm_bound;
+  double svdfactor;
+  double percent;
 
 //_____________________________________________________________________________
 // Testing 

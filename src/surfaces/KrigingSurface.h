@@ -21,6 +21,8 @@
 #ifndef __KRIGING_SURFACE_H__
 #define __KRIGING_SURFACE_H__
 
+#include "SurfpackParser.h"
+
 class KrigingSurface : public Surface
 {
 
@@ -60,6 +62,7 @@ public:
   void setConminThetaVars(std::vector<double> vals);
   void usePreComputedCorrelationVector(std::vector<double> vals);
   void build(SurfData& data);
+  virtual void config(const SurfpackParser::ArgList& arglist);
   
   /// Create a surface of the same type as 'this.'  This objects data should
   /// be replaced with the dataItr passed in, but all other attributes should

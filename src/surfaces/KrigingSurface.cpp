@@ -19,6 +19,7 @@
 #include "SurfPoint.h"
 #include "SurfData.h"
 #include "Surface.h"
+#include "SurfpackParser.h"
 #include "KrigingSurface.h"
 
 
@@ -375,6 +376,18 @@ void KrigingSurface::build(SurfData& data)
   buildModel(data);
 }
 
+void KrigingSurface::config(const SurfpackParser::ArgList& arglist)
+{
+  for (unsigned i = 0; i < arglist.size(); i++) {
+    string argname = arglist[i].name;
+    if (name == "conmin_seed") {
+      setConminThetaVars(arglist[i].lval.tuple); 
+    } else if (name == "theta_vars") {
+      usePreComputedCorrelationVector(arglist[i].lval.tuple);
+    }
+      
+  }
+}
 /// Create a surface of the same type as 'this.'  This objects data should
 /// be replaced with the dataItr passed in, but all other attributes should
 /// be the same (e.g., a second-order polynomial should return another 

@@ -23,9 +23,6 @@
 #define fmod fmod_
 #endif
 
-int MarsSurface::nk = 25;
-int MarsSurface::mi = 2;
-
 extern "C" void mars(int&, int&, real&, real&, real&, int&, int&, int&,
   real&, int&, real&, double&, int&);
 
@@ -65,6 +62,7 @@ const string MarsSurface::name = "Mars";
 MarsSurface::MarsSurface(SurfData* sd) : Surface(sd),
   xMatrix(0), fm(0), im(0)
 {
+  init();
 #ifdef __TESTING_MODE__
   constructCount++;
 #endif
@@ -73,6 +71,7 @@ MarsSurface::MarsSurface(SurfData* sd) : Surface(sd),
 MarsSurface::MarsSurface(const string filename) : Surface(0), xMatrix(0), 
   fm(0), im(0)
 {
+  init();
 #ifdef __TESTING_MODE__
   constructCount++;
 #endif
@@ -88,7 +87,12 @@ MarsSurface::~MarsSurface()
   delete [] im;
 }
 
-
+void MarsSurface::init()
+{
+  max_bases = 25;
+  max_interactions = 2;
+  interpolation = 2;
+}
 //_____________________________________________________________________________
 // Overloaded Operators 
 //_____________________________________________________________________________
@@ -118,22 +122,21 @@ double MarsSurface::evaluate(const std::vector<double>& x)
   //int ntcv = 0;
   // inputs
   // m=1 for linear, 2 for cubic
-  int m = 2; 
   //int ngc = 1;
   //int ngs = 1;
   //int icx = 1;
-  //int nk = 15;
-  //int mi = 2;
+  //int max_bases = 15;
+  //int max_interactions = 2;
   //
   //// outputs from plot
   //// number of curves
   //int nc; 
-  //double* crv = new double[ngc*2*nk];
+  //double* crv = new double[ngc*2*max_bases];
   //// number of surfaces
   //int ns;
-  //double* srf = new double[ngs*ngs*nk];
+  //double* srf = new double[ngs*ngs*max_bases];
   //double* sp = new double[max(4*ngs*ngs,max(ngc,2*n))];
-  //int* mm = new int[max(2*(mi+1),nmcv)];
+  //int* mm = new int[max(2*(max_interactions+1),nmcv)];
   //plot(m,this->x,fm,im,ngc,ngs,icx,nc,crv,ns,srf,sp,mm);
   
   //delete [] crv;
@@ -147,7 +150,7 @@ double MarsSurface::evaluate(const std::vector<double>& x)
   }
   real* sp = new real[2];
   real* f = new real[1];
-  fmod(m,n,xVector[0],fm[0],im[0],f[0],sp[0]);
+  fmod(interpolation,n,xVector[0],fm[0],im[0],f[0],sp[0]);
   delete [] sp;
   delete [] xVector;
   real result = *f;
@@ -166,20 +169,20 @@ void MarsSurface::build(SurfData& data)
   delete [] im;
   int nmcv = 0;
   int ntcv = 0;
-  //int nk = 15;
-  //int mi = 2;
+  //int max_bases = 15;
+  //int max_interactions = 2;
   n = static_cast<int>(data.size());
   np = static_cast<int>(data.xSize());
   xMatrix = new real[n*np];
   real* y = new real[n];
   real* w = new real[n];
   int* lx = new int[np];
-  fm = new real[ 3+nk*(5*mi+nmcv+6)+2*np+ntcv];
-  im = new int[ 21+nk*(3*mi+8) ];
-  real* sp = new real[2*(n*(max(nk+1,2)+3) + max(3*n+5*nk+np, max(2*np, 4*n))) 
-    + 2*np + 4*nk];
-  double* dp = new double[2*(max(n*nk,(nk+1)*(nk+1)) + max((nk+2)*(nmcv+3),4*nk))];
-  int* mm = new int[2*(n*np+2*max(mi,nmcv))];
+  fm = new real[ 3+max_bases*(5*max_interactions+nmcv+6)+2*np+ntcv];
+  im = new int[ 21+max_bases*(3*max_interactions+8) ];
+  real* sp = new real[2*(n*(max(max_bases+1,2)+3) + max(3*n+5*max_bases+np, max(2*np, 4*n))) 
+    + 2*np + 4*max_bases];
+  double* dp = new double[2*(max(n*max_bases,(max_bases+1)*(max_bases+1)) + max((max_bases+2)*(nmcv+3),4*max_bases))];
+  int* mm = new int[2*(n*np+2*max(max_interactions,nmcv))];
 
   unsigned pts = data.size();
   for (unsigned i = 0; i < data.size(); i++) {
@@ -199,13 +202,33 @@ void MarsSurface::build(SurfData& data)
   //printMatrix(w,n,1,cout);
   //printMatrix(y,n,1,cout);
   //printIntMatrix(lx,np,1,cout);
-  mars(n,np,xMatrix[0],y[0],w[0],nk,mi,lx[0],fm[0],im[0],sp[0],dp[0],mm[0]);
+  mars(n,np,xMatrix[0],y[0],w[0],max_bases,max_interactions,lx[0],fm[0],im[0],sp[0],dp[0],mm[0]);
   delete [] y;
   delete [] w;
   delete [] lx;
   delete [] sp;
   delete [] dp;
   delete [] mm;
+}
+
+void MarsSurface::config(const SurfpackParser::ArgList& arglist)
+{
+  for (unsigned i = 0; i < arglist.size(); i++) {
+    string argname = arglist[i].name;
+    if (name == "max_bases") {
+      max_bases = arglist[i].lval.integer;
+    } else if (name == "max_interactions") {
+      max_interactions = arglist[i].lval.integer;
+    } else if (name == "interpolation") {
+      if (arglist[i].lval.literal == "linear") {
+        interpolation = 1;
+      } else if (arglist[i].lval.literal == "cubic") {
+        interpolation = 2;
+      } else {
+        cerr << "Expected value for interpolation: 'linear' or 'cubic'" << endl;
+      } 
+    }
+  }
 }
 
 /// Create a surface of the same type as 'this.'  This objects data should
@@ -231,10 +254,10 @@ void MarsSurface::writeBinary(std::ostream& os)
   int nmcv = 0;
   int ntcv = 0;
   np = static_cast<int>(sd->size());
-  unsigned fmsize = 3+nk*(5*mi+nmcv+6)+2*np+ntcv;
-  unsigned imsize = 21+nk*(3*mi+8);
-  os.write(reinterpret_cast<char*>(&nk),sizeof(nk));
-  os.write(reinterpret_cast<char*>(&mi),sizeof(mi));
+  unsigned fmsize = 3+max_bases*(5*max_interactions+nmcv+6)+2*np+ntcv;
+  unsigned imsize = 21+max_bases*(3*max_interactions+8);
+  os.write(reinterpret_cast<char*>(&max_bases),sizeof(max_bases));
+  os.write(reinterpret_cast<char*>(&max_interactions),sizeof(max_interactions));
   os.write(reinterpret_cast<char*>(&nmcv),sizeof(nmcv));
   os.write(reinterpret_cast<char*>(&ntcv),sizeof(ntcv));
   os.write(reinterpret_cast<char*>(&np),sizeof(np));
@@ -247,15 +270,15 @@ void MarsSurface::writeText(std::ostream& os)
     int nmcv = 0;
     int ntcv = 0;
     np = static_cast<int>(sd->size());
-    unsigned fmsize = 3+nk*(5*mi+nmcv+6)+2*np+ntcv;
-    unsigned imsize = 21+nk*(3*mi+8);
+    unsigned fmsize = 3+max_bases*(5*max_interactions+nmcv+6)+2*np+ntcv;
+    unsigned imsize = 21+max_bases*(3*max_interactions+8);
     
     unsigned old_precision = os.precision(surfpack::output_precision);
     os.setf(ios::scientific);
     os << setw(surfpack::field_width) << nmcv << "  nmcv" << endl
        << setw(surfpack::field_width) << ntcv << "  ntcv" << endl
-       << setw(surfpack::field_width) << nk << "  nk" << endl
-       << setw(surfpack::field_width) << mi << "  mi" << endl
+       << setw(surfpack::field_width) << max_bases << "  max_bases" << endl
+       << setw(surfpack::field_width) << max_interactions << "  max_interactions" << endl
        << setw(surfpack::field_width) << np << "  np" << endl;
     unsigned i;
     for (i = 0; i < fmsize; i++) {
@@ -273,14 +296,14 @@ void MarsSurface::readBinary(std::istream& is)
 
   delete [] fm;
   delete [] im;
-  int nmcv,ntcv,nk,mi,np;
-  is.read(reinterpret_cast<char*>(&nk),sizeof(nk));
-  is.read(reinterpret_cast<char*>(&mi),sizeof(mi));
+  int nmcv,ntcv,np;
+  is.read(reinterpret_cast<char*>(&max_bases),sizeof(max_bases));
+  is.read(reinterpret_cast<char*>(&max_interactions),sizeof(max_interactions));
   is.read(reinterpret_cast<char*>(&nmcv),sizeof(nmcv));
   is.read(reinterpret_cast<char*>(&ntcv),sizeof(ntcv));
   is.read(reinterpret_cast<char*>(&np),sizeof(np));
-  unsigned fmsize = 3+nk*(5*mi+nmcv+6)+2*np+ntcv;
-  unsigned imsize = 21+nk*(3*mi+8);
+  unsigned fmsize = 3+max_bases*(5*max_interactions+nmcv+6)+2*np+ntcv;
+  unsigned imsize = 21+max_bases*(3*max_interactions+8);
   fm = new real[fmsize];
   im = new int[imsize];
   is.read(reinterpret_cast<char*>(fm),fmsize*sizeof(fm[0]));
@@ -291,7 +314,7 @@ void MarsSurface::readText(std::istream& is)
 {
     delete [] fm;
     delete [] im;
-    int nmcv,ntcv,nk,mi,np;
+    int nmcv,ntcv,np;
     string sline;
     istringstream streamline;
     getline(is,sline);
@@ -302,15 +325,15 @@ void MarsSurface::readText(std::istream& is)
     streamline >> ntcv;
     getline(is,sline);
     streamline.str(sline); streamline.clear();
-    streamline >> nk;
+    streamline >> max_bases;
     getline(is,sline);
     streamline.str(sline); streamline.clear();
-    streamline >> mi;
+    streamline >> max_interactions;
     getline(is,sline);
     streamline.str(sline); streamline.clear();
     streamline >> np;
-    unsigned fmsize = 3+nk*(5*mi+nmcv+6)+2*np+ntcv;
-    unsigned imsize = 21+nk*(3*mi+8);
+    unsigned fmsize = 3+max_bases*(5*max_interactions+nmcv+6)+2*np+ntcv;
+    unsigned imsize = 21+max_bases*(3*max_interactions+8);
     fm = new real[fmsize];
     im = new int[imsize];
     unsigned i;

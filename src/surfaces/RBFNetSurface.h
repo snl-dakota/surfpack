@@ -18,6 +18,7 @@
 class SurfData;
 class Surface;
 
+#include "SurfpackParser.h"
 typedef float real;
 
 class RBFNetSurface : public Surface
@@ -51,6 +52,7 @@ public:
 
   virtual void build(SurfData& data);
   
+  virtual void config(const SurfpackParser::ArgList& arglist);
   /// Create a surface of the same type as 'this.'  This objects data should
   /// be replaced with the dataItr passed in, but all other attributes should
   /// be the same (e.g., a second-order polynomial should return another 
@@ -78,6 +80,7 @@ protected:
   std::vector<double> weights;
   std::vector<double> sizes;
   std::vector<SurfPoint> centers;
+  double radius;
 
 //_____________________________________________________________________________
 // Testing 

@@ -30,6 +30,9 @@ public:
   MarsSurface(SurfData* sd);
   MarsSurface(const std::string filename);
   ~MarsSurface();
+protected:
+  void init();
+public:
 
 //_____________________________________________________________________________
 // Overloaded Operators 
@@ -50,6 +53,7 @@ public:
 
   virtual void build(SurfData& data);
   
+  virtual void config(const SurfpackParser::ArgList& arglist);
   /// Create a surface of the same type as 'this.'  This objects data should
   /// be replaced with the dataItr passed in, but all other attributes should
   /// be the same (e.g., a second-order polynomial should return another 
@@ -79,8 +83,9 @@ protected:
   int* im;
   int n;
   int np;
-static int nk; 
-static int mi;
+  int max_bases; 
+  int max_interactions;
+  int interpolation;
 
 //_____________________________________________________________________________
 // Testing 

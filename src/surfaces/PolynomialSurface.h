@@ -25,6 +25,7 @@
 #include <vector>
 #include <string>
 #include <stdexcept>
+#include "SurfpackParser.h"
 
 class SurfPoint;
 class Surface;
@@ -38,11 +39,12 @@ class PolynomialSurface : public Surface
 
 public:
   
-  PolynomialSurface(SurfData* sd, unsigned order);
+  PolynomialSurface(SurfData* sd, unsigned order = 2);
   PolynomialSurface(unsigned xsize, unsigned order, 
     std::vector<double> coefficients);
   PolynomialSurface(const std::string filename);
   PolynomialSurface(const PolynomialSurface& other);
+  virtual void config(const SurfpackParser::ArgList& arglist);
   
   /// Create a surface of the same type as 'this.'  This objects data should
   /// be replaced with the dataItr passed in, but all other attributes should

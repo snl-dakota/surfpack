@@ -68,6 +68,9 @@ ANNSurface::~ANNSurface()
 
 void ANNSurface::init()
 {
+  norm_bound = 0.8; 
+  percent = 0; 
+  svdfactor = 0.90;
 }
 
 //_____________________________________________________________________________
@@ -119,6 +122,20 @@ void ANNSurface::build(SurfData& data)
   annObject->set_aside_test_exemplars(percent);
   int num_neurons = annObject->numExemplars - 1;
   annObject->build_approximation(svdfactor, num_neurons);
+}
+
+void ANNSurface::config(const SurfpackParser::ArgList& arglist)
+{
+  for (unsigned i = 0; i < arglist.size(); i++) {
+    string argname = arglist[i].name;
+    if (name == "norm_bound") {
+      norm_bound = arglist[i].lval.real;
+    } else if (name == "svdfactor") {
+      svdfactor = arglist[i].lval.real;
+    } else if (name == "fraction_withheld") {
+      percent = arglist[i].lval.real;
+    }
+  }
 }
 
 /// Create a surface of the same type as 'this.'  This objects data should

@@ -64,6 +64,9 @@ RBFNetSurface::~RBFNetSurface()
 
 void RBFNetSurface::init()
 {
+  // .1 is a magic number.  More intelligent algorithm for choosing radii 
+  // is needed 
+  radius = 0.1;
 }
 
 //_____________________________________________________________________________
@@ -123,8 +126,7 @@ void RBFNetSurface::build(SurfData& surfData)
   }
   sizes.resize(surfData.size());
   for (unsigned j = 0; j < sizes.size(); j++) {
-    // .1 is a magic number.  More intelligent choice for rbf radius needed
-    sizes[j] = 0.1; 
+    sizes[j] = radius; 
       
   }
   int numpts = static_cast<int>(surfData.size());
@@ -223,6 +225,15 @@ void RBFNetSurface::build(SurfData& surfData)
   delete [] responseVector;
 }
 
+void RBFNetSurface::config(const SurfpackParser::ArgList& arglist)
+{
+  for (unsigned i = 0; i < arglist.size(); i++) {
+    string argname = arglist[i].name;
+    if (name == "radius") {
+      radius = arglist[i].lval.real;
+    }
+  }
+}
 /// Create a surface of the same type as 'this.'  This objects data should
 /// be replaced with the dataItr passed in, but all other attributes should
 /// be the same (e.g., a second-order polynomial should return another 
