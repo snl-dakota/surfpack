@@ -18,10 +18,8 @@
 #include <vector>
 #include <string>
 
-//#include "AbstractSurfDataIterator.h"
-#include "SurfException.h"
-#include "SurfPoint.h"
-#include "Surface.h"
+class SurfPoint;
+class Surface;
 
 class PolynomialSurface : public Surface
 {
