@@ -1,6 +1,46 @@
 dnl Available from the GNU Autoconf Macro Archive at:
 dnl http://www.gnu.org/software/ac-archive/htmldoc/acx_blas.html
 dnl
+
+AC_DEFUN([MDR_CXX_CPPUNIT], [
+AC_PREREQ(2.58)
+AC_CACHE_CHECK([for CPPUnit libraries], ac_cv_cxx_cppunit,
+	AC_LANG_SAVE
+        mdr_save_CXXFLAGS=$CXXFLAGS
+	CXXFLAGS="-L$SURFPACK/../../lib -I$SURFPACK/../../include -lcppunit"
+        AC_LANG(C++)
+	AC_LINK_IFELSE(
+        	[AC_LANG_PROGRAM(
+			[[#include <cppunit/extensions/HelperMacros.h>
+        	
+        	         class MyTest : public CppUnit::TestCase
+        	         {
+        	           MyTest(std::string name) : CppUnit::TestCase( name ) {}
+        	           void runTest() { CPPUNIT_ASSERT( 1 == 1); }
+        	         };]],
+			[[//no body]])],
+		[ac_cv_cxx_cppunit=yes], [ac_cv_cxx_cppunit=no])
+	AC_LANG_RESTORE
+	CXXFLAGS="$mdr_save_CXXFLAGS")
+if test "$ac_cv_cxx_cppunit" = yes
+then
+  echo "ac_cv_cxx_cppunit: " $ac_cv_cxx_cppunit
+  echo "CPPUnit found"
+  LIBS="-lcppunit $LIBS"
+  AC_DEFINE(HAVE_CPPUNIT,,[define if CPPUnit libraries are available for linking])
+else
+  echo "ac_cv_cxx_cppunit: " $ac_cv_cxx_cppunit
+  echo "CPPUnit not found"
+fi
+AM_CONDITIONAL(INCLUDE_TESTS, test "$ac_cv_cxx_cppunit" = yes)
+])	
+
+AC_DEFUN([MDR_CPPUNIT_MAKEFILE],
+[if test "$ac_cv_cxx_cppunit" = yes
+then
+     AC_CONFIG_FILES([$1])
+fi])
+
 AC_DEFUN([ACX_BLAS], [
 AC_PREREQ(2.50)
 AC_REQUIRE([AC_F77_LIBRARY_LDFLAGS])

@@ -55,9 +55,7 @@ AC_CHECK_LIB([dxml],[dgels_])
 
 #Check for libraries needed for CPP Unit test suite
 AC_CHECK_LIB([dl],[dlclose],[],[],[$WHOLE_LIB_PATH])
-include_tests=yes
-AC_CHECK_LIB([cppunit],[main],[],[include_tests=no],[$WHOLE_LIB_PATH])
-AM_CONDITIONAL(INCLUDE_TESTS, test $include_tests = yes)
+MDR_CXX_CPPUNIT
 
 AC_DEFINE([__TESTING_MODE__],[],[1])
 
@@ -76,8 +74,7 @@ CXXFLAGS="-g "
 if test $CXX = "cxx"
 then
   echo "Compiling with cxx"
-  #CXXFLAGS="-g "
-  AC_DEFINE([__USE_STD_IOSTREAM],[],[Define if sstream is used with cxx])
+  CXXFLAGS="-g -std strict_ansi"
 fi
 
 # Checks for header files.
@@ -97,8 +94,6 @@ AC_CONFIG_FILES([Makefile
 		 src/mars/Makefile
                  src/ann/Makefile
 		 interface/Makefile])
-if test $include_tests = yes; then
-  AC_CONFIG_FILES([tests/Makefile])
-fi
+MDR_CPPUNIT_MAKEFILE([tests/Makefile])
 echo 'LIBS:' $LIBS
 AC_OUTPUT
