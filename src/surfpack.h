@@ -8,6 +8,7 @@
 #ifndef __SURFPACK_H__
 #define __SURFPACK_H__
 
+#include <iostream>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -96,7 +97,7 @@ namespace surfpack {
 
   /// Write the parameter header followed by the values in the vector
   void printVector(const std::string header, std::vector<double>& vec, 
-    std::ostream& os = cout);
+    std::ostream& os = std::cout);
 
   /// Return true if the file specified by parameter file name has the extension
   /// specified by parameter extension
