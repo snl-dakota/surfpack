@@ -19,6 +19,9 @@ public:
   
   /// Initializes scaledPoint 
   SurfScaler();
+
+  /// Makes deep copy
+  SurfScaler(const SurfScaler& other);
  
   /// Iterate over a data set, computing the scaling parameters for each 
   /// dimension.
@@ -27,10 +30,13 @@ public:
   /// Return a scaled version of the parameter point 
   const SurfPoint& scale(const std::vector<double>& x) const;
 
-private:
+protected:
   std::vector<ScalingParameterPair> parameters;
   mutable SurfPoint scaledPoint;
    
+#ifdef __TESTING_MODE__
+  friend class SurfScalerTest;
+#endif
 
 
 };

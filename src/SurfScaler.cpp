@@ -16,7 +16,15 @@
 
 using namespace std;
 SurfScaler::SurfScaler()
-  : scaledPoint(vector<double>(1))
+  : scaledPoint(vector<double>(1)),
+  parameters(0)
+{
+
+}
+
+SurfScaler::SurfScaler(const SurfScaler& other)
+  : scaledPoint(other.scaledPoint), 
+  parameters(other.parameters)
 {
 
 }
