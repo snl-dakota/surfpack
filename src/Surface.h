@@ -5,81 +5,58 @@
 #endif
 // End of prepended lines
 
-// ----------------------------------------------------------
-// Project: SURFPACK++
-//
-// File:        Surface.h
-// Author:      Tony Giunta
-// Modified:    Eric Cyr 
-// Modified:	Mark Richards 
-//
-// Description: 
-// + The Surface class provides an interface for the
-//   different surface types; this class cannot be instantiated
-// ----------------------------------------------------------
-
 #ifndef __SURFACE_H__
 #define __SURFACE_H__
 
 class SurfPoint;
 class SurfData;
-
-#include "SurfpackParser.h"
-
-//class AbstractSurfDataIterator;
 struct ErrorStruct;
 
-/** Defines the interface for surfaces which approximate
- *  some function based on a limited number of data points.
- */
+/// \todo Eliminate the dependency on SurfpackParser.h in Surface.h
+#include "SurfpackParser.h"
+
+
+/// Abstract base class for implementation of a surface-fitting algorithm.  
+/// Each algorithm produces a function approximation given a set of data.  Some
+/// algorithms may have options that can be configured by the user.  Each 
+/// concrete Surface child class must implement the following methods:
+/// \todo One way to allow for "weighting" of data points is to allow one of
+/// the response variables in the data set to serve as the weights.  Add a data
+/// member to the Surface class that stores the index to the column of weights.
+/// (It should work the way the responseIndex member does.) Make it a 
+/// configurable argument, so that a user can include an argument of the form
+/// weights = 2 in their CreateSurface commands.  That change should be made in
+/// Surface::config.  A setter method (e.g., setWeightIndex) is also needed, so
+/// that clients can use the option from the C++ API without using the 
+/// interpreter front end.
 class Surface
 {
-protected:
-class null_dimension_surface: public std::runtime_error
-{
-public:
-  null_dimension_surface(const std::string& msg = "") 
-    : std::runtime_error(msg) {}
-};
-
-class bad_metric: public std::runtime_error
-{
-public:
-  bad_metric(const std::string& msg = "") 
-    : std::runtime_error(msg) {}
-};
-//class too_many_terms: public std::runtime_error
-//{
-//public:
-//  too_many_terms(const std::string& msg = "") 
-//    : std::runtime_error(msg) {}
-//};
-  
 // ____________________________________________________________________________
 // Creation, Destruction, Initialization 
 // ____________________________________________________________________________
 
 protected: 
-  /// Initialize SurfData to null
+  /// Initialize sd to null
   Surface(); 
 
 public:
   /// Data to be used to create surface is specified 
   Surface(SurfData* sd_);
 
-  // Makes deep copy
-  Surface(const Surface& s);
+  /// Deep copies are made of most data members.  For the sd member, the new
+  /// object simply asks to be added to other.sd's list of listeners. 
+  Surface(const Surface& other);
   
-  /// Delete data iterator 
+  /// Notifies its SurfData object that it is no longer observing 
   virtual ~Surface(); 
 
-  /// Initialize state variables
+  /// Common initialization for new objects 
   void init();
 
   /// Create a surface of the same type as 'this.'  This object's data should
-  /// be replaced with the passed in, but all other attributes should
+  /// be replaced with the data passed in, but all other attributes should
   /// be the same (e.g., a second-order polynomial should return another 
-  /// second-order polynomial.  Surfaces returned by this method can be used
+  /// second-order polynomial).  Surfaces returned by this method can be used
   /// to compute the PRESS statistic.
   virtual Surface* makeSimilarWithNewData(SurfData* sd_)=0;
 
@@ -88,111 +65,134 @@ public:
 // ____________________________________________________________________________
 
 public:
-  /// Return the name of this surface type as a string
+  /// Return the name of this surface type 
   virtual const std::string surfaceName() const = 0;
   
   /// Return dimensionality of the surface or zero if not built
   virtual unsigned xSize();
 
   /// Return true if the data that was used to create the surface is available.
-  /// Some error metrics require the original data; others do not.
+  /// Some error metrics require the original data.
   bool hasOriginalData() const;
 
   /// Return true if there is a sufficient number of correctly formatted data
   /// points
   bool acceptableData() const;
 
-  /// Return the minumum number of points needed to create s surface of this
+  /// Return the minumum number of points needed to create a surface of this
   /// type. 
   virtual unsigned minPointsRequired() const = 0;
  
-  /// Return the index of the response variable used in this surface.
-  //virtual unsigned responseIndex();
- 
-  /// Evaulate the approximation surface at point x and return the value.
-  /// The point x must have the same dimensionality as this surface's SurfData.
+  /// Evaluate the approximation surface at point x and return the value.
+  /// The point x must have the same dimensionality as this Surface's SurfData.
   virtual double evaluate(const std::vector<double>& x) = 0; 
 
-  /// Evaulate the approximation surface at point x and return the value.
-  /// The point x must have the same dimensionality as this surface's SurfData.
-  /// Make sure the surface is valid and then call evaluate
+  /// Evaluate the approximation surface at point x and return the value.
+  /// The point x must have the same dimensionality as this Surface's SurfData.
+  /// Makes sure the Surface is valid and then call evaluate.
   virtual double getValue(const std::vector<double>& x); 
 
-  /// Evaulate the approximation surface at point x and return the value.
+  /// Evaluate the approximation surface at point x and return the value.
   /// The point x must have the same dimensionality as this surface's SurfData.
   virtual double getValue(const SurfPoint& sp); 
 
-  /// Evaluate the empirical model at the points in surfData and store 
-  /// the observed and estimated values in results
-//  virtual void getValue(SurfData& surfData, std::vector<double> results);
-
+  /// Evaluate the approximation surface at each point in the parameter
+  /// surfData object.  Append the evaluations as a new response variable in
+  /// the data set.
   virtual void getValue(SurfData& surfData);
 
-  /// Evaluate the empirical model at the points in surfData and output
-  /// the points and their evaluations to os.
-  //virtual double test(SurfData& surfData, std::ostream& os = std::cout);
+  /// Evaluate the approximation surface at each point in the parameter
+  /// SurfData object.  In the ErrorStruct list, store the expected value (as
+  /// returned by sd.getResponse()) and the estimated value.
+  virtual void getValue(SurfData& sd, std::vector<ErrorStruct>& pts);
   
-  /// Return the value of some error metric.
-  virtual double goodnessOfFit(const std::string metricName, SurfData* surfData);
+  /// Return the value of some error metric
+  virtual double goodnessOfFit(const std::string metricName, 
+    SurfData* surfData);
+  
+  /// For each point x in dataSet, construct a similar approximation Surface 
+  /// that includes all of the points in dataSet except x.  Then evaluate the
+  /// Surface at x.  The difference between x and the estimate of x given the
+  /// rest of the data is the residual for x.  The PRESS statistic is the 
+  /// square root of the mean of the squares of all the residuals.
   virtual double press(SurfData& dataSet);
+
+  /// Statistically speaking, R^2 is extra sum of squares divided by the total
+  /// sum of squares.  It measures how much of the variation in the data is 
+  /// accounted for by the model (the approximating surface).
   virtual double rSquared(SurfData& dataSet);
+
+  /// The sum of squared errors.  The response variable at dataSet's 
+  /// defaultIndex is interpreted to be the true function value.
   virtual double sse(SurfData& dataSet);
+
+  /// The mean of squared errors.  The response variable at dataSet's 
+  /// defaultIndex is interpreted to be the true function value.
   virtual double mse(SurfData& dataSet);
+
+  /// The maximum relative absolute error is computed by dividing the maximum
+  /// absolute error by the standard deviation of the data.  The response 
+  /// variable at dataSet's defaultIndex is interpreted to be the true 
+  /// function value.
   virtual double mrae(SurfData& dataSet);
   
-
 // ____________________________________________________________________________
 // Commands
 // ____________________________________________________________________________
 
-  /// Associates a data set with this surface object.  If this surface has
-  /// already been built, it is invalidated
+  /// Associates a data set with this Surface object.  When Surface::build()
+  /// is invoked, this is the data that will be used to create the Surface
+  /// approximation.
   virtual void setData(SurfData* sd_);
 
-  /// Set the state of the SurfData object to use the default index and points
-  /// associated with this surface
+  /// Set the state of the SurfData object to use the same defaultIndex and 
+  /// set of excludedPoints that were used when the Surface approximation was
+  /// built
   virtual void prepareData();
 
-  /// Checks to make sure the data passed in is not null.  If it is, sets it 
-  /// to point to the SurfData used to create the object.  If that is also
-  /// non-existent, it is an error.  
+  /// Return the data set pointed to by member sd if parameter dataSet is NULL.
+  /// If dataSet is not NULL, then return the SurfData it points to.  If both
+  /// the parameter dataSet and member sd are NULL, throw an exception.  This
+  /// method is primarily used with the fitness metrics that can be set to use
+  /// by default the data that the approximation was created with but can also
+  /// use another set of data provided by the client.
   virtual SurfData& checkData(SurfData* dataSet);
 
-  /// Called when the SurfData object gets modified.
+  /// Invoked by data member sd when the data changes 
   virtual void notify(int msg);
 
-  /// Select which response variable will be used in this surface.
-  //virtual void responseIndex(unsigned index);
- 
   /// Check to make sure that data are acceptable and then build.
   /// Do not build if the surface has already been built and the data have not
-  /// changed
+  /// changed.
   virtual void createModel(SurfData* surfData = 0);
 
-  /// Create an empirical model using the data from dataItr. 
+  /// Create a surface approximation
   virtual void build(SurfData& data) = 0; 
 
-  virtual void getValue(SurfData& sd, std::vector<ErrorStruct>& pts);
-
+  /// Modify one of the configuration options for this surface type 
   virtual void config(const SurfpackParser::Arg& arg);
+
+  /// Process a list of configuration options
   virtual void configList(const SurfpackParser::ArgList& arglist);
 
 // ____________________________________________________________________________
 // Helper methods 
 // ____________________________________________________________________________
-
-bool testFileExtension(const std::string& filename) const;
+protected:  
+  /// Return true if filename has .srf extension, false if filename has .txt
+  /// extension.  If neither, throw surfpack::io_exception.
+  bool testFileExtension(const std::string& filename) const;
 
 // ____________________________________________________________________________
 // I/O 
 // ____________________________________________________________________________
-
+public:
   /// Write the surface out to a file.  Files with extension .txt are written
-  /// out in text mode; others are written in binary mode.
+  /// out in text mode; .srf files are written in binary format (unformatted). 
   virtual void write(const std::string filename);
 
   /// Read the surface from a file.  Files with extension .txt are read in text 
-  /// mode; others are read in binary mode.
+  /// mode; others are read in binary format (unformatted).
   virtual void read(const std::string filename);
 
   /// Write the surface in binary format
@@ -207,37 +207,30 @@ bool testFileExtension(const std::string& filename) const;
   /// Read the surface in text format
   virtual void readText(std::istream& is) = 0; 
 
-  /// Write the associated data to a stream.  Not all iterators will use all of 
-  /// the data available in their SurfData objects, so the writing must 
-  /// necessarily go through the iterator.
-  //virtual void writeData(std::ostream& os, bool binary = false);
-
-  /// Read the data from a file and create a SurfDataIterator wrapper for them
-  //virtual void readData(std::istream& is, bool binary = false);
-
 // ____________________________________________________________________________
 // Data members 
 // ____________________________________________________________________________
 
 protected: 
 
-  /// Number of dimensions in the data
+  /// Data used (or to be used) to create the approximation 
+  SurfData* sd;
+
+  /// Number of dimensions in the data (sd)
   unsigned xsize;
 
-  /// True if some surface has been successfully built.  This does not imply
+  /// True if Surface has been successfully built.  This does not imply
   /// that the surface matches the current data, only that there is something
   /// valid to evaluate
   bool builtOK;
 
-  /// True if one or more data points have been modified since the surface was 
-  /// built
+  /// True if one or more data points have been modified or added since the 
+  /// surface was built
   bool dataModified;
 
-  /// Indices of points present in sd that were not used to make the surface 
+  /// Indices of points present in sd that were not used to make compute the
+  /// approximation 
   std::set<unsigned> excludedPoints;
-
-  /// Data used to create this surface
-  SurfData* sd;
 
   /// Index of the response in sd that was used to create this surface
   unsigned responseIndex;
@@ -250,11 +243,9 @@ protected:
   friend class SurfaceFactoryUnitTest;
   friend class SurfaceTest;
   friend class PolynomialSurfaceTest;
- 
-  static int constructCount;
-  static int destructCount;
 #endif
 };
 
+// Write the surface out to a stream in text format
 std::ostream& operator<<(std::ostream& os,Surface&);
 #endif

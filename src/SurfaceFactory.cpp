@@ -5,14 +5,17 @@
 #endif
 // End of prepended lines
 
-#include <string>
-#include <fstream>
-#include <sstream>
-#include <iostream>
-#include <iomanip>
-#include <vector>
-#include <set>
 #include <cmath>
+#include <iomanip>
+#include <iostream>
+#include <fstream>
+#include <set>
+#include <sstream>
+#include <string>
+#include <vector>
+
+#include "surfpack.h"
+#include "SurfaceFactory.h"
 #include "SurfData.h"
 #include "Surface.h"
 #include "PolynomialSurface.h"
@@ -20,15 +23,13 @@
 #include "KrigingSurface.h"
 #include "RBFNetSurface.h"
 #include "ANNSurface.h"
-#include "surfpack.h"
-#include "SurfaceFactory.h"
-
-//______________________________________________________________________________
-// Functions for use by Surface methods
-//______________________________________________________________________________
 
 using namespace std;
 
+/// Open up the file specified by parameter filename.  The first item in the 
+/// file should be the name of the surface type.  Once that information is 
+/// known, build create and return the appropriate surface.  The client is
+/// responsible to call delete on the Surface* that is returned.
 Surface* SurfaceFactory::createSurface(const string& filename)
 {
   const string name = surfpack::surfaceName(filename);
@@ -48,6 +49,10 @@ Surface* SurfaceFactory::createSurface(const string& filename)
   }
 }
 
+/// The parameter type specifies the name of a Surface class.  Instantiate
+/// the appropriate class using parameter surfData, and return the new
+/// surface.  The client is responsible to call delete on the Surface* that
+/// is returned.
 Surface* SurfaceFactory::createSurface(const string& type, SurfData* sd)
 {
   if (type == "Polynomial") {
@@ -66,23 +71,4 @@ Surface* SurfaceFactory::createSurface(const string& type, SurfData* sd)
     throw os.str(); 
   }
 }
-
-//Surface* SurfaceFactory::createSurface(const std::string*, SurfData* sd, 
-//    const SurfpackParser::ArgList& arglist)
-//{ 
-//  //Surface* surf = createSurface(type, sd);
-//  //surf->config(arglist);
-//  //return surf;
-//  return 0;
-//}
-
-//Surface* SurfaceFactory::createSurface(const string& type, SurfData& sd, unsigned order)
-//{
-//  if (type == "Polynomial") {
-//    return new PolynomialSurface(&sd, order); 
-//  } else {
-//    cerr << "Unknown surface type: " << type << endl;
-//    return 0;
-//  }
-//}
 

@@ -37,7 +37,8 @@ public:
 /// 4) invoke addResponse(...) on an object where the logical size of the 
 ///    data set does not match the phyiscal size (i.e., some of the SurfPoints
 ///    have been marked for exclusion);
-/// 5) write a SurfData object that contains no data to a stream.
+/// 5) write a SurfData object that contains no data to a stream;
+/// 6) create a Surface with a SurfData object that does not have enough points. 
 class bad_surf_data : public std::runtime_error
 {
 public:

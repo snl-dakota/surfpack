@@ -5,35 +5,20 @@
 #endif
 // End of prepended lines
 
-// ----------------------------------------------------------
-// Project: SURFPACK++
-//
-// File:        Surface.cpp
-// Author:      Tony Giunta
-// Modified:    Eric Cyr 
-// Modified:    Mark Richards
-//
-// Description: 
-// + The Surface class provides an interface for the
-//   different surface types, this class cannot be instantiated
-// ----------------------------------------------------------
-
+#include <cmath>
+#include <cstdlib>
 #include <fstream>
-#include <iostream>
-#include <sstream>
 #include <iomanip>
-#include <vector>
+#include <iostream>
 #include <set>
+#include <sstream>
 #include <string>
+#include <vector>
+
 #include "surfpack.h"
-#include "Surface.h"
 #include "SurfPoint.h"
 #include "SurfData.h"
-#include <cstdlib>
-#include <cmath>
-//#include "SurfDataIterator.h"
-//#include "SkipSurfDataIterator.h"
-
+#include "Surface.h"
 
 using namespace std;
 
@@ -41,57 +26,43 @@ using namespace std;
 // Creation, Destruction, Initialization 
 // ____________________________________________________________________________
 
-//Surface::Surface() : sd(0)
-//{
-//#ifdef __TESTING_MODE__
-//  constructCount++;
-//#endif
-//  init();
-//}
-
+/// Data to be used to create surface is specified 
+// sd must be initialized to NULL before setData(...) is called, because 
+// setData(...) will call delete on the old value of sd, which will be
+// garbage if it's not initialized to NULL.
 Surface::Surface(SurfData* sd_) : sd(0)
 { 
-#ifdef __TESTING_MODE__
-  constructCount++;
-#endif
   setData(sd_);
   init();
 }
 
+/// Deep copies are made of most data members.  For the sd member, the new
+/// object simply asks to be added to sd's list of listeners. 
+// sd must be initialized to NULL before setData(...) is called, because 
+// setData(...) will call delete on the old value of sd, which will be
+// garbage if it's not initialized to NULL.
 Surface::Surface(const Surface& other) : sd(0), xsize(other.xsize), 
-  builtOK(other.builtOK), 
-  dataModified(other.dataModified), responseIndex(other.responseIndex)
+  builtOK(other.builtOK), dataModified(other.dataModified), 
+  responseIndex(other.responseIndex)
 {
-#ifdef __TESTING_MODE__
-  constructCount++;
-#endif
-  //this->sd = other.sd ? new SurfData(*(other.sd)) : 0;
   setData(other.sd);
-    
 }
 
-/// destructor, just removes itself from any SurfData objects
+/// Notifies its SurfData object that it is no longer observing 
 Surface::~Surface() 
 { 
   if(sd) {
-     //cout << "Disconnecting: " << this << " from : " << sd << endl;
      sd->removeListener(this);
-  } //else {
-     //cout << "Data is null; no removal necessary" << endl;
-  //}
-#ifdef __TESTING_MODE__
-  destructCount++;
-#endif
+  } 
 }
 
+/// Common initialization for new objects 
 void Surface::init()
 {
   dataModified = builtOK = false;
   xsize = sd ? sd->xSize() : 0;
   responseIndex = 0;
 }
-
-// Copy constructor goes here
 
 // ____________________________________________________________________________
 // Queries 
@@ -103,11 +74,15 @@ unsigned Surface::xSize()
   return xsize;
 }
 
+/// Return true if the data that was used to create the surface is available.
+/// Some error metrics require the original data.
 bool Surface::hasOriginalData() const
 {
   return (sd && builtOK && !dataModified); 
 }
 
+/// Return true if there is a sufficient number of correctly formatted data
+/// points
 bool Surface::acceptableData() const
 {
   if (!sd) {
@@ -123,10 +98,11 @@ bool Surface::acceptableData() const
       throw SurfData::bad_surf_data(errormsg.str());
     }
   }
+  // If no exception has been thrown when execution gets here, the data is ok.
   return true;
 }
   
-/// Evaulate the approximation surface at point x and return the value.
+/// Evaluate the approximation surface at point x and return the value.
 /// The point x must have the same dimensionality as this surface's SurfData.
 /// Make sure the surface is valid and then call evaluate
 double Surface::getValue(const std::vector<double>& x)
@@ -137,11 +113,16 @@ double Surface::getValue(const std::vector<double>& x)
   return evaluate(x);
 }
 
+/// Evaluate the approximation surface at point x and return the value.
+/// The point x must have the same dimensionality as this surface's SurfData.
 double Surface::getValue(const SurfPoint& sp)
 {
   return getValue(sp.X());
 }
 
+/// Evaluate the approximation surface at each point in the parameter
+/// SurfData object.  In the ErrorStruct list, store the expected value (as
+/// returned by sd.getResponse()) and the estimated value.
 void Surface::getValue(SurfData& sd, std::vector<ErrorStruct>& pts)
 {
   for (unsigned i = 0; i < sd.size(); i++) {
@@ -152,6 +133,9 @@ void Surface::getValue(SurfData& sd, std::vector<ErrorStruct>& pts)
   }
 }
 
+/// Evaluate the approximation surface at each point in the parameter
+/// surfData object.  Append the evaluations as a new response variable in
+/// the data set.
 void Surface::getValue(SurfData& surfData)
 {
   set<unsigned> emptySet;
@@ -163,8 +147,12 @@ void Surface::getValue(SurfData& surfData)
   surfData.addResponse(newValues);
 }
 
+/// Modify one of the configuration options for this surface type 
 void Surface::config(const SurfpackParser::Arg& arg)
 {
+  // Other arguments are processed by config methods in the child class.
+  // If the child class sees an argument it does not recognize, it should
+  // call this method.
   if (arg.name == "response_index") {
     unsigned index = static_cast<unsigned>(arg.lval.integer);
     if (!sd) {
@@ -176,34 +164,15 @@ void Surface::config(const SurfpackParser::Arg& arg)
   }
 }
 
+/// Process a list of configuration options
 void Surface::configList(const SurfpackParser::ArgList& arglist)
 {
   for (unsigned i = 0; i < arglist.size(); i++) {
     config(arglist[i]);
   }
 }
-/// Evaluate the empirical model at the points in surfData and output
-/// the points and their evaluations to os
-//double Surface::test(SurfData& surfData, ostream& os)
-//{
-//  ofstream outfile("results.txt", ios::out);
-//  double error = 0.0;
-//  for (unsigned i = 0; i < surfData.size(); i++) {
-//    SurfPoint& currentPoint = surfData.Point(i);
-//    double estimatedResponse = evaluate(currentPoint.X());
-//    
-//    // print out the points and deviations to a file
-//    currentPoint.writeText(outfile);
-//    outfile << setw(20) << estimatedResponse 
-//            << setw(20) << (currentPoint.F() - estimatedResponse)
-//  	  << endl;	
-//    error += (currentPoint.F() - estimatedResponse) * 
-//      (currentPoint.F() - estimatedResponse);
-//  }
-//  outfile.close();
-//  return error;
-//}    
 
+/// Return the value of some error metric
 double Surface::goodnessOfFit(const string metricName, SurfData* surfData)
 {
   SurfData& sdRef = checkData(surfData);
@@ -218,10 +187,15 @@ double Surface::goodnessOfFit(const string metricName, SurfData* surfData)
   } else if (metricName == "press") {
     return press(sdRef);
   } else {
-    throw bad_metric("No error metric of that type in this class");
+    throw string("No error metric of that type in this class");
   }
 }
 
+/// For each point x in dataSet, construct a similar approximation Surface 
+/// that includes all of the points in dataSet except x.  Then evaluate the
+/// Surface at x.  The difference between x and the estimate of x given the
+/// rest of the data is the residual for x.  The PRESS statistic is the 
+/// square root of the mean of the squares of all the residuals.
 double Surface::press(SurfData& dataSet)
 {
   /// <= test is used because it must be possible to build the surface
@@ -234,7 +208,7 @@ double Surface::press(SurfData& dataSet)
     // object where none of the points are excluded.  This will make
     // it easier to do the "leave one out" process
     bool containsInactives = !dataSet.getExcludedPoints().empty();
-    SurfData surfData = (containsInactives) 
+    SurfData activeSet = (containsInactives) 
       ? dataSet.copyActive() : dataSet;
     double pressValue = 0.0;
     unsigned i = 0;
@@ -244,73 +218,79 @@ double Surface::press(SurfData& dataSet)
     // surface at the omitted point and compute the residual
     // between the actual value and the value predicted by the new 
     // model at That point.
-    unsigned totalPoints = surfData.size();
+    unsigned totalPoints = activeSet.size();
     i = 0;
     set<unsigned> pointToSkip;
     while (i < totalPoints) {
       pointToSkip.clear();
-      surfData.setExcludedPoints(pointToSkip);
+      activeSet.setExcludedPoints(pointToSkip);
       // Get the point from the full data set corresponding to the index that 
       // will be skipped.  (This point will not be available to test after it
-      // has been marked for exclusion
-      const SurfPoint& currentPoint = surfData[i];
+      // has been marked for exclusion).
+      const SurfPoint& currentPoint = activeSet[i];
       pointToSkip.insert(i);
-      surfData.setExcludedPoints(pointToSkip);
+      activeSet.setExcludedPoints(pointToSkip);
 
-      Surface* allButOne = makeSimilarWithNewData(&surfData);
+      Surface* allButOne = makeSimilarWithNewData(&activeSet);
       double fTilde = allButOne->getValue(currentPoint.X());
       // actual value of the function at this point
-      double fx = currentPoint.F();
+      double fx = currentPoint.F(this->responseIndex);
       // add the square of the residual (fTilde - fx)
       pressValue += (fTilde - fx) * (fTilde - fx);
       delete allButOne;
       allButOne = 0;
       i++;
-      //cout << setw(5) << setprecision(0) 
-      //     << ( 100.0*static_cast<double>(i)/static_cast<double>(surfData.size()+1) ) 
-      //     << "%\r" << flush;
     }
-    //cout << setprecision(6) << endl;
-    pressValue = sqrt(pressValue/static_cast<double>(surfData.size()+1));
+    pressValue = sqrt(pressValue/static_cast<double>(activeSet.size()+1));
     return pressValue;
   }
   return 0.0;
 }
 
+/// Statistically speaking, R^2 is extra sum of squares divided by the total
+/// sum of squares.  It measures how much of the variation in the data is 
+/// accounted for by the model (the approximating surface).
 double Surface::rSquared(SurfData& dataSet)
 {
+  // Sum of the function evaluations for all the points; used to compute mean
   double sumObserved = 0.0;
+  
+  // Sum of the squared function evaluations for the points; used to compute
+  // the total sum of squares
   double sumOfSquaresObserved = 0.0;
+
+  // Sum of the squared differences between the true function value and the
+  // Surface approximation's estimate of the function value over all of the
+  // points
   double residualSumOfSquares = 0.0;
+
+  // Sum of the squared differences between the true function value and mean 
+  // function value over all of the points
   double totalSumOfSquares = 0.0;
+
   for (unsigned i = 0; i < dataSet.size(); i++) {
     double observedF = dataSet.getResponse(i);
     double estimatedF = evaluate(dataSet[i].X());
     double residual = observedF - estimatedF;
-    //cout << setw(4) << i
-    //     << setw(15) << observedF
-    //     << setw(15) << estimatedF
-    //     << setw(15) << residual
-    //     << setw(15) << residual*residual
-    //     << endl;
     residualSumOfSquares += residual * residual;
     sumObserved += observedF;
     sumOfSquaresObserved += observedF * observedF;
   }
+  // This is the same as sigma{i=1 to n}(x_i - xbar)^2
   totalSumOfSquares = sumOfSquaresObserved - 
     (sumObserved * sumObserved / dataSet.size());
   double rSquaredValue = 1.0 - residualSumOfSquares / totalSumOfSquares;
-  //cout << "totalSumOfSquares: " << totalSumOfSquares << endl;
-  //cout << "sumOfSquaresObserved: " << sumOfSquaresObserved << endl;
-  //cout << "sumObserved: " << sumObserved << " " << sumObserved*sumObserved << endl;
-  //cout << "count: " << dataSet.size() << endl;
-  //cout << "residualSumOfSquares: " << residualSumOfSquares << endl;
-  //cout << "rSquared: " << rSquaredValue << endl;
-                                                                                                                 
-
+  // In a polynomial regression, this computation will always result in a value
+  // between 0 and 1, because the residual sum of squares will always be less
+  // than or equal to the total sum of squares (i.e., the worst your regression
+  // can do is give you the mean everywhere).  Some of the other methods (Mars,
+  // Kriging, RBF, etc.) can have much larger residual sum of squares.  We will
+  // refrain from returning a value less than zero however.
   return (rSquaredValue < 0) ? 0 : rSquaredValue;
 } 
       
+/// The sum of squared errors.  The response variable at dataSet's 
+/// defaultIndex is interpreted as the true function value.
 double Surface::sse(SurfData& dataSet)
 {
   vector<ErrorStruct> results;
@@ -318,12 +298,22 @@ double Surface::sse(SurfData& dataSet)
   double sse = 0.0;
   for (unsigned i = 0; i < results.size(); i++) {
     double residual = results[i].observed - results[i].estimated;
-    //cout << "residual: " << residual << " sq: " << residual*residual << endl;
     sse += residual*residual;
   }
   return sse;
 }
 
+/// The mean of squared errors.  The response variable at dataSet's 
+/// defaultIndex is interpreted as the true function value.
+double Surface::mse(SurfData& dataSet)
+{
+  return sse(dataSet) / static_cast<double>(dataSet.size());
+}
+
+/// The maximum relative absolute error is computed by dividing the maximum
+/// absolute error by the standard deviation of the data.  The response 
+/// variable at dataSet's defaultIndex is interpreted to be the true 
+/// function value.
 double Surface::mrae(SurfData& dataSet)
 {
   vector<ErrorStruct> results;
@@ -340,54 +330,22 @@ double Surface::mrae(SurfData& dataSet)
   return max / sample_sd(trueVals);
 }
 
-double Surface::mse(SurfData& dataSet)
-{
-  return sse(dataSet) / static_cast<double>(dataSet.size());
-}
-
-//double Surface::computePressStatistic()
-//{
-//  double fpress = 0;
-//  //DataIterator dataIterator;
-//  //surfData.getIterator(dataIterator);
-//  //const SurfPoint* currentPoint = 0;
-//  unsigned i = 0;
-//  SkipSurfDataIterator skipIt(surfData);
-//  while (i < surfData.size()) {
-//    // leave out one point from the data set
-//    const SurfPoint currentPoint = surfData.getPoint(i); 
-//    assert(currentPoint);
-//    skipIt.unSkipAll();
-//    skipIt.skipPoint(i);
-//    //cout << "Skipping: " << i << endl;
-//    build(&skipIt);
-//    double fTilde = evaluate(currentPoint.getX());
-//    // actual value of the function at this point
-//    double fx = currentPoint.getF();
-//    // add the square of the deviation fTilde - fx
-//    fpress += (fTilde - fx) * (fTilde - fx);
-//    //dataIterator.nextElement();
-//    i++;
-//  }
-//  skipIt.unSkipAll();
-//  build(&skipIt);
-//  fpress = sqrt(fpress/i);
-//  return fpress;
-//}
-
 // ____________________________________________________________________________
 // Commands 
 // ____________________________________________________________________________
 
-/// Associates a data set with this surface object.  If this surface has
-/// already been built, it is invalidated
+/// Associates a data set with this Surface object.  When Surface::build()
+/// is invoked, this is the data that will be used to create the Surface
+/// approximation.
 void Surface::setData(SurfData* sd_)
 {
-  //Do a sanity check on the data
+  // If this Surface is already listening to a data set, it needs to notify that
+  // SurfData object that it is going to stop listening.
   if (this->sd) {
     this->sd->removeListener(this);
   }
   this->sd = sd_;
+  // Now request to be added to the new SurfData object's list of listeners.
   if (this->sd) {
     this->sd->addListener(this);
   }
@@ -397,21 +355,23 @@ void Surface::setData(SurfData* sd_)
   responseIndex = sd ? sd->getDefaultIndex() : 0;
 }
   
-/// Set the state of the SurfData object to use the default index and points
-/// associated with this surface
+/// Set the state of the SurfData object to use the same defaultIndex and 
+/// set of excludedPoints that were used when the Surface approximation was
+/// built
 void Surface::prepareData()
 {
-  // If sd is null, an exception will likely be be thrown elsewhere, but at this point
-  // it does not need to be considered an error
   if (sd) {
     sd->setExcludedPoints(excludedPoints);
     sd->setDefaultIndex(responseIndex);
   } 
 }
 
-/// Checks to make sure the data passed in is not null.  If it is, sets it 
-/// to point to the SurfData used to create the object.  If that is also
-/// non-existent, it is an error.  
+/// Return the data set pointed to by member sd if parameter dataSet is NULL.
+/// If dataSet is not NULL, then return the SurfData it points to.  If both
+/// the parameter dataSet and member sd are NULL, throw an exception.  This
+/// method is primarily used with the fitness metrics that can be set to use
+/// by default the data that the approximation was created with but can also
+/// use another set of data provided by the client.
 SurfData& Surface::checkData(SurfData* dataSet)
 {
     if (dataSet) {
@@ -427,12 +387,10 @@ SurfData& Surface::checkData(SurfData* dataSet)
     }
 }
 
+/// Invoked by data member sd when the data changes 
 void Surface::notify(int msg)
 {
-  if (!sd) {  // Then how did this get called!
-    //cerr << "Notify called, but this Surface does not point to any data" 
-    //     << endl;
-  } else if (msg == SurfData::GOING_OUT_OF_EXISTENCE) {
+  if (msg == SurfData::GOING_OUT_OF_EXISTENCE) {
     sd = 0;
     if (builtOK) {
       dataModified = true;
@@ -446,16 +404,17 @@ void Surface::notify(int msg)
 }
 /// Check to make sure that data are acceptable and then build.
 /// Do not build if the surface has already been built and the data have not
-/// changed
+/// changed.
 void Surface::createModel(SurfData* surfData)
 {
+  // If they passed in a non-NULL data set, use it to build the Surface.
+  // Otherwise, use the data already pointed to by member sd.
   if (surfData) {
     setData(surfData);
   }
   if (builtOK && !dataModified) {
-    //cerr << "Model is already valid and will not be rebuilt because the"
-    //     << " data set has not changed"
-    //     << endl;
+    // Model is already valid and will not be rebuilt because the data has not
+    // changed.
     return;
   } 
   acceptableData();
@@ -463,7 +422,6 @@ void Surface::createModel(SurfData* surfData)
   SurfData& sdRef = *sd;
   build(sdRef);
   excludedPoints = sd->getExcludedPoints();
-  //responseIndex = sd->getDefaultIndex();
   builtOK = true;
   dataModified = false;
 }
@@ -472,11 +430,15 @@ void Surface::createModel(SurfData* surfData)
 // I/O 
 // ____________________________________________________________________________
 
+/// Write the surface out to a file.  Files with extension .txt are written
+/// out in text mode; .srf files are written in binary format (unformatted). 
 void Surface::write(const string filename)
 {
   const string nameOfSurface = surfaceName();
+  // testFileExtension returns true for .srf, false for .txt
   bool binary = testFileExtension(filename); 
-  ofstream outfile(filename.c_str(), (binary ? ios::out|ios::binary : ios::out));
+  ofstream outfile(filename.c_str(), 
+    (binary ? ios::out|ios::binary : ios::out));
   if (!outfile) {
     throw surfpack::file_open_failure(filename);
   } else if (binary) {
@@ -486,10 +448,13 @@ void Surface::write(const string filename)
     outfile.write(nameOfSurface.c_str(),nameSize);
     // write out the surface 'details'
     writeBinary(outfile);
+    // If data member sd points to the data used to create this surface, write
+    // it out as well.
     if (hasOriginalData()) {
       outfile.write(reinterpret_cast<char*>(&responseIndex),
         sizeof(responseIndex));
     } else {
+      // a -1 signifies that there is no data
       int dummy = -1;
       outfile.write(reinterpret_cast<char*>(&dummy), sizeof(dummy));
     }
@@ -498,9 +463,12 @@ void Surface::write(const string filename)
     outfile << nameOfSurface << endl;
     // write out the surface 'details'
     writeText(outfile);
+    // If data member sd points to the data used to create this surface, write
+    // it out as well.
     if (hasOriginalData()) {
       outfile << responseIndex << " response index for surface data" << endl;
     } else {
+      // a -1 signifies that there is no data
       outfile << "-1 data for surface not included" << endl;
     }
   }
@@ -515,15 +483,19 @@ void Surface::write(const string filename)
   outfile.close();
 }
 
+/// Read the surface from a file.  Files with extension .txt are read in text 
+/// mode; others are read in binary format (unformatted).
 void Surface::read(const string filename)
 {
+  // First, open the file
+  // testFileExtension returns true for .srf, false for .txt
   bool binary = testFileExtension(filename);
   ifstream infile(filename.c_str(), (binary ? ios::in|ios::binary : ios::in));
   int index;
   if (!infile) {
     throw surfpack::file_open_failure(filename);
   } 
-
+  // The first thing in the file is the name of the surface.
   string nameInFile = surfpack::readName(infile, binary);
   if (nameInFile != surfaceName() ) {
     ostringstream errormsg;
@@ -554,7 +526,8 @@ void Surface::read(const string filename)
   dataModified = false;
 }
 
-/// Returns true if the filename extension is .srf
+/// Return true if filename has .srf extension, false if filename has .txt
+/// extension.  If neither, throw surfpack::io_exception.
 bool Surface::testFileExtension(const std::string& filename) const
 {
   if (surfpack::hasExtension(filename,".srf")) {
@@ -568,62 +541,12 @@ bool Surface::testFileExtension(const std::string& filename) const
   }
 }
 
+// Write the surface out to a stream in text format
 ostream& operator<<(ostream& os,Surface& surface)
 { 
   surface.writeText(os); 
   return os;
 }
-
-
-/// Write the associated data to a stream.  Not all iterators will use all of 
-/// the data available in their SurfData objects, so the writing must 
-/// necessarily go through the iterator.
-//void Surface::writeData(std::ostream& os, bool binary)
-//{
-//  if (!dataItr) {
-//    cerr << "No data to write in Surface::writeData" << endl;
-//  } else {
-//    unsigned s = dataItr->elementCount();
-//    unsigned xsize = dataItr->xSize();
-//    unsigned fsize = dataItr->currentElement().fSize();
-//    // write out header (number of points, dimension, number of responses)
-//    if (binary) {
-//      os.write((char*)&s,sizeof(s));
-//      os.write((char*)&xsize,sizeof(xsize));
-//      os.write((char*)&fsize,sizeof(fsize));
-//    } else {
-//      os << s << " data points" << endl
-//         << xsize << " input variables" << endl
-//       	 << fsize << " response variables" << endl;
-//    }
-//    // write out each point, one at a time
-//    dataItr->toFront();
-//    for (unsigned i = 0; i < dataItr->elementCount(); i++) {
-//      if (binary) {
-//	dataItr->currentElement().writeBinary(os);
-//      } else {
-// 	dataItr->currentElement().writeText(os);
-//      }
-//      dataItr->nextElement();
-//    }
-//  }
-//}
-
-/// Read the data from a file and create a SurfDataIterator wrapper for them
-//void Surface::readData(std::istream& is, bool binary)
-//{
-//  delete dataItr;
-//  sd = new SurfData(is, binary);
-//  dataItr = new SurfDataIterator(*sd);
-//}
-
 // ____________________________________________________________________________
 // Testing
 // ____________________________________________________________________________
-
-
-#ifdef __TESTING_MODE__
-  int Surface::constructCount = 0;
-  int Surface::destructCount = 0;
-#endif
-
