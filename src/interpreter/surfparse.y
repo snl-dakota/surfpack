@@ -25,7 +25,7 @@ input:		/* empty */
 	|	statement input
 ;
 
-statement: 	STANDARD_COMMAND {parser.addCommandName();} arglist	
+statement: 	STANDARD_COMMAND {parser.addCommandName();} arglist	{parser.storeCommandString();}
 ;
 
 arglist:	'[' arg arglisttail ']'				

@@ -2,8 +2,11 @@
 #include <cstdlib>
 #include "SurfpackParser.h"
 #include <FlexLexer.h>
+#include <sstream>
+#include <string>
 
 using namespace std;
+extern ostringstream cmdstream;
 
 SurfpackParser& SurfpackParser::instance()
 {
@@ -33,6 +36,20 @@ void SurfpackParser::init()
   currentArgList = 0;
   currentArgIndex = -1;
   currentTupleIndex = -1;
+  cmdstream.str("");
+}
+
+void SurfpackParser::storeCommandString()
+{
+  if (commands.size() > 0) {
+    commands[commands.size()-1].cmdstring = cmdstream.str();
+    cmdstream.str("");
+  }
+}
+
+std::vector<SurfpackParser::ParsedCommand>& SurfpackParser::commandList()
+{
+  return commands;
 }
 
 void SurfpackParser::print()
@@ -61,7 +78,7 @@ void SurfpackParser::print()
 
 void SurfpackParser::addCommandName()
 {
-  cout << "Add command name" << endl;
+  //cout << "Add command name" << endl;
   ParsedCommand pc;
   commands.push_back(pc);
   currentArgList = &(commands[commands.size()-1].arglist);
@@ -71,7 +88,7 @@ void SurfpackParser::addCommandName()
 
 void SurfpackParser::addArgName()
 {
-  cout << "Add arg name" << endl;
+  //cout << "Add arg name" << endl;
   if (currentArgList == 0) {
     cerr << "currentArgList is NULL; cannot assign name" << endl;
   } else {
@@ -105,7 +122,14 @@ void SurfpackParser::addArgValString()
   if (currentArgIndex == -1) {
     cerr << "currentArgIndex = -1; cannot assign String" << endl;
   } else {
-    (*currentArgList)[currentArgIndex].lval.literal= string(global_lexer.YYText());
+    string currentToken = string(global_lexer.YYText());
+    // The token contains leading and trailing apostrophes; remove them.
+    int pos;
+    while ( (pos = currentToken.find('\'')) != string::npos) {
+      currentToken.erase(pos,pos+1);
+    }
+    (*currentArgList)[currentArgIndex].lval.literal= currentToken;
+    //cout << "Stripped string: " << currentToken << endl;
   }
 }
 
@@ -192,3 +216,26 @@ void SurfpackParser::addTupleVal()
     (*currentArgList)[currentArgIndex].lval.tuple.push_back(val);
   }
 }
+
+std::string SurfpackParser::parseOutIdentifier(const string& argname,
+  const ArgList& arglist)
+{
+  for (unsigned i = 0; i < arglist.size(); i++) {
+    if (arglist[i].name == argname) {
+      return arglist[i].lval.identifier;
+    }
+  }
+  return string("");
+}
+
+std::string SurfpackParser::parseOutStringLiteral(const string& argname,
+  const ArgList& arglist)
+{
+  for (unsigned i = 0; i < arglist.size(); i++) {
+    if (arglist[i].name == argname) {
+      return arglist[i].lval.literal;
+    }
+  }
+  return string("");
+}
+
