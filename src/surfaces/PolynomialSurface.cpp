@@ -5,9 +5,10 @@
 #include <fstream>
 #include <vector>
 #include <set>
-//#include "SurfDataIterator.h"
-#include "PolynomialSurface.h"
+#include "SurfPoint.h"
 #include "SurfData.h"
+#include "Surface.h"
+#include "PolynomialSurface.h"
 
 extern "C" void dgels_(char&, int&, int&, int&, double*,
                        int&, double*, int&, double*, int&, int&);
