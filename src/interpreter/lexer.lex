@@ -18,7 +18,7 @@ GridPoints |
 Evaluate |
 SaveData |
 SaveSurface |
-AxesBuild |
+AxesBounds |
 Fitness               			{ /*cmdstream << yytext; cout << "Keyword: " << yytext << endl;*/ return STANDARD_COMMAND; }
 [[:alpha:]][[:alnum:]_]*		{ /*cmdstream << yytext; cout << "Identifier: " << yytext << endl;*/ return IDENTIFIER;}
 '[^']*'					{ /*cmdstream << yytext; cout << "StringLiteral: " << yytext << endl;*/ return STRING; }
