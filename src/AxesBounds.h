@@ -66,7 +66,13 @@ protected:
   /// sampleGrid method uses it in conjunction with the min, max, and interval
   /// values along each axis to create a SurfData object.
   std::vector<int> point;
+
+  /// Used during the iteration that creates a SurfData set.  It holds the
+  /// location of the current SurfPoint that is to be added.
   std::vector<double> surfptx;
+  
+  /// The set of <minimum, maximum, #intervals> specifications for each
+  /// dimension
   std::vector<Axis> axes;
   unsigned ndims;
   unsigned npts;
