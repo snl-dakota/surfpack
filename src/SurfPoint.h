@@ -90,7 +90,7 @@ public:
   class SurfPointPtrLessThan
   {
   public:
-    bool operator()(const SurfPoint* sp1, const SurfPoint* sp2);
+    bool operator()(const SurfPoint* sp1, const SurfPoint* sp2) const;
   };
       
 

@@ -128,17 +128,17 @@ bool SurfPoint::operator!=(const SurfPoint& sp) const
 } 
 
 bool SurfPoint::SurfPointPtrLessThan::
-  operator()(const SurfPoint* sp1, const SurfPoint* sp2)
+  operator()(const SurfPoint* sp1, const SurfPoint* sp2) const
 {
-  if (sp1->x.size() < sp2->x.size()) {
+  if (sp1->X().size() < sp2->X().size()) {
     return true;
-  } else if (sp1->x.size() > sp2->x.size()) {
+  } else if (sp1->X().size() > sp2->X().size()) {
     return false;
   } else {
-    for (unsigned i = 0; i < sp1->x.size(); i++) {
-      if (sp1->x[i] < sp2->x[i]) {
+    for (unsigned i = 0; i < sp1->X().size(); i++) {
+      if (sp1->X()[i] < sp2->X()[i]) {
         return true;
-      } else if (sp1->x[i] > sp2->x[i]) {
+      } else if (sp1->X()[i] > sp2->X()[i]) {
         return false;
       }
     }
