@@ -36,6 +36,8 @@ protected:
    
 #ifdef __TESTING_MODE__
   friend class SurfScalerTest;
+  friend class SurfDataTest;
+  friend class SurfaceTest;
 #endif
 
 

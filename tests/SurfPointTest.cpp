@@ -38,6 +38,16 @@ void SurfPointTest::tearDown()
   delete spPtr2;
 }
 
+void SurfPointTest::testSurfPointPtrLessThan()
+{
+  SurfData::SurfPointSet s;
+  s.insert(spPtr);
+  s.insert(spPtr2);
+  SurfData::SurfPointSet s2;
+  s2.insert(spPtr2);
+  s2.insert(spPtr);
+}
+
 void SurfPointTest::testConstructor()
 {
   

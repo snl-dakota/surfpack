@@ -84,6 +84,7 @@ SurfData::SurfData(const SurfData& other)
   copyBlockData(other);
   valid = other.valid;
   mapping = other.mapping;
+  buildOrderedPoints();
 }
 
 /// STL data members' resources automatically deallocated 
@@ -185,6 +186,7 @@ SurfData& SurfData::operator=(const SurfData& other)
     this->defaultIndex = other.defaultIndex;
     copyBlockData(other);
   }
+  buildOrderedPoints();
   return (*this);
 }
 
@@ -628,8 +630,9 @@ void SurfData::readText(istream& is)
       this->addPoint(SurfPoint(xsize,fsize,is,false));  
     }
     defaultMapping();
-  } catch(surfpack::io_exception&) {
-    cerr << "Expected: " << size << " points.  "
+  } catch(surfpack::io_exception& ioException) {
+    cerr << ioException.what() << endl
+         << "Expected: " << size << " points.  "
          << "Read: " << numPointsRead << " points." << endl;
     throw;
   } 

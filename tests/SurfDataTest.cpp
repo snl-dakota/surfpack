@@ -11,6 +11,7 @@
 #include "SurfData.h"
 #include "unittests.h"
 #include "SurfDataTest.h"
+#include "SurfScaler.h"
 
 using namespace std;
 
@@ -243,6 +244,11 @@ void SurfDataTest::testCopyConstructorSimple()
     CPPUNIT_ASSERT_EQUAL(sd[j], sd2[j]);
   }
   
+  // check to make sure ordered points got built 
+  for (unsigned j = 0; j < pointsInFile; j++) {
+    CPPUNIT_ASSERT(sd2.orderedPoints.find(sd2.points[j]) !=
+	sd2.orderedPoints.end());
+  }
 }
 
 void SurfDataTest::testCopyConstructorComplex()
@@ -378,6 +384,12 @@ void SurfDataTest::testAssignment()
   for (unsigned j = 0; j < sdBinary.size(); j++) {
     CPPUNIT_ASSERT_EQUAL(sdMain[j], sdBinary[j]);
   }
+
+  // check to make sure ordered points got built 
+  for (unsigned j = 0; j < sdBinary.size(); j++) {
+    CPPUNIT_ASSERT(sdBinary.orderedPoints.find(sdBinary.points[j]) !=
+	sdBinary.orderedPoints.end());
+  }
 }
 
 void SurfDataTest::testAssignmentToSelf()
@@ -449,6 +461,25 @@ void SurfDataTest::testOperatorIndexing()
   const SurfPoint sp2 = (*sdPtr1)[0];
   CPPUNIT_ASSERT_EQUAL(sp2, *sdPtr1->points[sdPtr1->mapping[0]]);
   CPPUNIT_ASSERT_EQUAL(sp2, *sdPtr1->points[1]);
+}
+
+void SurfDataTest::testOperatorIndexingScaled()
+{
+  SurfScaler s;
+  SurfData& msd = *sdPtr1;
+  msd.setScaler(&s);
+  const SurfPoint& sp1 = msd[0];
+  CPPUNIT_ASSERT(matches(sp1.x[0],0));
+  CPPUNIT_ASSERT(matches(sp1.x[1],0));
+  CPPUNIT_ASSERT(matches(sp1.x[2],0));
+  const SurfPoint& sp2 = msd[4];
+  CPPUNIT_ASSERT(matches(sp2.x[0],1.0));
+  CPPUNIT_ASSERT(matches(sp2.x[1],1.0));
+  CPPUNIT_ASSERT(matches(sp2.x[2],1.0));
+  const SurfPoint& sp3 = msd[2];
+  CPPUNIT_ASSERT(matches(sp3.x[0],0.5));
+  CPPUNIT_ASSERT(matches(sp3.x[1],0.5));
+  CPPUNIT_ASSERT(matches(sp3.x[2],0.5));
 }
 
 void SurfDataTest::testOperatorIndexingBadIndex()
@@ -802,6 +833,48 @@ void SurfDataTest::testSetExcludedPointsTooMany()
   sdPtr1->setExcludedPoints(skipAllPoints);
 }
 
+void SurfDataTest::testDuplicatePoint()
+{
+  vector< double > duplicatePoint(3);
+  duplicatePoint[0] = 0.0;
+  duplicatePoint[1] = 1.0;
+  duplicatePoint[2] = 2.0;
+  SurfPoint duplicateSurfPoint(duplicatePoint, duplicatePoint);
+  CPPUNIT_ASSERT_EQUAL((unsigned)5,sdPtr1->size());
+  sdPtr1->addPoint(duplicateSurfPoint);
+  CPPUNIT_ASSERT_EQUAL((unsigned)5,sdPtr1->size());
+}
+
+void SurfDataTest::testSetScalerNull()
+{
+  CPPUNIT_ASSERT( sdPtr1->scaler == 0 );
+  CPPUNIT_ASSERT( !sdPtr1->isScaled() );
+  sdPtr1->setScaler(0);
+  CPPUNIT_ASSERT( !sdPtr1->isScaled() );
+}
+
+void SurfDataTest::testSetScalerNotNull()
+{
+  SurfScaler s;
+  sdPtr1->setScaler(&s);
+  CPPUNIT_ASSERT_EQUAL( (unsigned)3,s.parameters.size() );
+  CPPUNIT_ASSERT( matches(0.0,s.parameters[0].offset) );
+  CPPUNIT_ASSERT( matches(4.0,s.parameters[0].divisor) );
+  CPPUNIT_ASSERT( matches(1.0,s.parameters[1].offset) );
+  CPPUNIT_ASSERT( matches(4.0,s.parameters[1].divisor) );
+  CPPUNIT_ASSERT( matches(2.0,s.parameters[2].offset) );
+  CPPUNIT_ASSERT( matches(4.0,s.parameters[2].divisor) );
+}
+
+void SurfDataTest::testIsScaled()
+{
+  CPPUNIT_ASSERT( sdPtr1->scaler == 0 );
+  CPPUNIT_ASSERT( !sdPtr1->isScaled() );
+  SurfScaler s;
+  sdPtr1->setScaler(&s);
+  CPPUNIT_ASSERT( sdPtr1->isScaled() );
+}
+
 void SurfDataTest::testWriteBinary()
 {
   sdPtr1->write(fullPath("surfdata1.sd"));
@@ -850,6 +923,12 @@ void SurfDataTest::testReadBinaryFileTooShort()
   sdPtr1->read(fullPath("claimsTooMany.sd"));
 }
 
+void SurfDataTest::testBadSanityCheck()
+{
+  SurfData sd2(*sdPtr1);
+  sd2.points[0]->x.resize(10);
+  sd2.sanityCheck();
+}
 void SurfDataTest::testStreamInsertion()
 {
   // If this test doesn't throw an exception,

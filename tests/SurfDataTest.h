@@ -29,6 +29,7 @@ class SurfDataTest : public CppUnit::TestFixture
   CPPUNIT_TEST( testOperatorEquality );
   CPPUNIT_TEST( testOperatorInequality );
   CPPUNIT_TEST( testOperatorIndexing );
+  CPPUNIT_TEST( testOperatorIndexingScaled );
   CPPUNIT_TEST_EXCEPTION( testOperatorIndexingBadIndex, std::range_error );
   CPPUNIT_TEST_EXCEPTION(testOperatorIndexingAnotherBadIndex, std::range_error);
   CPPUNIT_TEST( testSize );
@@ -66,6 +67,10 @@ class SurfDataTest : public CppUnit::TestFixture
   CPPUNIT_TEST( testSetExcludedPointsToNone);
   CPPUNIT_TEST_EXCEPTION( testSetExcludedPointsTooMany,
     SurfData::bad_surf_data );
+  CPPUNIT_TEST( testDuplicatePoint );
+  CPPUNIT_TEST( testSetScalerNull );
+  CPPUNIT_TEST( testSetScalerNotNull );
+  CPPUNIT_TEST( testIsScaled );
   CPPUNIT_TEST( testWriteBinary );
   CPPUNIT_TEST( testWriteText );
   CPPUNIT_TEST_EXCEPTION( testWriteNoPoints,
@@ -78,6 +83,8 @@ class SurfDataTest : public CppUnit::TestFixture
     surfpack::io_exception);
   CPPUNIT_TEST_EXCEPTION( testReadTextFileTooShort,
     surfpack::io_exception);
+  CPPUNIT_TEST_EXCEPTION( testBadSanityCheck,
+    SurfData::bad_surf_data);
   CPPUNIT_TEST( testStreamInsertion );
   CPPUNIT_TEST_SUITE_END();
 public:
@@ -104,6 +111,7 @@ public:
   void testOperatorEquality();
   void testOperatorInequality();
   void testOperatorIndexing();
+  void testOperatorIndexingScaled();
   void testOperatorIndexingBadIndex();
   void testOperatorIndexingAnotherBadIndex();
   void testSize();
@@ -134,6 +142,10 @@ public:
   void testSetExcludedPoints();
   void testSetExcludedPointsToNone();
   void testSetExcludedPointsTooMany();
+  void testDuplicatePoint();
+  void testSetScalerNull();
+  void testSetScalerNotNull();
+  void testIsScaled();
 // defaultMapping not explicitly tested
 // validateXMatrix not explicitly tested
 // validateYVector not explicitly tested
@@ -145,6 +157,7 @@ public:
   void testReadNoFile();
   void testReadTextFileTooShort();
   void testReadBinaryFileTooShort();
+  void testBadSanityCheck();
   void testStreamInsertion();
 
 private:

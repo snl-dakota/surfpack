@@ -15,6 +15,9 @@ class SurfScalerTest : public CppUnit::TestFixture
   CPPUNIT_TEST( testOperatorAssignment );
   CPPUNIT_TEST( testOperatorAssignmentToSelf );
   CPPUNIT_TEST( testComputeScalingParameters);
+  CPPUNIT_TEST( testComputeScalingParametersFour1DPts);
+  CPPUNIT_TEST( testComputeScalingParametersFour2DPts);
+  CPPUNIT_TEST( testScale );
   //CPPUNIT_TEST( testOperatorEquality );
   //CPPUNIT_TEST( testOperatorInequality );
   CPPUNIT_TEST_SUITE_END();
@@ -30,6 +33,9 @@ public:
   void testOperatorAssignment();
   void testOperatorAssignmentToSelf();
   void testComputeScalingParameters();
+  void testComputeScalingParametersFour1DPts();
+  void testComputeScalingParametersFour2DPts();
+  void testScale();
   //void testOperatorEquality();
   //void testOperatorInequality();
 

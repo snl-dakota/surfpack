@@ -13,6 +13,7 @@
 #include "unittests.h"
 #include "PolynomialSurface.h"
 #include "SurfaceTest.h"
+#include "SurfScaler.h"
 
 using namespace std;
 
@@ -98,11 +99,33 @@ void SurfaceTest::getValueVector()
   CPPUNIT_ASSERT(matches(ps.getValue(x),9.0));
 }
 
+void SurfaceTest::getValueVectorScaled()
+{
+  vector<double> x(1);
+  x[0] = 3.0;
+  CPPUNIT_ASSERT(matches(polysurf->getValue(x),9.0));
+  PolynomialSurface ps(surfd, 2);
+  ps.scaleUniform();
+  ps.createModel();
+  CPPUNIT_ASSERT(matches(ps.getValue(x),9.0));
+}
+
 void SurfaceTest::getValueSurfPoint()
 {
   vector<double> x(1);
   x[0] = -4.0;
   SurfPoint sp(x);
+  CPPUNIT_ASSERT(matches(polysurf->getValue(sp),16.0));
+
+}
+
+void SurfaceTest::getValueSurfPointScaled()
+{
+  vector<double> x(1);
+  x[0] = -4.0;
+  SurfPoint sp(x);
+  polysurf->scaleUniform();
+  polysurf->createModel();
   CPPUNIT_ASSERT(matches(polysurf->getValue(sp),16.0));
 
 }
@@ -113,6 +136,26 @@ void SurfaceTest::getValueSurfData()
   CPPUNIT_ASSERT(surfd->fSize() == 2);
   CPPUNIT_ASSERT(matches((*surfd)[1].F(1),1.0));
 
+}
+
+void SurfaceTest::noScale()
+{
+  CPPUNIT_ASSERT( polysurf->scaler == 0);
+  polysurf->noScale();
+  CPPUNIT_ASSERT( polysurf->scaler == 0);
+  polysurf->scaleUniform();
+  CPPUNIT_ASSERT( polysurf->scaler != 0);
+  polysurf->noScale();
+  CPPUNIT_ASSERT( polysurf->scaler == 0);
+}
+
+void SurfaceTest::scaleUniform()
+{
+  polysurf->scaleUniform();
+  polysurf->createModel();
+  CPPUNIT_ASSERT_EQUAL( (unsigned)1, polysurf->scaler->parameters.size());
+  CPPUNIT_ASSERT( matches(-3.0, polysurf->scaler->parameters[0].offset));
+  CPPUNIT_ASSERT( matches(6.0, polysurf->scaler->parameters[0].divisor));
 }
 
 void SurfaceTest::getValueErrorStructs()

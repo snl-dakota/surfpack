@@ -18,9 +18,13 @@ class SurfaceTest : public CppUnit::TestFixture
   CPPUNIT_TEST_EXCEPTION( acceptableDataExceptionNull, SurfData::bad_surf_data );
   CPPUNIT_TEST_EXCEPTION( acceptableDataExceptionNotEnough, SurfData::bad_surf_data );
   CPPUNIT_TEST( getValueVector );
+  CPPUNIT_TEST( getValueVectorScaled );
   CPPUNIT_TEST( getValueSurfPoint );
+  CPPUNIT_TEST( getValueSurfPointScaled );
   CPPUNIT_TEST( getValueSurfData );
   CPPUNIT_TEST( getValueErrorStructs );
+  CPPUNIT_TEST( noScale );
+  CPPUNIT_TEST( scaleUniform );
   CPPUNIT_TEST( goodnessOfFit );
   CPPUNIT_TEST_EXCEPTION( goodnessOfFitException, std::string);
   CPPUNIT_TEST( press );
@@ -49,9 +53,13 @@ public:
   void acceptableDataExceptionNull();
   void acceptableDataExceptionNotEnough();
   void getValueVector();
+  void getValueVectorScaled();
   void getValueSurfPoint();
+  void getValueSurfPointScaled();
   void getValueSurfData();
   void getValueErrorStructs();
+  void noScale();
+  void scaleUniform();
   void goodnessOfFit();
   void goodnessOfFitException();
   void press();

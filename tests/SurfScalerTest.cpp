@@ -95,6 +95,60 @@ void SurfScalerTest::testComputeScalingParameters()
   CPPUNIT_ASSERT(matches(ss.parameters[0].offset,1.0));
   CPPUNIT_ASSERT(matches(ss.parameters[0].divisor,10.0));
 }
+
+void SurfScalerTest::testComputeScalingParametersFour1DPts()
+{
+  vector<double> x(1);
+  vector<double> f(1);
+  vector<SurfPoint> spts;
+  x[0] = -2; f[0] =  3; spts.push_back(SurfPoint(x,f));
+  x[0] =  2; f[0] = -3; spts.push_back(SurfPoint(x,f));
+  x[0] = -6; f[0] = -6; spts.push_back(SurfPoint(x,f));
+  x[0] =  6; f[0] =  6; spts.push_back(SurfPoint(x,f));
+  SurfData sd(spts);
+  SurfScaler ss;
+  ss.computeScalingParameters(spts);
+  CPPUNIT_ASSERT_EQUAL((unsigned)1,ss.parameters.size());
+  CPPUNIT_ASSERT(matches(ss.parameters[0].offset,-6.0));
+  CPPUNIT_ASSERT(matches(ss.parameters[0].divisor,12.0));
+}
+
+void SurfScalerTest::testComputeScalingParametersFour2DPts()
+{
+  vector<double> x(2);
+  vector<double> f(1);
+  vector<SurfPoint> spts;
+  x[0] = -6; x[1] =  1; f[0] = -6; spts.push_back(SurfPoint(x,f));
+  x[0] =  6; x[1] =  2; f[0] =  6; spts.push_back(SurfPoint(x,f));
+  x[0] = -2; x[1] =  3; f[0] =  3; spts.push_back(SurfPoint(x,f));
+  x[0] =  2; x[1] =  4; f[0] = -3; spts.push_back(SurfPoint(x,f));
+  SurfData sd(spts);
+  SurfScaler ss;
+  ss.computeScalingParameters(spts);
+  CPPUNIT_ASSERT_EQUAL((unsigned)2,ss.parameters.size());
+  CPPUNIT_ASSERT(matches(ss.parameters[0].offset,-6.0));
+  CPPUNIT_ASSERT(matches(ss.parameters[0].divisor,12.0));
+  CPPUNIT_ASSERT(matches(ss.parameters[1].offset,1.0));
+  CPPUNIT_ASSERT(matches(ss.parameters[1].divisor,3.0));
+}
+
+void SurfScalerTest::testScale()
+{
+  vector<double> x(2);
+  vector<double> f(1);
+  vector<SurfPoint> spts;
+  x[0] = -6; x[1] =  1; f[0] = -6; spts.push_back(SurfPoint(x,f));
+  x[0] =  6; x[1] =  2; f[0] =  6; spts.push_back(SurfPoint(x,f));
+  x[0] = -2; x[1] =  3; f[0] =  3; spts.push_back(SurfPoint(x,f));
+  x[0] =  2; x[1] =  4; f[0] = -3; spts.push_back(SurfPoint(x,f));
+  SurfData sd(spts);
+  SurfScaler ss;
+  ss.computeScalingParameters(spts);
+  const SurfPoint& temp = ss.scale(x);
+  CPPUNIT_ASSERT(matches(temp.X()[0],.66666));
+  CPPUNIT_ASSERT(matches(temp.X()[1],1.0));
+  cout << "End SurfScaler Test" << endl;
+}
 //void SurfScalerTest::testOperatorEquality()
 //{
 //  SurfPoint sp(x2, f1);

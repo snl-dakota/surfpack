@@ -5,10 +5,12 @@
 
 #include <cppunit/extensions/HelperMacros.h>
 #include "SurfPoint.h"
+#include "SurfData.h"
 
 class SurfPointTest : public CppUnit::TestFixture
 {
   CPPUNIT_TEST_SUITE( SurfPointTest );
+  CPPUNIT_TEST( testSurfPointPtrLessThan );
   CPPUNIT_TEST( testConstructor );
   CPPUNIT_TEST( testConstructorXSpecified );
   CPPUNIT_TEST( testConstructorXSpecifiedPlusOneF );
@@ -40,6 +42,9 @@ class SurfPointTest : public CppUnit::TestFixture
 public:
   void setUp();
   void tearDown();
+
+// Other
+  void testSurfPointPtrLessThan();
 
 // Constructors
   void testConstructor();
