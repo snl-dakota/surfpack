@@ -2,4 +2,4 @@ aclocal -I $HOME/local/share/aclocal
 libtoolize --force --copy
 automake -a
 autoconf
-configure -C --prefix=$HOME/Working/Surfpack/Surfpack "CXXFLAGS=" --disable-shared 
+configure -C --prefix=$HOME/Working/Surfpack/Surfpack --disable-shared 

@@ -2,10 +2,11 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.57)
-AC_INIT(Surfpack++, 0.1, mricha@sandia.gov)
+AC_INIT(Surfpack, 0.1, mricha@sandia.gov)
 AM_INIT_AUTOMAKE
 # Check to make sure this file exists as a safety check
 AC_CONFIG_SRCDIR([src/Surface.cpp])
+
 
 # Checks for programs.
 AC_PROG_AWK
@@ -18,6 +19,7 @@ AC_PROG_YACC
 AC_PROG_MAKE_SET
 AC_PROG_LIBTOOL
 
+CXXFLAGS="-fprofile-arcs -ftest-coverage -g"
 # Checks for libraries.
 ## FIXME: Replace `main' with a function in `-lF':
 #AC_CHECK_LIB([F], [main])
