@@ -41,13 +41,13 @@ using namespace std;
 // Creation, Destruction, Initialization 
 // ____________________________________________________________________________
 
-Surface::Surface() : sd(0)
-{
-#ifdef __TESTING_MODE__
-  constructCount++;
-#endif
-  init();
-}
+//Surface::Surface() : sd(0)
+//{
+//#ifdef __TESTING_MODE__
+//  constructCount++;
+//#endif
+//  init();
+//}
 
 Surface::Surface(SurfData* sd) : sd(sd)
 { 
@@ -62,8 +62,7 @@ Surface::Surface(SurfData* sd) : sd(sd)
 
 Surface::Surface(const Surface& other) : xsize(other.xsize), 
   builtOK(other.builtOK), dataAdded(other.dataAdded), 
-  dataModified(other.dataModified), originalData(other.originalData),
-  responseIndex(other.responseIndex)
+  dataModified(other.dataModified), responseIndex(other.responseIndex)
 {
 #ifdef __TESTING_MODE__
   constructCount++;
@@ -84,9 +83,10 @@ Surface::~Surface()
 
 void Surface::init()
 {
-  dataAdded = dataModified = builtOK = 0;
+  dataAdded = dataModified = builtOK = false;
   xsize = sd ? sd->xSize() : 0;
   responseIndex = 0;
+  
 }
 
 // Copy constructor goes here
@@ -103,17 +103,23 @@ unsigned Surface::xSize()
 
 bool Surface::hasOriginalData() const
 {
-  return (sd != 0 && !dataAdded && !dataModified); 
+  return (sd && builtOK && !dataAdded && !dataModified); 
 }
 
 bool Surface::acceptableData() const
 {
   if (!sd) {
-    cerr << "Data unacceptable: there is no data" << endl;
-    return false;
-  } else if (sd->size() < minPointsRequired()) {
-    cerr << "Data unacceptable: there is not enough data " << endl;
-    return false;
+    throw bad_data("Data unacceptable: there is no data.");
+  } else {
+    unsigned pointsAvailable = sd->size();
+    unsigned pointsRequired = minPointsRequired();
+    if (pointsAvailable < pointsRequired) {
+      ostringstream errormsg;
+      errormsg << "ERROR: data unacceptable.  This surface requires "
+	   << pointsRequired << ", but only " << pointsAvailable
+	   << " were given." << endl;
+      throw bad_data(errormsg.str());
+    }
   }
   return true;
 }
@@ -126,16 +132,7 @@ double Surface::getValue(const std::vector<double>& x)
   if (!builtOK || dataModified) {
     createModel();
   }
-  
-  // By this point, the model should be built correctly
-  if (!builtOK) {
-    cerr << "Cannot evaluate point because model was not successfully rebuilt" 
-         << endl;
-    return 0.0;
-  } else {
-    return evaluate(x);
-  }
-  
+  return evaluate(x);
 }
 
 double Surface::getValue(const SurfPoint& sp)
@@ -147,7 +144,7 @@ void Surface::getValue(SurfData& sd, std::vector<ErrorStruct>& pts)
 {
   for (unsigned i = 0; i < sd.size(); i++) {
     ErrorStruct es;
-    es.estimated = evaluate(sd[i].X());
+    es.estimated = getValue(sd[i].X());
     es.observed = sd.getResponse(i);
     pts.push_back(es);
   }
@@ -194,15 +191,14 @@ double Surface::goodnessOfFit(const string metricName, SurfData* surfData)
   } else if (metricName == "mse") {
     return mse(sdRef);
   } else if (metricName == "mrae") {
-    return mse(sdRef);
+    return mrae(sdRef);
   } else if (metricName == "rsquared") {
     return rSquared(sdRef);
   } else if (metricName == "press") {
     return press(sdRef);
   } else {
-    cout << "No error metric of that type in this class" << endl;
+    throw bad_metric("No error metric of that type in this class");
   }
-  return 0;
 }
 
 double Surface::press(SurfData& dataSet)
@@ -210,8 +206,7 @@ double Surface::press(SurfData& dataSet)
   /// <= test is used because it must be possible to build the surface
   /// even when one point is removed from dataSet
   if (dataSet.size() <= minPointsRequired()) {
-    cerr << "Not enough data to compute PRESS" << endl;
-    return 0.0;
+    throw bad_data("Not enough data to compute PRESS.");
   } else {
     // If some of the points in the data set are already being excluded,
     // copy all of the non-excluded data points into a new SurfData
@@ -254,7 +249,7 @@ double Surface::press(SurfData& dataSet)
       //     << ( 100.0*static_cast<double>(i)/static_cast<double>(surfData.size()+1) ) 
       //     << "%\r" << flush;
     }
-    cout << setprecision(6) << endl;
+    //cout << setprecision(6) << endl;
     pressValue = sqrt(pressValue/static_cast<double>(surfData.size()+1));
     return pressValue;
   }
@@ -370,6 +365,7 @@ void Surface::setData(SurfData* sd)
   //Do a sanity check on the data
   this->sd = sd;
   dataModified = true;
+  dataAdded = true;
   xsize = sd ? sd->xSize() : 0;
 }
   
@@ -377,12 +373,12 @@ void Surface::setData(SurfData* sd)
 /// associated with this surface
 void Surface::prepareData()
 {
+  // If sd is null, an exception will likely be be thrown elsewhere, but at this point
+  // it does not need to be considered an error
   if (sd) {
     sd->setExcludedPoints(excludedPoints);
     sd->setDefaultIndex(responseIndex);
-  } else {
-    cerr << "There is no data to prepare." << endl;
-  }
+  } 
 }
 
 /// Checks to make sure the data passed in is not null.  If it is, sets it 
@@ -390,16 +386,17 @@ void Surface::prepareData()
 /// non-existent, it is an error.  
 SurfData& Surface::checkData(SurfData* dataSet)
 {
-  if (!dataSet) {
-    if (sd) {
+    if (dataSet) {
+      return *dataSet;
+    } else if (sd) {
       prepareData();
       return *sd;
     } else {
-      cerr << "In Surface::checkData: No data was passed in and this surface has"
-           << " no data." << endl;
+      ostringstream errormsg;
+      errormsg << "In Surface::checkData: No data was passed in "
+	       << "and this surface has no data." << endl;
+      throw bad_data(errormsg.str());
     }
-  }
-  return *dataSet;
 }
 
 /// Check to make sure that data are acceptable and then build.
@@ -411,23 +408,18 @@ void Surface::createModel(SurfData* surfData)
     setData(surfData);
   }
   if (builtOK && !dataAdded && !dataModified) {
-    cerr << "Model is already valid and will not be rebuilt because the"
-         << " data set has not changed"
-         << endl;
+    //cerr << "Model is already valid and will not be rebuilt because the"
+    //     << " data set has not changed"
+    //     << endl;
     return;
   } 
-
-  if (acceptableData()) {
-    SurfData& sdRef = *sd;
-    build(sdRef);
-    excludedPoints = sd->getExcludedPoints();
-    responseIndex = sd->getDefaultIndex();
-    originalData = builtOK = true;
-    dataAdded = dataModified = false;
-  } else {
-    cerr << "Model could not be built because the data was not acceptable" 
-         << endl;
-  }
+  acceptableData();
+  SurfData& sdRef = *sd;
+  build(sdRef);
+  excludedPoints = sd->getExcludedPoints();
+  responseIndex = sd->getDefaultIndex();
+  builtOK = true;
+  dataAdded = dataModified = false;
 }
 
 // ____________________________________________________________________________
@@ -437,14 +429,10 @@ void Surface::createModel(SurfData* surfData)
 void Surface::write(const string filename)
 {
   const string nameOfSurface = surfaceName();
-  bool binary = (filename.find(".txt") != filename.size() - 4);
+  bool binary = testFileExtension(filename); 
   ofstream outfile(filename.c_str(), (binary ? ios::out|ios::binary : ios::out));
   if (!outfile) {
-    cerr << "File named \"" 
-         << filename
-	 << "\" could not be opened." 
-	 << endl;
-    return;
+    throw surfpack::file_open_failure(filename);
   } else if (binary) {
     // write out the surface name
     unsigned nameSize = nameOfSurface.size();
@@ -452,7 +440,7 @@ void Surface::write(const string filename)
     outfile.write(nameOfSurface.c_str(),nameSize);
     // write out the surface 'details'
     writeBinary(outfile);
-    if (sd) {
+    if (hasOriginalData()) {
       outfile.write(reinterpret_cast<char*>(&responseIndex),
         sizeof(responseIndex));
     } else {
@@ -464,13 +452,13 @@ void Surface::write(const string filename)
     outfile << nameOfSurface << endl;
     // write out the surface 'details'
     writeText(outfile);
-    if (sd) {
+    if (hasOriginalData()) {
       outfile << responseIndex << " response index for surface data" << endl;
     } else {
       outfile << "-1 data for surface not included" << endl;
     }
   }
-  if (originalData) {
+  if (hasOriginalData()) {
     prepareData();
     if (binary) {
       sd->writeBinary(outfile);
@@ -483,42 +471,28 @@ void Surface::write(const string filename)
 
 void Surface::read(const string filename)
 {
-  bool binary = (filename.find(".txt") != filename.size() - 4);
+  bool binary = testFileExtension(filename);
   ifstream infile(filename.c_str(), (binary ? ios::in|ios::binary : ios::in));
   int index;
   if (!infile) {
-    cerr << "File named \"" 
-         << filename
-	 << "\" could not be opened." 
-	 << endl;
-    return;
+    throw surfpack::file_open_failure(filename);
+  } 
+
+  string nameInFile = surfpack::readName(infile, binary);
+  if (nameInFile != surfaceName() ) {
+    ostringstream errormsg;
+    errormsg << "Bad surface name in file " << filename << ".  "
+             << "Expected: " << surfaceName() << "; found: " 
+             <<  surfpack::surfaceName(filename) 
+             << ".  Cannot build surface." << endl;
+    throw surfpack::io_exception(errormsg.str());
   } else if (binary) {
-    // read surface name
-    unsigned nameSize;
-    infile.read(reinterpret_cast<char*>(&nameSize),sizeof(nameSize));
-    char* surfaceType = new char[nameSize+1];
-    infile.read(surfaceType,nameSize);
-    surfaceType[nameSize] = '\0';
-    string nameInFile(surfaceType);
-    delete [] surfaceType;
-    if (nameInFile != surfaceName()) {
-      cerr << "Surface name in file is not " << surfaceName() << "." << endl;
-      cerr << "Cannot build surface." << endl;
-      return;
-    }
     // read the surface details
     readBinary(infile);
     infile.read(reinterpret_cast<char*>(&index),sizeof(index));
   } else {
-    // read surface name 
-    string sline;
-    getline(infile,sline);
-    if (sline!= surfaceName()) {
-      cerr << "Surface name in file is not " << surfaceName() << "." << endl;
-      cerr << "Cannot build surface." << endl;
-      return;
-    }
     // read the surface details
+    string sline;
     readText(infile);
     getline(infile, sline);
     istringstream streamline(sline);
@@ -527,11 +501,24 @@ void Surface::read(const string filename)
   if (index >= 0) {
     sd = new SurfData(infile, binary);
     responseIndex = static_cast<unsigned>(index);
-    originalData = true;
   }    
   infile.close();
   builtOK = true;
   dataAdded = dataModified = false;
+}
+
+/// Returns true if the filename extension is .srf
+bool Surface::testFileExtension(const std::string& filename) const
+{
+  if (surfpack::hasExtension(filename,".srf")) {
+    return true;
+  } else if (surfpack::hasExtension(filename,".txt")) {
+    return false;
+  } else {
+    throw surfpack::io_exception(
+      "Unrecognized filename extension.  Use .srf or .txt"
+    );
+  }
 }
 
 ostream& operator<<(ostream& os,Surface& surface)

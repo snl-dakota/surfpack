@@ -31,12 +31,39 @@ struct ErrorStruct;
  */
 class Surface
 {
+protected:
+class null_dimension_surface: public std::runtime_error
+{
+public:
+  null_dimension_surface(const std::string& msg = "") 
+    : std::runtime_error(msg) {}
+};
+
+class bad_data: public std::runtime_error
+{
+public:
+  bad_data(const std::string& msg = "") 
+    : std::runtime_error(msg) {}
+};
+
+class bad_metric: public std::runtime_error
+{
+public:
+  bad_metric(const std::string& msg = "") 
+    : std::runtime_error(msg) {}
+};
+//class too_many_terms: public std::runtime_error
+//{
+//public:
+//  too_many_terms(const std::string& msg = "") 
+//    : std::runtime_error(msg) {}
+//};
+  
 // ____________________________________________________________________________
 // Creation, Destruction, Initialization 
 // ____________________________________________________________________________
 
-protected:
-   
+protected: 
   /// Initialize SurfData to null
   Surface(); 
 
@@ -152,6 +179,12 @@ public:
   virtual void getValue(SurfData& sd, std::vector<ErrorStruct>& pts);
 
 // ____________________________________________________________________________
+// Helper methods 
+// ____________________________________________________________________________
+
+bool testFileExtension(const std::string& filename) const;
+
+// ____________________________________________________________________________
 // I/O 
 // ____________________________________________________________________________
 
@@ -205,9 +238,6 @@ protected:
   /// built
   bool dataModified;
 
-  /// Set to true when data used to build surface is present 
-  bool originalData;
-
   /// Indices of points present in sd that were not used to make the surface 
   std::set<unsigned> excludedPoints;
 
@@ -224,6 +254,7 @@ protected:
 #ifdef __TESTING_MODE__
   friend class SurfaceFactoryUnitTest;
   friend class SurfaceTest;
+  friend class PolynomialSurfaceTest;
  
   static int constructCount;
   static int destructCount;
