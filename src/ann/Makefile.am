@@ -4,3 +4,4 @@ libann_la_SOURCES = ann.C ann.h client.C allocate.C allocate.h \
 	random.C random.h system_defs.h utilities.C utilities.h \
 	vector_enhancements.C vector_enhancements.h
 INCLUDES = -I$(top_srcdir)/src
+CLEANFILES = *.bb *.bbg *.da *.gcov
