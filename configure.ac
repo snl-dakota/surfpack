@@ -19,11 +19,14 @@ AC_PROG_CXX([CC cxx xlc g++ c++ gcc])
 AC_DISABLE_SHARED
 
 AC_LANG_CPLUSPLUS
+#Check for linear algebra libraries needed on the AIX
+AC_CHECK_LIB([essl], [dgels_])
+
+#Check for the linear algebra libraries that are needed on IRIX
+AC_CHECK_LIB([scs],[dgels_])
+
 #Chech for the linear algebra libraries that should be on OSF
 AC_CHECK_LIB([dxml],[dgels_])
-
-#Check for the linear algebra libraries that are needed on Irix
-AC_CHECK_LIB([scs],[dgels_])
 
 WHOLE_LIB_PATH=`echo $LD_LIBRARY_PATH | sed -e 's/^/-L/;s/:/ -L/g'`
 #Check for the linear algebra libraries that are needed on Sun/Solaris
