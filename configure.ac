@@ -19,30 +19,31 @@ AC_PROG_CXX([CC cxx xlc g++ c++ gcc])
 AC_DISABLE_SHARED
 
 AC_LANG_CPLUSPLUS
-#Check for linear algebra libraries needed on the AIX
-AC_CHECK_LIB([essl], [dgels_])
-
-#Check for the linear algebra libraries that are needed on IRIX
-AC_CHECK_LIB([scs],[dgels_])
-
-#Chech for the linear algebra libraries that should be on OSF
-AC_CHECK_LIB([dxml],[dgels_])
-
+ACX_LAPACK
 WHOLE_LIB_PATH=`echo $LD_LIBRARY_PATH | sed -e 's/^/-L/;s/:/ -L/g'`
-#Check for the linear algebra libraries that are needed on Sun/Solaris
-AC_CHECK_LIB([sunmath],[logf],[],[],[$WHOLE_LIB_PATH])
-AC_CHECK_LIB([F77],[etime_],[],[],[$WHOLE_LIB_PATH])
-AC_CHECK_LIB([fsu],[__c_exp],[],[],[$WHOLE_LIB_PATH])
-AC_CHECK_LIB([sunperf],[dgels_],[],[],[$WHOLE_LIB_PATH])
-
-
-#Check for the linear algebra libraries on Linux machines
-AC_CHECK_LIB([m],[atanh],[],[],[$WHOLE_LIB_PATH])
-AC_CHECK_LIB([g2c],[c_cos],[],[],[$WHOLE_LIB_PATH])
-AC_CHECK_LIB([blas],[ddot_],[],[],[$WHOLE_LIB_PATH])
-AC_CHECK_LIB([lapack],[dgels_],[],[],[$WHOLE_LIB_PATH])
-#AC_CHECK_LIB([gslcblas],[main],[],[],[$WHOLE_LIB_PATH])
-#AC_CHECK_LIB([gsl],[main],[],[],[$WHOLE_LIB_PATH])
+#Check for linear algebra libraries needed on the AIX
+#AC_CHECK_LIB([essl], [dgels_])
+#
+##Check for the linear algebra libraries that are needed on IRIX
+#AC_CHECK_LIB([scs],[dgels_])
+#
+##Chech for the linear algebra libraries that should be on OSF
+#AC_CHECK_LIB([dxml],[dgels_])
+#
+##Check for the linear algebra libraries that are needed on Sun/Solaris
+#AC_CHECK_LIB([sunmath],[logf],[],[],[$WHOLE_LIB_PATH])
+#AC_CHECK_LIB([F77],[etime_],[],[],[$WHOLE_LIB_PATH])
+#AC_CHECK_LIB([fsu],[__c_exp],[],[],[$WHOLE_LIB_PATH])
+#AC_CHECK_LIB([sunperf],[dgels_],[],[],[$WHOLE_LIB_PATH])
+#
+#
+##Check for the linear algebra libraries on Linux machines
+#AC_CHECK_LIB([m],[atanh],[],[],[$WHOLE_LIB_PATH])
+#AC_CHECK_LIB([g2c],[c_cos],[],[],[$WHOLE_LIB_PATH])
+#AC_CHECK_LIB([blas],[ddot_],[],[],[$WHOLE_LIB_PATH])
+#AC_CHECK_LIB([lapack],[dgels_],[],[],[$WHOLE_LIB_PATH])
+##AC_CHECK_LIB([gslcblas],[main],[],[],[$WHOLE_LIB_PATH])
+##AC_CHECK_LIB([gsl],[main],[],[],[$WHOLE_LIB_PATH])
 
 #Check for libraries needed for CPP Unit test suite
 AC_CHECK_LIB([dl],[main],[],[],[$WHOLE_LIB_PATH])
