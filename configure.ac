@@ -11,9 +11,9 @@ AC_CONFIG_SRCDIR([src/Surface.cpp])
 AC_LANG_CPLUSPLUS
 WHOLE_LIB_PATH=`echo $LD_LIBRARY_PATH | sed -e 's/^/-L/;s/:/ -L/g'`
 #Check for the linear algebra libraries that are needed on Sun/Solaris
-AC_CHECK_LIB([fsu],[main],[],[],[$WHOLE_LIB_PATH])
 AC_CHECK_LIB([sunmath],[main],[],[],[$WHOLE_LIB_PATH])
-AC_CHECK_LIB([-lF77],[main],[],[],[$WHOLE_LIB_PATH])
+AC_CHECK_LIB([F77],[main],[],[],[$WHOLE_LIB_PATH])
+AC_CHECK_LIB([fsu],[main],[],[],[$WHOLE_LIB_PATH])
 AC_CHECK_LIB([sunperf],[main],[],[],[$WHOLE_LIB_PATH])
 
 
