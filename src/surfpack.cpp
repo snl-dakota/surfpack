@@ -21,6 +21,13 @@
 
 using namespace std;
 
+void surfpack::writeFile(std::string filename, std::string contents)
+{
+  ofstream outfile(filename.c_str(), ios::out);
+  outfile << contents << endl;
+  outfile.close();
+}
+
 const string surfpack::surfaceName(const string filename)
 {
   bool binary = (filename.find(".txt") != filename.size() - 4);
@@ -180,12 +187,95 @@ void surfpack::writeMatrix(const string filename, unsigned* mat, unsigned rows,
   outfile.close();
 }
 
+double surfpack::testFunction(const string name, const vector<double>& pt)
+{
+  if (name == "rosenbrock") {
+    return surfpack::rosenbrock(pt);
+  } else if (name == "sphere") {
+    return surfpack::sphere(pt);
+  } else if (name == "sumofall") {
+    return surfpack::sumofall(pt);
+  } else if (name == "simplepoly") {
+    return surfpack::simplepoly(pt);
+  } else if (name == "moderatepoly") {
+    return surfpack::moderatepoly(pt);
+  } else if (name == "sinewave") {
+    return surfpack::sinewave(pt);
+  } else if (name == "quasisine") {
+    return surfpack::quasisine(pt);
+  } else if (name == "xplussinex") {
+    return surfpack::xplussinex(pt);
+  } else {
+    return surfpack::rastrigin(pt);
+  }
+}
+
 double surfpack::sphere(const vector<double>& pt) 
 {
   double result = 0.0;
   for (unsigned i = 0; i < pt.size(); i++) {
     double x = pt[i];
     result += x*x;
+  }
+  return result;
+}
+
+double surfpack::quasisine(const std::vector<double>& pt)
+{
+  double result = 0.0;
+  double c = 16.0/15.0;
+  double e = 1.0;
+  for (unsigned i = 0; i < pt.size(); i++) {
+    double x = pt[i];
+    result += sin(c*x-e) + sin(c*x-e)*sin(c*x-e) + .02*sin(40.0*(c*x-e));
+  }
+  return result;
+
+}
+
+double surfpack::sinewave(const std::vector<double>& pt)
+{
+  double result = 0.0;
+  for (unsigned i = 0; i < pt.size(); i++) {
+    double x = pt[i];
+    result += sin(x);
+  }
+  return result;
+
+}
+
+double surfpack::xplussinex(const std::vector<double>& pt)
+{
+  double result = 0.0;
+  for (unsigned i = 0; i < pt.size(); i++) {
+    double x = pt[i];
+    result += x + sin(x);
+  }
+  return result;
+
+}
+
+double surfpack::moderatepoly(const std::vector<double>& pt)
+{
+  double result = -3.0;
+  for (unsigned i = 0; i < pt.size(); i++) {
+    double x = pt[i];
+    switch (i % 3) {
+      case 0: result -= 2.0*(x-3.0); break;
+      case 1: result += 1.0*(x+3.0)*(x+3.0); break;
+      case 2: result += 2.0*(x-3.0)*(pt[(i+2)%3]); break;
+    }
+  }
+  return result;
+
+}
+
+double surfpack::simplepoly(const std::vector<double>& pt)
+{
+  double result = 3.0;
+  for (unsigned i = 0; i < pt.size(); i++) {
+    double x = pt[i];
+    result += 2.0*x;
   }
   return result;
 }

@@ -23,6 +23,9 @@
 
 class SurfPoint;
 class SurfData;
+
+#include "SurfpackParser.h"
+
 //class AbstractSurfDataIterator;
 struct ErrorStruct;
 
@@ -36,13 +39,6 @@ class null_dimension_surface: public std::runtime_error
 {
 public:
   null_dimension_surface(const std::string& msg = "") 
-    : std::runtime_error(msg) {}
-};
-
-class bad_data: public std::runtime_error
-{
-public:
-  bad_data(const std::string& msg = "") 
     : std::runtime_error(msg) {}
 };
 
@@ -177,6 +173,8 @@ public:
   virtual void build(SurfData& data) = 0; 
 
   virtual void getValue(SurfData& sd, std::vector<ErrorStruct>& pts);
+
+  virtual void config(const SurfpackParser::ArgList& arglist);
 
 // ____________________________________________________________________________
 // Helper methods 

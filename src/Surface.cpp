@@ -109,7 +109,7 @@ bool Surface::hasOriginalData() const
 bool Surface::acceptableData() const
 {
   if (!sd) {
-    throw bad_data("Data unacceptable: there is no data.");
+    throw SurfData::bad_surf_data("Data unacceptable: there is no data.");
   } else {
     unsigned pointsAvailable = sd->size();
     unsigned pointsRequired = minPointsRequired();
@@ -118,7 +118,7 @@ bool Surface::acceptableData() const
       errormsg << "ERROR: data unacceptable.  This surface requires "
 	   << pointsRequired << ", but only " << pointsAvailable
 	   << " were given." << endl;
-      throw bad_data(errormsg.str());
+      throw SurfData::bad_surf_data(errormsg.str());
     }
   }
   return true;
@@ -161,6 +161,10 @@ void Surface::getValue(SurfData& surfData)
   surfData.addResponse(newValues);
 }
 
+void Surface::config(const SurfpackParser::ArgList& arglist)
+{
+
+}
 /// Evaluate the empirical model at the points in surfData and output
 /// the points and their evaluations to os
 //double Surface::test(SurfData& surfData, ostream& os)
@@ -206,7 +210,7 @@ double Surface::press(SurfData& dataSet)
   /// <= test is used because it must be possible to build the surface
   /// even when one point is removed from dataSet
   if (dataSet.size() <= minPointsRequired()) {
-    throw bad_data("Not enough data to compute PRESS.");
+    throw SurfData::bad_surf_data("Not enough data to compute PRESS.");
   } else {
     // If some of the points in the data set are already being excluded,
     // copy all of the non-excluded data points into a new SurfData
@@ -395,7 +399,7 @@ SurfData& Surface::checkData(SurfData* dataSet)
       ostringstream errormsg;
       errormsg << "In Surface::checkData: No data was passed in "
 	       << "and this surface has no data." << endl;
-      throw bad_data(errormsg.str());
+      throw SurfData::bad_surf_data(errormsg.str());
     }
 }
 

@@ -28,7 +28,7 @@ class SurfPoint;
 
 class SurfData
 {
-private:
+public:
 class bad_surf_data : public std::runtime_error
 {
 public:

@@ -48,28 +48,41 @@ Surface* SurfaceFactory::createSurface(const string& filename)
   }
 }
 
-Surface* SurfaceFactory::createSurface(const string& type, SurfData& sd)
+Surface* SurfaceFactory::createSurface(const string& type, SurfData* sd)
 {
-  if (type == "Kriging") {
-    return new KrigingSurface(&sd);
+  if (type == "Polynomial") {
+    return new PolynomialSurface(sd);
+  } else if (type == "Kriging") {
+    return new KrigingSurface(sd);
   } else if (type == "Mars") {
-    return new MarsSurface(&sd);
+    return new MarsSurface(sd);
   } else if (type == "RBFNet") {
-    return new RBFNetSurface(&sd);
+    return new RBFNetSurface(sd);
   } else if (type == "ANN") {
-    return new ANNSurface(&sd);
+    return new ANNSurface(sd);
   } else {
-    cerr << "Unknown surface type: " << type << endl;
-    return 0;
+    ostringstream os;
+    os << "Unknown surface type: " << type; 
+    throw os.str(); 
   }
 }
 
-Surface* SurfaceFactory::createSurface(const string& type, SurfData& sd, unsigned order)
-{
-  if (type == "Polynomial") {
-    return new PolynomialSurface(&sd, order); 
-  } else {
-    cerr << "Unknown surface type: " << type << endl;
-    return 0;
-  }
-}
+//Surface* SurfaceFactory::createSurface(const std::string*, SurfData* sd, 
+//    const SurfpackParser::ArgList& arglist)
+//{ 
+//  //Surface* surf = createSurface(type, sd);
+//  //surf->config(arglist);
+//  //return surf;
+//  return 0;
+//}
+
+//Surface* SurfaceFactory::createSurface(const string& type, SurfData& sd, unsigned order)
+//{
+//  if (type == "Polynomial") {
+//    return new PolynomialSurface(&sd, order); 
+//  } else {
+//    cerr << "Unknown surface type: " << type << endl;
+//    return 0;
+//  }
+//}
+

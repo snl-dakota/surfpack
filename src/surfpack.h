@@ -33,6 +33,7 @@ double sample_sd(std::vector<double>& vals);
 void printVector(const std::string header, std::vector<double>& vec);
 
 namespace surfpack {
+  void writeFile(std::string filename, std::string contents);
   const std::string surfaceName(const std::string filename);
   const std::string readName(std::istream& is, bool binary);
   const unsigned field_width = 26;
@@ -63,6 +64,13 @@ namespace surfpack {
   void writeMatrix(const std::string filename, unsigned* mat, unsigned rows, 
     unsigned columns, bool c_style = false);
 
+  // test functions
+  double testFunction(const std::string name, const std::vector<double>& pt);
+  double simplepoly(const std::vector<double>& pt);
+  double quasisine(const std::vector<double>& pt);
+  double sinewave(const std::vector<double>& pt);
+  double xplussinex(const std::vector<double>& pt);
+  double moderatepoly(const std::vector<double>& pt);
   double rosenbrock(const std::vector<double>& pt);
   double rastrigin(const std::vector<double>& pt);
   double sphere(const std::vector<double>& pt);

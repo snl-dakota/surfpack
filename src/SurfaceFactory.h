@@ -10,11 +10,16 @@
 
 class Surface;
 class SurfData;
+#include <vector>
+#include "SurfpackParser.h"
+
 
 namespace SurfaceFactory {
   Surface* createSurface(const std::string& filename);
-  Surface* createSurface(const std::string& type, SurfData& surfData);
-  Surface* createSurface(const std::string& type, SurfData& surfData, unsigned order);
+  Surface* createSurface(const std::string& type, SurfData* surfData);
+  //Surface* createSurface(const std::string*, SurfData* sd, 
+  //  const SurfpackParser::ArgList& arglist);
+  //Surface* createSurface(const std::string& type, SurfData* surfData, unsigned order);
 }
 
 #endif

@@ -6,6 +6,8 @@ libsurfpack_la_SOURCES = SurfPoint.cpp \
 			SurfData.h \
 			Surface.cpp \
 			Surface.h \
+			PointDefinition.cpp \
+			PointDefinition.h \
 			surfaces/KrigingSurface.cpp \
 			surfaces/KrigingSurface.h \
 			surfaces/MarsSurface.cpp \
@@ -38,10 +40,17 @@ libsurfpack_la_SOURCES = SurfPoint.cpp \
 			ann/utilities.cpp \
 			ann/utilities.h \
 			ann/vector_enhancements.cpp \
-			ann/vector_enhancements.h
+			ann/vector_enhancements.h \
+			interpreter/SurfpackParser.cpp \
+			interpreter/SurfpackParser.h \
+			interpreter/SurfpackInterpreter.cpp \
+			interpreter/SurfpackInterpreter.h \
+			interpreter/surfparse.tab.cpp \
+			interpreter/surfparse.tab.h \
+			interpreter/lex.yy.cpp
 libsurfpack_la_LIBADD =	$(top_builddir)/src/mars/libmars.la \
 			$(top_builddir)/src/kriging/libkriging.la \
 			$(LAPACK_LIBS) $(BLAS_LIBS) $(LIBS) $(FLIBS)
-INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src -I$(top_srcdir)/src/surfaces -I$(top_srcdir)/src/ann
+INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src -I$(top_srcdir)/src/surfaces -I$(top_srcdir)/src/ann -I$(top_srcdir)/src/interpreter
 CLEANFILES = *.bb *.bbg *.da *.gcov *.ii *.s
 		
