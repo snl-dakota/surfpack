@@ -6,12 +6,14 @@
 // End of prepended lines
 
 #include <cmath>
-#include <iostream>
-#include <iomanip>
-#include <sstream>
 #include <fstream>
-#include <vector>
+#include <iomanip>
+#include <iostream>
 #include <set>
+#include <sstream>
+#include <vector>
+
+#include "surfpack.h"
 #include "SurfPoint.h"
 #include "SurfData.h"
 #include "Surface.h"

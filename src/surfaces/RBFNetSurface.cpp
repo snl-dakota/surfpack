@@ -98,7 +98,7 @@ double RBFNetSurface::evaluate(const std::vector<double>& x)
   double result = 0.0;
   double temp;
   for (unsigned i = 0; i < centers.size(); i++) {
-    temp = euclideanDistance(x,centers[i].X());
+    temp = surfpack::euclideanDistance(x,centers[i].X());
     //cout << "dist: " << temp;
     // distance squared
     temp *= temp;
@@ -145,8 +145,8 @@ void RBFNetSurface::build(SurfData& surfData)
   for (unsigned point = 0; point < surfData.size(); point++) {
     for(int centerIndex = 0; centerIndex < numcenters; centerIndex++) 
     {
-      double temp = 
-        euclideanDistance(surfData[point].X(),centers[centerIndex].X());
+      double temp = surfpack::euclideanDistance(surfData[point].X(),
+        centers[centerIndex].X());
       temp *= temp;
       temp /= sizes[centerIndex];
       temp = exp(-temp);
