@@ -72,14 +72,14 @@ if test $acx_blas_ok = no; then
 fi
 
 # BLAS in Sun Performance library?
-if test $acx_blas_ok = no; then
-	if test "x$GCC" != xyes; then # only works with Sun CC
-		AC_CHECK_LIB(sunmath, acosp,
-			[AC_CHECK_LIB(sunperf, $sgemm,
-        			[BLAS_LIBS="-xlic_lib=sunperf -lsunmath"
-                                 acx_blas_ok=yes],[],[-lsunmath])])
-	fi
-fi
+#if test $acx_blas_ok = no; then
+#	if test "x$GCC" != xyes; then # only works with Sun CC
+#		AC_CHECK_LIB(sunmath, acosp,
+#			[AC_CHECK_LIB(sunperf, $sgemm,
+#        			[BLAS_LIBS="-xlic_lib=sunperf -lsunmath"
+#                                 acx_blas_ok=yes],[],[-lsunmath])])
+#	fi
+#fi
 
 # BLAS in SCSL library?  (SGI/Cray Scientific Library)
 if test $acx_blas_ok = no; then
