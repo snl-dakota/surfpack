@@ -10,7 +10,6 @@
 #include "SurfPoint.h"
 #include "SurfData.h"
 #include "Surface.h"
-#include "SurfDataIterator.h"
 #include "ANNSurface.h"
 
 extern "C" void dgels_(char& trans, int& m, int& n, int& nrhs, double* A,

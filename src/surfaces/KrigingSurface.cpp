@@ -12,8 +12,6 @@
 #include "SurfPoint.h"
 #include "SurfData.h"
 #include "Surface.h"
-#include "SkipSurfDataIterator.h"
-#include "SurfDataIterator.h"
 #include "KrigingSurface.h"
 
 

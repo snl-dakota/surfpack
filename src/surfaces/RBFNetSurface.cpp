@@ -8,7 +8,6 @@
 #include "SurfPoint.h"
 #include "SurfData.h"
 #include "Surface.h"
-#include "SurfDataIterator.h"
 #include "RBFNetSurface.h"
 
 extern "C" void dgels_(char& trans, int& m, int& n, int& nrhs, double* A,
