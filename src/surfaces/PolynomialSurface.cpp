@@ -357,9 +357,6 @@ void PolynomialSurface::nextTerm()
 /// Save the surface to a file in binary format
 void PolynomialSurface::writeBinary(ostream& os)
 {
-  unsigned nameSize = name.size();
-  os.write(reinterpret_cast<char*>(&nameSize),sizeof(nameSize));
-  os.write(name.c_str(),nameSize);
   os.write(reinterpret_cast<char*>(&xsize),sizeof(xsize));
   os.write(reinterpret_cast<char*>(&order),sizeof(order));
   for (unsigned i = 0; i < coefficients.size(); i++) {
@@ -371,7 +368,6 @@ void PolynomialSurface::writeBinary(ostream& os)
 void PolynomialSurface::writeText(ostream& os) 
 {
   resetTermCounter();
-  os << name << endl;
   os << xsize << " dimensions" << endl;
   os << order << " order" << endl;
   os.setf(ios::left);
@@ -390,18 +386,6 @@ void PolynomialSurface::writeText(ostream& os)
 /// Load the surface from a file
 void PolynomialSurface::readBinary(istream& is)
 {
-  unsigned nameSize;
-  is.read(reinterpret_cast<char*>(&nameSize),sizeof(nameSize));
-  char* surfaceType = new char[nameSize+1];
-  is.read(surfaceType,nameSize);
-  surfaceType[nameSize] = '\0';
-  string nameInFile(surfaceType);
-  delete [] surfaceType;
-  if (nameInFile != name) {
-    cerr << "Surface name in file is not 'Polynomial'." << endl;
-    cerr << "Cannot build surface." << endl;
-    return;
-  }
   is.read(reinterpret_cast<char*>(&xsize),sizeof(xsize));
   is.read(reinterpret_cast<char*>(&order),sizeof(order));
   coefficients.resize(minPointsRequired());
@@ -416,34 +400,20 @@ void PolynomialSurface::readBinary(istream& is)
 
 void PolynomialSurface::readText(istream& is)
 {
-  const int MAX_CHAR = 2000;
-  char line[MAX_CHAR];
-  // throw away first line; header info only
-  is.getline(line, MAX_CHAR);    
-  string sline(line);
-  istringstream streamline(sline);
-  string nameInFile;
-  streamline >> nameInFile;
-  if (nameInFile != name) {
-    cerr << "Surface name in file is not 'Polynomial'." << endl;
-    cerr << "Cannot build surface." << endl;
-    return;
-  }
   // read in the number of dimensions
-  is.getline(line, MAX_CHAR);   
-  sline = line;
+  string sline;
+  getline(is,sline);   
+  istringstream streamline(sline);
   streamline.str(sline);
   streamline >> xsize; 		 
   // read in the order of the model
-  is.getline(line, MAX_CHAR);   
-  sline = line;
+  getline(is,sline);   
   streamline.str(sline);
   streamline >> order;
   // determine the number of terms that should be in the file
   coefficients.resize(minPointsRequired());
   for (unsigned i = 0; i < coefficients.size(); i++) {
-    is.getline(line, MAX_CHAR);   
-    sline = line;
+    getline(is,sline);   
     streamline.str(sline);
     // read each coefficient; ignore the label, if any, to the right 
     streamline >> coefficients[i];		

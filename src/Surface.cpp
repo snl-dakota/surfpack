@@ -250,7 +250,7 @@ double Surface::rSquared(AbstractSurfDataIterator* itr)
   //cout << "residualSumOfSquares: " << residualSumOfSquares << endl;
   //cout << "rSquared: " << rSquaredValue << endl;
   
-  return rSquaredValue;
+  return (rSquaredValue < 0) ? 0 : rSquaredValue;
 } 
       
 double Surface::sse(AbstractSurfDataIterator* itr)
@@ -335,10 +335,8 @@ void Surface::evaluate(AbstractSurfDataIterator* itr,
 void Surface::write(const string filename)
 {
   bool binary = (filename.find(".txt") != filename.size() - 4);
-  unsigned s = dataItr->elementCount();
-  unsigned xsize = dataItr->xSize();
-  unsigned fsize = dataItr->currentElement().fSize();
   ofstream outfile(filename.c_str(), (binary ? ios::out|ios::binary : ios::out));
+  const string nameOfSurface = surfaceName();
   if (!outfile) {
     cerr << "File named \"" 
          << filename
@@ -346,15 +344,17 @@ void Surface::write(const string filename)
 	 << endl;
     return;
   } else if (binary) {
+    // write out the surface name
+    unsigned nameSize = nameOfSurface.size();
+    outfile.write(reinterpret_cast<char*>(&nameSize),sizeof(nameSize));
+    outfile.write(nameOfSurface.c_str(),nameSize);
+    // write out the surface 'details'
     writeBinary(outfile);
-    outfile.write((char*)&s,sizeof(s));
-    outfile.write((char*)&xsize,sizeof(xsize));
-    outfile.write((char*)&fsize,sizeof(fsize));
   } else {
+    // write out the surface name
+    outfile << nameOfSurface << endl;
+    // write out the surface 'details'
     writeText(outfile);
-    outfile << s << endl
-            << xsize << endl
-	    << fsize << endl;
   }
   writeData(outfile, binary);
   outfile.close();
@@ -371,9 +371,32 @@ void Surface::read(const string filename)
 	 << endl;
     return;
   } else if (binary) {
+    // read surface name
+    unsigned nameSize;
+    infile.read(reinterpret_cast<char*>(&nameSize),sizeof(nameSize));
+    char* surfaceType = new char[nameSize+1];
+    infile.read(surfaceType,nameSize);
+    surfaceType[nameSize] = '\0';
+    string nameInFile(surfaceType);
+    delete [] surfaceType;
+    if (nameInFile != surfaceName()) {
+      cerr << "Surface name in file is not 'Polynomial'." << endl;
+      cerr << "Cannot build surface." << endl;
+      return;
+    }
+    // read the surface details
     readBinary(infile);
   } else {
-    readBinary(infile);
+    // read surface name 
+    string nameInFile;
+    getline(infile,nameInFile);
+    if (nameInFile != surfaceName()) {
+      cerr << "Surface name in file is not 'Polynomial'." << endl;
+      cerr << "Cannot build surface." << endl;
+      return;
+    }
+    // read the surface details
+    readText(infile);
   }
   readData(infile, binary);
   originalData = true;
@@ -395,12 +418,28 @@ void Surface::writeData(std::ostream& os, bool binary)
   if (!dataItr) {
     cerr << "No data to write in Surface::writeData" << endl;
   } else {
+    unsigned s = dataItr->elementCount();
+    unsigned xsize = dataItr->xSize();
+    unsigned fsize = dataItr->currentElement().fSize();
+    // write out header (number of points, dimension, number of responses)
+    if (binary) {
+      os.write((char*)&s,sizeof(s));
+      os.write((char*)&xsize,sizeof(xsize));
+      os.write((char*)&fsize,sizeof(fsize));
+    } else {
+      os << s << endl
+              << xsize << endl
+       	      << fsize << endl;
+    }
+    // write out each point, one at a time
     dataItr->toFront();
     for (unsigned i = 0; i < dataItr->elementCount(); i++) {
       if (binary) {
 	dataItr->currentElement().writeBinary(os);
       } else {
  	dataItr->currentElement().writeText(os);
+	// SurfPoint::writeText does not include newline
+	os << endl;
       }
       dataItr->nextElement();
     }
