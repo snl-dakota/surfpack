@@ -16,20 +16,20 @@
 #include "SurfPoint.h"
 #include "SurfData.h"
 #include "surfpack.h"
-#include "PointDefinition.h"
+#include "AxesBounds.h"
 
 
 
 using namespace std;
 
 
-PointDefinition::PointDefinition(vector<PointDefinition::Axis> axes_) 
+AxesBounds::AxesBounds(vector<AxesBounds::Axis> axes_) 
   : axes(axes_), ndims(axes.size()), point(ndims)
 {
 
 }
 
-PointDefinition::PointDefinition(string filename) 
+AxesBounds::AxesBounds(string filename) 
 //void readInput(istream& is = cin)
 {
     ifstream infile(filename.c_str(), ios::in);
@@ -68,12 +68,12 @@ PointDefinition::PointDefinition(string filename)
     infile.close();
 }    
      
-PointDefinition::~PointDefinition()
+AxesBounds::~AxesBounds()
 {
 
 }
 
-void PointDefinition::initialize()
+void AxesBounds::initialize()
 {
     point.resize(ndims);
     for (int i = 0; i < ndims; i++) {
@@ -81,7 +81,7 @@ void PointDefinition::initialize()
     }
 }
 
-void PointDefinition::nextPoint()
+void AxesBounds::nextPoint()
 {
     int curDim = ndims-1;
     while (axes[curDim].pts == 1 || point[curDim] == (axes[curDim].pts - 1)) {
@@ -115,7 +115,7 @@ void PointDefinition::nextPoint()
 //    //cout << "Number of points: " << npts << endl;
 //}
 
-SurfData* PointDefinition::sampleGrid(const vector<string>& testFunctions) 
+SurfData* AxesBounds::sampleGrid(const vector<string>& testFunctions) 
 {
   initialize();
   surfptx.resize(ndims);
@@ -134,7 +134,7 @@ SurfData* PointDefinition::sampleGrid(const vector<string>& testFunctions)
   return  new SurfData(sps);
 }
 
-SurfData* PointDefinition::sampleMonteCarlo(unsigned numPts, const vector<string>& testFunctions) 
+SurfData* AxesBounds::sampleMonteCarlo(unsigned numPts, const vector<string>& testFunctions) 
 {
   surfptx.resize(ndims);
   vector<SurfPoint> sps;

@@ -11,7 +11,7 @@
 #include "SurfpackParser.h"
 #include "SurfData.h"
 #include "Surface.h"
-#include "PointDefinition.h"
+#include "AxesBounds.h"
 
 
 class SurfpackInterpreter
@@ -33,7 +33,7 @@ public:
   void executeConvertSurface(const SurfpackParser::ParsedCommand& command);
   void executeEvaluate(const SurfpackParser::ParsedCommand& command);
   void executeFitness(const SurfpackParser::ParsedCommand& command);
-  void executePointDefinition(const SurfpackParser::ParsedCommand& command);
+  void executeAxesBounds(const SurfpackParser::ParsedCommand& command);
   void executeGridPoints(const SurfpackParser::ParsedCommand& command);
   void executeMonteCarloSample(const SurfpackParser::ParsedCommand& command);
   
@@ -57,8 +57,8 @@ public:
   typedef std::map<std::string, SurfData*> SurfDataMap;
   typedef std::pair<std::string, Surface*> SurfaceSymbol;
   typedef std::map<std::string, Surface*> SurfaceMap;
-  typedef std::pair<std::string, PointDefinition*> PointDefinitionSymbol;
-  typedef std::map<std::string, PointDefinition*> PointDefinitionMap;
+  typedef std::pair<std::string, AxesBounds*> AxesBoundsSymbol;
+  typedef std::map<std::string, AxesBounds*> AxesBoundsMap;
   
   
 private:
@@ -66,7 +66,7 @@ private:
   {
     SurfDataMap dataVars;
     SurfaceMap surfaceVars;
-    PointDefinitionMap pointDefinitionVars;
+    AxesBoundsMap pointDefinitionVars;
     ~SymbolTable() { 
       for (SurfDataMap::iterator iter = dataVars.begin();
 	    iter != dataVars.end();
@@ -78,7 +78,7 @@ private:
             ++siter) {
         delete siter->second; 
       }
-      for (PointDefinitionMap::iterator pditer = pointDefinitionVars.begin();
+      for (AxesBoundsMap::iterator pditer = pointDefinitionVars.begin();
 	    pditer != pointDefinitionVars.end();
             ++pditer) {
         delete pditer->second; 

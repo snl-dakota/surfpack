@@ -14,7 +14,7 @@ class SurfPoint;
 #include <string>
 
 
-class PointDefinition
+class AxesBounds
 {
 
 public:
@@ -25,9 +25,9 @@ public:
       double interval;
   };
 
-  PointDefinition( std::vector<Axis> axes_);
-  PointDefinition( std::string filename);
-  ~PointDefinition();
+  AxesBounds( std::vector<Axis> axes_);
+  AxesBounds( std::string filename);
+  ~AxesBounds();
   SurfData* sampleGrid(const std::vector<std::string>& testFunctions);
   SurfData* sampleMonteCarlo(unsigned numPts, const std::vector<std::string>& testFunctions);
   //SurfData* populate();

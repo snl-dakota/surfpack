@@ -10,7 +10,7 @@
 #include <set>
 
 #include "surfpack.h"
-#include "PointDefinition.h"
+#include "AxesBounds.h"
 #include "SurfpackParser.h"
 #include "SurfpackInterpreter.h"
 #include "SurfPoint.h"
@@ -64,8 +64,8 @@ void SurfpackInterpreter::commandLoop(std::ostream& os, std::ostream& es)
         executeEvaluate(commands[i]);
       } else if (commands[i].name == "Fitness") {
         executeFitness(commands[i]);
-      } else if (commands[i].name == "PointDefinition") {
-        executePointDefinition(commands[i]);
+      } else if (commands[i].name == "AxesBounds") {
+        executeAxesBounds(commands[i]);
       } else if (commands[i].name == "GridPoints") {
         executeGridPoints(commands[i]);
       } else if (commands[i].name == "MonteCarloSample") {
@@ -366,7 +366,7 @@ void SurfpackInterpreter::executeFitness(const SurfpackParser::ParsedCommand& co
   
 }
   
-void SurfpackInterpreter::executePointDefinition(const SurfpackParser::ParsedCommand& command)
+void SurfpackInterpreter::executeAxesBounds(const SurfpackParser::ParsedCommand& command)
 {
 
   // Extract the variable name for this SurfData object
@@ -386,9 +386,9 @@ void SurfpackInterpreter::executePointDefinition(const SurfpackParser::ParsedCom
   }
 
   // Read the file into a SurfData object and add it to the symbol table
-  PointDefinition* sd = new PointDefinition(filename);
-  symbol_table.pointDefinitionVars.insert(PointDefinitionSymbol(name,sd));
-  //cout << "Executed PointDefinition" << endl;
+  AxesBounds* sd = new AxesBounds(filename);
+  symbol_table.pointDefinitionVars.insert(AxesBoundsSymbol(name,sd));
+  //cout << "Executed AxesBounds" << endl;
 }
 
 void SurfpackInterpreter::executeGridPoints(const SurfpackParser::ParsedCommand& command)
@@ -399,13 +399,13 @@ void SurfpackInterpreter::executeGridPoints(const SurfpackParser::ParsedCommand&
     throw command_error(
       string("No def argument specified."), command.cmdstring);
   }
-  PointDefinitionMap::iterator iter = symbol_table.pointDefinitionVars.find(def);
+  AxesBoundsMap::iterator iter = symbol_table.pointDefinitionVars.find(def);
   if (iter == symbol_table.pointDefinitionVars.end()) {
     throw command_error(
       string("Definition not found in symbol table."), command.cmdstring);
   }
   //cout << "Variable def: " << def << endl;
-  PointDefinition* pd = iter->second;
+  AxesBounds* pd = iter->second;
 
   // Extract the name of the SurfData object (it may already be in the symbol table) 
   string dataName = SurfpackParser::parseOutIdentifier(string("name"), command.arglist);
@@ -440,13 +440,13 @@ void SurfpackInterpreter::executeMonteCarloSample(const SurfpackParser::ParsedCo
     throw command_error(
       string("No def argument specified."), command.cmdstring);
   }
-  PointDefinitionMap::iterator iter = symbol_table.pointDefinitionVars.find(def);
+  AxesBoundsMap::iterator iter = symbol_table.pointDefinitionVars.find(def);
   if (iter == symbol_table.pointDefinitionVars.end()) {
     throw command_error(
       string("Definition not found in symbol table."), command.cmdstring);
   }
   //cout << "Variable def: " << def << endl;
-  PointDefinition* pd = iter->second;
+  AxesBounds* pd = iter->second;
 
   // Extract the name of the SurfData object (it may already be in the symbol table) 
   string name = SurfpackParser::parseOutIdentifier(string("name"), command.arglist);
