@@ -133,26 +133,24 @@ void SurfpackInterpreter::executeSaveData(
     throw command_error(
       string("No data argument specified."), command.cmdstring);
   }
-  //cout << "Variable data: " << data << endl;
+  
   // Extract the name of the file to be written to 
   string filename = SurfpackParser::parseOutStringLiteral(string("file"), command.arglist);
-  //cout << "Filename: " << filename << endl;
   if (filename == "") {
     throw command_error(
       string("No filename specified."), command.cmdstring);
   }
+
+  // Look up the data object in the symbol table
   SurfDataMap::iterator iter = symbol_table.dataVars.find(data);
   if (iter == symbol_table.dataVars.end()) {
-    //cout << "size of datavars: " << symbol_table.dataVars.size();
-    SurfDataSymbol sd = *(symbol_table.dataVars.begin());
-    //cout << "first: " << sd.first << endl;
     throw command_error(
       string("Symbol not found"), command.cmdstring);
   } else {
+    // Data object found in symbol table, write the object to file
     SurfData* sd = iter->second;
     sd->write(filename);
   }
-  //cout << "Executed SaveData" << endl;
 }
 
 void SurfpackInterpreter::executeConvertData(

@@ -52,6 +52,7 @@ protected:
     std::string cmdstring;
   };
 
+public:
   typedef std::pair<std::string, SurfData*> SurfDataSymbol;
   typedef std::map<std::string, SurfData*> SurfDataMap;
   typedef std::pair<std::string, Surface*> SurfaceSymbol;

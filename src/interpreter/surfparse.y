@@ -4,7 +4,7 @@
 #define YYINITDEPTH 400
 #define YYSTYPE double
 int yylex();
-int yyerror(const char* s);
+void yyerror(const char* s);
 
 #include <iostream>
 #include "SurfpackParser.h"
@@ -66,7 +66,7 @@ triplet:	'{' number {parser.addTripletMin();} ','
 	
 %%
 
-int yyerror (const char* s) /* Called by yyparse on error */
+void yyerror (const char* s) /* Called by yyparse on error */
 {
   cout << s << endl;
 }
