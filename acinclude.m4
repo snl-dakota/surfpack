@@ -7,7 +7,7 @@ AC_PREREQ(2.58)
 AC_CACHE_CHECK([for CPPUnit libraries], ac_cv_cxx_cppunit,
 	AC_LANG_SAVE
         mdr_save_CXXFLAGS=$CXXFLAGS
-	CXXFLAGS="-L$SURFPACK/../../lib -I$SURFPACK/../../include -lcppunit"
+	CXXFLAGS="-L$SURFPACK/../../lib -I$SURFPACK/../../include -lcppunit -ldl"
         AC_LANG(C++)
 	AC_LINK_IFELSE(
         	[AC_LANG_PROGRAM(
@@ -26,7 +26,8 @@ if test "$ac_cv_cxx_cppunit" = yes
 then
   echo "ac_cv_cxx_cppunit: " $ac_cv_cxx_cppunit
   echo "CPPUnit found"
-  LIBS="-lcppunit $LIBS"
+  CPPUNIT_LIBS="-lcppunit -ldl"
+  AC_SUBST([CPPUNIT_LIBS])
   AC_DEFINE(HAVE_CPPUNIT,,[define if CPPUnit libraries are available for linking])
 else
   echo "ac_cv_cxx_cppunit: " $ac_cv_cxx_cppunit
@@ -137,6 +138,19 @@ fi
 #	fi
 #fi
 
+if test $acx_blas_ok = no
+then
+    AC_CHECK_LIB([sunmath],[logf],[
+      AC_CHECK_LIB([F77],[etime_],[
+        AC_CHECK_LIB([fsu],[__c_exp],[
+          AC_CHECK_LIB([sunperf],[dgels_],[
+            LAPACK_LIBS="-lsunperf -lfsu -lF77 -lsunmath";acx_blas_ok=yes
+	  ],[],[-lfsu -lF77 -lsunmath $WHOLE_LIB_PATH])
+	],[],[-lF77 -lsunmath $WHOLE_LIB_PATH])
+      ],[],[-lsunmath $WHOLE_LIB_PATH])
+    ],[],[$WHOLE_LIB_PATH])
+fi
+
 # BLAS in SCSL library?  (SGI/Cray Scientific Library)
 if test $acx_blas_ok = no; then
 	AC_CHECK_LIB(scs, $sgemm, [acx_blas_ok=yes; BLAS_LIBS="-lscs"])
@@ -228,6 +242,10 @@ for lapack in lapack lapack_rs6k; do
                 LIBS="$save_LIBS"
         fi
 done
+echo "LAPACK: " $LAPACK_LIBS
+echo "BLAS: " $BLAS_LIBS
+echo "LIBS: " $LIBS
+echo "FLIBS: " $FLIBS
 
 AC_SUBST(LAPACK_LIBS)
 
