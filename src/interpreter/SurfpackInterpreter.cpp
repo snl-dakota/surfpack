@@ -8,12 +8,14 @@
 #include <iostream>
 #include <map>
 #include <set>
+
+#include "surfpack.h"
 #include "PointDefinition.h"
 #include "SurfpackParser.h"
 #include "SurfpackInterpreter.h"
-#include "Surface.h"
-#include "SurfData.h"
 #include "SurfPoint.h"
+#include "SurfData.h"
+#include "Surface.h"
 #include "SurfaceFactory.h"
 
 using namespace std;

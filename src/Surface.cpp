@@ -123,10 +123,10 @@ double Surface::getValue(const SurfPoint& sp)
 /// Evaluate the approximation surface at each point in the parameter
 /// SurfData object.  In the ErrorStruct list, store the expected value (as
 /// returned by sd.getResponse()) and the estimated value.
-void Surface::getValue(SurfData& sd, std::vector<ErrorStruct>& pts)
+void Surface::getValue(SurfData& sd, std::vector<surfpack::ErrorStruct>& pts)
 {
   for (unsigned i = 0; i < sd.size(); i++) {
-    ErrorStruct es;
+    surfpack::ErrorStruct es;
     es.estimated = getValue(sd[i].X());
     es.observed = sd.getResponse(i);
     pts.push_back(es);
@@ -293,7 +293,7 @@ double Surface::rSquared(SurfData& dataSet)
 /// defaultIndex is interpreted as the true function value.
 double Surface::sse(SurfData& dataSet)
 {
-  vector<ErrorStruct> results;
+  vector<surfpack::ErrorStruct> results;
   getValue(dataSet,results);
   double sse = 0.0;
   for (unsigned i = 0; i < results.size(); i++) {
@@ -316,7 +316,7 @@ double Surface::mse(SurfData& dataSet)
 /// function value.
 double Surface::mrae(SurfData& dataSet)
 {
-  vector<ErrorStruct> results;
+  vector<surfpack::ErrorStruct> results;
   vector<double> trueVals(dataSet.size());
   getValue(dataSet,results);
   double max = abs(results[0].observed - results[0].estimated);
@@ -327,7 +327,7 @@ double Surface::mrae(SurfData& dataSet)
     if (curr > max) max = curr;
   }
   
-  return max / sample_sd(trueVals);
+  return max / surfpack::sample_sd(trueVals);
 }
 
 // ____________________________________________________________________________

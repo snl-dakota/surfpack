@@ -10,7 +10,7 @@
 
 class SurfPoint;
 class SurfData;
-struct ErrorStruct;
+struct surfpack::ErrorStruct;
 
 /// \todo Eliminate the dependency on SurfpackParser.h in Surface.h
 #include "SurfpackParser.h"
@@ -20,6 +20,15 @@ struct ErrorStruct;
 /// Each algorithm produces a function approximation given a set of data.  Some
 /// algorithms may have options that can be configured by the user.  Each 
 /// concrete Surface child class must implement the following methods:
+/// 1) Surface* makeSimilarWithNewData(SurfData* sd_);
+/// 2) const std::string surfaceName() const;
+/// 3) unsigned minPointsRequired() const;
+/// 4) double evaluate(const std::vector<double>& x);
+/// 5) void build(SurfData& data);
+/// 6) void writeBinary(std::ostream& os);
+/// 7) void writeText(std::ostream& os);
+/// 8) void readBinary(std::ostream& os);
+/// 9) void readText(std::ostream& os);
 /// \todo One way to allow for "weighting" of data points is to allow one of
 /// the response variables in the data set to serve as the weights.  Add a data
 /// member to the Surface class that stores the index to the column of weights.
@@ -57,8 +66,8 @@ public:
   /// be replaced with the data passed in, but all other attributes should
   /// be the same (e.g., a second-order polynomial should return another 
   /// second-order polynomial).  Surfaces returned by this method can be used
-  /// to compute the PRESS statistic.
-  virtual Surface* makeSimilarWithNewData(SurfData* sd_)=0;
+  /// to compute the PRESS statistic
+  virtual Surface* makeSimilarWithNewData(SurfData* sd_) = 0;
 
 // ____________________________________________________________________________
 // Queries 
@@ -104,7 +113,7 @@ public:
   /// Evaluate the approximation surface at each point in the parameter
   /// SurfData object.  In the ErrorStruct list, store the expected value (as
   /// returned by sd.getResponse()) and the estimated value.
-  virtual void getValue(SurfData& sd, std::vector<ErrorStruct>& pts);
+  virtual void getValue(SurfData& sd, std::vector<surfpack::ErrorStruct>& pts);
   
   /// Return the value of some error metric
   virtual double goodnessOfFit(const std::string metricName, 
@@ -155,7 +164,9 @@ public:
   /// the parameter dataSet and member sd are NULL, throw an exception.  This
   /// method is primarily used with the fitness metrics that can be set to use
   /// by default the data that the approximation was created with but can also
-  /// use another set of data provided by the client.
+  /// use another set of data provided by the client
+
+  /// Short summary
   virtual SurfData& checkData(SurfData* dataSet);
 
   /// Invoked by data member sd when the data changes 
@@ -174,14 +185,6 @@ public:
 
   /// Process a list of configuration options
   virtual void configList(const SurfpackParser::ArgList& arglist);
-
-// ____________________________________________________________________________
-// Helper methods 
-// ____________________________________________________________________________
-protected:  
-  /// Return true if filename has .srf extension, false if filename has .txt
-  /// extension.  If neither, throw surfpack::io_exception.
-  bool testFileExtension(const std::string& filename) const;
 
 // ____________________________________________________________________________
 // I/O 
@@ -206,6 +209,11 @@ public:
 
   /// Read the surface in text format
   virtual void readText(std::istream& is) = 0; 
+
+  /// Return true if filename has .srf extension, false if filename has .txt
+  /// extension.  If neither, throw surfpack::io_exception.
+  bool testFileExtension(const std::string& filename) const;
+
 
 // ____________________________________________________________________________
 // Data members 

@@ -8,36 +8,24 @@
 #ifndef __SURFPACK_H__
 #define __SURFPACK_H__
 
+#include <stdexcept>
 #include <string>
 #include <vector>
-#include <stdexcept>
-
-struct ErrorStruct {
-  double observed;
-  double estimated;
-};
 
 //class AbstractSurfDataIterator;
 class Surface;
 class SurfData;
 
-
-double euclideanDistance(const std::vector<double>& pt1, const std::vector<double>& pt2);
-void vectorDifference(std::vector<double>& diff, const std::vector<double>& pt1,
-  const std::vector<double>& pt2);
-
-double mean(std::vector<double>& vals);
-double sample_var(std::vector<double>& vals);
-double sample_sd(std::vector<double>& vals);
-
-void printVector(const std::string header, std::vector<double>& vec);
-
 namespace surfpack {
-  void writeFile(std::string filename, std::string contents);
-  const std::string surfaceName(const std::string filename);
-  const std::string readName(std::istream& is, bool binary);
-  const unsigned field_width = 26;
-  const unsigned output_precision = 17;
+
+
+// ____________________________________________________________________________
+// Nested Types 
+// ____________________________________________________________________________
+  struct ErrorStruct {
+    double observed;
+    double estimated;
+  };
 
   class file_open_failure: public std::runtime_error
   {
@@ -52,6 +40,10 @@ namespace surfpack {
     io_exception(const std::string& msg = "") : std::runtime_error(msg) {}
   };
   
+// ____________________________________________________________________________
+// I/O 
+// ____________________________________________________________________________
+
   /// Make sure eof has not been reached unexpectedly
   void checkForEOF(std::istream& is);
   
@@ -63,7 +55,20 @@ namespace surfpack {
     unsigned columns, bool c_style = false);
   void writeMatrix(const std::string filename, unsigned* mat, unsigned rows, 
     unsigned columns, bool c_style = false);
+  bool hasExtension(const std::string& filename, const std::string extension);
 
+  void printVector(const std::string header, std::vector<double>& vec);
+
+  void writeFile(std::string filename, std::string contents);
+  const std::string surfaceName(const std::string filename);
+  const std::string readName(std::istream& is, bool binary);
+  const unsigned field_width = 26;
+  const unsigned output_precision = 17;
+
+
+// ____________________________________________________________________________
+// Testing 
+// ____________________________________________________________________________
   // test functions
   double testFunction(const std::string name, const std::vector<double>& pt);
   double simplepoly(const std::vector<double>& pt);
@@ -75,7 +80,25 @@ namespace surfpack {
   double rastrigin(const std::vector<double>& pt);
   double sphere(const std::vector<double>& pt);
   double sumofall(const std::vector<double>& pt);
-  bool hasExtension(const std::string& filename, const std::string extension);
-} // namespace surfpack
 
+// ____________________________________________________________________________
+// Vector helper methods 
+// ____________________________________________________________________________
+
+  /// Return the arithmetic mean (average) of the values in vector vals
+  double mean(std::vector<double>& vals);
+
+  /// Return the sample variance of the values in vals
+  double sample_var(std::vector<double>& vals);
+  
+  /// Return the sample standard deviation of the values in vals
+  double sample_sd(std::vector<double>& vals);
+  
+  /// Return the euclidean distance between pt1 and pt2
+  double euclideanDistance(const std::vector<double>& pt1, 
+    const std::vector<double>& pt2);
+  void vectorDifference(std::vector<double>& diff, 
+    const std::vector<double>& pt1, const std::vector<double>& pt2);
+  
+} // namespace surfpack
 #endif
