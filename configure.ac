@@ -20,7 +20,12 @@ AC_PROG_CXX([CC cxx xlC g++ c++ gcc])
 
 AC_LANG_CPLUSPLUS
 ACX_LAPACK
-WHOLE_LIB_PATH=`echo $LD_LIBRARY_PATH | sed -e 's/^/-L/;s/:/ -L/g'`
+if test -n $LD_LIBRARY_PATH
+then 
+  WHOLE_LIB_PATH=`echo $LD_LIBRARY_PATH | sed -e 's/^/-L/;s/:/ -L/g'`
+else
+  WHOLE_LIB_PATH=
+fi
 #Check for linear algebra libraries needed on the AIX
 #AC_CHECK_LIB([essl], [dgels_])
 #
