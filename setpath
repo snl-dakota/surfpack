@@ -2,3 +2,7 @@
 SURFPACK=`pwd`; export SURFPACK
 PATH="$SURFPACK/../../bin:$PATH"; export PATH 
 M4="$SURFPACK/../../bin/m4"; export M4 
+if test -n $LD_LIBRARY_PATH
+then
+  LD_LIBRARY_PATH="$SURFPACK/../../lib:$SURFPACK"
+fi

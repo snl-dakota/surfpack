@@ -11,14 +11,17 @@ AC_CONFIG_SRCDIR([src/Surface.cpp])
 # Checks for programs.
 #AC_PROG_AWK
 AC_PROG_F77([xlf f77 g77])
+AC_PROG_CXX([CC cxx xlC g++ c++ gcc])
 if test "$F77" = "f77"
 then
-  echo "Compiling fortran 77 with f77"
-  FFLAGS="-g -O2 -fpe3"
+  if test "$CXX" = "cxx"
+  then
+    echo "Compiling fortran 77 with f77"
+    FFLAGS="-g -O2 -fpe3"
+  fi 
 fi
 MDR_C2F77_UNDERSCORE
 
-AC_PROG_CXX([CC cxx xlC g++ c++ gcc])
 #AC_CXX_NAMESPACES
 #AC_CXX_HAVE_STL
 #AC_CXX_BOOL

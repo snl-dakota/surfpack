@@ -36,17 +36,25 @@ AM_CONDITIONAL(INCLUDE_TESTS, test "$ac_cv_cxx_cppunit" = yes)
 ])	
 
 AC_DEFUN([MDR_CPPUNIT_MAKEFILE],
-[if test "$ac_cv_cxx_cppunit" = yes
+[AC_CACHE_CHECK(whether CPPUnit tests should be included, ac_cv_cxx_cppunit, [])
+if test "$ac_cv_cxx_cppunit" = yes
 then
      AC_CONFIG_FILES([$1])
 fi])
 
 AC_DEFUN([MDR_C2F77_UNDERSCORE],
-  [ AC_F77_FUNC([func1])
+  [AC_CACHE_CHECK(whether calls to fortran from C/C++ require trailing underscore, ac_cv_add_underscore,
+    [AC_F77_FUNC([func1])
     if test "$func1" = "func1_" 
     then
+      ac_cv_add_underscore=yes
+    else
+      ac_cv_add_underscore=no
+    fi])
+  if test "$ac_cv_add_underscore" = "yes"
+  then 
       AC_DEFINE([C2F77_CALLS_NEED_UNDERSCORE],[],["Define if function calls from C/C++ to F77 need a trailing underscore"])
-    fi
+  fi
   ])
 
 AC_DEFUN([ACX_BLAS], [
@@ -144,8 +152,9 @@ fi
 if test $acx_blas_ok = no; then
 	AC_CHECK_LIB(blas, $sgemm,
 		[AC_CHECK_LIB(essl, $sgemm,
-			[mdr_essl=yes; acx_blas_ok=yes; BLAS_LIBS="-lessl -lblas"],
-			[], [-lblas $FLIBS])])
+			[mdr_essl=yes; echo "mdr_essl = yes";
+			 acx_blas_ok=yes; BLAS_LIBS="-lessl -lblas"],
+			[mdr_essl=no; echo "mdr_essl = no"], [-lblas $FLIBS])])
 fi
 
 # Generic BLAS library?
@@ -153,7 +162,7 @@ if test $acx_blas_ok = no; then
 	AC_CHECK_LIB(blas, $sgemm, [acx_blas_ok=yes; BLAS_LIBS="-lblas"])
 fi
 
-AM_CONDITIONAL([NEEDS_EXTRA_LAPACK_ROUTINES], [test "$mdr_essl"=yes])
+AM_CONDITIONAL([NEEDS_EXTRA_LAPACK_ROUTINES], [test "$mdr_essl" = "yes"])
 AC_SUBST(BLAS_LIBS)
 
 LIBS="$acx_blas_save_LIBS"

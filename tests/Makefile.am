@@ -4,18 +4,11 @@ srftest_SOURCES = SurfPointTest.h \
 		SurfPointTest.cpp \
 		SurfDataTest.h \
 		SurfDataTest.cpp \
-		PolynomialSurfaceTest.h \
-		PolynomialSurfaceTest.cpp \
 		unittests.h \
 		unittests.cpp \
 		srftestmain.cpp 
 srftest_CXXFLAGS = $(CPPUNIT_CFLAGS)
 #srftest_LDFLAGS = -L$(HOME)/local/lib -L../src
-srftest_LDADD = $(top_builddir)/src/libsurfpack.la \
-		 $(top_builddir)/src/mars/libmars.la \
-		 $(top_builddir)/src/kriging/libkriging.la \
-		 $(top_builddir)/src/conmin/libconmin.la \
-		 -lcppunit -ldl \
-		 $(LAPACK_LIBS) $(BLAS_LIBS) $(LIBS) $(FLIBS)
+srftest_LDADD = $(top_builddir)/src/libsurfpack.la 
 INCLUDES = -I$(top_srcdir)/src -I$(top_srcdir)/src/surfaces 
 CLEANFILES = *.bb *.bbg *.da *.gcov *.ii *.s writePoint.sp writePoint.txt
