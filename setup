@@ -40,7 +40,7 @@ do
   then
     echo $preface $untarreddir
     cd "$untarreddir"
-    ./configure --prefix="$HOME/SolarisBuild"
+    ./configure --prefix="$SURFPACK/../.."
     make
     make install
     cd ..
@@ -50,7 +50,7 @@ done
 echo installed tools
 
 # apply the patch to cppunit.m4
-needspatch="$HOME/SolarisBuild/share/aclocal/cppunit.m4"
+needspatch="$SURFPACK/../../share/aclocal/cppunit.m4"
 if test -f "$needspatch"
 then
   patch "$needspatch" "$SURFPACK/toolsrc/cppunitpatch"

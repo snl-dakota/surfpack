@@ -258,7 +258,7 @@ void RBFNetSurface::writeBinary(std::ostream& os)
 
 void RBFNetSurface::writeText(std::ostream& os)
 {
-  std::_Ios_Fmtflags old_flags = os.flags();
+  long old_flags = os.flags();
   unsigned old_precision = os.precision(surfpack::output_precision);
   os.setf(ios::scientific);
   os << centers.size() << " Number of centers" << endl

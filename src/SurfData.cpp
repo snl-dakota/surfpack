@@ -24,6 +24,7 @@
 #include <iomanip>
 #include <sstream>
 #include <fstream>
+#include <cassert>
 
 #include "surfpack.h"
 #include "SurfData.h"
