@@ -18,6 +18,7 @@ void yyerror(const char* s);
 
 #include <iostream>
 #include "SurfpackParser.h"
+#include "config.h"
 #define parser SurfpackParser::instance()
 using namespace std;
 
@@ -95,9 +96,9 @@ static const short yyrhs[] =
 /* YYRLINE[YYN] -- source line where rule number YYN was defined. */
 static const short yyrline[] =
 {
-       0,    24,    25,    28,    28,    31,    34,    35,    38,    38,
-      41,    42,    43,    44,    45,    46,    47,    50,    50,    53,
-      54,    57,    58,    58,    61,    61,    61,    61
+       0,    25,    26,    29,    29,    32,    35,    36,    39,    39,
+      42,    43,    44,    45,    46,    47,    48,    51,    51,    54,
+      55,    58,    59,    59,    62,    62,    62,    62
 };
 #endif
 
@@ -891,55 +892,55 @@ yyreduce:
   switch (yyn) {
 
 case 3:
-#line 28 "surfparse.y"
+#line 29 "surfparse.y"
 {parser.addCommandName();;
     break;}
 case 4:
-#line 28 "surfparse.y"
+#line 29 "surfparse.y"
 {parser.storeCommandString();;
     break;}
 case 8:
-#line 38 "surfparse.y"
+#line 39 "surfparse.y"
 {parser.addArgName();;
     break;}
 case 10:
-#line 41 "surfparse.y"
+#line 42 "surfparse.y"
 {parser.addArgValIdent();
     break;}
 case 11:
-#line 42 "surfparse.y"
+#line 43 "surfparse.y"
 {parser.addArgValInt();
     break;}
 case 12:
-#line 43 "surfparse.y"
+#line 44 "surfparse.y"
 {parser.addArgValString();
     break;}
 case 13:
-#line 44 "surfparse.y"
+#line 45 "surfparse.y"
 {parser.addArgValReal();
     break;}
 case 16:
-#line 47 "surfparse.y"
+#line 48 "surfparse.y"
 {parser.addArgValArgList();
     break;}
 case 17:
-#line 50 "surfparse.y"
+#line 51 "surfparse.y"
 {parser.addTupleVal();;
     break;}
 case 22:
-#line 58 "surfparse.y"
+#line 59 "surfparse.y"
 {parser.addTupleVal();;
     break;}
 case 24:
-#line 61 "surfparse.y"
+#line 62 "surfparse.y"
 {parser.addTripletMin();;
     break;}
 case 25:
-#line 62 "surfparse.y"
+#line 63 "surfparse.y"
 {parser.addTripletMax();;
     break;}
 case 26:
-#line 63 "surfparse.y"
+#line 64 "surfparse.y"
 {parser.addTripletNumPts();;
     break;}
 }
@@ -1175,7 +1176,7 @@ yyreturn:
 #endif
   return yyresult;
 }
-#line 67 "surfparse.y"
+#line 68 "surfparse.y"
 
 
 void yyerror (const char* s) /* Called by yyparse on error */

@@ -422,12 +422,13 @@ static yyconst short int yy_chk[238] =
 #define INITIAL 0
 /* lexical analyzer for Surfpack */
 #line 3 "lexer.lex"
+	#include "config.h"
 	#include <iostream>
 	#include "surfparse.tab.h"
 	#include <sstream>
 	using namespace std;
         ostringstream cmdstream;
-#line 431 "lex.yy.cc"
+#line 432 "lex.yy.cc"
 
 /* Macros after this point can all be overridden by user definitions in
  * section 1.
@@ -554,9 +555,9 @@ YY_DECL
 	register char *yy_cp = NULL, *yy_bp = NULL;
 	register int yy_act;
 
-#line 9 "lexer.lex"
+#line 10 "lexer.lex"
 
-#line 560 "lex.yy.cc"
+#line 561 "lex.yy.cc"
 
 	if ( yy_init )
 		{
@@ -640,123 +641,123 @@ do_action:	/* This label is used only to access EOF actions. */
 			goto yy_find_action;
 
 case 1:
-#line 11 "lexer.lex"
-case 2:
 #line 12 "lexer.lex"
-case 3:
+case 2:
 #line 13 "lexer.lex"
-case 4:
+case 3:
 #line 14 "lexer.lex"
-case 5:
+case 4:
 #line 15 "lexer.lex"
-case 6:
+case 5:
 #line 16 "lexer.lex"
-case 7:
+case 6:
 #line 17 "lexer.lex"
-case 8:
+case 7:
 #line 18 "lexer.lex"
-case 9:
+case 8:
 #line 19 "lexer.lex"
-case 10:
+case 9:
 #line 20 "lexer.lex"
-case 11:
+case 10:
 #line 21 "lexer.lex"
+case 11:
+#line 22 "lexer.lex"
 case 12:
 YY_RULE_SETUP
-#line 21 "lexer.lex"
+#line 22 "lexer.lex"
 { /*cmdstream << yytext; cout << "Keyword: " << yytext << endl;*/ return STANDARD_COMMAND; }
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 22 "lexer.lex"
+#line 23 "lexer.lex"
 { /*cmdstream << yytext; cout << "Identifier: " << yytext << endl;*/ return IDENTIFIER;}
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 23 "lexer.lex"
+#line 24 "lexer.lex"
 { /*cmdstream << yytext; cout << "StringLiteral: " << yytext << endl;*/ return STRING; }
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 24 "lexer.lex"
+#line 25 "lexer.lex"
 { /*cmdstream << yytext; cout << "Comment: " << yytext << endl;*/ }
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 25 "lexer.lex"
+#line 26 "lexer.lex"
 { /*cmdstream << yytext; cout << "ShellCommand: " << yytext << endl;*/ } 
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 26 "lexer.lex"
+#line 27 "lexer.lex"
 { /*cmdstream << yytext; cout << "Integer: " << yytext << endl;*/ return INTEGER;}
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 27 "lexer.lex"
+#line 28 "lexer.lex"
 { /*cmdstream << yytext; cout << "Real: " << yytext << endl;*/ return REAL;}
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 28 "lexer.lex"
+#line 29 "lexer.lex"
 { /*cmdstream << yytext; cout << "Punctuation: " << yytext << endl;*/ return '('; }
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 29 "lexer.lex"
+#line 30 "lexer.lex"
 { /*cmdstream << yytext; cout << "Punctuation: " << yytext << endl;*/ return ')'; }
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 30 "lexer.lex"
+#line 31 "lexer.lex"
 { /*cmdstream << yytext; cout << "Punctuation: " << yytext << endl;*/ return '{'; }
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 31 "lexer.lex"
+#line 32 "lexer.lex"
 { /*cmdstream << yytext; cout << "Punctuation: " << yytext << endl;*/ return '}'; }
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 32 "lexer.lex"
+#line 33 "lexer.lex"
 { /*cmdstream << yytext; cout << "Punctuation: " << yytext << endl;*/ return ','; }
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
-#line 33 "lexer.lex"
+#line 34 "lexer.lex"
 { /*cmdstream << yytext; cout << "Punctuation: " << yytext << endl;*/ return '='; }
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
-#line 34 "lexer.lex"
+#line 35 "lexer.lex"
 { /*cmdstream << yytext; cout << "LeftBracket: " << yytext << endl;*/ return '['; }
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
-#line 35 "lexer.lex"
+#line 36 "lexer.lex"
 { /*cmdstream << yytext; cout << "RightBracket: " << yytext << endl;*/ return ']'; }
 	YY_BREAK
 case 27:
 YY_RULE_SETUP
-#line 36 "lexer.lex"
+#line 37 "lexer.lex"
 { cmdstream << yytext;}
 	YY_BREAK
 case 28:
 YY_RULE_SETUP
-#line 37 "lexer.lex"
+#line 38 "lexer.lex"
 
 	YY_BREAK
 case 29:
 YY_RULE_SETUP
-#line 38 "lexer.lex"
+#line 39 "lexer.lex"
 { /*cmdstream << yytext; cout << "Unrecognized: " << yytext << endl;*/ }
 	YY_BREAK
 case 30:
 YY_RULE_SETUP
-#line 40 "lexer.lex"
+#line 41 "lexer.lex"
 ECHO;
 	YY_BREAK
-#line 760 "lex.yy.cc"
+#line 761 "lex.yy.cc"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -1561,4 +1562,4 @@ int main()
 	return 0;
 	}
 #endif
-#line 40 "lexer.lex"
+#line 41 "lexer.lex"

@@ -1,5 +1,6 @@
 /* lexical analyzer for Surfpack */
 %{
+	#include "config.h"
 	#include <iostream>
 	#include "surfparse.tab.h"
 	#include <sstream>

@@ -8,6 +8,7 @@ void yyerror(const char* s);
 
 #include <iostream>
 #include "SurfpackParser.h"
+#include "config.h"
 #define parser SurfpackParser::instance()
 using namespace std;
 
