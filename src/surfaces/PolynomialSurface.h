@@ -18,7 +18,7 @@
 #include <vector>
 #include <string>
 
-#include "AbstractSurfDataIterator.h"
+//#include "AbstractSurfDataIterator.h"
 #include "SurfException.h"
 #include "SurfPoint.h"
 #include "Surface.h"
@@ -32,12 +32,19 @@ class PolynomialSurface : public Surface
 
 public:
   
-  PolynomialSurface(SurfData& sd, unsigned order, unsigned responseIndex = 0);
-  PolynomialSurface(AbstractSurfDataIterator* dataItr, unsigned order);
+  PolynomialSurface(SurfData* sd, unsigned order);
   PolynomialSurface(unsigned xsize, unsigned order, 
     std::vector<double> coefficients);
   PolynomialSurface(const std::string filename);
-  //PolynomialSurface(const PolynomialSurface&);
+  PolynomialSurface(const PolynomialSurface& other);
+  
+  /// Create a surface of the same type as 'this.'  This objects data should
+  /// be replaced with the dataItr passed in, but all other attributes should
+  /// be the same (e.g., a second-order polynomial should return another 
+  /// second-order polynomial.  Surfaces returned by this method can be used
+  /// to compute the PRESS statistic.
+  virtual PolynomialSurface* makeSimilarWithNewData(SurfData* surfData);
+ 
   virtual ~PolynomialSurface(); 
 
 private:
@@ -62,15 +69,8 @@ public:
 // Commands 
 // ____________________________________________________________________________
 
-  virtual void build();
+  virtual void build(SurfData& data);
 
-  /// Create a surface of the same type as 'this.'  This objects data should
-  /// be replaced with the dataItr passed in, but all other attributes should
-  /// be the same (e.g., a second-order polynomial should return another 
-  /// second-order polynomial.  Surfaces returned by this method can be used
-  /// to compute the PRESS statistic.
-  virtual PolynomialSurface* makeSimilarWithNewData
-    (AbstractSurfDataIterator* dataItr);
 
 // ____________________________________________________________________________
 // Helper methods 
@@ -87,9 +87,7 @@ public:
 
 protected:
   static const std::string name;
-  unsigned xsize;
   unsigned order;
-  
   std::vector<double> coefficients;
   std::vector<unsigned> digits;
   unsigned termIndex;

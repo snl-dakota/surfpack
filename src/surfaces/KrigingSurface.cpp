@@ -5,6 +5,7 @@
 #include <sstream>
 #include <iomanip>
 #include <vector>
+#include <set>
 #include <string>
 
 #include "surfpack.h"
@@ -52,24 +53,13 @@ const string KrigingSurface::name = "Kriging";
 // Creation, Destruction, Initialization
 //_____________________________________________________________________________
 
-KrigingSurface::KrigingSurface(AbstractSurfDataIterator* dataItr) 
-  : Surface(dataItr), needsCleanup(false), runConminFlag(true)
-{
-
-#ifdef __TESTING_MODE__
-  constructCount++;
-#endif
-  build();
-}
-KrigingSurface::KrigingSurface(SurfData& sd, unsigned responseIndex)
-  : Surface(0), needsCleanup(false), runConminFlag(true)
+KrigingSurface::KrigingSurface(SurfData* sd)
+  : Surface(sd), needsCleanup(false), runConminFlag(true)
 {
 #ifdef __TESTING_MODE__
   constructCount++;
 #endif
-  dataItr = new SurfDataIterator(sd, responseIndex);
   numdv = numsamp = 0;
-  build();
 }
 
 KrigingSurface::KrigingSurface(const string filename) : Surface(0)
@@ -205,7 +195,7 @@ void KrigingSurface::initialize()
     conminThetaUpperBnds[i] =  DBL_MAX;
   }
   for (i=0;i<numdv;i++) {
-    conminThetaVars[i]      = 1.0e+1 ;
+    conminThetaVars[i]      = 4.0e+1 ;
     conminThetaLowerBnds[i] = 1.e-3; 
     conminThetaUpperBnds[i] = 1.e+16; 
   }
@@ -273,7 +263,12 @@ unsigned KrigingSurface::minPointsRequired(unsigned xsize)
 
 unsigned KrigingSurface::minPointsRequired() const
 { 
-  return dataItr->xSize(); 
+  if (sd) {
+    return sd->xSize(); 
+  } else {
+    cerr << "Cannot compute minPointsRequired without data" << endl;
+    return INT_MAX;
+  }
 }
 
 double KrigingSurface::evaluate(const std::vector<double>& x)
@@ -320,7 +315,7 @@ void KrigingSurface::usePreComputedCorrelationVector(std::vector<double> vals)
   }
 }
 
-void KrigingSurface::build()
+void KrigingSurface::build(SurfData& data)
 {
   double* saveTheta;
 
@@ -328,32 +323,26 @@ void KrigingSurface::build()
   // initialize
   // this could be cleaner
 
-  if (!acceptableData())
-  {
-    cerr << "Unacceptable data.  Cannot build Kriging surface." << endl;
-  } else {
-    numdv = dataItr->xSize();
-    numsamp = dataItr->elementCount();
-    
-if (!runConminFlag) {
-      saveTheta = new double[numdv];
-      memcpy(saveTheta,thetaVector,sizeof(double)*numdv);
-    }
-
-    if (needsCleanup) {
-      cleanup();
-    }
-    initialize();
-
-    if (!runConminFlag) {
-      memcpy(thetaVector,saveTheta,sizeof(double)*numdv);
-      delete saveTheta;
-      saveTheta = 0;
-    }
-    buildModel();
-    valid = true;
-    originalData = true;
+  numdv = data.xSize();
+  numsamp = data.size();
+  
+  if (!runConminFlag) {
+    saveTheta = new double[numdv];
+    memcpy(saveTheta,thetaVector,sizeof(double)*numdv);
   }
+
+  if (needsCleanup) {
+    cleanup();
+  }
+  initialize();
+
+  if (!runConminFlag) {
+    memcpy(thetaVector,saveTheta,sizeof(double)*numdv);
+    delete saveTheta;
+    saveTheta = 0;
+  }
+  buildModel(data);
+  originalData = true;
 }
 
 /// Create a surface of the same type as 'this.'  This objects data should
@@ -361,10 +350,9 @@ if (!runConminFlag) {
 /// be the same (e.g., a second-order polynomial should return another 
 /// second-order polynomial.  Surfaces returned by this method can be used
 /// to compute the PRESS statistic.
-KrigingSurface* KrigingSurface::makeSimilarWithNewData
-  (AbstractSurfDataIterator* dataItr)
+KrigingSurface* KrigingSurface::makeSimilarWithNewData(SurfData* surfData)
 {
-  return new KrigingSurface(dataItr);
+  return new KrigingSurface(surfData);
 }
 //_____________________________________________________________________________
 // I/O 
@@ -436,7 +424,6 @@ void KrigingSurface::readBinary(istream& is)
   for(i=0;i<numdv;i++) { 
     is.read(reinterpret_cast<char*>(&thetaVector[i]),sizeof(thetaVector[i]));
   }
-  valid = true;
   originalData = false;
 }
 
@@ -470,7 +457,6 @@ void KrigingSurface::readText(istream& is)
     getline(is,sline); streamline.str(sline);
     streamline >> thetaVector[i];
   }
-  valid = true;
   originalData = false;
 
 }
@@ -597,20 +583,15 @@ void KrigingSurface::printConminVariables(ostream& os)
 // Helper methods 
 //_____________________________________________________________________________
 
-void KrigingSurface::buildModel()
+void KrigingSurface::buildModel(SurfData& data)
 {
-  dim = static_cast<int>(dataItr->xSize());
-  pts = static_cast<int>(dataItr->elementCount());
-  unsigned i = 0;
-  dataItr->toFront();
-  while (!dataItr->isEnd()) {
-    SurfPoint& current = dataItr->currentElement();
+  dim = static_cast<int>(data.xSize());
+  pts = static_cast<int>(data.size());
+  for (unsigned i = 0; i < data.size(); i++) {
     for (int j = 0; j < dim; j++) {
-       xMatrix[j*pts+i] = current.X()[j];
+       xMatrix[j*pts+i] = data[i].X()[j];
     }
-    yValueVector[i] = current.F(dataItr->responseIndex());
-    dataItr->nextElement();
-    i++;
+    yValueVector[i] = data.getResponse(i);
   } 
   if (runConminFlag) {
     // call to F77 driver code that runs CONMIN and the kriging software

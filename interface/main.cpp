@@ -4,6 +4,7 @@
 #include <iomanip>
 #include <string>
 #include <vector>
+#include <set>
 #include <cmath>
 #include <string>
 #include <ctime>
@@ -12,10 +13,10 @@
 #include "SurfPoint.h"
 #include "SurfData.h"
 #include "Surface.h"
-#include "SurfDataIterator.h"
+//#include "SurfDataIterator.h"
 #include "PolynomialSurface.h"
-#include "KrigingSurface.h"
-#include "MarsSurface.h"
+//#include "KrigingSurface.h"
+//#include "MarsSurface.h"
 #include "surfpack.h"
 //#include "ANNSurface.h"
 //#include "ParticleSwarmMLP.h"
@@ -119,11 +120,11 @@ void populateSurfData(SurfData* surfData, string filename, Surface* surface=0)
     //cout << "Number of points: " << npts << endl;
 }
 
-SurfData* pointSpecToSurfData(string filename) {
+SurfData pointSpecToSurfData(string filename) {
   ifstream infile(filename.c_str(),ios::in);
   if (!infile) {
           cerr << "File " << filename << " not found." << endl;
-          return 0;
+	  exit(1);
   }
   readInput(infile);
   infile.close();
@@ -142,14 +143,14 @@ SurfData* pointSpecToSurfData(string filename) {
       //surfData->addPoint(sp);
       nextPoint();
   }
-  return new SurfData(sps);
+  return SurfData(sps);
 }
 
-SurfData* randomPoints(string filename) {
+SurfData randomPoints(string filename) {
   ifstream infile(filename.c_str(),ios::in);
   if (!infile) {
           cerr << "File " << filename << " not found." << endl;
-          return 0;
+          exit(1);
   }
   readInput(infile);
   infile.close();
@@ -168,7 +169,7 @@ SurfData* randomPoints(string filename) {
       //surfData->addPoint(sp);
       nextPoint();
   }
-  return new SurfData(sps);
+  return SurfData(sps);
 }
 
 double sphere(const vector<double>& pt) 
@@ -216,34 +217,33 @@ double testFunction(const string name, const vector<double>& pt)
 
 void randomSample(vector< string >& args) 
 {
-  SurfData* sd = randomPoints(args[1]);
-  if (sd && args.size() == 4) {
-    unsigned newindex = sd->addResponse();
-    for (unsigned i = 0; i < sd->size(); i++) {
-      double response = testFunction(args[3],sd->Point(i).X());
-      sd->Point(i).F(newindex,response);
+  SurfData sd = randomPoints(args[1]);
+  if (args.size() == 4) {
+    vector<double> newResponseValues(sd.size());
+    //unsigned newindex = sd->addResponse();
+    for (unsigned i = 0; i < sd.size(); i++) {
+      newResponseValues[i] = testFunction(args[3],sd[i].X());
+      //sd->Point(i).F(newindex,response);
     }
+    sd.addResponse(newResponseValues);
   }
-  if (sd) {
-    sd->write(args[2]);
-  }
-  delete sd;
+  sd.write(args[2]);
 }
 
 void gridPoints(vector< string >& args) 
 {
-  SurfData* sd = pointSpecToSurfData(args[1]);
-  if (sd && args.size() == 4) {
-    unsigned newindex = sd->addResponse();
-    for (unsigned i = 0; i < sd->size(); i++) {
-      double response = testFunction(args[3],sd->Point(i).X());
-      sd->Point(i).F(newindex,response);
+  SurfData sd = pointSpecToSurfData(args[1]);
+  if (args.size() == 4) {
+    vector<double> newResponseValues(sd.size());
+    //unsigned newindex = sd->addResponse();
+    for (unsigned i = 0; i < sd.size(); i++) {
+      newResponseValues[i] = testFunction(args[3],sd[i].X());
+      //double response = testFunction(args[3],sd->Point(i).X());
+      //sd->Point(i).F(newindex,response);
     }
+    sd.addResponse(newResponseValues);
   }
-  if (sd) {
-    sd->write(args[2]);
-  }
-  delete sd;
+  sd.write(args[2]);
 }
 
 void create(vector< string >& args)
@@ -264,10 +264,12 @@ void create(vector< string >& args)
     //}
     if (args.size() == 4) {
       // create surface with sd; responseIndex = 0
-      s = createSurface(args[3], sd, 0);
+      sd.setDefaultIndex(0);
+      s = createSurface(args[3], sd);
     } else if (args.size() == 5) {
       // must be a polynomial surface 
-      s = createSurface(args[3], sd, 0, atoi(args[4].c_str()));
+      sd.setDefaultIndex(0);
+      s = createSurface(args[3], sd, atoi(args[4].c_str()));
     }
     
     //if (args[3] == "kriging") {
@@ -280,6 +282,7 @@ void create(vector< string >& args)
     //        s->build();
     //}
     if (s) {
+            s->createModel();
 	    s->write(args[2]);
     }
     //infile.close();
@@ -324,7 +327,7 @@ void evaluateSurface(vector< string >& args)
     //    	cout << "Unknown Surface" << endl;
     //}
     s = createSurface(args[3]);
-    s->evaluate(sd);
+    s->getValue(sd);
     
     sd.writeText(outfile);
     //infile.close();
@@ -336,17 +339,17 @@ void computeErrorMetric(vector< string>& args)
 {
     Surface* s = createSurface(args[1]);
     SurfData* sd = 0;
-    AbstractSurfDataIterator* itr = 0;
+    //AbstractSurfDataIterator* itr = 0;
     if (args.size() == 4) {
       sd = new SurfData(args[3]);
-      itr = new SurfDataIterator(*sd);
+      //itr = new SurfDataIterator(*sd);
     }
     if (s) {
-      double errorValue = s->errorMetric(args[2], itr);
+      double errorValue = s->goodnessOfFit(args[2], sd);
       cout << args[2] << ": " << errorValue << endl;
       delete s;
     }
-    delete itr;
+    //delete itr;
     delete sd;
 
 
@@ -408,8 +411,14 @@ void executeScript(string filename)
 		            args.push_back(nextarg);
 		        }
 		        //cout << "End of arguments " << endl;
-		        if (args.size() > 0 && args[0][0] != '#') {
-		                executeCommand(args);
+                          
+		        if (args.size() > 0) {
+                          if (args[0][0] == '!') {
+                             cout << "Ending execution" << endl;
+                             break;
+                          } else if (args[0][0] != '#') {
+		             executeCommand(args);
+                          }
 		        }
 		    }
 		}

@@ -16,7 +16,7 @@
 
 class SurfPoint;
 class SurfData;
-class AbstractSurfDataIterator;
+//class AbstractSurfDataIterator;
 struct ErrorStruct;
 
 /** Defines the interface for surfaces which approximate
@@ -28,19 +28,30 @@ class Surface
 // Creation, Destruction, Initialization 
 // ____________________________________________________________________________
 
-public:
+protected:
    
-  /// Initialize dataItr to null
+  /// Initialize SurfData to null
   Surface(); 
 
-  // Iterator wraps data that will be used to construct the surface
-  Surface(AbstractSurfDataIterator* dataItr);
+public:
+  /// Data to be used to create surface is specified 
+  Surface(SurfData* sd);
 
   // Makes deep copy
   Surface(const Surface& s);
   
   /// Delete data iterator 
   virtual ~Surface(); 
+
+  /// Initialize state variables
+  void init();
+
+  /// Create a surface of the same type as 'this.'  This object's data should
+  /// be replaced with the passed in, but all other attributes should
+  /// be the same (e.g., a second-order polynomial should return another 
+  /// second-order polynomial.  Surfaces returned by this method can be used
+  /// to compute the PRESS statistic.
+  virtual Surface* makeSimilarWithNewData(SurfData* sd)=0;
 
 // ____________________________________________________________________________
 // Queries 
@@ -50,9 +61,8 @@ public:
   /// Return the name of this surface type as a string
   virtual const std::string surfaceName() const = 0;
   
-  /// Return true if surface has been properly built and is in a consistent
-  /// state
-  bool isValid() const;
+  /// Return dimensionality of the surface or zero if not built
+  virtual unsigned xSize();
 
   /// Return true if the data that was used to create the surface is available.
   /// Some error metrics require the original data; others do not.
@@ -75,28 +85,48 @@ public:
 
   /// Evaulate the approximation surface at point x and return the value.
   /// The point x must have the same dimensionality as this surface's SurfData.
-  virtual double evaluate(const SurfPoint& sp); 
+  /// Make sure the surface is valid and then call evaluate
+  virtual double getValue(const std::vector<double>& x); 
+
+  /// Evaulate the approximation surface at point x and return the value.
+  /// The point x must have the same dimensionality as this surface's SurfData.
+  virtual double getValue(const SurfPoint& sp); 
+
+  /// Evaluate the empirical model at the points in surfData and store 
+  /// the observed and estimated values in results
+//  virtual void getValue(SurfData& surfData, std::vector<double> results);
+
+  virtual void getValue(SurfData& surfData);
 
   /// Evaluate the empirical model at the points in surfData and output
   /// the points and their evaluations to os.
-  virtual void evaluate(SurfData& surfData);
-
-  /// Evaluate the empirical model at the points in surfData and output
-  /// the points and their evaluations to os.
-  virtual double test(SurfData& surfData, std::ostream& os = std::cout);
+  //virtual double test(SurfData& surfData, std::ostream& os = std::cout);
   
   /// Return the value of some error metric.
-  virtual double errorMetric(const std::string metricName, 
-    AbstractSurfDataIterator* itr);
-  virtual double press(AbstractSurfDataIterator* itr);
-  virtual double rSquared(AbstractSurfDataIterator* itr);
-  virtual double sse(AbstractSurfDataIterator* itr);
-  virtual double mse(AbstractSurfDataIterator* itr);
+  virtual double goodnessOfFit(const std::string metricName, SurfData* surfData);
+  virtual double press(SurfData& dataSet);
+  virtual double rSquared(SurfData& dataSet);
+  virtual double sse(SurfData& dataSet);
+  virtual double mse(SurfData& dataSet);
+  virtual double mrae(SurfData& dataSet);
   
 
 // ____________________________________________________________________________
 // Commands
 // ____________________________________________________________________________
+
+  /// Associates a data set with this surface object.  If this surface has
+  /// already been built, it is invalidated
+  virtual void setData(SurfData* sd);
+
+  /// Set the state of the SurfData object to use the default index and points
+  /// associated with this surface
+  virtual void prepareData();
+
+  /// Checks to make sure the data passed in is not null.  If it is, sets it 
+  /// to point to the SurfData used to create the object.  If that is also
+  /// non-existent, it is an error.  
+  virtual SurfData& checkData(SurfData* dataSet);
 
   /// Called when the SurfData object gets modified.
   //virtual void notify();
@@ -104,21 +134,15 @@ public:
   /// Select which response variable will be used in this surface.
   //virtual void responseIndex(unsigned index);
  
-  /// Rebuild the surface, if necessary
-  virtual void ensureValidity();
+  /// Check to make sure that data are acceptable and then build.
+  /// Do not build if the surface has already been built and the data have not
+  /// changed
+  virtual void createModel(SurfData* surfData = 0);
 
   /// Create an empirical model using the data from dataItr. 
-  virtual void build() = 0; 
+  virtual void build(SurfData& data) = 0; 
 
-  /// Create a surface of the same type as 'this.'  This objects data should
-  /// be replaced with the dataItr passed in, but all other attributes should
-  /// be the same (e.g., a second-order polynomial should return another 
-  /// second-order polynomial.  Surfaces returned by this method can be used
-  /// to compute the PRESS statistic.
-  virtual Surface* makeSimilarWithNewData(AbstractSurfDataIterator* dataItr)=0;
-
-  virtual void evaluate(AbstractSurfDataIterator* itr, 
-    std::vector<ErrorStruct>& pts);
+  virtual void getValue(SurfData& sd, std::vector<ErrorStruct>& pts);
 
 // ____________________________________________________________________________
 // I/O 
@@ -147,10 +171,10 @@ public:
   /// Write the associated data to a stream.  Not all iterators will use all of 
   /// the data available in their SurfData objects, so the writing must 
   /// necessarily go through the iterator.
-  virtual void writeData(std::ostream& os, bool binary = false);
+  //virtual void writeData(std::ostream& os, bool binary = false);
 
   /// Read the data from a file and create a SurfDataIterator wrapper for them
-  virtual void readData(std::istream& is, bool binary = false);
+  //virtual void readData(std::istream& is, bool binary = false);
 
 // ____________________________________________________________________________
 // Data members 
@@ -158,26 +182,38 @@ public:
 
 protected: 
 
-  /// Is this surface in a valid, consistent state? 
-  bool valid;                 
+  /// Number of dimensions in the data
+  unsigned xsize;
+
+  /// True if some surface has been successfully built.  This does not imply
+  /// that the surface matches the current data, only that there is something
+  /// valid to evaluate
+  bool builtOK;
+
+  /// True if one or more data points have been added since the surface was 
+  /// built
+  bool dataAdded;
+
+  /// True if one or more data points have been modified since the surface was 
+  /// built
+  bool dataModified;
 
   /// Set to true when data used to build surface is present 
   bool originalData;
 
-  /// Collection of points used to create empirical model
-  AbstractSurfDataIterator* dataItr;               
+  /// Indices of points present in sd that were not used to make the surface 
+  std::set<unsigned> excludedPoints;
 
-  /// Created and passed to dataItr only if surface is created from a file
+  /// Data used to create this surface
   SurfData* sd;
+
+  /// Index of the response in sd that was used to create this surface
+  unsigned responseIndex;
 
 // ____________________________________________________________________________
 // Testing
 // ____________________________________________________________________________
 
-void writeMatrix(const std::string header, double* mat, unsigned rows, 
-  unsigned columns, std::ostream& os);
-void writeMatrix(const std::string filename, double* mat, unsigned rows, 
-  unsigned columns);
 #ifdef __TESTING_MODE__
   friend class SurfaceFactoryUnitTest;
   friend class SurfaceUnitTest;

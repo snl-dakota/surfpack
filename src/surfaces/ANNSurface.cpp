@@ -3,6 +3,7 @@
 #include <sstream>
 #include <fstream>
 #include <vector>
+#include <set>
 #include "vector_enhancements.h"
 #include "ann.h"
 #include "surfpack.h"
@@ -34,25 +35,13 @@ const string ANNSurface::name = "ANN";
 // Creation, Destruction, Initialization
 //_____________________________________________________________________________
 
-ANNSurface::ANNSurface(SurfData& sd, unsigned responseIndex) : Surface(0),
-  annObject(0)
-{
-#ifdef __TESTING_MODE__
-  constructCount++;
-#endif
-  dataItr = new SurfDataIterator(sd, responseIndex);
-  init();
-  build();
-}
-
-ANNSurface::ANNSurface(AbstractSurfDataIterator* dataItr) : Surface(dataItr),
+ANNSurface::ANNSurface(SurfData* sd) : Surface(sd),
   annObject(0)
 {
 #ifdef __TESTING_MODE__
   constructCount++;
 #endif
   init();
-  build();
 }
 
 ANNSurface::ANNSurface(const string filename) : Surface(0),
@@ -90,7 +79,7 @@ const std::string ANNSurface::surfaceName() const
 
 unsigned ANNSurface::minPointsRequired() const
 {
-  return dataItr->xSize() + 1;
+  return sd->xSize() + 1;
 }
 
 double ANNSurface::evaluate(const std::vector<double>& x)
@@ -104,27 +93,20 @@ double ANNSurface::evaluate(const std::vector<double>& x)
 // Commands 
 //_____________________________________________________________________________
 
-void ANNSurface::build()
+void ANNSurface::build(SurfData& data)
 {
-  if (!acceptableData()) {
-    cerr << "Unsatisfactory data" << endl;
-    return;
-  }
-  
   delete annObject;
   annObject = new ANNApprox;
   vector< vector< double > > training_inputs;
   vector< vector< double > > training_outputs;
-  reshape_2d(training_inputs, dataItr->elementCount(), dataItr->xSize());
-  reshape_2d(training_outputs, dataItr->elementCount(), 1);
-  dataItr->toFront();
-  for (unsigned i = 0; i < dataItr->elementCount(); i++) {
-    SurfPoint& sp = dataItr->currentElement();
-    for (unsigned j = 0; j < dataItr->xSize(); j++) {
+  reshape_2d(training_inputs, data.size(), data.xSize());
+  reshape_2d(training_outputs, data.size(), 1);
+  for (unsigned i = 0; i < data.size(); i++) {
+    SurfPoint& sp = data[i];
+    for (unsigned j = 0; j < data.xSize(); j++) {
       training_inputs[i][j] = sp.X()[j];
-      training_outputs[i][0] = sp.F(dataItr->responseIndex());
+      training_outputs[i][0] = data.getResponse(i);
     }
-    dataItr->nextElement();
   }
   double norm_bound = 0.8, percent = 0, svdfactor = 0.90;
   annObject->normalize_data(training_inputs, training_outputs, norm_bound);
@@ -138,10 +120,9 @@ void ANNSurface::build()
 /// be the same (e.g., a second-order polynomial should return another 
 /// second-order polynomial.  Surfaces returned by this method can be used
 /// to compute the PRESS statistic.
-ANNSurface* ANNSurface::makeSimilarWithNewData
-  (AbstractSurfDataIterator* dataItr)
+ANNSurface* ANNSurface::makeSimilarWithNewData(SurfData* surfData)
 {
-  return new ANNSurface(dataItr);
+  return new ANNSurface(surfData);
 }
 
 //_____________________________________________________________________________
@@ -169,7 +150,6 @@ void ANNSurface::readBinary(std::istream& is)
   delete annObject;
   annObject = new ANNApprox;
   annObject->readBinary(is);
-  valid = true;
   originalData = false;
 }
 
@@ -178,7 +158,6 @@ void ANNSurface::readText(std::istream& is)
   delete annObject;
   annObject = new ANNApprox;
   annObject->readText(is);
-  valid = true;
   originalData = false;
 }
 

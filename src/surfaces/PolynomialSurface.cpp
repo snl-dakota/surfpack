@@ -4,9 +4,10 @@
 #include <sstream>
 #include <fstream>
 #include <vector>
-#include "SurfData.h"
-#include "SurfDataIterator.h"
+#include <set>
+//#include "SurfDataIterator.h"
 #include "PolynomialSurface.h"
+#include "SurfData.h"
 
 extern "C" void dgels_(char&, int&, int&, int&, double*,
                        int&, double*, int&, double*, int&, int&);
@@ -25,39 +26,22 @@ const string PolynomialSurface::name = "Polynomial";
 // ____________________________________________________________________________
 
 
-PolynomialSurface::PolynomialSurface(SurfData& sd, unsigned order, 
-  unsigned responseIndex) : Surface(0),  
-  xsize(sd.xSize()), order(order), digits(order) 
+PolynomialSurface::PolynomialSurface(SurfData* sd, unsigned order)
+  : Surface(sd), order(order), digits(order) 
 {
 #ifdef __TESTING_MODE__
   constructCount++;
 #endif
-  dataItr = new SurfDataIterator(sd, responseIndex);
-  resetTermCounter();
-  build();
 }  
 
-PolynomialSurface::PolynomialSurface(AbstractSurfDataIterator* dataItr, 
-  unsigned order) : Surface(dataItr), xsize(dataItr->xSize()), order(order),
-  digits(order)
-{
-#ifdef __TESTING_MODE__
-  constructCount++;
-#endif
-  resetTermCounter();
-  build();
-}
-  
 PolynomialSurface::PolynomialSurface(unsigned xsize, unsigned order, 
-  std::vector<double> coefficients) : Surface(0), 
-  xsize(xsize), order(order), coefficients(coefficients),
-  digits(order)
+  std::vector<double> coefficients) : Surface(0), order(order), 
+  coefficients(coefficients), digits(order)
 {
 #ifdef __TESTING_MODE__
   constructCount++;
 #endif
-  resetTermCounter();
-  build();
+  this->xsize = xsize;
 }
 
 PolynomialSurface::PolynomialSurface(const string filename) : Surface(0)
@@ -66,6 +50,28 @@ PolynomialSurface::PolynomialSurface(const string filename) : Surface(0)
   constructCount++;
 #endif
   read(filename);
+}
+
+PolynomialSurface::PolynomialSurface(const PolynomialSurface& other) 
+  : Surface(other), order(other.order), coefficients(other.coefficients),
+  digits(other.order), termIndex(other.termIndex)
+{
+#ifdef __TESTING_MODE__
+  constructCount++;
+#endif
+}
+
+/// Create a surface of the same type as 'this.'  This objects data should
+/// be replaced with the dataItr passed in, but all other attributes should
+/// be the same (e.g., a second-order polynomial should return another 
+/// second-order polynomial.  Surfaces returned by this method can be used
+/// to compute the PRESS statistic.
+PolynomialSurface* 
+  PolynomialSurface::makeSimilarWithNewData(SurfData* surfData)
+{
+  PolynomialSurface* newPS = new PolynomialSurface(*this);
+  newPS->setData(surfData);
+  return newPS;
 }
 
 PolynomialSurface::~PolynomialSurface()
@@ -91,11 +97,17 @@ unsigned PolynomialSurface::minPointsRequired(unsigned xsize, unsigned order)
 
 unsigned PolynomialSurface::minPointsRequired() const
 { 
-  return minPointsRequired(xsize, order);
+  if (!xsize) {
+    return INT_MAX;
+  } else {
+    unsigned result = minPointsRequired(xsize, order);
+    return result; 
+  }
 }
 
 double PolynomialSurface::evaluate(const std::vector<double> & x)
 { 
+  // Add sanity check on x
   double sum = 0;
   resetTermCounter();
   for (unsigned i = 0; i < coefficients.size(); i++) {
@@ -211,72 +223,56 @@ double PolynomialSurface::evaluate(const std::vector<double> & x)
 // Commands 
 // ____________________________________________________________________________
 
-void PolynomialSurface::build()
+// This function should only be called by Surface::createModel, which should
+// check to make sure all of the necessary data is available
+void PolynomialSurface::build(SurfData& data)
 {
-  if (!acceptableData()) {
-    cerr << "Cannot build surface.  Data are not acceptable" << endl;
-  } else {
-    coefficients.resize(minPointsRequired());
-    int pts = dataItr->elementCount();
-    int lwork = pts * coefficients.size() * 2;
+  int numCoeff = static_cast<int>(minPointsRequired());
+  coefficients.resize(numCoeff);
+  int pts = static_cast<int>(data.size());
+  int lwork = pts * numCoeff * 2;
 
-    // allocate space for the matrices
-    double* a = new double[coefficients.size()*pts];
-    double* b = new double[pts];
-    double* work = new double[lwork];
+  // allocate space for the matrices
+  double* a = new double[numCoeff*pts];
+  double* b = new double[pts];
+  double* work = new double[lwork];
 
-    // populate the A and B matrices in preparation for Ax=b
-    dataItr->toFront();
-    unsigned point = 0;
-    while(!dataItr->isEnd()) {
-      resetTermCounter();
-      while (termIndex < coefficients.size()) {
-        a[point+termIndex*pts] = computeTerm(dataItr->currentElement().X());
-        nextTerm();
-      }
-      b[point] = dataItr->currentElement().F(dataItr->responseIndex());
-      dataItr->nextElement();
-      point++;
+  // populate the A and B matrices in preparation for Ax=b
+  for(unsigned i = 0; i < data.size(); i++) {
+    resetTermCounter();
+    while (termIndex < static_cast<unsigned>(numCoeff)) {
+      a[i+termIndex*pts] = computeTerm(data[i].X());
+      nextTerm();
     }
-
-    // values must be passed by reference to Fortran, so variables must be declared for info, nrhs, trans
-    int info;
-    int nrhs=1;
-    char trans = 'N';
-    int numCoeff = static_cast<int>(coefficients.size());
-    writeMatrix("AMatrix",a,static_cast<unsigned>(pts),coefficients.size());
-    writeMatrix("BVector",b,static_cast<unsigned>(pts),1);
-    dgels_(trans,pts,numCoeff,nrhs,a,pts,b,pts,work,lwork,info);
-    //cout << "A Matrix after: " << endl;
-    //writeMatrix(a,pts,numCoeff,cout);
-    if (info < 0) {
-            cerr << "dgels_ returned with an error" << endl;
-    }
-
-    for(unsigned i=0;i<coefficients.size();i++) {
-      coefficients[i] = b[i];
-      double approx = floor(coefficients[i]+.5);
-      if (abs(approx-coefficients[i]) < 1.0e-5) {
-      	coefficients[i] = approx;
-      }
-    }
-
-    //writeText(cout);
-    delete [] work;
-    delete [] b;
-    delete [] a;
+    b[i] = data.getResponse(i);
   }
-}
 
-/// Create a surface of the same type as 'this.'  This objects data should
-/// be replaced with the dataItr passed in, but all other attributes should
-/// be the same (e.g., a second-order polynomial should return another 
-/// second-order polynomial.  Surfaces returned by this method can be used
-/// to compute the PRESS statistic.
-PolynomialSurface* PolynomialSurface::makeSimilarWithNewData
-  (AbstractSurfDataIterator* dataItr)
-{
-  return new PolynomialSurface(dataItr, order);
+  // values must be passed by reference to Fortran, so variables must be declared for info, nrhs, trans
+  int info;
+  int nrhs=1;
+  char trans = 'N';
+  SurfData::writeMatrix("AMatrix",a,static_cast<unsigned>(pts),numCoeff);
+  SurfData::writeMatrix("BVector",b,static_cast<unsigned>(pts),1);
+  dgels_(trans,pts,numCoeff,nrhs,a,pts,b,pts,work,lwork,info);
+  //cout << "A Matrix after: " << endl;
+  //writeMatrix(a,pts,numCoeff,cout);
+  if (info < 0) {
+          cerr << "dgels_ returned with an error" << endl;
+  }
+
+  for(int i=0;i<numCoeff;i++) {
+    coefficients[i] = b[i];
+    double approx = floor(coefficients[i]+.5);
+    if (abs(approx-coefficients[i]) < 1.0e-5) {
+    	coefficients[i] = approx;
+    }
+  }
+
+  //writeText(cout);
+  delete [] work;
+  delete [] b;
+  delete [] a;
+  
 }
 
 // ____________________________________________________________________________
@@ -357,6 +353,7 @@ void PolynomialSurface::nextTerm()
 /// Save the surface to a file in binary format
 void PolynomialSurface::writeBinary(ostream& os)
 {
+  prepareData();
   os.write(reinterpret_cast<char*>(&xsize),sizeof(xsize));
   os.write(reinterpret_cast<char*>(&order),sizeof(order));
   for (unsigned i = 0; i < coefficients.size(); i++) {
@@ -367,6 +364,7 @@ void PolynomialSurface::writeBinary(ostream& os)
 
 void PolynomialSurface::writeText(ostream& os) 
 {
+  prepareData();
   resetTermCounter();
   os << xsize << " dimensions" << endl;
   os << order << " order" << endl;
@@ -393,8 +391,6 @@ void PolynomialSurface::readBinary(istream& is)
     is.read(reinterpret_cast<char*>(&coefficients[i]),sizeof(coefficients[i]));
   }
   digits.resize(order);
-  resetTermCounter();
-  valid = true;
   //originalData = false;
 }
 
@@ -419,8 +415,6 @@ void PolynomialSurface::readText(istream& is)
     streamline >> coefficients[i];		
   }
   digits.resize(order);
-  resetTermCounter();
-  valid = true;
   //originalData = false;
 }
 

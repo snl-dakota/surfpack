@@ -10,7 +10,6 @@
 
 class SurfData;
 class Surface;
-class AbstractSurfDataIterator;
 class ANNApprox;
 
 typedef float real;
@@ -22,8 +21,7 @@ class ANNSurface : public Surface
 //_____________________________________________________________________________
 
 public:
-  ANNSurface(SurfData& sd, unsigned responseIndex = 0);
-  ANNSurface(AbstractSurfDataIterator* dataItr);
+  ANNSurface(SurfData* sd);
   ANNSurface(const std::string filename);
   ~ANNSurface();
   void init();
@@ -45,15 +43,14 @@ public:
 // Commands 
 //_____________________________________________________________________________
 
-  virtual void build();
+  virtual void build(SurfData& data);
   
   /// Create a surface of the same type as 'this.'  This objects data should
   /// be replaced with the dataItr passed in, but all other attributes should
   /// be the same (e.g., a second-order polynomial should return another 
   /// second-order polynomial.  Surfaces returned by this method can be used
   /// to compute the PRESS statistic.
-  virtual ANNSurface* makeSimilarWithNewData
-    (AbstractSurfDataIterator* dataItr);
+  virtual ANNSurface* makeSimilarWithNewData(SurfData* sd);
 
 //_____________________________________________________________________________
 // Helper methods 

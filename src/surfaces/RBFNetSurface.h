@@ -10,7 +10,6 @@
 
 class SurfData;
 class Surface;
-class AbstractSurfDataIterator;
 
 typedef float real;
 
@@ -21,8 +20,7 @@ class RBFNetSurface : public Surface
 //_____________________________________________________________________________
 
 public:
-  RBFNetSurface(SurfData& sd, unsigned responseIndex = 0);
-  RBFNetSurface(AbstractSurfDataIterator* dataItr);
+  RBFNetSurface(SurfData* sd);
   RBFNetSurface(const std::string filename);
   ~RBFNetSurface();
   void init();
@@ -44,15 +42,14 @@ public:
 // Commands 
 //_____________________________________________________________________________
 
-  virtual void build();
+  virtual void build(SurfData& data);
   
   /// Create a surface of the same type as 'this.'  This objects data should
   /// be replaced with the dataItr passed in, but all other attributes should
   /// be the same (e.g., a second-order polynomial should return another 
   /// second-order polynomial.  Surfaces returned by this method can be used
   /// to compute the PRESS statistic.
-  virtual RBFNetSurface* makeSimilarWithNewData
-    (AbstractSurfDataIterator* dataItr);
+  virtual RBFNetSurface* makeSimilarWithNewData(SurfData* surfData);
 
 //_____________________________________________________________________________
 // Helper methods 

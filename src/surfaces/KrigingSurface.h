@@ -23,8 +23,7 @@ class KrigingSurface : public Surface
 
 public:
   //KrigingSurface(const std::vector<double> &);
-  KrigingSurface(AbstractSurfDataIterator* dataItr);
-  KrigingSurface(SurfData& sd, unsigned responseIndex = 0);
+  KrigingSurface(SurfData* sd);
   KrigingSurface(const std::string filename);
   ~KrigingSurface(); 
   void initialize();
@@ -52,21 +51,20 @@ public:
 //_____________________________________________________________________________
 
   void usePreComputedCorrelationVector(std::vector<double> vals);
-  void build();
+  void build(SurfData& data);
   
   /// Create a surface of the same type as 'this.'  This objects data should
   /// be replaced with the dataItr passed in, but all other attributes should
   /// be the same (e.g., a second-order polynomial should return another 
   /// second-order polynomial.  Surfaces returned by this method can be used
   /// to compute the PRESS statistic.
-  virtual KrigingSurface* makeSimilarWithNewData
-    (AbstractSurfDataIterator* dataItr);
+  virtual KrigingSurface* makeSimilarWithNewData(SurfData* surfData);
 
 //_____________________________________________________________________________
 // Helper methods 
 //_____________________________________________________________________________
 
-  void buildModel();
+  void buildModel(SurfData& data);
 
 //_____________________________________________________________________________
 // I/O 

@@ -17,6 +17,13 @@
 class SurfPoint;
 //class Surface;
 
+struct SurfDataStateConsistency 
+{
+  bool xMatrix;
+  bool yVector;
+  SurfDataStateConsistency() : xMatrix(false), yVector(false) {}
+};
+  
 class SurfData
 {
 // ____________________________________________________________________________
@@ -39,6 +46,12 @@ public:
   
   /// STL data members' resources automatically deallocated 
   ~SurfData();
+
+  /// Initialize data members
+  void init();
+  
+  /// Copy only the "active" points
+  SurfData* copyActive();
   
 private:
 
@@ -59,12 +72,21 @@ public:
   /// makes deep comparison
   bool operator!=(const SurfData& sd);
 
+  /// Return a reference to SurfPoint at given index
+  SurfPoint& operator[](unsigned index);
+
+  /// Return a const reference to SurfPoint at given index
+  const SurfPoint& operator[](unsigned index) const;
+
 // ____________________________________________________________________________
 // Queries 
 // ____________________________________________________________________________
 
   /// Return the number of SurfPoints in the data set 
   unsigned size() const;
+
+  /// True if there are no points
+  bool empty() const;
   
   /// Return the dimensionality of the SurfPoints 
   unsigned xSize() const;
@@ -73,22 +95,50 @@ public:
   unsigned fSize() const;
 
   /// Return a point from the data set
-  SurfPoint& Point(unsigned index);
+  //SurfPoint& Point(unsigned index);
 
   /// Return a reference to the SurfPoints vector 
-  std::vector<SurfPoint>& Points();
+  //std::vector<SurfPoint>& Points();
+
+  /// Return the set of excluded points (the indices)
+  std::set<unsigned> getExcludedPoints() const ; 
+
+  /// Get the response value of the (index)th point that corresponds to this
+  /// surface
+  double getResponse(unsigned index) const;
+
+  /// Get default index
+  unsigned getDefaultIndex() const;
+
+  /// Return point domains as a matrix in a contiguous block.  Be careful.
+  /// The data should not be changed.
+  const double* getXMatrix() const;
+
+  /// Return response values for the default response in a contiguous block.  
+  /// Be careful. The data should not be changed.
+  const double* getYVector() const;
 
 // ____________________________________________________________________________
 // Commands 
 // ____________________________________________________________________________
 
+  /// Specify which response value getResponse will return
+  void setDefaultIndex(unsigned index); 
+  
+  /// Set the response value of the (index)th point that corresponds to this
+  /// surface
+  void setResponse(unsigned index, double value);
+  
   /// Add a point to the data set. The parameter point will be copied.
   void addPoint(const SurfPoint& sp);
 
   /// Add a new response variable to each point. 
   /// Return the index of the new variable.
-  unsigned addResponse(); 
+  unsigned addResponse(const std::vector<double>& newValues); 
   
+  /// Specify which points should be skipped
+  void setExcludedPoints(std::set<unsigned> excludedPoints);
+
   /// Inform this object that a Surface wants to be notified when this object
   /// changes
   //void addListener(Surface *);
@@ -96,7 +146,21 @@ public:
   /// remove the Surface from the list of surfaces that are notified when the
   /// data changes
   //void removeListener(Surface *);
+private:
+  /// Make sure an index falls within acceptable boundaries
+  void checkRange(unsigned index) const;
 
+  /// Maps all indices to themselves
+  void defaultMapping();
+
+  /// Creates a matrix of the domains for all of the points in a contiguous
+  /// block of memory, for use in matrix operations
+  void validateXMatrix() const;
+ 
+  /// Creates a vector of response values for the default response value in
+  /// a contiguous blcok of memory
+  void validateYVector() const;
+public:
    
 // ____________________________________________________________________________
 // I/O
@@ -135,6 +199,28 @@ private:
   /// The set of points in this data set
   std::vector<SurfPoint> points; 
 
+  /// The indices of points in points that are skipped
+  std::set<unsigned> excludedPoints;
+
+  /// For mapping the indices in points to the indices returned by operator[]
+  std::vector<unsigned> mapping;
+
+  /// Pointer to the domain of the data points, represented as a contiguous 
+  /// block of memory
+  mutable double* xMatrix;
+
+  /// Pointer to a set of response values for the data poitns, stored in a
+  /// contiguous block of memory
+  mutable double* yVector;
+
+  /// The index of the response variable that will be returned by F
+  mutable unsigned defaultIndex;
+
+  /// Keeps track of which data members are valid
+  mutable SurfDataStateConsistency valid;
+
+
+
   /// List of pointers to listening/observing Surface objects 
   /// which need to be notified when this object changes
   //std::list<Surface*> listeners;
@@ -151,11 +237,16 @@ private:
 // Testing 
 // ____________________________________________________________________________
 
+public:
+
+static void writeMatrix(const std::string header, double* mat, unsigned rows, 
+  unsigned columns, std::ostream& os);
+static void writeMatrix(const std::string filename, double* mat, unsigned rows, 
+  unsigned columns);
 #ifdef __TESTING_MODE__ 
   friend class SurfDataUnitTest;
   friend class SurfaceUnitTest;
 
-public:
   static int constructCount;
   static int copyCount;
   static int destructCount;

@@ -78,14 +78,14 @@ SURF_SRCS = $(DIR)/src/surfpack.cpp \
        $(DIR)/src/SurfPoint.cpp \
        $(DIR)/src/SurfData.cpp \
        $(DIR)/src/Surface.cpp \
-       $(DIR)/src/surfaces/ANNSurface.cpp \
-       $(DIR)/src/iterators/AbstractSurfDataIterator.cpp \
-       $(DIR)/src/iterators/SurfDataIterator.cpp \
-       $(DIR)/src/iterators/SkipSurfDataIterator.cpp \
-       $(DIR)/src/surfaces/RBFNetSurface.cpp \
+       $(DIR)/src/surfaces/KrigingSurface.cpp \
        $(DIR)/src/surfaces/MarsSurface.cpp \
-       $(DIR)/src/surfaces/PolynomialSurface.cpp \
-       $(DIR)/src/surfaces/KrigingSurface.cpp 
+       $(DIR)/src/surfaces/RBFNetSurface.cpp \
+       $(DIR)/src/surfaces/ANNSurface.cpp \
+       $(DIR)/src/surfaces/PolynomialSurface.cpp 
+       #$(DIR)/src/iterators/AbstractSurfDataIterator.cpp \
+       #$(DIR)/src/iterators/SurfDataIterator.cpp \
+       #$(DIR)/src/iterators/SkipSurfDataIterator.cpp \
 
 SURF_OBJS = $(SURF_SRCS:.cpp=.o)
 

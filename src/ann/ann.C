@@ -107,7 +107,7 @@ int  ANNApprox::normalize_data(vector< vector<double> > Inputs,
          trainOutputs[j][k] = delta*((x-minOutputs[k])/deltaOutputs[k])+low;
       }
    }
-	printf("ANNApprox::normalize_data           ...complete\n");
+	//printf("ANNApprox::normalize_data           ...complete\n");
    return(0);
 }
 
@@ -169,7 +169,7 @@ int  ANNApprox::set_aside_test_exemplars(double TEST_PERCENT)
          //printf("  out[%2d][%d] = %9.5f  \n",j,k,trainOutputs[j][k]);
       }
    }
-	printf("ANNApprox::set_aside_test_exemplars ...complete\n");
+	//printf("ANNApprox::set_aside_test_exemplars ...complete\n");
    return(0);
 }
 
@@ -460,7 +460,7 @@ int  ANNApprox::build_approximation(double svdfactor, int Neurons)
    else {
      //printf("\nNormalized errors associated with %d testing exemplars\nN/A",0);
    }
-   printf("ANNApprox::build_approximation      ...complete\n");
+   //printf("ANNApprox::build_approximation      ...complete\n");
    return(0);
 }
 

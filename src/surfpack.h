@@ -9,24 +9,22 @@ struct ErrorStruct {
   double estimated;
 };
 
-class AbstractSurfDataIterator;
+//class AbstractSurfDataIterator;
 class Surface;
 class SurfData;
 
 const std::string surfaceName(const std::string filename);
-Surface* createSurface(const std::string filename);
-Surface* createSurface(const std::string type, 
-  AbstractSurfDataIterator* dataItr);
-Surface* createSurface(const std::string type,
-  AbstractSurfDataIterator* dataItr, unsigned order);
-Surface* createSurface(const std::string type, SurfData& sd, 
-  unsigned responseIndex);
-Surface* createSurface(const std::string type, SurfData& sd, 
-  unsigned responseIndex, unsigned order);
+Surface* createSurface(const std::string& filename);
+Surface* createSurface(const std::string& type, SurfData& surfData);
+Surface* createSurface(const std::string& type, SurfData& surfData, unsigned order);
 
 double euclideanDistance(const std::vector<double>& pt1, const std::vector<double>& pt2);
 void vectorDifference(std::vector<double>& diff, const std::vector<double>& pt1,
   const std::vector<double>& pt2);
+
+double mean(std::vector<double>& vals);
+double sample_var(std::vector<double>& vals);
+double sample_sd(std::vector<double>& vals);
 
 void printVector(const std::string header, std::vector<double>& vec);
 

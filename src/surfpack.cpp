@@ -3,6 +3,7 @@
 #include <sstream>
 #include <iostream>
 #include <vector>
+#include <set>
 #include "SurfData.h"
 #include "Surface.h"
 #include "PolynomialSurface.h"
@@ -42,7 +43,7 @@ const string surfaceName(const string filename)
     
 } 
 
-Surface* createSurface(const string filename)
+Surface* createSurface(const string& filename)
 {
   const string name = surfaceName(filename);
   if (name == "Polynomial") {
@@ -61,57 +62,26 @@ Surface* createSurface(const string filename)
   }
 }
 
-Surface* createSurface(const std::string type, 
-  AbstractSurfDataIterator* dataItr)
+Surface* createSurface(const string& type, SurfData& sd)
 {
   if (type == "Kriging") {
-    return new KrigingSurface(dataItr);
+    return new KrigingSurface(&sd);
   } else if (type == "Mars") {
-    return new MarsSurface(dataItr);
+    return new MarsSurface(&sd);
   } else if (type == "RBFNet") {
-    return new RBFNetSurface(dataItr);
+    return new RBFNetSurface(&sd);
   } else if (type == "ANN") {
-    return new ANNSurface(dataItr);
+    return new ANNSurface(&sd);
   } else {
     cerr << "Unknown surface type: " << type << endl;
     return 0;
   }
 }
 
-Surface* createSurface(const std::string type,
-  AbstractSurfDataIterator* dataItr, unsigned order)
+Surface* createSurface(const string& type, SurfData& sd, unsigned order)
 {
   if (type == "Polynomial") {
-    return new PolynomialSurface(dataItr, order); 
-  } else {
-    cerr << "Unknown surface type: " << type << endl;
-    return 0;
-  }
-}
-
-Surface* createSurface(const std::string type, SurfData& sd, 
-  unsigned responseIndex)
-{
-  if (type == "Kriging") {
-    return new KrigingSurface(sd, responseIndex);
-  } else if (type == "Mars") {
-    return new MarsSurface(sd, responseIndex);
-  } else if (type == "RBFNet") {
-    return new RBFNetSurface(sd, responseIndex);
-  } else if (type == "ANN") {
-    return new ANNSurface(sd, responseIndex);
-  } else {
-    cerr << "Unknown surface type: " << type << endl;
-    return 0;
-  }
-}
-
-Surface* createSurface(const std::string type, SurfData& sd, 
-  unsigned responseIndex, unsigned order)
-{
-
-  if (type == "Polynomial") {
-    return new PolynomialSurface(sd, order, responseIndex); 
+    return new PolynomialSurface(&sd, order); 
   } else {
     cerr << "Unknown surface type: " << type << endl;
     return 0;
@@ -153,4 +123,28 @@ void printVector(const std::string header, vector<double>& vec)
   for (unsigned i = 0; i < vec.size(); i++) {
     cout << i << " " << vec[i] << endl;
   }
+}
+
+double mean(std::vector<double>& vals)
+{
+  double sum = 0;
+  for (unsigned i = 0; i < vals.size(); i++) {
+    sum += vals[i];
+  }
+  return static_cast<double>(sum) / vals.size();
+}
+
+double sample_var(std::vector<double>& vals)
+{
+  double sse = 0;
+  double avg = mean(vals);
+  for (unsigned i = 0; i < vals.size(); i++) {
+    sse += (vals[i]-avg)*(vals[i]-avg);
+  }
+  return sse / (vals.size() - 1);
+}
+
+double sample_sd(std::vector<double>& vals)
+{
+  return sqrt(sample_var(vals));
 }
