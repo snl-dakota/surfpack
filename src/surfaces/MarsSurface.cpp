@@ -17,7 +17,7 @@
 #include "Surface.h"
 #include "MarsSurface.h"
 
-#ifndef RS6K
+#ifdef C2F77_CALLS_NEED_UNDERSCORE 
 #define mars mars_ 
 #define plot plot_ 
 #define fmod fmod_

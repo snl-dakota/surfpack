@@ -23,7 +23,7 @@
 
 
 
-#ifndef RS6K
+#ifdef C2F77_CALLS_NEED_UNDERSCORE 
 #define callconmin callconmin_
 #define krigmodel  krigmodel_
 #endif
