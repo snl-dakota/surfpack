@@ -14,8 +14,32 @@
 #ifndef __SURF_DATA_H__
 #define __SURF_DATA_H__
 
+#include <stdexcept>
+
 class SurfPoint;
 //class Surface;
+
+class file_open_failure: public std::runtime_error
+{
+public:
+  file_open_failure(const std::string& filename = "") 
+    : std::runtime_error("File " + filename + " could not be opened.") {}
+};
+  
+class SurfData
+{
+private:
+class bad_surf_data : public std::runtime_error
+{
+public:
+  bad_surf_data(const std::string& msg = "") : std::runtime_error(msg) {}
+};
+
+class io_exception: public std::runtime_error
+{
+public:
+  io_exception(const std::string& msg = "") : std::runtime_error(msg) {}
+};
 
 struct SurfDataStateConsistency 
 {
@@ -23,15 +47,12 @@ struct SurfDataStateConsistency
   bool yVector;
   SurfDataStateConsistency() : xMatrix(false), yVector(false) {}
 };
-  
-class SurfData
-{
+
 // ____________________________________________________________________________
 // Creation, Destruction, Initialization 
 // ____________________________________________________________________________
 
 public:
-
   /// Vector of points will be copied
   SurfData(const std::vector<SurfPoint>& points);
 
@@ -42,27 +63,33 @@ public:
   SurfData(std::istream& is, bool binary = false);
 
   /// Makes a deep copy of the object 
-  SurfData(const SurfData& sd); 
+  SurfData(const SurfData& other); 
   
   /// STL data members' resources automatically deallocated 
   ~SurfData();
 
-  /// Initialize data members
-  void init();
-  
   /// Copy only the "active" points
   SurfData* copyActive();
   
-private:
-
-  // Default constructor explicitly disallowed. 
+protected:
+  /// Default constructor explicitly disallowed by clients, but subclassing 
+  /// permitted.
   SurfData();
+
+private:
+  /// Initialize data members
+  void init();
+  
+  /// Copy xMatrix and yVector from another SurfData object
+  void copyBlockData(const SurfData& other);
+
+  /// Deallocate any memory allocated for xMatrix and/or yVector
+  void cleanup();
 
 // ____________________________________________________________________________
 // Overloaded operators 
 // ____________________________________________________________________________
 public:
-
   /// makes deep copy 
   SurfData& operator=(const SurfData& sd);
 
@@ -101,7 +128,7 @@ public:
   //std::vector<SurfPoint>& Points();
 
   /// Return the set of excluded points (the indices)
-  std::set<unsigned> getExcludedPoints() const ; 
+  const std::set<unsigned>& getExcludedPoints() const ; 
 
   /// Get the response value of the (index)th point that corresponds to this
   /// surface
@@ -117,6 +144,14 @@ public:
   /// Return response values for the default response in a contiguous block.  
   /// Be careful. The data should not be changed.
   const double* getYVector() const;
+
+  /// Returns true if the filename extension is .sd.
+  static bool hasBinaryExtension(const std::string& filename);
+  
+  /// Returns true if the filename extension is .txt.
+  static bool hasTextExtension(const std::string& filename);
+  
+  
 
 // ____________________________________________________________________________
 // Commands 
@@ -137,7 +172,7 @@ public:
   unsigned addResponse(const std::vector<double>& newValues); 
   
   /// Specify which points should be skipped
-  void setExcludedPoints(std::set<unsigned> excludedPoints);
+  void setExcludedPoints(const std::set<unsigned>& excludedPoints);
 
   /// Inform this object that a Surface wants to be notified when this object
   /// changes
@@ -147,9 +182,6 @@ public:
   /// data changes
   //void removeListener(Surface *);
 private:
-  /// Make sure an index falls within acceptable boundaries
-  void checkRange(unsigned index) const;
-
   /// Maps all indices to themselves
   void defaultMapping();
 
@@ -167,10 +199,10 @@ public:
 // ____________________________________________________________________________
 
   /// Write a set of SurfPoints to a file
-  void write(const std::string filename) const;
+  void write(const std::string& filename) const;
 
   /// Write a set of SurfPoints to an output stream
-  void read(const std::string filename);
+  void read(const std::string& filename);
   
   /// Write the surface in binary format
   void writeBinary(std::ostream& os) const;
@@ -233,9 +265,24 @@ private:
   /// is added or removed.
   //void notifyListeners(); 
 
+ /// Returns true if file is opened in binary mode, false if it is opened
+ /// in text mode.  If file cannot be opened, an exception is thrown.
+ bool testFileExtension(const std::string& filename) const;
+
 // ____________________________________________________________________________
 // Testing 
 // ____________________________________________________________________________
+
+protected:
+  // Throw an exception if there are any mismatches in the number of
+  // dimensions or number of response values among points in the data set  
+  void sanityCheck() const;
+
+  /// Make sure an index falls within acceptable boundaries
+  void checkRange(const std::string& header, unsigned index) const;
+
+  /// Make sure eof has not been reached unexpectedly
+  void checkForEOF(std::istream& is) const;
 
 public:
 
@@ -244,8 +291,8 @@ static void writeMatrix(const std::string header, double* mat, unsigned rows,
 static void writeMatrix(const std::string filename, double* mat, unsigned rows, 
   unsigned columns);
 #ifdef __TESTING_MODE__ 
-  friend class SurfDataUnitTest;
-  friend class SurfaceUnitTest;
+  friend class SurfDataTest;
+  friend class SurfaceTest;
 
   static int constructCount;
   static int copyCount;
