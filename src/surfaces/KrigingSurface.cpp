@@ -59,7 +59,7 @@ KrigingSurface::KrigingSurface(SurfData* sd)
 #ifdef __TESTING_MODE__
   constructCount++;
 #endif
-  numdv = numsamp = 0;
+  xsize = numsamp = 0;
 }
 
 KrigingSurface::KrigingSurface(const string filename) : Surface(0)
@@ -82,7 +82,7 @@ KrigingSurface::~KrigingSurface()
 
 void KrigingSurface::initialize()
 {
-  if (numdv <= 0 || numsamp <= 0) {
+  if (xsize <= 0 || numsamp <= 0) {
     cerr << "Trying to create Kriging Surface with bad or non-existent surfdata" << endl;
   }
   // CONMIN parameters and array allocation
@@ -107,10 +107,10 @@ void KrigingSurface::initialize()
                     // correlation parameters
 
   numcon = 0;     // number of constraints
-  N1     = numdv + 2;
-  N2     = numdv*2 + numcon;
-  N3     = 1 + numcon + numdv;
-  N4     = (N3 >= numdv) ? N3 : numdv;
+  N1     = xsize + 2;
+  N2     = xsize*2 + numcon;
+  N3     = 1 + numcon + xsize;
+  N4     = (N3 >= xsize) ? N3 : xsize;
   N5     = 2*N4;
   S      = new double[N1];
   G1     = new double[N2];
@@ -127,7 +127,7 @@ void KrigingSurface::initialize()
   conminThetaLowerBnds = new double[N1];  
   conminThetaUpperBnds = new double[N1];
   
-  ICNDIR   =  numdv+1;  // conjugate direction restart parameter
+  ICNDIR   =  xsize+1;  // conjugate direction restart parameter
   NSCAL    =  0;  // (unused) scaling flag
   NACMX1   =  N3; // estimate of 1+(max # of active constraints)
   LINOBJ   =  0;  // (unused) set to 1 if obj fcn is linear
@@ -154,15 +154,15 @@ void KrigingSurface::initialize()
   numNewPts         = 1;
   numSampQuad       = 4*numsamp;
   conminSingleArray = 1;
-  xNewVector        = new double[numdv*numNewPts];
-  thetaVector       = new double[numdv];
-  xArray 	    = new double[numdv];
-  xMatrix           = new double[numdv*numsamp];
+  xNewVector        = new double[xsize*numNewPts];
+  thetaVector       = new double[xsize];
+  xArray 	    = new double[xsize];
+  xMatrix           = new double[xsize*numsamp];
   yValueVector      = new double[numsamp];
   rhsTermsVector    = new double[numsamp];
   constraintVector  = new double[conminSingleArray];
-  thetaLoBndVector  = new double[numdv];
-  thetaUpBndVector  = new double[numdv];
+  thetaLoBndVector  = new double[xsize];
+  thetaUpBndVector  = new double[xsize];
   iPivotVector      = new int[numsamp];
   correlationMatrix = new double[numsamp*numsamp];
   invcorrelMatrix   = new double[numsamp*numsamp];
@@ -180,7 +180,7 @@ void KrigingSurface::initialize()
   // parameters for the kriging model -- maximum liklihood estimation
   // is used to find the optimal values of thetaVector in the kriging code.
   // Also initialize the lower and upper bounds on theta.
-  /*for (i=0; i<numdv; i++) {
+  /*for (i=0; i<xsize; i++) {
     thetaVector[i]      = theta_input[i];
     thetaLoBndVector[i] = theta_low_bnd_input[i];
     thetaUpBndVector[i] = theta_upp_bnd_input[i];
@@ -188,13 +188,13 @@ void KrigingSurface::initialize()
 
   // copy the "theta" vectors to the "conmin_theta" -- this is needed 
   // because CONMIN uses array sizes that are larger than the number
-  // of design variables (array length = N1, and N1 = numdv+2)
+  // of design variables (array length = N1, and N1 = xsize+2)
   for (i=0;i<N1;i++) {
     conminThetaVars[i]      = 0.0;
     conminThetaLowerBnds[i] = -DBL_MAX;
     conminThetaUpperBnds[i] =  DBL_MAX;
   }
-  for (i=0;i<numdv;i++) {
+  for (i=0;i<xsize;i++) {
     conminThetaVars[i]      = 4.0e+1 ;
     conminThetaLowerBnds[i] = 1.e-3; 
     conminThetaUpperBnds[i] = 1.e+16; 
@@ -273,11 +273,11 @@ unsigned KrigingSurface::minPointsRequired() const
 
 double KrigingSurface::evaluate(const std::vector<double>& x)
 { 
-  //double* xArray = new double[dim];
-  if (x.size() != static_cast<unsigned>(dim)) {
+  //double* xArray = new double[xsize];
+  if (x.size() != static_cast<unsigned>(xsize)) {
     cerr << "Wrong number of dimensions" << endl;
   } else {
-    for (int i = 0; i < dim; i++) {
+    for (int i = 0; i < xsize; i++) {
       xArray[i] = x[i];
     }
   }
@@ -290,7 +290,7 @@ double KrigingSurface::evaluate(const std::vector<double>& x)
 #endif
   //cout << "Calculate_________________" << endl;
   //printKrigEvalVars(cout);
-  krigmodel(dim,pts,numNewPts,
+  krigmodel(xsize,numsamp,numNewPts,
             iFlag,thetaVector[0],xMatrix[0],yValueVector[0],xArray[0],
             yNewVector[0],betaHat,rhsTermsVector[0],maxLikelihoodEst,
             iPivotVector[0],correlationMatrix[0],invcorrelMatrix[0],
@@ -308,10 +308,36 @@ double KrigingSurface::evaluate(const std::vector<double>& x)
 // Commands 
 //_____________________________________________________________________________
 
+void KrigingSurface::setConminThetaVars(std::vector<double> vals)
+{
+  if (!sd) {
+    cout << "Can't set conmin seed without data" << endl;
+  } else { 
+    xsize = sd->xSize();
+    numsamp = sd->size();
+    if (!needsCleanup) {
+      initialize();
+    }
+    for (unsigned i = 0; i < vals.size(); i++) {
+            conminThetaVars[i] = vals[i];
+    }
+    runConminFlag = true;
+  }
+}
 void KrigingSurface::usePreComputedCorrelationVector(std::vector<double> vals)
 {
-  for (unsigned i = 0; i < vals.size(); i++) {
-	  thetaVector[i] = vals[i];
+  if (!sd) {
+    cout << "Can't set theta vars without data" << endl;
+  } else {
+    xsize = sd->xSize();
+    numsamp = sd->size();
+    if (!needsCleanup) {
+      initialize();
+    }
+    for (unsigned i = 0; i < vals.size(); i++) {
+            thetaVector[i] = vals[i];
+    }
+    runConminFlag = false;
   }
 }
 
@@ -323,12 +349,12 @@ void KrigingSurface::build(SurfData& data)
   // initialize
   // this could be cleaner
 
-  numdv = data.xSize();
+  xsize = data.xSize();
   numsamp = data.size();
   
   if (!runConminFlag) {
-    saveTheta = new double[numdv];
-    memcpy(saveTheta,thetaVector,sizeof(double)*numdv);
+    saveTheta = new double[xsize];
+    memcpy(saveTheta,thetaVector,sizeof(double)*xsize);
   }
 
   if (needsCleanup) {
@@ -337,7 +363,7 @@ void KrigingSurface::build(SurfData& data)
   initialize();
 
   if (!runConminFlag) {
-    memcpy(thetaVector,saveTheta,sizeof(double)*numdv);
+    memcpy(thetaVector,saveTheta,sizeof(double)*xsize);
     delete saveTheta;
     saveTheta = 0;
   }
@@ -361,19 +387,19 @@ KrigingSurface* KrigingSurface::makeSimilarWithNewData(SurfData* surfData)
 void KrigingSurface::writeBinary(ostream& os)
 {
   int i;
-  os.write((char*)(&numdv),sizeof(int));
+  os.write((char*)(&xsize),sizeof(int));
   os.write((char*)(&numsamp),sizeof(int));
-  for(i=0;i<pts;i++) { 
+  for(i=0;i<numsamp;i++) { 
     os.write(reinterpret_cast<char*>(&xMatrix[i]),sizeof(xMatrix[i]));
   }
-  for(i=0;i<pts;i++) { 
+  for(i=0;i<numsamp;i++) { 
     os.write(reinterpret_cast<char*>(&rXhatVector[i]),sizeof(rXhatVector[i]));
   }
   os.write(reinterpret_cast<char*>(&betaHat),sizeof(betaHat));
-  for(i=0;i<pts;i++) { 
+  for(i=0;i<numsamp;i++) { 
     os.write(reinterpret_cast<char*>(&rhsTermsVector[i]),sizeof(rhsTermsVector[i]));
   }
-  for(i=0;i<numdv;i++) { 
+  for(i=0;i<xsize;i++) { 
     os.write(reinterpret_cast<char*>(&thetaVector[i]),sizeof(thetaVector[i]));
   }
 }
@@ -384,19 +410,19 @@ void KrigingSurface::writeText(ostream& os)
   unsigned old_precision = os.precision(surfpack::output_precision);
   os.setf(ios::scientific);
   int i;
-  os << pts << " number of data points" << endl;
-  os << dim << " number of input variables" << endl;
-  for(i=0;i<pts;i++) { 
+  os << numsamp << " number of data points" << endl;
+  os << xsize << " number of input variables" << endl;
+  for(i=0;i<numsamp;i++) { 
     os << xMatrix[i] << " xMatrix[" << i << "]" << endl; 
   }
-  for(i=0;i<pts;i++) { 
+  for(i=0;i<numsamp;i++) { 
     os <<  rXhatVector[i] << " rXhatVector[" << i << "]" << endl; 
   }
   os << betaHat << " betaHat" << endl; 
-  for(i=0;i<pts;i++) { 
+  for(i=0;i<numsamp;i++) { 
     os <<  rhsTermsVector[i] << " rhsTermsVector[" << i << "]" << endl; 
   }
-  for(i=0;i<numdv;i++) { 
+  for(i=0;i<xsize;i++) { 
     os << thetaVector[i] << " thetaVector[" << i << "]" << endl; 
   }
   os.flags(old_flags);
@@ -406,22 +432,20 @@ void KrigingSurface::writeText(ostream& os)
 void KrigingSurface::readBinary(istream& is)
 {
   int i;
-  is.read((char*)(&numdv),sizeof(int));
-  dim = numdv;
+  is.read((char*)(&xsize),sizeof(int));
   is.read((char*)(&numsamp),sizeof(int));
-  pts = numsamp;
   initialize();
-  for(i=0;i<pts;i++) { 
+  for(i=0;i<numsamp;i++) { 
     is.read(reinterpret_cast<char*>(&xMatrix[i]),sizeof(xMatrix[i]));
   }
-  for(i=0;i<pts;i++) { 
+  for(i=0;i<numsamp;i++) { 
     is.read(reinterpret_cast<char*>(&rXhatVector[i]),sizeof(rXhatVector[i]));
   }
   is.read(reinterpret_cast<char*>(&betaHat),sizeof(betaHat));
-  for(i=0;i<pts;i++) { 
+  for(i=0;i<numsamp;i++) { 
     is.read(reinterpret_cast<char*>(&rhsTermsVector[i]),sizeof(rhsTermsVector[i]));
   }
-  for(i=0;i<numdv;i++) { 
+  for(i=0;i<xsize;i++) { 
     is.read(reinterpret_cast<char*>(&thetaVector[i]),sizeof(thetaVector[i]));
   }
   originalData = false;
@@ -433,27 +457,25 @@ void KrigingSurface::readText(istream& is)
   istringstream streamline;
   int i;
   getline(is,sline); streamline.str(sline);
-  streamline >> pts;
+  streamline >> numsamp;
   getline(is,sline); streamline.str(sline);
-  streamline >> dim;
-  numdv = dim;
-  numsamp = pts;
+  streamline >> xsize;
   initialize();
-  for(i=0;i<pts;i++) { 
+  for(i=0;i<numsamp;i++) { 
     getline(is,sline); streamline.str(sline);
     streamline >> xMatrix[i];
   }
-  for(i=0;i<pts;i++) { 
+  for(i=0;i<numsamp;i++) { 
     getline(is,sline); streamline.str(sline);
     streamline >> rXhatVector[i];
   }
   getline(is,sline); streamline.str(sline);
   streamline >> betaHat;
-  for(i=0;i<pts;i++) { 
+  for(i=0;i<numsamp;i++) { 
     getline(is,sline); streamline.str(sline);
     streamline >> rhsTermsVector[i];
   }
-  for(i=0;i<numdv;i++) { 
+  for(i=0;i<xsize;i++) { 
     getline(is,sline); streamline.str(sline);
     streamline >> thetaVector[i];
   }
@@ -465,44 +487,44 @@ void KrigingSurface::printKrigModelVariables(ostream& os)
 {
   int i;
   os << "After call to krigmodel in modelbuild" << endl;
-  os << "dim: " << dim << endl;
-  os << "pts: " << pts  << endl;
+  os << "xsize: " << xsize << endl;
+  os << "numsamp: " << numsamp  << endl;
   os << "numNewPts: " << numNewPts << endl;
   os << "iFlag" << iFlag << endl;
-  os << "thetaVector" << endl; for(i=0;i<dim;i++) { os << thetaVector[i] << endl; }
-  os << "xMatrix" << endl; for(i=0;i<pts;i++) { os << xMatrix[i] << endl; }
-  os << "yValueVector" << endl; for(i=0;i<pts;i++) { os <<  yValueVector[i] << endl; }
-  os << "xNewVector" << endl; for(i=0;i<pts;i++) { os <<  xNewVector[i]  << endl; }
-  os << "yNewVector" << endl; for(i=0;i<pts;i++) { os <<  yNewVector[i] << endl; }
+  os << "thetaVector" << endl; for(i=0;i<xsize;i++) { os << thetaVector[i] << endl; }
+  os << "xMatrix" << endl; for(i=0;i<numsamp;i++) { os << xMatrix[i] << endl; }
+  os << "yValueVector" << endl; for(i=0;i<numsamp;i++) { os <<  yValueVector[i] << endl; }
+  os << "xNewVector" << endl; for(i=0;i<numsamp;i++) { os <<  xNewVector[i]  << endl; }
+  os << "yNewVector" << endl; for(i=0;i<numsamp;i++) { os <<  yNewVector[i] << endl; }
   os << "betaHat: " <<  betaHat << endl; 
-  os << "rhsTermsVector" << endl; for(i=0;i<pts;i++) { os <<  rhsTermsVector[i] << endl; }
+  os << "rhsTermsVector" << endl; for(i=0;i<numsamp;i++) { os <<  rhsTermsVector[i] << endl; }
   os << "maxLikelihoodEst: " << maxLikelihoodEst << endl;
-  os << "iPivotVector" << endl; for(i=0;i<pts;i++) { os <<  iPivotVector[i] << endl; }
-  os << "correlationMatrix" << endl; for(i=0;i<pts*pts;i++) { os <<  correlationMatrix[i] << endl; }
-  os << "invcorrelMatrix" << endl; for(i=0;i<pts*pts;i++) { os <<  invcorrelMatrix[i] << endl; }
-  os << "fValueVector" << endl; for(i=0;i<pts;i++) { os <<  fValueVector[i] << endl; }
-  os << "fRinvVector" << endl; for(i=0;i<pts;i++) { os <<  fRinvVector[i] << endl; }
-  os << "yfbVector" << endl; for(i=0;i<pts;i++) { os <<  yfbVector[i] << endl; }
-  os << "yfbRinvVector" << endl; for(i=0;i<pts;i++) { os <<  yfbRinvVector[i] << endl; }
-  os << "rXhatVector" << endl; for(i=0;i<pts;i++) { os <<  rXhatVector[i] << endl; }
-  os << "workVector" << endl; for(i=0;i<pts;i++) { os <<  workVector[i] << endl; }
-  os << "workVectorQuad" << endl; for(i=0;i<4*pts;i++) { os <<  workVectorQuad[i] << endl; }
-  os << "iworkVector" << endl; for(i=0;i<pts;i++) { os <<  iworkVector[i] << endl; }
-  os << "numSampQuad: " << pts  << endl;
+  os << "iPivotVector" << endl; for(i=0;i<numsamp;i++) { os <<  iPivotVector[i] << endl; }
+  os << "correlationMatrix" << endl; for(i=0;i<numsamp*numsamp;i++) { os <<  correlationMatrix[i] << endl; }
+  os << "invcorrelMatrix" << endl; for(i=0;i<numsamp*numsamp;i++) { os <<  invcorrelMatrix[i] << endl; }
+  os << "fValueVector" << endl; for(i=0;i<numsamp;i++) { os <<  fValueVector[i] << endl; }
+  os << "fRinvVector" << endl; for(i=0;i<numsamp;i++) { os <<  fRinvVector[i] << endl; }
+  os << "yfbVector" << endl; for(i=0;i<numsamp;i++) { os <<  yfbVector[i] << endl; }
+  os << "yfbRinvVector" << endl; for(i=0;i<numsamp;i++) { os <<  yfbRinvVector[i] << endl; }
+  os << "rXhatVector" << endl; for(i=0;i<numsamp;i++) { os <<  rXhatVector[i] << endl; }
+  os << "workVector" << endl; for(i=0;i<numsamp;i++) { os <<  workVector[i] << endl; }
+  os << "workVectorQuad" << endl; for(i=0;i<4*numsamp;i++) { os <<  workVectorQuad[i] << endl; }
+  os << "iworkVector" << endl; for(i=0;i<numsamp;i++) { os <<  iworkVector[i] << endl; }
+  os << "numSampQuad: " << numsamp  << endl;
 }
 
 void KrigingSurface::printKrigEvalVars(ostream& os)
 {
   int i;
-  os << "xMatrix" << endl; for(i=0;i<pts;i++) { os << xMatrix[i] << endl; }
-  os << "rXhatVector" << endl; for(i=0;i<pts;i++) { os <<  rXhatVector[i] << endl; }
+  os << "xMatrix" << endl; for(i=0;i<numsamp;i++) { os << xMatrix[i] << endl; }
+  os << "rXhatVector" << endl; for(i=0;i<numsamp;i++) { os <<  rXhatVector[i] << endl; }
   os << "betaHat: " <<  betaHat << endl; 
-  os << "rhsTermsVector" << endl; for(i=0;i<pts;i++) { os <<  rhsTermsVector[i] << endl; }
-  os << "pts: " << pts  << endl;
-  os << "dim: " << dim << endl;
+  os << "rhsTermsVector" << endl; for(i=0;i<numsamp;i++) { os <<  rhsTermsVector[i] << endl; }
+  os << "numsamp: " << numsamp  << endl;
+  os << "xsize: " << xsize << endl;
   os << "numNewPts: " << numNewPts << endl;
-  os << "thetaVector: " << endl; for(i=0;i<numdv;i++) { os << thetaVector[i] << endl; }
-  os << "yNewVector" << endl; for(i=0;i<pts;i++) { os <<  yNewVector[i] << endl; }
+  os << "thetaVector: " << endl; for(i=0;i<xsize;i++) { os << thetaVector[i] << endl; }
+  os << "yNewVector" << endl; for(i=0;i<numsamp;i++) { os <<  yNewVector[i] << endl; }
 }
 
 void KrigingSurface::printConminVariables(ostream& os)
@@ -541,7 +563,7 @@ void KrigingSurface::printConminVariables(ostream& os)
   os << "ABOBJ1: " << ABOBJ1 << endl;
   os << "THETA: " << THETA << endl;
   os << "maxLikelihoodEst: " << maxLikelihoodEst << endl;
-  os << "dim: " << dim << endl;
+  os << "xsize: " << xsize << endl;
   os << "numcon: " << numcon << endl;
   os << "NSIDE: " << NSIDE << endl;
   os << "IPRINT: " << IPRINT  << endl;
@@ -556,27 +578,27 @@ void KrigingSurface::printConminVariables(ostream& os)
   os << "conminInfo: " << conminInfo  << endl;
   os << "INFOG: " << INFOG  << endl;
   os << "ITER: " << ITER  << endl;
-  os << "pts: " << pts  << endl;
+  os << "numsamp: " << numsamp  << endl;
   os << "numNewPts: " << numNewPts << endl;
-  os << "xMatrix" << endl; for(i=0;i<pts;i++) { os << xMatrix[i] << endl; }
-  os << "yValueVector" << endl; for(i=0;i<pts;i++) { os <<  yValueVector[i] << endl; }
-  os << "xNewVector" << endl; for(i=0;i<pts;i++) { os <<  xNewVector[i]  << endl; }
-  os << "yNewVector" << endl; for(i=0;i<pts;i++) { os <<  yNewVector[i] << endl; }
+  os << "xMatrix" << endl; for(i=0;i<numsamp;i++) { os << xMatrix[i] << endl; }
+  os << "yValueVector" << endl; for(i=0;i<numsamp;i++) { os <<  yValueVector[i] << endl; }
+  os << "xNewVector" << endl; for(i=0;i<numsamp;i++) { os <<  xNewVector[i]  << endl; }
+  os << "yNewVector" << endl; for(i=0;i<numsamp;i++) { os <<  yNewVector[i] << endl; }
   os << "betaHat: " <<  betaHat << endl; 
-  os << "rhsTermsVector" << endl; for(i=0;i<pts;i++) { os <<  rhsTermsVector[i] << endl; }
-  os << "iPivotVector" << endl; for(i=0;i<pts;i++) { os <<  iPivotVector[i] << endl; }
-  os << "correlationMatrix" << endl; for(i=0;i<pts*pts;i++) { os <<  correlationMatrix[i] << endl; }
-  os << "invcorrelMatrix" << endl; for(i=0;i<pts*pts;i++) { os <<  invcorrelMatrix[i] << endl; }
-  os << "fValueVector" << endl; for(i=0;i<pts;i++) { os <<  fValueVector[i] << endl; }
-  os << "fRinvVector" << endl; for(i=0;i<pts;i++) { os <<  fRinvVector[i] << endl; }
-  os << "yfbVector" << endl; for(i=0;i<pts;i++) { os <<  yfbVector[i] << endl; }
-  os << "yfbRinvVector" << endl; for(i=0;i<pts;i++) { os <<  yfbRinvVector[i] << endl; }
-  os << "rXhatVector" << endl; for(i=0;i<pts;i++) { os <<  rXhatVector[i] << endl; }
-  os << "workVector" << endl; for(i=0;i<pts;i++) { os <<  workVector[i] << endl; }
-  os << "workVectorQuad" << endl; for(i=0;i<4*pts;i++) { os <<  workVectorQuad[i] << endl; }
-  os << "iworkVector" << endl; for(i=0;i<pts;i++) { os <<  iworkVector[i] << endl; }
-  os << "numSampQuad: " << pts  << endl;
-  os << "conminSingleArray: " << pts  << endl;
+  os << "rhsTermsVector" << endl; for(i=0;i<numsamp;i++) { os <<  rhsTermsVector[i] << endl; }
+  os << "iPivotVector" << endl; for(i=0;i<numsamp;i++) { os <<  iPivotVector[i] << endl; }
+  os << "correlationMatrix" << endl; for(i=0;i<numsamp*numsamp;i++) { os <<  correlationMatrix[i] << endl; }
+  os << "invcorrelMatrix" << endl; for(i=0;i<numsamp*numsamp;i++) { os <<  invcorrelMatrix[i] << endl; }
+  os << "fValueVector" << endl; for(i=0;i<numsamp;i++) { os <<  fValueVector[i] << endl; }
+  os << "fRinvVector" << endl; for(i=0;i<numsamp;i++) { os <<  fRinvVector[i] << endl; }
+  os << "yfbVector" << endl; for(i=0;i<numsamp;i++) { os <<  yfbVector[i] << endl; }
+  os << "yfbRinvVector" << endl; for(i=0;i<numsamp;i++) { os <<  yfbRinvVector[i] << endl; }
+  os << "rXhatVector" << endl; for(i=0;i<numsamp;i++) { os <<  rXhatVector[i] << endl; }
+  os << "workVector" << endl; for(i=0;i<numsamp;i++) { os <<  workVector[i] << endl; }
+  os << "workVectorQuad" << endl; for(i=0;i<4*numsamp;i++) { os <<  workVectorQuad[i] << endl; }
+  os << "iworkVector" << endl; for(i=0;i<numsamp;i++) { os <<  iworkVector[i] << endl; }
+  os << "numSampQuad: " << numsamp  << endl;
+  os << "conminSingleArray: " << numsamp  << endl;
 }
 
 //_____________________________________________________________________________
@@ -585,11 +607,11 @@ void KrigingSurface::printConminVariables(ostream& os)
 
 void KrigingSurface::buildModel(SurfData& data)
 {
-  dim = static_cast<int>(data.xSize());
-  pts = static_cast<int>(data.size());
+  xsize = static_cast<int>(data.xSize());
+  numsamp = static_cast<int>(data.size());
   for (unsigned i = 0; i < data.size(); i++) {
-    for (int j = 0; j < dim; j++) {
-       xMatrix[j*pts+i] = data[i].X()[j];
+    for (int j = 0; j < xsize; j++) {
+       xMatrix[j*numsamp+i] = data[i].X()[j];
     }
     yValueVector[i] = data.getResponse(i);
   } 
@@ -601,15 +623,15 @@ void KrigingSurface::buildModel(SurfData& data)
 
     // Print out xMatrix
     //cout << "xMatrix before call to conmin" << endl;
-    //for (int i = 0; i < dim*pts; i++) {
+    //for (int i = 0; i < xsize*numsamp; i++) {
     //        cout << xMatrix[i] << endl;
     //}
     //cout << "yValueVector before call to conmin" << endl;
-    //for (int j = 0; j < pts; j++) {
+    //for (int j = 0; j < numsamp; j++) {
     //        cout << yValueVector[j] << endl;
     //}
-    //writeMatrix("xMatrix before conmin",xMatrix,pts,dim,cout);
-    //writeMatrix("yVector before conmin",yValueVector,pts,1,cout);
+    //writeMatrix("xMatrix before conmin",xMatrix,numsamp,xsize,cout);
+    //writeMatrix("yVector before conmin",yValueVector,numsamp,1,cout);
 #ifdef PRINT_DEBUG
     ofstream before("before.txt",ios::out);
     //ostream& os = cout;
@@ -622,9 +644,9 @@ void KrigingSurface::buildModel(SurfData& data)
 	       constraintVector[0],SCAL[0],DF[0],A[0],S[0],G1[0],G2[0],
 	       B[0],C[0],ISC[0],IC[0],MS1[0],N1,N2,N3,N4,N5,
 	       DELFUN,DABFUN,FDCH,FDCHM,CT,CTMIN,CTL,CTLMIN,ALPHAX,ABOBJ1,THETA,
-	       maxLikelihoodEst,dim,numcon,NSIDE,IPRINT,NFDG,NSCAL,LINOBJ,
+	       maxLikelihoodEst,xsize,numcon,NSIDE,IPRINT,NFDG,NSCAL,LINOBJ,
 	       ITMAX,ITRM,ICNDIR,IGOTO,NAC,
-	       conminInfo,INFOG,ITER,pts,numNewPts,iFlag, 
+	       conminInfo,INFOG,ITER,numsamp,numNewPts,iFlag, 
 	       xMatrix[0],yValueVector[0],xNewVector[0],yNewVector[0],betaHat,
 	       rhsTermsVector[0],iPivotVector[0],correlationMatrix[0],
 	       invcorrelMatrix[0],fValueVector[0],fRinvVector[0], 
@@ -639,7 +661,7 @@ void KrigingSurface::buildModel(SurfData& data)
 #endif
     // copy CONMIN's theta variables to the thetaVector array for use in the
     // kriging model evaluation phase
-    for (int i=0;i<dim;i++) {
+    for (int i=0;i<xsize;i++) {
       thetaVector[i] = conminThetaVars[i];
     }
 
@@ -654,7 +676,7 @@ void KrigingSurface::buildModel(SurfData& data)
     os << "Before call to krigmodel in buildModel" << endl;
     printKrigModelVariables(os);
 #endif
-    krigmodel(dim,pts,numNewPts,
+    krigmodel(xsize,numsamp,numNewPts,
 	      iFlag,thetaVector[0],xMatrix[0],yValueVector[0],xNewVector[0],
 	      yNewVector[0],betaHat,rhsTermsVector[0],maxLikelihoodEst,
 	      iPivotVector[0],correlationMatrix[0],invcorrelMatrix[0],

@@ -15,10 +15,10 @@
 #include "Surface.h"
 //#include "SurfDataIterator.h"
 #include "PolynomialSurface.h"
-//#include "KrigingSurface.h"
-//#include "MarsSurface.h"
+#include "KrigingSurface.h"
+#include "MarsSurface.h"
 #include "surfpack.h"
-//#include "ANNSurface.h"
+#include "ANNSurface.h"
 //#include "ParticleSwarmMLP.h"
 //#include "BackpropMLP.h"
 
@@ -262,16 +262,32 @@ void create(vector< string >& args)
     //        cerr << "Error: unable to open " << args[2] << " for output." << endl;
     //        return;
     //}
-    if (args.size() == 4) {
-      // create surface with sd; responseIndex = 0
-      sd.setDefaultIndex(0);
-      s = createSurface(args[3], sd);
-    } else if (args.size() == 5) {
+    if (args[3] == "Polynomial" && args.size() == 5) {
       // must be a polynomial surface 
       sd.setDefaultIndex(0);
       s = createSurface(args[3], sd, atoi(args[4].c_str()));
+    } else {
+      // create surface with sd; responseIndex = 0
+      sd.setDefaultIndex(0);
+      s = createSurface(args[3], sd);
     }
-    
+    if (args[3] == "Kriging") {
+      if (args.size() > 5) {
+        vector<double> vals;
+        for (unsigned argInd = 5; argInd < args.size(); argInd++) {
+          vals.push_back(atof(args[argInd].c_str()));
+        }
+        if (args[4] == "ConminSeed") {
+ 	  cout << "Setting conmin seed" << endl;
+          (dynamic_cast<KrigingSurface*>(s))->setConminThetaVars(vals);
+        } else if (args[4] == "Thetas") {
+ 	  cout << "Setting theta vars" << endl;
+          (dynamic_cast<KrigingSurface*>(s))->usePreComputedCorrelationVector(vals);
+        }
+      }
+    }
+        
+     
     //if (args[3] == "kriging") {
     //        s = new KrigingSurface(&sd);
     //        s->build();
@@ -378,7 +394,7 @@ void executeCommand(vector< string >& args)
 		create(args);
 	} else if (args[0] == "evaluate") {
 		evaluateSurface(args);
-	} else if (args[0] == "error") {
+	} else if (args[0] == "fitness" || args[0] == "error") {
 		computeErrorMetric(args);
 	} else if (args[0] == "convert") {
 		conversion(args);

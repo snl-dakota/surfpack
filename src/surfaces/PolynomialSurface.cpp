@@ -251,8 +251,8 @@ void PolynomialSurface::build(SurfData& data)
   int info;
   int nrhs=1;
   char trans = 'N';
-  SurfData::writeMatrix("AMatrix",a,static_cast<unsigned>(pts),numCoeff);
-  SurfData::writeMatrix("BVector",b,static_cast<unsigned>(pts),1);
+  //SurfData::writeMatrix("AMatrix",a,static_cast<unsigned>(pts),numCoeff);
+  //SurfData::writeMatrix("BVector",b,static_cast<unsigned>(pts),1);
   dgels_(trans,pts,numCoeff,nrhs,a,pts,b,pts,work,lwork,info);
   //cout << "A Matrix after: " << endl;
   //writeMatrix(a,pts,numCoeff,cout);

@@ -24,7 +24,7 @@ LINK=ar
 #CPPFLAGS=-Wall -g -fPIC
 #CPPFLAGS=-Wall -g -D__TESTING_MODE__ -pg -O3
 
-CPPFLAGS=-Wall -g -D__TESTING_MODE__
+CPPFLAGS=-Wall -g -pg -O3 # -D__TESTING_MODE__
 LINKFLAGS = rcs 
 
 DIR=$(SURFPACK)
@@ -122,12 +122,12 @@ $(SURF): $(ANN_OBJS) $(SURF_OBJS)
 	$(LINK) $(LINKFLAGS)  $@ $(SURF_OBJS) $(ANN_OBJS)
 
 $(NEWBIN): $(KRIG) $(SURF) $(OTHER_OBJS)
-	$(CC) $(LDFLAGS) -o $@ $(DIR)/interface/main.o $(LDLIBS)
+	$(CC) $(LDFLAGS) -pg -O3 -o $@ $(DIR)/interface/main.o $(LDLIBS)
 
 #clean: 
 #	rm $(DIR)/src/SurfPoint.o $(DIR)/src/SurfData.o $(DIR)/src/Surface.o $(DIR)/src/surfaces/PolynomialSurface.o
 clean:
-	rm $(MARS) $(CONMIN) $(KRIG) $(SURF) $(NEWBIN) $(SURF_OBJS) $(KRIG_OBJS) $(CONMIN_OBJS) $(OTHER_OBJS) $(ANN_OBJS)
+	rm $(MARS) $(CONMIN) $(KRIG) $(SURF) $(NEWBIN) $(SURF_OBJS) $(KRIG_OBJS) $(CONMIN_OBJS) $(OTHER_OBJS) $(ANN_OBJS) $(MARS_OBJS)
 	   
 
 

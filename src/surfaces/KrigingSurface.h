@@ -50,6 +50,7 @@ public:
 // Commands 
 //_____________________________________________________________________________
 
+  void setConminThetaVars(std::vector<double> vals);
   void usePreComputedCorrelationVector(std::vector<double> vals);
   void build(SurfData& data);
   
@@ -86,10 +87,8 @@ protected:
 
   static const std::string name;
   bool needsCleanup;
-  int numdv;
+  int xsize;
   int numsamp;
-  int dim;
-  int pts;
   bool runConminFlag;
 
   //*******************CONMIN DATA**************************/
@@ -176,11 +175,11 @@ protected:
   /** Array of flags to identify active and violated constraints */
   int    *IC;
 
-  /// Temporary array of design variables used by CONMIN (length N1 = numdv+2)
+  /// Temporary array of design variables used by CONMIN (length N1 = xsize+2)
   double *conminThetaVars;
-  /// Temporary array of lower bounds used by CONMIN (length N1 = numdv+2)
+  /// Temporary array of lower bounds used by CONMIN (length N1 = xsize+2)
   double *conminThetaLowerBnds;
-  /// Temporary array of upper bounds used by CONMIN (length N1 = numdv+2)
+  /// Temporary array of upper bounds used by CONMIN (length N1 = xsize+2)
   double *conminThetaUpperBnds;
 
   /// Internal CONMIN variable: 1-D search parameter.

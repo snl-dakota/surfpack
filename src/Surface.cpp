@@ -241,9 +241,9 @@ double Surface::press(SurfData& dataSet)
       delete allButOne;
       allButOne = 0;
       i++;
-      cout << setw(5) << setprecision(0) 
-           << ( 100.0*static_cast<double>(i)/static_cast<double>(surfData.size()+1) ) 
-           << "%\r" << flush;
+      //cout << setw(5) << setprecision(0) 
+      //     << ( 100.0*static_cast<double>(i)/static_cast<double>(surfData.size()+1) ) 
+      //     << "%\r" << flush;
     }
     cout << setprecision(6) << endl;
     pressValue = sqrt(pressValue/static_cast<double>(surfData.size()+1));
