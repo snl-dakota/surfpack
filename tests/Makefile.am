@@ -11,4 +11,4 @@ srftest_LDADD = $(top_builddir)/src/libsurfpack.la \
 		 -lcppunit -ldl \
 		 -llapack -lblas -lm -lg2c
 INCLUDES = -I$(top_srcdir)/src -I$(top_srcdir)/src/surfaces 
-CLEANFILES = *.bb *.bbg *.da *.gcov
+CLEANFILES = *.bb *.bbg *.da *.gcov writePoint.sp writePoint.txt
