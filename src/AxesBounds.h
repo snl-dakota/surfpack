@@ -52,7 +52,8 @@ public:
   /// must contain the names of zero or more functions at which all the data
   /// points should be evaluated.  The test functions should reside in the
   /// surfpack namespace.
-  SurfData* sampleMonteCarlo(unsigned numPts, const std::vector<std::string>& testFunctions);
+  SurfData* sampleMonteCarlo(unsigned numPts, 
+    const std::vector<std::string>& testFunctions);
 
   /// Reset the counter used to iterate through dimensions for grid data
   void initialize();
@@ -61,8 +62,9 @@ public:
   void nextPoint();
 
 protected:
-  /// Counter used to iterate through the dimensions for grid data.  The
-  /// 
+  /// Counter used to iterate through the dimensions for grid data.  The 
+  /// sampleGrid method uses it in conjunction with the min, max, and interval
+  /// values along each axis to create a SurfData object.
   std::vector<int> point;
   std::vector<double> surfptx;
   std::vector<Axis> axes;
