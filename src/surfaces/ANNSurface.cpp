@@ -108,7 +108,7 @@ void ANNSurface::build(SurfData& data)
   reshape_2d(training_inputs, data.size(), data.xSize());
   reshape_2d(training_outputs, data.size(), 1);
   for (unsigned i = 0; i < data.size(); i++) {
-    SurfPoint& sp = data[i];
+    const SurfPoint& sp = data[i];
     for (unsigned j = 0; j < data.xSize(); j++) {
       training_inputs[i][j] = sp.X()[j];
       training_outputs[i][0] = data.getResponse(i);
