@@ -6,5 +6,5 @@ surfpack_LDADD = $(top_builddir)/src/libsurfpack.la \
 		 $(top_builddir)/src/kriging/libkriging.la \
 		 $(top_builddir)/src/conmin/libconmin.la \
 		 -llapack -lblas -lm -lg2c
-INCLUDES = -I$(top_srcdir)/src -I$(top_srcdir)/src/surfaces 
+INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src -I$(top_srcdir)/src/surfaces 
 CLEANFILES = *.bb *.bbg *.da *.gcov

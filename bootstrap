@@ -3,4 +3,4 @@ libtoolize --force --copy
 autoheader
 automake -a
 autoconf
-configure -C --prefix=$HOME/Working/Surfpack/Surfpack --disable-shared 
+configure -C --prefix=$HOME/Temp/Surfpack/Surfpack --disable-shared 
