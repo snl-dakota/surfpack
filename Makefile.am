@@ -16,4 +16,4 @@ SUBDIRS = src $(test_dirs)
 # Specifies that the files in the examples subdirectory should be included in 
 # the distribution tarball, even though they are not involved in the build
 # process.
-EXTRA_DIST = $(top_srcdir)/examples/*
+EXTRA_DIST = $(top_srcdir)/examples/* $(top_srcdir)/docs/DoxygenConfig
