@@ -16,7 +16,7 @@ AC_PROG_CXX([CC cxx xlC g++ c++ gcc])
 #AC_CXX_BOOL
 #AC_CXX_MUTABLE
 
-AC_DISABLE_SHARED
+#AC_DISABLE_SHARED
 
 AC_LANG_CPLUSPLUS
 ACX_LAPACK
@@ -63,7 +63,8 @@ AC_PROG_F77
 AC_PROG_LIBTOOL
 
 CPPFLAGS="-DDATADIR='\"\$(top_srcdir)/share\"' "
-CXXFLAGS="-fprofile-arcs -ftest-coverage -g -save-temps"
+#CXXFLAGS="-fprofile-arcs -ftest-coverage -g -save-temps"
+CXXFLAGS="-g "
 
 # Checks for header files.
 
