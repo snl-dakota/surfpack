@@ -92,7 +92,6 @@ AC_CONFIG_FILES([Makefile
 		 src/conmin/Makefile
 		 src/kriging/Makefile
 		 src/mars/Makefile
-                 src/bonus/Makefile
 		 interface/Makefile])
 MDR_CPPUNIT_MAKEFILE([tests/Makefile])
 echo 'LIBS:' $LIBS
