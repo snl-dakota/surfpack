@@ -10,7 +10,7 @@ AC_CONFIG_SRCDIR([src/Surface.cpp])
 
 # Checks for programs.
 #AC_PROG_AWK
-AC_PROG_CXX([CC cxx xlc g++ c++ gcc])
+AC_PROG_CXX([CC cxx xlC g++ c++ gcc])
 #AC_CXX_NAMESPACES
 #AC_CXX_HAVE_STL
 #AC_CXX_BOOL
@@ -31,11 +31,11 @@ WHOLE_LIB_PATH=`echo $LD_LIBRARY_PATH | sed -e 's/^/-L/;s/:/ -L/g'`
 #AC_CHECK_LIB([dxml],[dgels_])
 #
 ##Check for the linear algebra libraries that are needed on Sun/Solaris
-#AC_CHECK_LIB([sunmath],[logf],[],[],[$WHOLE_LIB_PATH])
-#AC_CHECK_LIB([F77],[etime_],[],[],[$WHOLE_LIB_PATH])
-#AC_CHECK_LIB([fsu],[__c_exp],[],[],[$WHOLE_LIB_PATH])
-#AC_CHECK_LIB([sunperf],[dgels_],[],[],[$WHOLE_LIB_PATH])
-#
+AC_CHECK_LIB([sunmath],[logf],[],[],[$WHOLE_LIB_PATH])
+AC_CHECK_LIB([F77],[etime_],[],[],[$WHOLE_LIB_PATH])
+AC_CHECK_LIB([fsu],[__c_exp],[],[],[$WHOLE_LIB_PATH])
+AC_CHECK_LIB([sunperf],[dgels_],[],[],[$WHOLE_LIB_PATH])
+
 #
 ##Check for the linear algebra libraries on Linux machines
 #AC_CHECK_LIB([m],[atanh],[],[],[$WHOLE_LIB_PATH])
@@ -46,7 +46,7 @@ WHOLE_LIB_PATH=`echo $LD_LIBRARY_PATH | sed -e 's/^/-L/;s/:/ -L/g'`
 ##AC_CHECK_LIB([gsl],[main],[],[],[$WHOLE_LIB_PATH])
 
 #Check for libraries needed for CPP Unit test suite
-AC_CHECK_LIB([dl],[main],[],[],[$WHOLE_LIB_PATH])
+AC_CHECK_LIB([dl],[dlclose],[],[],[$WHOLE_LIB_PATH])
 include_tests=yes
 AC_CHECK_LIB([cppunit],[main],[],[include_tests=no],[$WHOLE_LIB_PATH])
 AM_CONDITIONAL(INCLUDE_TESTS, test $include_tests = yes)
