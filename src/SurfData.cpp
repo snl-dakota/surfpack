@@ -13,6 +13,7 @@
 
 #include<vector>
 #include<iostream>
+#include<sstream>
 #include<fstream>
 
 #include "SurfData.h"
@@ -331,15 +332,14 @@ void SurfData::writeBinary(ostream& os) const
 /// Write a set of SurfPoints to an output stream
 void SurfData::writeText(ostream& os) const
 {
-  os << points.size() << endl
-     << xsize << endl 
-     << fsize << endl;
+  // Using trailing words to circumvent istringstream bug
+  os << points.size() << " data points" << endl
+     << xsize << " input variables" << endl 
+     << fsize << " response variables" << endl;
   vector<SurfPoint>::const_iterator itr;
   itr = points.begin();
   while (itr != points.end()) {
     (*itr).writeText(os);
-    // Surfpoint->write(os) does not write newline after each point
-    os << endl; 
     ++itr;
   }
 }
@@ -361,10 +361,17 @@ void SurfData::readBinary(istream& is)
 /// Read a set of SurfPoints from an input stream
 void SurfData::readText(istream& is) 
 {
+  string sline;
+  getline(is,sline);
+  istringstream streamline(sline);
   unsigned size;
-  is >> size
-     >> xsize
-     >> fsize;
+  streamline >> size;
+  getline(is,sline);
+  streamline.str(sline);
+  streamline >> xsize;
+  getline(is,sline);
+  streamline.str(sline);
+  streamline >> fsize;
   points.clear();
   for (unsigned i = 0; i < size; i++) {
     // False for second argument signals a text read

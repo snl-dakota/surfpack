@@ -2,10 +2,12 @@
 #include <cfloat>
 #include <fstream>
 #include <iostream>
+#include <sstream>
 #include <iomanip>
 #include <vector>
 #include <string>
 
+#include "surfpack.h"
 #include "SurfPoint.h"
 #include "SurfData.h"
 #include "Surface.h"
@@ -43,6 +45,7 @@ extern "C" void krigmodel(int&, int&, int&,
 			  double&, double&, double&, double&, int&, int&);
 
 using namespace std;
+using namespace surfpack;
 
 const string KrigingSurface::name = "Kriging";
 //_____________________________________________________________________________
@@ -202,7 +205,7 @@ void KrigingSurface::initialize()
     conminThetaUpperBnds[i] =  DBL_MAX;
   }
   for (i=0;i<numdv;i++) {
-    conminThetaVars[i]      = 10.0 ;
+    conminThetaVars[i]      = 1.0e+1 ;
     conminThetaLowerBnds[i] = 1.e-3; 
     conminThetaUpperBnds[i] = 1.e+16; 
   }
@@ -370,187 +373,105 @@ KrigingSurface* KrigingSurface::makeSimilarWithNewData
 void KrigingSurface::writeBinary(ostream& os)
 {
   int i;
-  //int tempID = Surface::krigingSurfaceID;
-  
-  unsigned nameSize = name.size();
-  os.write(reinterpret_cast<char*>(&nameSize),sizeof(nameSize));
-  os.write(name.c_str(),nameSize);
   os.write((char*)(&numdv),sizeof(int));
   os.write((char*)(&numsamp),sizeof(int));
-  for(i=0;i<numdv;i++) { os.write((char*)&thetaVector[i],sizeof(double)); }
-  for(i=0;i<N1;i++) { os.write((char*)&conminThetaVars[i],sizeof(double)); }
-  for(i=0;i<N1;i++) { os.write((char*)&conminThetaLowerBnds[i],sizeof(double)); }
-  for(i=0;i<N1;i++) { os.write((char*)&conminThetaUpperBnds[i],sizeof(double)); }
-  for(i=0;i<conminSingleArray;i++) { os.write((char*)&constraintVector[i],sizeof(double)); }
-  for(i=0;i<N1;i++) { os.write((char*)&SCAL[i],sizeof(double)); }
-  for(i=0;i<N1;i++) { os.write((char*)&DF[i],sizeof(double)); }
-  for(i=0;i<N1*N3;i++) { os.write((char*)&A[i],sizeof(double)); }
-  for(i=0;i<N1;i++) { os.write((char*)&S[i],sizeof(double)); }
-  for(i=0;i<N2;i++) { os.write((char*)&G1[i],sizeof(double)); }
-  for(i=0;i<N2;i++) { os.write((char*)&G2[i],sizeof(double)); }
-  for(i=0;i<N3*N3;i++) { os.write((char*)&B[i],sizeof(double)); }
-  for(i=0;i<N4;i++) { os.write((char*)&C[i],sizeof(double)); }
-  for(i=0;i<N2;i++) { os.write((char*)&ISC[i],sizeof(int)); }
-  for(i=0;i<N3;i++) { os.write((char*)&IC[i],sizeof(int)); }
-  for(i=0;i<N5;i++) { os.write((char*)&MS1[i],sizeof(int)); }
-  os.write((char*)&N1,sizeof(int));
-  os.write((char*)&N2,sizeof(int));
-  os.write((char*)&N3,sizeof(int));
-  os.write((char*)&N4,sizeof(int));
-  os.write((char*)&N5,sizeof(int));
-  os.write((char*)&N5,sizeof(int));
-  os.write((char*)&DELFUN,sizeof(double));
-  os.write((char*)&DABFUN,sizeof(double));
-  os.write((char*)&FDCH,sizeof(double));
-  os.write((char*)&FDCHM,sizeof(double));
-  os.write((char*)&CT,sizeof(double));
-  os.write((char*)&CTMIN,sizeof(double));
-  os.write((char*)&CTL,sizeof(double));
-  os.write((char*)&CTLMIN,sizeof(double));
-  os.write((char*)&ALPHAX,sizeof(double));
-  os.write((char*)&ABOBJ1,sizeof(double));
-  os.write((char*)&THETA,sizeof(double));
-  os.write((char*)&maxLikelihoodEst,sizeof(double));
-  os.write((char*)&dim,sizeof(int));
-  os.write((char*)&numcon,sizeof(int));
-  os.write((char*)&NSIDE,sizeof(int));
-  os.write((char*)&IPRINT,sizeof(int));
-  os.write((char*)&NFDG,sizeof(int));
-  os.write((char*)&NSCAL,sizeof(int));
-  os.write((char*)&LINOBJ,sizeof(int));
-  os.write((char*)&ITMAX,sizeof(int));
-  os.write((char*)&ITRM,sizeof(int));
-  os.write((char*)&ICNDIR,sizeof(int));
-  os.write((char*)&IGOTO,sizeof(int));
-  os.write((char*)&NAC,sizeof(int));
-  os.write((char*)&conminInfo,sizeof(int));
-  os.write((char*)&INFOG,sizeof(int));
-  os.write((char*)&ITER,sizeof(int));
-  os.write((char*)&pts,sizeof(int));
-  os.write((char*)&numNewPts,sizeof(int));
-  os.write((char*)&iFlag,sizeof(int));
-  for(i=0;i<dim*pts;i++) { os.write((char*)&xMatrix[i],sizeof(double)); }
-  for(i=0;i<pts;i++) { os.write((char*)& yValueVector[i],sizeof(double)); }
-  for(i=0;i<dim*numNewPts;i++) { os.write((char*)& xNewVector[i] ,sizeof(double)); }
-  for(i=0;i<numNewPts;i++) { os.write((char*)& yNewVector[i],sizeof(double)); }
-  os.write((char*)&betaHat,sizeof(double)); 
-  for(i=0;i<pts;i++) { os.write((char*)& rhsTermsVector[i],sizeof(double)); }
-  for(i=0;i<pts;i++) { os.write((char*)& iPivotVector[i],sizeof(int)); }
-  for(i=0;i<pts*pts;i++) { os.write((char*)& correlationMatrix[i],sizeof(double)); }
-  for(i=0;i<pts*pts;i++) { os.write((char*)& invcorrelMatrix[i],sizeof(double)); }
-  for(i=0;i<pts;i++) { os.write((char*)& fValueVector[i],sizeof(double)); }
-  for(i=0;i<pts;i++) { os.write((char*)& fRinvVector[i],sizeof(double)); }
-  for(i=0;i<pts;i++) { os.write((char*)& yfbVector[i],sizeof(double)); }
-  for(i=0;i<pts;i++) { os.write((char*)& yfbRinvVector[i],sizeof(double)); }
-  for(i=0;i<pts;i++) { os.write((char*)& rXhatVector[i],sizeof(double)); }
-  for(i=0;i<pts;i++) { os.write((char*)& workVector[i],sizeof(double)); }
-  for(i=0;i<4*pts;i++) { os.write((char*)& workVectorQuad[i],sizeof(double)); }
-  for(i=0;i<pts;i++) { os.write((char*)& iworkVector[i],sizeof(int)); }
-  //surfData->write(os, true); // binary write
+  for(i=0;i<pts;i++) { 
+    os.write(reinterpret_cast<char*>(&xMatrix[i]),sizeof(xMatrix[i]));
+  }
+  for(i=0;i<pts;i++) { 
+    os.write(reinterpret_cast<char*>(&rXhatVector[i]),sizeof(rXhatVector[i]));
+  }
+  os.write(reinterpret_cast<char*>(&betaHat),sizeof(betaHat));
+  for(i=0;i<pts;i++) { 
+    os.write(reinterpret_cast<char*>(&rhsTermsVector[i]),sizeof(rhsTermsVector[i]));
+  }
+  for(i=0;i<numdv;i++) { 
+    os.write(reinterpret_cast<char*>(&thetaVector[i]),sizeof(thetaVector[i]));
+  }
 }
 
 void KrigingSurface::writeText(ostream& os)
 {
-
+  std::_Ios_Fmtflags old_flags = os.flags();
+  unsigned old_precision = os.precision(surfpack::output_precision);
+  os.setf(ios::scientific);
+  int i;
+  os << pts << " number of data points" << endl;
+  os << dim << " number of input variables" << endl;
+  for(i=0;i<pts;i++) { 
+    os << xMatrix[i] << " xMatrix[" << i << "]" << endl; 
+  }
+  for(i=0;i<pts;i++) { 
+    os <<  rXhatVector[i] << " rXhatVector[" << i << "]" << endl; 
+  }
+  os << betaHat << " betaHat" << endl; 
+  for(i=0;i<pts;i++) { 
+    os <<  rhsTermsVector[i] << " rhsTermsVector[" << i << "]" << endl; 
+  }
+  for(i=0;i<numdv;i++) { 
+    os << thetaVector[i] << " thetaVector[" << i << "]" << endl; 
+  }
+  os.flags(old_flags);
+  os.precision(old_precision);
 }
 
 void KrigingSurface::readBinary(istream& is)
 {
-  unsigned nameSize;
-  is.read(reinterpret_cast<char*>(&nameSize),sizeof(nameSize));
-  char* surfaceType = new char[nameSize+1];
-  is.read(surfaceType,nameSize);
-  surfaceType[nameSize] = '\0';
-  string nameInFile(surfaceType);
-  delete [] surfaceType;
-  if (nameInFile != name) {
-    cerr << "Surface name in file is not 'Kriging'." << endl;
-    cerr << "Cannot build surface." << endl;
-    return;
-  }
   int i;
-  //int tempID;
   is.read((char*)(&numdv),sizeof(int));
   dim = numdv;
   is.read((char*)(&numsamp),sizeof(int));
   pts = numsamp;
   initialize();
-  for(i=0;i<numdv;i++) { is.read((char*)&thetaVector[i],sizeof(double)); }
-  for(i=0;i<N1;i++) { is.read((char*)&conminThetaVars[i],sizeof(double)); }
-  for(i=0;i<N1;i++) { is.read((char*)&conminThetaLowerBnds[i],sizeof(double)); }
-  for(i=0;i<N1;i++) { is.read((char*)&conminThetaUpperBnds[i],sizeof(double)); }
-  for(i=0;i<conminSingleArray;i++) { is.read((char*)&constraintVector[i],sizeof(double)); }
-  for(i=0;i<N1;i++) { is.read((char*)&SCAL[i],sizeof(double)); }
-  for(i=0;i<N1;i++) { is.read((char*)&DF[i],sizeof(double)); }
-  for(i=0;i<N1*N3;i++) { is.read((char*)&A[i],sizeof(double)); }
-  for(i=0;i<N1;i++) { is.read((char*)&S[i],sizeof(double)); }
-  for(i=0;i<N2;i++) { is.read((char*)&G1[i],sizeof(double)); }
-  for(i=0;i<N2;i++) { is.read((char*)&G2[i],sizeof(double)); }
-  for(i=0;i<N3*N3;i++) { is.read((char*)&B[i],sizeof(double)); }
-  for(i=0;i<N4;i++) { is.read((char*)&C[i],sizeof(double)); }
-  for(i=0;i<N2;i++) { is.read((char*)&ISC[i],sizeof(int)); }
-  for(i=0;i<N3;i++) { is.read((char*)&IC[i],sizeof(int)); }
-  for(i=0;i<N5;i++) { is.read((char*)&MS1[i],sizeof(int)); }
-  is.read((char*)&N1,sizeof(int));
-  is.read((char*)&N2,sizeof(int));
-  is.read((char*)&N3,sizeof(int));
-  is.read((char*)&N4,sizeof(int));
-  is.read((char*)&N5,sizeof(int));
-  is.read((char*)&N5,sizeof(int));
-  is.read((char*)&DELFUN,sizeof(double));
-  is.read((char*)&DABFUN,sizeof(double));
-  is.read((char*)&FDCH,sizeof(double));
-  is.read((char*)&FDCHM,sizeof(double));
-  is.read((char*)&CT,sizeof(double));
-  is.read((char*)&CTMIN,sizeof(double));
-  is.read((char*)&CTL,sizeof(double));
-  is.read((char*)&CTLMIN,sizeof(double));
-  is.read((char*)&ALPHAX,sizeof(double));
-  is.read((char*)&ABOBJ1,sizeof(double));
-  is.read((char*)&THETA,sizeof(double));
-  is.read((char*)&maxLikelihoodEst,sizeof(double));
-  is.read((char*)&dim,sizeof(int));
-  is.read((char*)&numcon,sizeof(int));
-  is.read((char*)&NSIDE,sizeof(int));
-  is.read((char*)&IPRINT,sizeof(int));
-  is.read((char*)&NFDG,sizeof(int));
-  is.read((char*)&NSCAL,sizeof(int));
-  is.read((char*)&LINOBJ,sizeof(int));
-  is.read((char*)&ITMAX,sizeof(int));
-  is.read((char*)&ITRM,sizeof(int));
-  is.read((char*)&ICNDIR,sizeof(int));
-  is.read((char*)&IGOTO,sizeof(int));
-  is.read((char*)&NAC,sizeof(int));
-  is.read((char*)&conminInfo,sizeof(int));
-  is.read((char*)&INFOG,sizeof(int));
-  is.read((char*)&ITER,sizeof(int));
-  is.read((char*)&pts,sizeof(int));
-  is.read((char*)&numNewPts,sizeof(int));
-  is.read((char*)&iFlag,sizeof(int));
-  for(i=0;i<dim*pts;i++) { is.read((char*)&xMatrix[i],sizeof(double)); }
-  for(i=0;i<pts;i++) { is.read((char*)& yValueVector[i],sizeof(double)); }
-  for(i=0;i<dim*numNewPts;i++) { is.read((char*)& xNewVector[i] ,sizeof(double)); }
-  for(i=0;i<numNewPts;i++) { is.read((char*)& yNewVector[i],sizeof(double)); }
-  is.read((char*)&betaHat,sizeof(double)); 
-  for(i=0;i<pts;i++) { is.read((char*)& rhsTermsVector[i],sizeof(double)); }
-  for(i=0;i<pts;i++) { is.read((char*)& iPivotVector[i],sizeof(int)); }
-  for(i=0;i<pts*pts;i++) { is.read((char*)& correlationMatrix[i],sizeof(double)); }
-  for(i=0;i<pts*pts;i++) { is.read((char*)& invcorrelMatrix[i],sizeof(double)); }
-  for(i=0;i<pts;i++) { is.read((char*)& fValueVector[i],sizeof(double)); }
-  for(i=0;i<pts;i++) { is.read((char*)& fRinvVector[i],sizeof(double)); }
-  for(i=0;i<pts;i++) { is.read((char*)& yfbVector[i],sizeof(double)); }
-  for(i=0;i<pts;i++) { is.read((char*)& yfbRinvVector[i],sizeof(double)); }
-  for(i=0;i<pts;i++) { is.read((char*)& rXhatVector[i],sizeof(double)); }
-  for(i=0;i<pts;i++) { is.read((char*)& workVector[i],sizeof(double)); }
-  for(i=0;i<4*pts;i++) { is.read((char*)& workVectorQuad[i],sizeof(double)); }
-  for(i=0;i<pts;i++) { is.read((char*)& iworkVector[i],sizeof(int)); }
-  //delete surfData;
-  //surfData = new SurfData;
-  //surfData->read(is,true); // binary read
+  for(i=0;i<pts;i++) { 
+    is.read(reinterpret_cast<char*>(&xMatrix[i]),sizeof(xMatrix[i]));
+  }
+  for(i=0;i<pts;i++) { 
+    is.read(reinterpret_cast<char*>(&rXhatVector[i]),sizeof(rXhatVector[i]));
+  }
+  is.read(reinterpret_cast<char*>(&betaHat),sizeof(betaHat));
+  for(i=0;i<pts;i++) { 
+    is.read(reinterpret_cast<char*>(&rhsTermsVector[i]),sizeof(rhsTermsVector[i]));
+  }
+  for(i=0;i<numdv;i++) { 
+    is.read(reinterpret_cast<char*>(&thetaVector[i]),sizeof(thetaVector[i]));
+  }
+  valid = true;
+  originalData = false;
 }
 
 void KrigingSurface::readText(istream& is)
 {
+  string sline;
+  istringstream streamline;
+  int i;
+  getline(is,sline); streamline.str(sline);
+  streamline >> pts;
+  getline(is,sline); streamline.str(sline);
+  streamline >> dim;
+  numdv = dim;
+  numsamp = pts;
+  initialize();
+  for(i=0;i<pts;i++) { 
+    getline(is,sline); streamline.str(sline);
+    streamline >> xMatrix[i];
+  }
+  for(i=0;i<pts;i++) { 
+    getline(is,sline); streamline.str(sline);
+    streamline >> rXhatVector[i];
+  }
+  getline(is,sline); streamline.str(sline);
+  streamline >> betaHat;
+  for(i=0;i<pts;i++) { 
+    getline(is,sline); streamline.str(sline);
+    streamline >> rhsTermsVector[i];
+  }
+  for(i=0;i<numdv;i++) { 
+    getline(is,sline); streamline.str(sline);
+    streamline >> thetaVector[i];
+  }
+  valid = true;
+  originalData = false;
 
 }
 
@@ -706,6 +627,8 @@ void KrigingSurface::buildModel()
     //for (int j = 0; j < pts; j++) {
     //        cout << yValueVector[j] << endl;
     //}
+    //writeMatrix("xMatrix before conmin",xMatrix,pts,dim,cout);
+    //writeMatrix("yVector before conmin",yValueVector,pts,1,cout);
 #ifdef PRINT_DEBUG
     ofstream before("before.txt",ios::out);
     //ostream& os = cout;

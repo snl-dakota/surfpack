@@ -9,7 +9,7 @@
 ## ++ A makefile for the SURFPACK++ library
 ## ----------------------------------------------------------
 
-.SUFFIXES: .cpp .f .o
+.SUFFIXES: .c .C .cpp .f .o
 
 # CC=CC
 # LINK=CC
@@ -97,6 +97,12 @@ SURF = $(DIR)/lib/libsurfpack.a
 NEWBIN = $(DIR)/bin/surfpack
 
 .cpp.o:
+	$(CC) -c $(CPPFLAGS) $(INCLUDE) $< -o $@
+
+.c.o:
+	$(CC) -c $(CPPFLAGS) $(INCLUDE) $< -o $@
+
+.C.o:
 	$(CC) -c $(CPPFLAGS) $(INCLUDE) $< -o $@
 
 #all: $(DIR)/src/SurfPoint.o $(DIR)/src/SurfData.o $(DIR)/src/Surface.o $(DIR)/src/surfaces/PolynomialSurface.o

@@ -255,11 +255,21 @@ double Surface::rSquared(AbstractSurfDataIterator* itr)
       
 double Surface::sse(AbstractSurfDataIterator* itr)
 {
+  ensureValidity();
+  if (!itr) {
+    if (dataItr) {
+      itr = dataItr;
+    } else {
+      cerr << "Cannot compute sse without data" << endl;
+      return 0.0;
+    }
+  }
   vector<ErrorStruct> results;
   evaluate(itr,results);
   double sse = 0.0;
   for (unsigned i = 0; i < results.size(); i++) {
     double residual = results[i].observed - results[i].estimated;
+    cout << "residual: " << residual << " sq: " << residual*residual << endl;
     sse += residual*residual;
   }
   return sse;
@@ -267,6 +277,14 @@ double Surface::sse(AbstractSurfDataIterator* itr)
 
 double Surface::mse(AbstractSurfDataIterator* itr)
 {
+  if (!itr) {
+    if (dataItr) {
+      itr = dataItr;
+    } else {
+      cerr << "Cannot compute sse without data" << endl;
+      return 0.0;
+    }
+  }
   return sse(itr) / static_cast<double>(itr->elementCount());
 }
 //double Surface::computePressStatistic()
@@ -427,9 +445,9 @@ void Surface::writeData(std::ostream& os, bool binary)
       os.write((char*)&xsize,sizeof(xsize));
       os.write((char*)&fsize,sizeof(fsize));
     } else {
-      os << s << endl
-              << xsize << endl
-       	      << fsize << endl;
+      os << s << " data points" << endl
+         << xsize << " input variables" << endl
+       	 << fsize << " response variables" << endl;
     }
     // write out each point, one at a time
     dataItr->toFront();
@@ -438,8 +456,6 @@ void Surface::writeData(std::ostream& os, bool binary)
 	dataItr->currentElement().writeBinary(os);
       } else {
  	dataItr->currentElement().writeText(os);
-	// SurfPoint::writeText does not include newline
-	os << endl;
       }
       dataItr->nextElement();
     }

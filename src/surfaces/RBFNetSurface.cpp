@@ -72,7 +72,7 @@ void RBFNetSurface::init()
     return;
   }
   for (unsigned i = 0; i < dataItr->elementCount(); i++) {
-    centers.push_back(dataItr->currentElement());
+    centers.push_back(SurfPoint(dataItr->currentElement().X()));
     dataItr->nextElement();
   }
   sizes.resize(dataItr->elementCount());
@@ -258,17 +258,13 @@ RBFNetSurface* RBFNetSurface::makeSimilarWithNewData
 
 void RBFNetSurface::writeBinary(std::ostream& os)
 {
-  unsigned nameSize = name.size();
-  os.write(reinterpret_cast<char*>(&nameSize),sizeof(nameSize));
-  os.write(name.c_str(),nameSize);
   unsigned numcenters = centers.size();
   unsigned xsize = centers[0].xSize();
-  unsigned fsize = centers[0].fSize();
+  //unsigned fsize = centers[0].fSize();
   os.write(reinterpret_cast<char*>(&numcenters),sizeof(numcenters));
   os.write(reinterpret_cast<char*>(&xsize),sizeof(xsize));
-  os.write(reinterpret_cast<char*>(&fsize),sizeof(fsize));
-  unsigned j;
-  for (j = 0; j < numcenters; j++) {
+  //os.write(reinterpret_cast<char*>(&fsize),sizeof(fsize));
+  for (unsigned j = 0; j < numcenters; j++) {
     centers[j].writeBinary(os);
     os.write(reinterpret_cast<char*>(&sizes[j]),sizeof(sizes[j]));
     os.write(reinterpret_cast<char*>(&weights[j]),sizeof(weights[j]));
@@ -277,49 +273,89 @@ void RBFNetSurface::writeBinary(std::ostream& os)
 
 void RBFNetSurface::writeText(std::ostream& os)
 {
-
+  std::_Ios_Fmtflags old_flags = os.flags();
+  unsigned old_precision = os.precision(surfpack::output_precision);
+  os.setf(ios::scientific);
+  os << centers.size() << " Number of centers" << endl
+     << centers[0].xSize() << " Number of dimensions" << endl;
+     //<< centers[0].fSize() << " Number of responses" << endl;
+  for (unsigned j = 0; j < centers.size() ; j++) {
+    centers[j].writeText(os);
+    os << sizes[j] << " Radius of rbf #" << j << endl
+       << weights[j] << " Weight of rbf #" << j << endl;
+  }
+  os.flags(old_flags);
+  os.precision(old_precision);
 }
 
 void RBFNetSurface::readBinary(std::istream& is)
 {
-
-  unsigned nameSize;
-  is.read(reinterpret_cast<char*>(&nameSize),sizeof(nameSize));
-  char* surfaceType = new char[nameSize+1];
-  is.read(surfaceType,nameSize);
-  surfaceType[nameSize] = '\0';
-  string nameInFile(surfaceType);
-  delete [] surfaceType;
-  if (nameInFile != name) {
-    cerr << "Surface name in file is not 'Kriging'." << endl;
-    cerr << "Cannot build surface." << endl;
-    return;
-  }
   unsigned numcenters;  
   unsigned xsize;
-  unsigned fsize;
+  //unsigned fsize;
   is.read(reinterpret_cast<char*>(&numcenters),sizeof(numcenters));
   is.read(reinterpret_cast<char*>(&xsize),sizeof(xsize));
-  is.read(reinterpret_cast<char*>(&fsize),sizeof(fsize));
-  //weights.resize(numcenters);
-  //sizes.resize(numcenters);
-  unsigned j;
+  //is.read(reinterpret_cast<char*>(&fsize),sizeof(fsize));
   double size;
   double weight;
-  for (j = 0; j < numcenters; j++) {
-    centers.push_back(SurfPoint(xsize,fsize,is,true));
+  for (unsigned j = 0; j < numcenters; j++) {
+    centers.push_back(SurfPoint(xsize,0,is,true));
     is.read(reinterpret_cast<char*>(&size),sizeof(size));
     sizes.push_back(size);
     is.read(reinterpret_cast<char*>(&weight),sizeof(weight));
     weights.push_back(weight);
   }
   valid = true;
+  originalData = false;
 }
 
 void RBFNetSurface::readText(std::istream& is)
 {
-    valid = true;
-    originalData = false;
+  unsigned numcenters;  
+  unsigned xsize;
+  // read numcenters
+  string sline;
+  getline(is,sline);
+  istringstream streamline;
+  streamline.str(sline);
+  streamline >> numcenters;
+  //cout << "numcenters: " << numcenters << endl;
+  // read xsize (dimensionality of the rbf centers)
+  getline(is,sline);
+  streamline.str(sline);
+  string buffer = streamline.str();
+  streamline >> xsize;
+  //cout << "xsize: " << xsize << endl;
+  //cout << "buffer: " << buffer << endl;
+
+  // read sizes and weights
+  double size;
+  double weight;
+  for (unsigned j = 0; j < numcenters; j++) {
+    // read the location of a center in as a surfpoint
+    centers.push_back(SurfPoint(xsize,0,is,false));
+    //centers[j].writeText(cout);
+    //cout << endl;
+    // read size of rbf center;
+    getline(is,sline);
+    streamline.str(sline);
+    buffer = streamline.str();
+    streamline >> size;
+    //cout << "size: " << size << endl;
+    //cout << "buffer: " << buffer << endl;
+    
+    sizes.push_back(size);
+    // read weight of rbf center;
+    getline(is,sline);
+    streamline.str(sline);
+    buffer = streamline.str();
+    streamline >> weight;
+    //cout << "weight: " << weight << endl;
+    //cout << "buffer: " << buffer << endl;
+    weights.push_back(weight);
+  }
+  valid = true;
+  originalData = false;
 }
 
 //_____________________________________________________________________________

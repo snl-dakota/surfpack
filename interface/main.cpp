@@ -171,6 +171,16 @@ SurfData* randomPoints(string filename) {
   return new SurfData(sps);
 }
 
+double sphere(const vector<double>& pt) 
+{
+  double result = 0.0;
+  for (unsigned i = 0; i < pt.size(); i++) {
+    double x = pt[i];
+    result += x*x;
+  }
+  return result;
+}
+
 double rastrigin(const vector<double>& pt) 
 {
   double result = 0.0;
@@ -197,6 +207,8 @@ double testFunction(const string name, const vector<double>& pt)
 {
   if (name == "rosenbrock") {
     return rosenbrock(pt);
+  } else if (name == "sphere") {
+    return sphere(pt);
   } else {
     return rastrigin(pt);
   }

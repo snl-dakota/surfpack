@@ -11,10 +11,13 @@
 
 #include <vector>
 #include <iostream>
+#include <sstream>
 #include <iomanip> 
 #include "SurfPoint.h"
+#include "surfpack.h"
 
 using namespace std;
+using namespace surfpack;
 
 // ____________________________________________________________________________
 // Creation, Destruction, Initialization 
@@ -182,17 +185,18 @@ void SurfPoint::writeBinary(ostream& os) const
 
 void SurfPoint::writeText(ostream& os) const
 {
-  const unsigned width = 26;
-  const unsigned output_precision = 17;
+  std::_Ios_Fmtflags old_flags = os.flags();
   unsigned old_precision = os.precision(output_precision);
   os.setf(ios::scientific);
   for (unsigned i = 0; i < x.size(); i++) {
-    os  << setw(width) << x[i] ;
+    os  << setw(field_width) << x[i] ;
   }
   for (unsigned i = 0; i < f.size(); i++) {
-    os << setw(width) << f[i];
+    os << setw(field_width) << f[i];
   }
-  os.unsetf(ios::scientific);
+  // Tack on some extra space before the endl to circumvent istringstream bug
+  os << " " << endl;
+  os.flags(old_flags);
   os.precision(old_precision);
 }
  
@@ -212,11 +216,14 @@ void SurfPoint::readText(istream& is)
 {
   // read the point as text
   unsigned i;
+  string sline;
+  getline(is,sline);
+  istringstream streamline(sline);
   for (i = 0; i < x.size(); i++) {
-     is >> x[i];
+     streamline >> x[i];
   }
   for (i = 0; i < f.size(); i++) {
-     is >> f[i];
+     streamline >> f[i];
   }
 }
 /// Write point to an output stream in text format

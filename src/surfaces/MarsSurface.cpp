@@ -3,6 +3,7 @@
 #include <sstream>
 #include <fstream>
 #include <vector>
+#include "surfpack.h"
 #include "SurfPoint.h"
 #include "SurfData.h"
 #include "Surface.h"
@@ -23,6 +24,7 @@ extern "C" void mars(int&, int&, real&, real&, real&, int&, int&, int&,
 
 extern "C" void fmod(int&, int&, real&, real&, int&, real&, real&);
 using namespace std;
+using namespace surfpack;
 
 void printMatrix(real* mat, unsigned rows, unsigned columns, ostream& os)
 {
@@ -240,13 +242,8 @@ void MarsSurface::writeBinary(std::ostream& os)
   int nmcv = 0;
   int ntcv = 0;
   np = static_cast<int>(dataItr->xSize());
-  //int nk = 15;
-  //int mi = 2;
   unsigned fmsize = 3+nk*(5*mi+nmcv+6)+2*np+ntcv;
   unsigned imsize = 21+nk*(3*mi+8);
-  unsigned nameSize = name.size();
-  os.write(reinterpret_cast<char*>(&nameSize),sizeof(nameSize));
-  os.write(name.c_str(),nameSize);
   os.write(reinterpret_cast<char*>(&nk),sizeof(nk));
   os.write(reinterpret_cast<char*>(&mi),sizeof(mi));
   os.write(reinterpret_cast<char*>(&nmcv),sizeof(nmcv));
@@ -261,23 +258,25 @@ void MarsSurface::writeText(std::ostream& os)
     int nmcv = 0;
     int ntcv = 0;
     np = static_cast<int>(dataItr->xSize());
-    //int nk = 15;
-    //int mi = 2;
     unsigned fmsize = 3+nk*(5*mi+nmcv+6)+2*np+ntcv;
     unsigned imsize = 21+nk*(3*mi+8);
-
-    os << nmcv << endl
-       << ntcv << endl
-       << nk << endl
-       << mi << endl
-       << np << endl;
+    
+    unsigned old_precision = os.precision(surfpack::output_precision);
+    os.setf(ios::scientific);
+    os << setw(surfpack::field_width) << nmcv << endl
+       << setw(surfpack::field_width) << ntcv << endl
+       << setw(surfpack::field_width) << nk << endl
+       << setw(surfpack::field_width) << mi << endl
+       << setw(surfpack::field_width) << np << endl;
     unsigned i;
     for (i = 0; i < fmsize; i++) {
-      os << fm[i] << endl;
+      os << setw(surfpack::field_width) << fm[i] << endl;
     }
     for (i = 0; i < imsize; i++) {
-      os << im[i] << endl;
+      os << setw(surfpack::field_width) << im[i] << endl;
     }
+    os.unsetf(ios::scientific);
+    os.precision(old_precision);
 }
 
 void MarsSurface::readBinary(std::istream& is)
@@ -286,18 +285,6 @@ void MarsSurface::readBinary(std::istream& is)
   delete [] fm;
   delete [] im;
   int nmcv,ntcv,nk,mi,np;
-  unsigned nameSize;
-  is.read(reinterpret_cast<char*>(&nameSize),sizeof(nameSize));
-  char* surfaceType = new char[nameSize+1];
-  is.read(surfaceType,nameSize);
-  surfaceType[nameSize] = '\0';
-  string nameInFile(surfaceType);
-  delete [] surfaceType;
-  if (nameInFile != name) {
-    cerr << "Surface name in file is not 'Kriging'." << endl;
-    cerr << "Cannot build surface." << endl;
-    return;
-  }
   is.read(reinterpret_cast<char*>(&nk),sizeof(nk));
   is.read(reinterpret_cast<char*>(&mi),sizeof(mi));
   is.read(reinterpret_cast<char*>(&nmcv),sizeof(nmcv));

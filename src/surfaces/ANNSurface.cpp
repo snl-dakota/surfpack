@@ -124,6 +124,7 @@ void ANNSurface::build()
       training_inputs[i][j] = sp.X()[j];
       training_outputs[i][0] = sp.F(dataItr->responseIndex());
     }
+    dataItr->nextElement();
   }
   double norm_bound = 0.8, percent = 0, svdfactor = 0.90;
   annObject->normalize_data(training_inputs, training_outputs, norm_bound);
@@ -153,9 +154,6 @@ ANNSurface* ANNSurface::makeSimilarWithNewData
 
 void ANNSurface::writeBinary(std::ostream& os)
 {
-  unsigned nameSize = name.size();
-  os.write(reinterpret_cast<char*>(&nameSize),sizeof(nameSize));
-  os.write(name.c_str(),nameSize);
   if (annObject) annObject->writeBinary(os);
 }
 
@@ -168,32 +166,20 @@ void ANNSurface::writeText(std::ostream& os)
 void ANNSurface::readBinary(std::istream& is)
 {
 
-  unsigned nameSize;
-  is.read(reinterpret_cast<char*>(&nameSize),sizeof(nameSize));
-  char* surfaceType = new char[nameSize+1];
-  is.read(surfaceType,nameSize);
-  surfaceType[nameSize] = '\0';
-  string nameInFile(surfaceType);
-  delete [] surfaceType;
-  if (nameInFile != name) {
-    cerr << "Surface name in file is not 'Kriging'." << endl;
-    cerr << "Cannot build surface." << endl;
-    return;
-  }
   delete annObject;
   annObject = new ANNApprox;
   annObject->readBinary(is);
   valid = true;
+  originalData = false;
 }
 
 void ANNSurface::readText(std::istream& is)
 {
-  valid = true;
-  originalData = false;
   delete annObject;
   annObject = new ANNApprox;
   annObject->readText(is);
   valid = true;
+  originalData = false;
 }
 
 //_____________________________________________________________________________

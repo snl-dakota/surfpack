@@ -12,8 +12,10 @@
 
 // DAKOTA includes
 //#include "data_types.h"
+#include "surfpack.h"
 #include "system_defs.h"
 #include <vector>
+#include <sstream>
 #include "vector_enhancements.h"
 
 // ANN includes
@@ -27,6 +29,7 @@
 //}
 
 using namespace std;
+using namespace surfpack;
 
 
 //#define TEST_PERCENT  0.05  //defined in call to set_aside_test_exemplars
@@ -505,17 +508,18 @@ int  ANNApprox::map(vector<double> ANNInput, vector<double> *ANNOutput)
    //  outputs[i].resize(numOutputs);
    //}
 
-   // old reshaping code from DAKOTA
-   //ones.reshape(exemplars);
-   //ones = 1.0;
-   //reshape_2d(temp1,exemplars,numNeurons);
-   //reshape_2d(temp2,exemplars,numNeurons);
-   //reshape_2d(temp3,exemplars,numOutputs);
-   //reshape_2d(temp4,exemplars,numOutputs);
-   //    reshape_2d(r,exemplars,numNeurons);
-   //    reshape_2d(y,exemplars,numOutputs);
-   //reshape_2d(inputs,exemplars,numInputs);
-   //reshape_2d(outputs,exemplars,numOutputs);
+   // new reshaping code using vector_enhancements methods instead of DAKOTA
+   // data structures 
+   ones.resize(exemplars);
+   ones.assign(ones.size(), 1.0);
+   reshape_2d(temp1,exemplars,numNeurons);
+   reshape_2d(temp2,exemplars,numNeurons);
+   reshape_2d(temp3,exemplars,numOutputs);
+   reshape_2d(temp4,exemplars,numOutputs);
+       reshape_2d(r,exemplars,numNeurons);
+       reshape_2d(y,exemplars,numOutputs);
+   reshape_2d(inputs,exemplars,numInputs);
+   reshape_2d(outputs,exemplars,numOutputs);
    
 
    // old reshaping code from DAKOTA
@@ -580,37 +584,29 @@ void ANNApprox::writeBinary(std::ostream& os)
   os.write(reinterpret_cast<char*>(&numNeurons),sizeof(numNeurons));
   os.write(reinterpret_cast<char*>(&numOutputs),sizeof(numOutputs));
   int i,j;
-  minInputs.resize(numInputs);
   for(i = 0; i < numInputs; i++) { 
     os.write(reinterpret_cast<char*>(&minInputs[i]),sizeof(minInputs[i]));
   }
-  deltaInputs.resize(numInputs);
   for(i = 0; i < numInputs; i++) { 
     os.write(reinterpret_cast<char*>(&deltaInputs[i]),sizeof(deltaInputs[i]));
   }
-  hiddenOffsets.resize(numNeurons);
   for(i = 0; i < numNeurons; i++) { 
     os.write(reinterpret_cast<char*>(&hiddenOffsets[i]),sizeof(hiddenOffsets[i]));
   }
-  reshape_2d(hiddenWeights,numInputs,numNeurons);
   for(i = 0; i < numInputs; i++) { 
     for(j = 0; j < numNeurons; j++) {
       os.write(reinterpret_cast<char*>(&hiddenWeights[i][j]),sizeof(hiddenWeights[i][j]));
     }
   }
-  minOutputs.resize(numOutputs);
   for(i = 0; i < numOutputs; i++) { 
     os.write(reinterpret_cast<char*>(&minOutputs[i]),sizeof(minOutputs[i]));
   }
-  deltaOutputs.resize(numOutputs);
   for(i = 0; i < numOutputs; i++) { 
     os.write(reinterpret_cast<char*>(&deltaOutputs[i]),sizeof(deltaOutputs[i]));
   }
-  outputOffsets.resize(numOutputs);
   for(i = 0; i < numOutputs; i++) { 
     os.write(reinterpret_cast<char*>(&outputOffsets[i]),sizeof(outputOffsets[i]));
   }
-  reshape_2d(outputWeights,numNeurons,numOutputs);
   for(i = 0; i < numNeurons; i++) { 
     for(j = 0; j < numOutputs; j++) {
       os.write(reinterpret_cast<char*>(&outputWeights[i][j]),sizeof(outputWeights[i][j]));
@@ -620,7 +616,47 @@ void ANNApprox::writeBinary(std::ostream& os)
 
 void ANNApprox::writeText(std::ostream& os)
 {
-
+  std::_Ios_Fmtflags old_flags = os.flags();
+  unsigned old_precision = os.precision(surfpack::output_precision);
+  os.setf(ios::scientific);
+  
+  os << normalize_factor << " normalizing factor" << endl;
+  os << numInputs << " number of inputs" << endl;
+  os << numNeurons << " number of neruons" << endl;
+  os << numOutputs << " number of outputs" << endl;
+  int i,j;
+  for(i = 0; i < numInputs; i++) { 
+    os << minInputs[i] << " minInputs[" << i << "]" << endl;
+  }
+  for(i = 0; i < numInputs; i++) { 
+    os << deltaInputs[i] << " deltaInputs[" << i << "]" << endl;
+  }
+  for(i = 0; i < numNeurons; i++) { 
+    os << hiddenOffsets[i] << " hiddenOffsets[" << i << "]" << endl;
+  }
+  for(i = 0; i < numInputs; i++) { 
+    for(j = 0; j < numNeurons; j++) {
+      os << hiddenWeights[i][j] 
+         << " hiddenWeights[" << i << "][" << j << "]" << endl;
+    }
+  }
+  for(i = 0; i < numOutputs; i++) { 
+    os << minOutputs[i] << " minOutputs[" << i << "]" << endl;
+  }
+  for(i = 0; i < numOutputs; i++) { 
+    os << deltaOutputs[i] << " deltaOutputs[" << i << "]" << endl;
+  }
+  for(i = 0; i < numOutputs; i++) { 
+    os << outputOffsets[i] << " outputOffsets[" << i << "]" << endl;
+  }
+  for(i = 0; i < numNeurons; i++) { 
+    for(j = 0; j < numOutputs; j++) {
+      os << outputWeights[i][j] 
+         << " outputWeights[" << i << "][" << j << "]" << endl;
+    }
+  }
+  os.precision(old_precision);
+  os.flags(old_flags);
 }
 
 void ANNApprox::readBinary(std::istream& is)
@@ -671,4 +707,59 @@ void ANNApprox::readBinary(std::istream& is)
 
 void ANNApprox::readText(std::istream& is)
 {
+  string sline;
+  istringstream streamline;
+  getline(is,sline); streamline.str(sline);
+  streamline >> normalize_factor;
+  getline(is,sline); streamline.str(sline);
+  streamline >> numInputs;
+  getline(is,sline); streamline.str(sline);
+  streamline >> numNeurons;
+  getline(is,sline); streamline.str(sline);
+  streamline >> numOutputs;
+  int i,j;
+  minInputs.resize(numInputs);
+  for(i = 0; i < numInputs; i++) { 
+    getline(is,sline); streamline.str(sline);
+    streamline >> minInputs[i];
+  }
+  deltaInputs.resize(numInputs);
+  for(i = 0; i < numInputs; i++) { 
+    getline(is,sline); streamline.str(sline);
+    streamline >> deltaInputs[i];
+  }
+  hiddenOffsets.resize(numNeurons);
+  for(i = 0; i < numNeurons; i++) { 
+    getline(is,sline); streamline.str(sline);
+    streamline >> hiddenOffsets[i];
+  }
+  reshape_2d(hiddenWeights,numInputs,numNeurons);
+  for(i = 0; i < numInputs; i++) { 
+    for(j = 0; j < numNeurons; j++) {
+      getline(is,sline); streamline.str(sline);
+      streamline >> hiddenWeights[i][j];
+    }
+  }
+  minOutputs.resize(numOutputs);
+  for(i = 0; i < numOutputs; i++) { 
+    getline(is,sline); streamline.str(sline);
+    streamline >> minOutputs[i];
+  }
+  deltaOutputs.resize(numOutputs);
+  for(i = 0; i < numOutputs; i++) { 
+    getline(is,sline); streamline.str(sline);
+    streamline >> deltaOutputs[i];
+  }
+  outputOffsets.resize(numOutputs);
+  for(i = 0; i < numOutputs; i++) { 
+    getline(is,sline); streamline.str(sline);
+    streamline >> outputOffsets[i];
+  }
+  reshape_2d(outputWeights,numNeurons,numOutputs);
+  for(i = 0; i < numNeurons; i++) { 
+    for(j = 0; j < numOutputs; j++) {
+      getline(is,sline); streamline.str(sline);
+      streamline >> outputWeights[i][j];
+    }
+  }
 }

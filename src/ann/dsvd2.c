@@ -195,7 +195,7 @@ void dsvdcmp1(double **a, int m,int n,double *w,double **v)
                 }
                 if ( fabs(w[nm])+anorm == anorm ) break;
             }
-            if (flag)
+            if (flag) // line changed by Mark Richards
             {
                 c = 0.0;
                 s = 1.0;
