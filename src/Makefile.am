@@ -17,7 +17,9 @@ libsurfpack_la_SOURCES = SurfPoint.cpp \
 			surfaces/PolynomialSurface.cpp \
 			surfaces/PolynomialSurface.h \
 			surfpack.cpp \
-			surfpack.h
+			surfpack.h \
+			SurfaceFactory.cpp \
+			SurfaceFactory.h
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/surfaces -I$(top_srcdir)/src/ann
 CLEANFILES = *.bb *.bbg *.da *.gcov *.ii *.s
 		

@@ -15,11 +15,6 @@
 #include <cmath>
 #include "SurfData.h"
 #include "Surface.h"
-#include "PolynomialSurface.h"
-#include "MarsSurface.h"
-#include "KrigingSurface.h"
-#include "RBFNetSurface.h"
-#include "ANNSurface.h"
 #include "surfpack.h"
 
 //______________________________________________________________________________
@@ -51,51 +46,6 @@ const string surfaceName(const string filename)
   }
     
 } 
-
-Surface* createSurface(const string& filename)
-{
-  const string name = surfaceName(filename);
-  if (name == "Polynomial") {
-    return new PolynomialSurface(filename); 
-  } else if (name == "Kriging") {
-    return new KrigingSurface(filename);
-  } else if (name == "Mars") {
-    return new MarsSurface(filename);
-  } else if (name == "RBFNet") {
-    return new RBFNetSurface(filename);
-  } else if (name == "ANN") {
-    return new ANNSurface(filename);
-  } else {
-    cerr << "Unknown surface type: " << name << endl;
-    return 0;
-  }
-}
-
-Surface* createSurface(const string& type, SurfData& sd)
-{
-  if (type == "Kriging") {
-    return new KrigingSurface(&sd);
-  } else if (type == "Mars") {
-    return new MarsSurface(&sd);
-  } else if (type == "RBFNet") {
-    return new RBFNetSurface(&sd);
-  } else if (type == "ANN") {
-    return new ANNSurface(&sd);
-  } else {
-    cerr << "Unknown surface type: " << type << endl;
-    return 0;
-  }
-}
-
-Surface* createSurface(const string& type, SurfData& sd, unsigned order)
-{
-  if (type == "Polynomial") {
-    return new PolynomialSurface(&sd, order); 
-  } else {
-    cerr << "Unknown surface type: " << type << endl;
-    return 0;
-  }
-}
 
 double euclideanDistance(const vector<double>& pt1, const vector<double>& pt2)
 {

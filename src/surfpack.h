@@ -22,9 +22,6 @@ class Surface;
 class SurfData;
 
 const std::string surfaceName(const std::string filename);
-Surface* createSurface(const std::string& filename);
-Surface* createSurface(const std::string& type, SurfData& surfData);
-Surface* createSurface(const std::string& type, SurfData& surfData, unsigned order);
 
 double euclideanDistance(const std::vector<double>& pt1, const std::vector<double>& pt2);
 void vectorDifference(std::vector<double>& diff, const std::vector<double>& pt1,
@@ -60,6 +57,7 @@ void writeMatrix(const std::string header, double* mat, unsigned rows,
   unsigned columns, std::ostream& os);
 void writeMatrix(const std::string filename, double* mat, unsigned rows, 
   unsigned columns);
-}
+
+} // namespace surfpack
 
 #endif
