@@ -25,7 +25,6 @@
 #include "utilities.h"
 #include <cmath>
 using namespace std;
-
 /*
  * Function: my_atanh
  * Usage: double my_atanh(x)
