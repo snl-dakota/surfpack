@@ -31,6 +31,9 @@ public:
   /// Read a set of SurfPoints from a file
   SurfData(const std::string filename);
 
+  /// Read a set of SurfPoints from an istream
+  SurfData(std::istream& is, bool binary = false);
+
   /// Makes a deep copy of the object 
   SurfData(const SurfData& sd); 
   
@@ -103,7 +106,19 @@ public:
   void write(const std::string filename) const;
 
   /// Write a set of SurfPoints to an output stream
-  std::ostream& write(std::ostream& os = std::cout, bool binary = false) const;
+  void read(const std::string filename);
+  
+  /// Write the surface in binary format
+  void writeBinary(std::ostream& os) const;
+
+  /// Write the surface in text format
+  void writeText(std::ostream& os) const ; 
+
+  /// Read the surface in binary format
+  void readBinary(std::istream& is); 
+
+  /// Read the surface in text format
+  void readText(std::istream& is); 
 
 private:
 

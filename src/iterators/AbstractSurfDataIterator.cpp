@@ -10,6 +10,10 @@
 // + SurfAbstractSurfDataIterator class - Iterator for the SurfData class
 // ----------------------------------------------------------
 
+#include <algorithm>
+#include <vector>
+#include <iostream>
+#include "SurfData.h"
 #include "AbstractSurfDataIterator.h"
 
 using namespace std;
@@ -18,7 +22,8 @@ using namespace std;
 ////////////////////////////////////
  
 /// iterate over elements in surfData
-AbstractSurfDataIterator::AbstractSurfDataIterator(SurfData* surfData)  : surfData(surfData)
+AbstractSurfDataIterator::AbstractSurfDataIterator(SurfData& sd, unsigned response_index)  
+  : sd(sd), response_index(response_index)
 {
     sort();
 }
@@ -27,7 +32,7 @@ AbstractSurfDataIterator::AbstractSurfDataIterator(SurfData* surfData)  : surfDa
 // copy constructor
 //AbstractSurfDataIterator::AbstractSurfDataIterator(const AbstractSurfDataIterator & di) 
 //{ 
-//    this->surfData = di.surfData;
+//    this->sd = di.sd;
 //    this->order = di.order;
 //    this->currentIndex = di.currentIndex;
 //}
@@ -45,7 +50,7 @@ AbstractSurfDataIterator::~AbstractSurfDataIterator()
 /// is the iterator at the end
 bool AbstractSurfDataIterator::isEnd() 
 { 
-    return currentIndex >= surfData->size(); 
+    return currentIndex >= sd.size(); 
 }
 
 /// set the iterator to the first element 
@@ -56,7 +61,7 @@ void AbstractSurfDataIterator::toFront()
 
 void AbstractSurfDataIterator::sort()
 {
-    order.resize(surfData->size());
+    order.resize(sd.size());
     for (unsigned i = 0; i < order.size(); i++) {
 	order[i] = i;
     }
@@ -69,8 +74,13 @@ void AbstractSurfDataIterator::shuffle()
     currentIndex = 0;
 }
 
-int AbstractSurfDataIterator::getDimension() const
+unsigned AbstractSurfDataIterator::xSize() const
 {
-    return surfData->getDimension();
+    return sd.xSize();
 }
 
+/// Return index of response variable associated with this iterator
+unsigned AbstractSurfDataIterator::responseIndex() const
+{
+  return response_index;
+}

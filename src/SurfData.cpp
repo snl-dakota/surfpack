@@ -45,65 +45,77 @@ SurfData::SurfData(const string filename)
 #ifdef __TESTING_MODE__
   constructCount++;
 #endif
+  read(filename);
   // open file 
   // if filename has ".txt", read in text mode; otherwise, read in binary mode
-  bool binary = (filename.find(".txt") != filename.size() - 4);
-  ifstream infile(filename.c_str(), (binary ? ios::in|ios::binary : ios::in));
-  if (!infile) {
-    cerr << "File named \"" 
-         << filename
-	 << "\" could not be opened." 
-	 << endl;
-  }
-  
-  //The first data in the file should be:
-  // 1. Number of points
-  // 2. Dimensionality of points
-  // 3. Number of response variables per point 
-  unsigned size;
-  if (!binary) {
-    infile >> size;
-    infile >> xsize;
-    infile >> fsize;
-  } else {
-    infile.read(reinterpret_cast<char*>(&size),sizeof(size));
-    infile.read(reinterpret_cast<char*>(&xsize),sizeof(xsize));
-    infile.read(reinterpret_cast<char*>(&fsize),sizeof(fsize));
-  }
+  //bool binary = (filename.find(".txt") != filename.size() - 4);
+  //ifstream infile(filename.c_str(), (binary ? ios::in|ios::binary : ios::in));
+  //if (!infile) {
+  //  cerr << "File named \"" 
+  //       << filename
+  //       << "\" could not be opened." 
+  //       << endl;
+  //}
+  //
+  ////The first data in the file should be:
+  //// 1. Number of points
+  //// 2. Dimensionality of points
+  //// 3. Number of response variables per point 
+  //unsigned size;
+  //if (!binary) {
+  //  infile >> size;
+  //  infile >> xsize;
+  //  infile >> fsize;
+  //} else {
+  //  infile.read(reinterpret_cast<char*>(&size),sizeof(size));
+  //  infile.read(reinterpret_cast<char*>(&xsize),sizeof(xsize));
+  //  infile.read(reinterpret_cast<char*>(&fsize),sizeof(fsize));
+  //}
 
-  // Insert code for sanity check on size, xsize, and fsize
+  //// Insert code for sanity check on size, xsize, and fsize
 
-  vector< double > x(xsize);
-  vector< double > f(fsize);
-  unsigned index = 0;
-  // loop counter
-  unsigned i; 
-  while (index < size && !infile.eof()); {
-    if (!binary) {
-      for (i = 0; i < xsize; i++) {
-        infile >> x[i];
-      }
-      for (i = 0; i < fsize; i++) {
-        infile >> f[i];
-      }
-    } else {
-      for (i = 0; i < xsize; i++) {
-        infile.read(reinterpret_cast<char*>(&x[i]),sizeof(x[i]));
-      }
-      for (i = 0; i < fsize; i++) {
-        infile.read(reinterpret_cast<char*>(&f[i]),sizeof(f[i]));
-      }
-    }
-    // Insert code for error checking
-    SurfPoint sp(x,f);
-    points.push_back(sp);
-    i++;
-  }
-  // check to make sure end-of-file happens right here
+  //vector< double > x(xsize);
+  //vector< double > f(fsize);
+  //unsigned index = 0;
+  //// loop counter
+  //unsigned i; 
+  //while (index < size && !infile.eof()); {
+  //  if (!binary) {
+  //    for (i = 0; i < xsize; i++) {
+  //      infile >> x[i];
+  //    }
+  //    for (i = 0; i < fsize; i++) {
+  //      infile >> f[i];
+  //    }
+  //  } else {
+  //    for (i = 0; i < xsize; i++) {
+  //      infile.read(reinterpret_cast<char*>(&x[i]),sizeof(x[i]));
+  //    }
+  //    for (i = 0; i < fsize; i++) {
+  //      infile.read(reinterpret_cast<char*>(&f[i]),sizeof(f[i]));
+  //    }
+  //  }
+  //  // Insert code for error checking
+  //  SurfPoint sp(x,f);
+  //  points.push_back(sp);
+  //  i++;
+  //}
+  //// check to make sure end-of-file happens right here
  
-  infile.close();
+  //infile.close();
       
 }
+  
+/// Read a set of SurfPoints from an istream
+SurfData::SurfData(std::istream& is, bool binary)
+{
+  if (binary) {
+    readBinary(is);
+  } else {
+    readText(is);
+  }
+}
+
 
 /// Makes a deep copy of the object 
 SurfData::SurfData(const SurfData& sd) 
@@ -194,7 +206,7 @@ SurfPoint& SurfData::Point(unsigned index)
     cerr << "Cannot return points[" << index << "].  There are no points." << endl;
   }
   if (index >= points.size()) {
-    cerr << "Out of range in SurfData::Point; returning last point" << endl;
+    //cerr << "Out of range in SurfData::Point; returning last point" << endl;
     return points[points.size()-1];
   }
   return points[index];
@@ -269,43 +281,102 @@ void SurfData::write(const std::string filename) const
   bool binary = (filename.find(".txt") != filename.size() - 4);
   ofstream outfile(filename.c_str(), (binary ? ios::out|ios::binary : ios::out));
   if (!outfile) {
-    cerr << "Could not open " << filename << " for writing." << endl;
+    cerr << "File named \"" 
+         << filename
+	 << "\" could not be opened." 
+	 << endl;
+    return;
+  } else if (binary) {
+    writeBinary(outfile);
   } else {
-    write(outfile, binary);
+    writeText(outfile);
+  }
+  outfile.close();
+}
+
+/// Read a set of SurfPoints from a file.  Opens file and calls other version.
+void SurfData::read(const string filename)
+{
+  bool binary = (filename.find(".txt") != filename.size() - 4);
+  ifstream infile(filename.c_str(), (binary ? ios::in|ios::binary : ios::in));
+  if (!infile) {
+    cerr << "File named \"" 
+         << filename
+	 << "\" could not be opened." 
+	 << endl;
+    return;
+  } else if (binary) {
+    readBinary(infile);
+  } else {
+    readText(infile);
+  }
+  infile.close();
+}
+
+/// Write a set of SurfPoints to an output stream
+void SurfData::writeBinary(ostream& os) const 
+{
+  unsigned s = points.size();
+  os.write((char*)&s,sizeof(s));
+  os.write((char*)&xsize,sizeof(xsize));
+  os.write((char*)&fsize,sizeof(fsize));
+  vector<SurfPoint>::const_iterator itr;
+  itr = points.begin();
+  while (itr != points.end()) {
+    (*itr).writeBinary(os);
+    ++itr;
   }
 }
 
 /// Write a set of SurfPoints to an output stream
-ostream& SurfData::write(ostream& os, bool binary) const
+void SurfData::writeText(ostream& os) const
 {
-  if (!binary) {
-    os << points.size() << endl
-       << xsize << endl 
-       << fsize << endl;
-    os << 0 << endl; // grad size
-  } else {
-    unsigned s = points.size();
-    os.write((char*)&s,sizeof(s));
-    os.write((char*)&xsize,sizeof(xsize));
-    os.write((char*)&fsize,sizeof(fsize));
-  }
+  os << points.size() << endl
+     << xsize << endl 
+     << fsize << endl;
   vector<SurfPoint>::const_iterator itr;
   itr = points.begin();
   while (itr != points.end()) {
-    (*itr).write(os,binary);
-    if (!binary) {
-      // Surfpoint->write(os) does not write newline after each point
-      os << endl; 
-    } 
+    (*itr).writeText(os);
+    // Surfpoint->write(os) does not write newline after each point
+    os << endl; 
     ++itr;
   }
-  return os;
+}
+
+/// Read a set of SurfPoints from an input stream
+void SurfData::readBinary(istream& is) 
+{
+  unsigned size;  
+  is.read((char*)&size,sizeof(size));
+  is.read((char*)&xsize,sizeof(xsize));
+  is.read((char*)&fsize,sizeof(fsize));
+  points.clear();
+  for (unsigned i = 0; i < size; i++) {
+    // True for second argument signals a binary read
+    points.push_back(SurfPoint(xsize,fsize,is,true));  
+  }
+}
+
+/// Read a set of SurfPoints from an input stream
+void SurfData::readText(istream& is) 
+{
+  unsigned size;
+  is >> size
+     >> xsize
+     >> fsize;
+  points.clear();
+  for (unsigned i = 0; i < size; i++) {
+    // False for second argument signals a text read
+    points.push_back(SurfPoint(xsize,fsize,is,false));  
+  }
 }
 
 // so a SurfData object can be printed
 ostream& operator<<(ostream& os, const SurfData& sd) 
 { 
-  return sd.write(os); 
+  sd.writeText(os); 
+  return os;
 }
 
 // ____________________________________________________________________________

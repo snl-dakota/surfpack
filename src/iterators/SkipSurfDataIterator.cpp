@@ -9,7 +9,12 @@
 // + SkipSurfDataIterator class - Iterator for the SurfData class
 // ----------------------------------------------------------
 
+#include <vector>
+#include <algorithm>
+#include <iostream>
 #include "SkipSurfDataIterator.h"
+#include "SurfPoint.h"
+#include "SurfData.h"
 
 using namespace std;
 
@@ -24,7 +29,8 @@ using namespace std;
  
 
 /// iterates over surfData, skipping specified points
-SkipSurfDataIterator::SkipSurfDataIterator(SurfData* surfData) : AbstractSurfDataIterator(surfData)
+SkipSurfDataIterator::SkipSurfDataIterator(SurfData& sd, unsigned response_index) 
+  : AbstractSurfDataIterator(sd, response_index)
 {
 }
 
@@ -37,58 +43,48 @@ SkipSurfDataIterator::~SkipSurfDataIterator()
 ////////////////////////////////////
 
 /// get the next element in the iterator
-SurfPoint * SkipSurfDataIterator::nextElement() 
+SurfPoint& SkipSurfDataIterator::nextElement() 
 { 
-   if(!surfData) {
-	  cerr << "Null SurfData in SkipSurfDataIterator::nextElement()" << endl;
-	  return 0;
-   } else if (currentIndex < surfData->size()) {
-       ++currentIndex; 
-   }
-   return currentElement(); 
+  if (currentIndex < sd.size()) {
+      ++currentIndex; 
+  }
+  return currentElement(); 
 }
 
 /// get the current element from the iterator
-SurfPoint * SkipSurfDataIterator::currentElement() 
+SurfPoint& SkipSurfDataIterator::currentElement() 
 { 
-   if(!surfData) {
-	  cerr << "Null SurfData in SkipSurfDataIterator::currentElement()" << endl;
-	  return 0;
-   }
-   while(currentIndex < surfData->size() && skipIndices.find(order[currentIndex]) !=skipIndices.end() ) {
-	   ++currentIndex;
-   }
-   if (currentIndex >= surfData->size()) {
-       return 0; 
-   } else {
-       return surfData->getPoint(order[currentIndex]);
-   }
+  while(currentIndex < sd.size() && skipIndices.find(order[currentIndex]) !=skipIndices.end() ) {
+          ++currentIndex;
+  }
+  return sd.Point(order[currentIndex]);
+   
 }
 
 /// is the iterator at the end
 bool SkipSurfDataIterator::isEnd() 
 { 
-    currentElement();
-    return currentIndex >= surfData->size();
+  currentElement();
+  return currentIndex >= sd.size();
 }
 
 
 /// skip over point at <index> during iteration
-void SkipSurfDataIterator::skipPoint(int index)
+void SkipSurfDataIterator::skipPoint(unsigned index)
 { 
-   if (index >= 0 && index < surfData->size()) {
-       skipIndices.insert(index); 
-   }
+  if (index >= 0 && index < sd.size()) {
+    skipIndices.insert(index); 
+  }
 }
 
 /// return the number of elements in one complete iteration 
-int SkipSurfDataIterator::getElementCount() const
+unsigned SkipSurfDataIterator::elementCount() const
 {
-    return surfData->size() - skipIndices.size();
+  return sd.size() - skipIndices.size();
 }
 
 /// unmark all elements that are currently skipped
 void SkipSurfDataIterator::unSkipAll()
 {
-    skipIndices.clear();
+  skipIndices.clear();
 }

@@ -1,12 +1,12 @@
 //----------------------------------------------------------------------------
 // Project: SURFPACK++
 //
-// File: 	MarsSurface.h
+// File: 	RBFNetSurface.h
 // Author: 	Mark Richards
 //----------------------------------------------------------------------------
 
-#ifndef __MARS_SURFACE_H__
-#define __MARS_SURFACE_H__
+#ifndef __RBF_NET_SURFACE_H__ 
+#define __RBF_NET_SURFACE_H__ 
 
 class SurfData;
 class Surface;
@@ -14,17 +14,18 @@ class AbstractSurfDataIterator;
 
 typedef float real;
 
-class MarsSurface : public Surface
+class RBFNetSurface : public Surface
 {
 //_____________________________________________________________________________
 // Creation, Destruction, Initialization
 //_____________________________________________________________________________
 
 public:
-  MarsSurface(SurfData& sd, unsigned responseIndex = 0);
-  MarsSurface(AbstractSurfDataIterator* dataItr);
-  MarsSurface(const std::string filename);
-  ~MarsSurface();
+  RBFNetSurface(SurfData& sd, unsigned responseIndex = 0);
+  RBFNetSurface(AbstractSurfDataIterator* dataItr);
+  RBFNetSurface(const std::string filename);
+  ~RBFNetSurface();
+  void init();
 
 //_____________________________________________________________________________
 // Overloaded Operators 
@@ -50,13 +51,13 @@ public:
   /// be the same (e.g., a second-order polynomial should return another 
   /// second-order polynomial.  Surfaces returned by this method can be used
   /// to compute the PRESS statistic.
-  virtual MarsSurface* makeSimilarWithNewData
+  virtual RBFNetSurface* makeSimilarWithNewData
     (AbstractSurfDataIterator* dataItr);
 
 //_____________________________________________________________________________
 // Helper methods 
 //_____________________________________________________________________________
-
+  
 //_____________________________________________________________________________
 // I/O 
 //_____________________________________________________________________________
@@ -70,13 +71,9 @@ public:
 //_____________________________________________________________________________
 protected:
   static const std::string name;
-  real* xMatrix;
-  real* fm;
-  int* im;
-  int n;
-  int np;
-static int nk; 
-static int mi;
+  std::vector<double> weights;
+  std::vector<double> sizes;
+  std::vector<SurfPoint> centers;
 
 //_____________________________________________________________________________
 // Testing 

@@ -24,6 +24,7 @@ const string PolynomialSurface::name = "Polynomial";
 // Creation, Destruction, Initialization 
 // ____________________________________________________________________________
 
+
 PolynomialSurface::PolynomialSurface(SurfData& sd, unsigned order, 
   unsigned responseIndex) : Surface(0),  
   xsize(sd.xSize()), order(order), digits(order) 
@@ -35,6 +36,17 @@ PolynomialSurface::PolynomialSurface(SurfData& sd, unsigned order,
   resetTermCounter();
   build();
 }  
+
+PolynomialSurface::PolynomialSurface(AbstractSurfDataIterator* dataItr, 
+  unsigned order) : Surface(dataItr), xsize(dataItr->xSize()), order(order),
+  digits(order)
+{
+#ifdef __TESTING_MODE__
+  constructCount++;
+#endif
+  resetTermCounter();
+  build();
+}
   
 PolynomialSurface::PolynomialSurface(unsigned xsize, unsigned order, 
   std::vector<double> coefficients) : Surface(0), 
@@ -48,7 +60,7 @@ PolynomialSurface::PolynomialSurface(unsigned xsize, unsigned order,
   build();
 }
 
-PolynomialSurface::PolynomialSurface(string filename) : Surface(0)
+PolynomialSurface::PolynomialSurface(const string filename) : Surface(0)
 {
 #ifdef __TESTING_MODE__
   constructCount++;
@@ -93,107 +105,107 @@ double PolynomialSurface::evaluate(const std::vector<double> & x)
   return sum;
 }
 
-double PolynomialSurface::errorMetric(string metricName)
-{
-  if (metricName == "press") {
-    cout << "Call Press from Polynomial" << endl;
-    return press();
-  } else if (metricName == "rsquared") {
-    cout << "Call rSquared from Polynomial" << endl;
-    return rSquared();
-  } else {
-    return Surface::errorMetric(metricName);	
-  }
-  return 0;
-}
+//double PolynomialSurface::errorMetric(string metricName)
+//{
+//  if (metricName == "press") {
+//    //cout << "Call Press from Polynomial" << endl;
+//    return press();
+//  } else if (metricName == "rsquared") {
+//    //cout << "Call rSquared from Polynomial" << endl;
+//    return rSquared();
+//  } else {
+//    return Surface::errorMetric(metricName);	
+//  }
+//  return 0;
+//}
 
-double PolynomialSurface::press()
-{
-  cout << "Polynomial::press" << endl;
-  return 0;
-}
+//double PolynomialSurface::press()
+//{
+//  cout << "Polynomial::press" << endl;
+//  return 0;
+//}
 
-double PolynomialSurface::rSquared(AbstractSurfDataIterator* iter)
-{
-  if(!iter) {
-    iter = this->dataItr;
-    if (!iter) {
-      cerr << "Cannot compute R^2 without data" << endl;
-      return 0.0;
-    }
-  }
-
-  int pts = iter->elementCount();
-  int lwork = pts * coefficients.size() * 2;
-
-  // allocate space for the matrices
-  double* a = new double[coefficients.size()*pts];
-  double* a2 = new double[coefficients.size()*pts];
-  double* b = new double[pts];
-  double* y = new double[pts];
-  double* yhat = new double[pts];
-  double* work = new double[lwork];
-
-  double ysum = 0.0;
-  // populate the A and B matrices in preparation for Ax=b
-  iter->toFront();
-  unsigned point = 0;
-  while(!iter->isEnd()) {
-    resetTermCounter();
-    while (termIndex < coefficients.size()) {
-          a[point+termIndex*pts] = computeTerm(iter->currentElement().X());
-          a2[point+termIndex*pts] = computeTerm(iter->currentElement().X());
-          //cout << "a[" << point+termIndex*pts << "] = " << a[point+termIndex*pts] << endl;
-        nextTerm();
-    }
-    b[point] = iter->currentElement().F(iter->responseIndex());
-    y[point] = b[point];
-    ysum += y[point];
-    iter->nextElement();
-    point++;
-  }
-  double ysumSquared = ysum * ysum;
-  int inc = 1;
-  double ydoty = ddot_(pts,y,inc,y,inc);
-  // values must be passed by reference to Fortran, so variables must be declared for info, nrhs, trans
-  int info;
-  int nrhs=1;
-  char trans = 'N';
-  int numCoeff = static_cast<int>(coefficients.size());
-  //cout << "A Matrix: " << endl;
-  //writeMatrix(a,pts,numCoeff,cout);
-  //cout << "B Vector: " << endl;
-  //long defaultPrecision = cout.precision();
-  //cout.precision(30);
-  //writeMatrix(b,pts,1,cout);
-  //cout.precision(defaultPrecision);
-  dgels_(trans,pts,numCoeff,nrhs,a,pts,b,pts,work,lwork,info);
-  //cout << "A Matrix after: " << endl;
-  //writeMatrix(a,pts,numCoeff,cout);
-  if (info < 0) {
-          cerr << "dgels_ returned with an error" << endl;
-  }
-  double noScale = 1.0;
-  double noExist = 0.0;
-  dgemv_(trans,pts,numCoeff,noScale,a2,pts,b,inc,noExist,yhat,inc);
-  //cout << "Yhat vector: " << endl;
-  //cout.precision(30);
-  //writeMatrix(yhat,pts,1,cout);
-  //cout.precision(defaultPrecision);
-  double yhatDoty = ddot_(pts,yhat,inc,y,inc);
-  double Syy = ydoty - ysumSquared;
-  double SSe = ydoty - yhatDoty;
-  double r2 = 1.0 - SSe/Syy;
-  
-  delete [] work;
-  delete [] b;
-  delete [] a;
-  delete [] a2;
-  delete [] yhat;
-  delete [] y;
-  cout << "ysumSquared: " << ysumSquared << " ydoty: " << ydoty << endl;
-  return r2;
-}
+//double PolynomialSurface::rSquared(AbstractSurfDataIterator* iter)
+//{
+//  if(!iter) {
+//    iter = this->dataItr;
+//    if (!iter) {
+//      cerr << "Cannot compute R^2 without data" << endl;
+//      return 0.0;
+//    }
+//  }
+//
+//  int pts = iter->elementCount();
+//  int lwork = pts * coefficients.size() * 2;
+//
+//  // allocate space for the matrices
+//  double* a = new double[coefficients.size()*pts];
+//  double* a2 = new double[coefficients.size()*pts];
+//  double* b = new double[pts];
+//  double* y = new double[pts];
+//  double* yhat = new double[pts];
+//  double* work = new double[lwork];
+//
+//  double ysum = 0.0;
+//  // populate the A and B matrices in preparation for Ax=b
+//  iter->toFront();
+//  unsigned point = 0;
+//  while(!iter->isEnd()) {
+//    resetTermCounter();
+//    while (termIndex < coefficients.size()) {
+//          a[point+termIndex*pts] = computeTerm(iter->currentElement().X());
+//          a2[point+termIndex*pts] = computeTerm(iter->currentElement().X());
+//          //cout << "a[" << point+termIndex*pts << "] = " << a[point+termIndex*pts] << endl;
+//        nextTerm();
+//    }
+//    b[point] = iter->currentElement().F(iter->responseIndex());
+//    y[point] = b[point];
+//    ysum += y[point];
+//    iter->nextElement();
+//    point++;
+//  }
+//  double ysumSquared = ysum * ysum;
+//  int inc = 1;
+//  double ydoty = ddot_(pts,y,inc,y,inc);
+//  // values must be passed by reference to Fortran, so variables must be declared for info, nrhs, trans
+//  int info;
+//  int nrhs=1;
+//  char trans = 'N';
+//  int numCoeff = static_cast<int>(coefficients.size());
+//  //cout << "A Matrix: " << endl;
+//  //writeMatrix(a,pts,numCoeff,cout);
+//  //cout << "B Vector: " << endl;
+//  //long defaultPrecision = cout.precision();
+//  //cout.precision(30);
+//  //writeMatrix(b,pts,1,cout);
+//  //cout.precision(defaultPrecision);
+//  dgels_(trans,pts,numCoeff,nrhs,a,pts,b,pts,work,lwork,info);
+//  //cout << "A Matrix after: " << endl;
+//  //writeMatrix(a,pts,numCoeff,cout);
+//  if (info < 0) {
+//          cerr << "dgels_ returned with an error" << endl;
+//  }
+//  double noScale = 1.0;
+//  double noExist = 0.0;
+//  dgemv_(trans,pts,numCoeff,noScale,a2,pts,b,inc,noExist,yhat,inc);
+//  //cout << "Yhat vector: " << endl;
+//  //cout.precision(30);
+//  //writeMatrix(yhat,pts,1,cout);
+//  //cout.precision(defaultPrecision);
+//  double yhatDoty = ddot_(pts,yhat,inc,y,inc);
+//  double Syy = ydoty - ysumSquared;
+//  double SSe = ydoty - yhatDoty;
+//  double r2 = 1.0 - SSe/Syy;
+//  
+//  delete [] work;
+//  delete [] b;
+//  delete [] a;
+//  delete [] a2;
+//  delete [] yhat;
+//  delete [] y;
+//  cout << "ysumSquared: " << ysumSquared << " ydoty: " << ydoty << endl;
+//  return r2;
+//}
 
 // ____________________________________________________________________________
 // Commands 
@@ -204,6 +216,7 @@ void PolynomialSurface::build()
   if (!acceptableData()) {
     cerr << "Cannot build surface.  Data are not acceptable" << endl;
   } else {
+    coefficients.resize(minPointsRequired());
     int pts = dataItr->elementCount();
     int lwork = pts * coefficients.size() * 2;
 
@@ -231,10 +244,8 @@ void PolynomialSurface::build()
     int nrhs=1;
     char trans = 'N';
     int numCoeff = static_cast<int>(coefficients.size());
-    //cout << "A Matrix: " << endl;
-    //writeMatrix(a,pts,coefficients.size(),cout);
-    //cout << "B Vector: " << endl;
-    //writeMatrix(b,pts,1,cout);
+    writeMatrix("AMatrix",a,static_cast<unsigned>(pts),coefficients.size());
+    writeMatrix("BVector",b,static_cast<unsigned>(pts),1);
     dgels_(trans,pts,numCoeff,nrhs,a,pts,b,pts,work,lwork,info);
     //cout << "A Matrix after: " << endl;
     //writeMatrix(a,pts,numCoeff,cout);
@@ -250,10 +261,22 @@ void PolynomialSurface::build()
       }
     }
 
+    //writeText(cout);
     delete [] work;
     delete [] b;
     delete [] a;
   }
+}
+
+/// Create a surface of the same type as 'this.'  This objects data should
+/// be replaced with the dataItr passed in, but all other attributes should
+/// be the same (e.g., a second-order polynomial should return another 
+/// second-order polynomial.  Surfaces returned by this method can be used
+/// to compute the PRESS statistic.
+PolynomialSurface* PolynomialSurface::makeSimilarWithNewData
+  (AbstractSurfDataIterator* dataItr)
+{
+  return new PolynomialSurface(dataItr, order);
 }
 
 // ____________________________________________________________________________
@@ -323,8 +346,8 @@ void PolynomialSurface::nextTerm()
       curDig--;
       digits[curDig] = digits[curDig+1];
     }
-    termIndex++;
   }
+  termIndex++;
 }
 
 // ____________________________________________________________________________
@@ -373,6 +396,7 @@ void PolynomialSurface::readBinary(istream& is)
   is.read(surfaceType,nameSize);
   surfaceType[nameSize] = '\0';
   string nameInFile(surfaceType);
+  delete [] surfaceType;
   if (nameInFile != name) {
     cerr << "Surface name in file is not 'Polynomial'." << endl;
     cerr << "Cannot build surface." << endl;
@@ -387,7 +411,7 @@ void PolynomialSurface::readBinary(istream& is)
   digits.resize(order);
   resetTermCounter();
   valid = true;
-  originalData = false;
+  //originalData = false;
 }
 
 void PolynomialSurface::readText(istream& is)
@@ -427,7 +451,7 @@ void PolynomialSurface::readText(istream& is)
   digits.resize(order);
   resetTermCounter();
   valid = true;
-  originalData = false;
+  //originalData = false;
 }
 
 void PolynomialSurface::printTermLabel(ostream& os)
@@ -460,24 +484,13 @@ void PolynomialSurface::printTermLabel(ostream& os)
 }
 
   
-ostream& PolynomialSurface::writeMatrix(double* mat, unsigned rows, unsigned columns, ostream& os)
-{
-  for (unsigned r = 0; r < rows; r++) {
-    for (unsigned c = 0; c < columns; c++) {
-      os << setw(15) << mat[r + c*rows];
-    }
-    os << endl;
-  }
-  return os;
-}
-
 // ____________________________________________________________________________
 // Testing 
 // ____________________________________________________________________________
 
 #ifdef __TESTING_MODE__
-  int SurfData::constructCount = 0;
-  int SurfData::copyCount = 0;
-  int SurfData::destructCount = 0;
+  int PolynomialSurface::constructCount = 0;
+  int PolynomialSurface::copyCount = 0;
+  int PolynomialSurface::destructCount = 0;
 #endif
 

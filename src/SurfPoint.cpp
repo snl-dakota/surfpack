@@ -52,25 +52,12 @@ SurfPoint::SurfPoint(unsigned xsize, unsigned fsize, istream& is, bool binary)
 #ifdef __TESTING_MODE__
   constructCount++;
 #endif
-  unsigned i;
   x.resize(xsize);
   f.resize(fsize);
-  if (!binary) {
-    // read the point as text
-    for (i = 0; i < xsize; i++) {
-       is >> x[i];
-    }
-    for (i = 0; i < fsize; i++) {
-       is >> f[i];
-    }
+  if (binary) {
+    readBinary(is);
   } else { 
-    // read the point in binary format
-    for (i = 0; i < xsize; i++) {
-       is.read(reinterpret_cast<char*>(&x[i]),sizeof(x[i]));
-    }
-    for (i = 0; i < fsize; i++) {
-       is.read(reinterpret_cast<char*>(&f[i]),sizeof(f[i]));
-    }
+    readText(is);
   }
 }
 
@@ -183,36 +170,60 @@ void SurfPoint::F(unsigned responseIndex, double responseValue)
 // ____________________________________________________________________________
 
 /// Write point to stream in text or binary format
-ostream& SurfPoint::write(ostream& os, bool binary) const
+void SurfPoint::writeBinary(ostream& os) const
 {
-  if (!binary) {
-    const unsigned width = 26;
-    const unsigned output_precision = 17;
-    unsigned old_precision = os.precision(output_precision);
-    os.setf(ios::scientific);
-    for (unsigned i = 0; i < x.size(); i++) {
-      os  << setw(width) << x[i] ;
-    }
-    for (unsigned i = 0; i < f.size(); i++) {
-      os << setw(width) << f[i];
-    }
-    os.unsetf(ios::scientific);
-    os.precision(old_precision);
-  } else {
-    for (unsigned i = 0; i < x.size(); i++) {
-      os.write(reinterpret_cast<const char*>(&x[i]),sizeof(x[i])) ;
-    }
-    for (unsigned i = 0; i < f.size(); i++) {
-      os.write(reinterpret_cast<const char*>(&f[i]),sizeof(f[i]));
-    }
+  for (unsigned i = 0; i < x.size(); i++) {
+    os.write(reinterpret_cast<const char*>(&x[i]),sizeof(x[i])) ;
   }
-  return os;
+  for (unsigned i = 0; i < f.size(); i++) {
+    os.write(reinterpret_cast<const char*>(&f[i]),sizeof(f[i]));
+  }
 }
 
+void SurfPoint::writeText(ostream& os) const
+{
+  const unsigned width = 26;
+  const unsigned output_precision = 17;
+  unsigned old_precision = os.precision(output_precision);
+  os.setf(ios::scientific);
+  for (unsigned i = 0; i < x.size(); i++) {
+    os  << setw(width) << x[i] ;
+  }
+  for (unsigned i = 0; i < f.size(); i++) {
+    os << setw(width) << f[i];
+  }
+  os.unsetf(ios::scientific);
+  os.precision(old_precision);
+}
+ 
+void SurfPoint::readBinary(istream& is)
+{
+  // read the point in binary format
+  unsigned i;
+  for (i = 0; i < x.size(); i++) {
+     is.read(reinterpret_cast<char*>(&x[i]),sizeof(x[i]));
+  }
+  for (i = 0; i < f.size(); i++) {
+     is.read(reinterpret_cast<char*>(&f[i]),sizeof(f[i]));
+  }
+}
+
+void SurfPoint::readText(istream& is)
+{
+  // read the point as text
+  unsigned i;
+  for (i = 0; i < x.size(); i++) {
+     is >> x[i];
+  }
+  for (i = 0; i < f.size(); i++) {
+     is >> f[i];
+  }
+}
 /// Write point to an output stream in text format
 ostream& operator<<(ostream& os, const SurfPoint& sp) 
 {
-  return sp.write(os);
+  sp.writeText(os);
+  return os;
 }
 
 // ____________________________________________________________________________

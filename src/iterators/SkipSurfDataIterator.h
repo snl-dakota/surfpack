@@ -43,7 +43,7 @@ public:
 ////////////////////////////////////
  
 
-   SkipSurfDataIterator(SurfData* surfData);
+   SkipSurfDataIterator(SurfData& sd, unsigned response_index = 0);
 
    virtual ~SkipSurfDataIterator();
 
@@ -51,19 +51,19 @@ public:
 ////////////////////////////////////
 
    /// get the next element in the iterator
-   virtual SurfPoint * nextElement();
+   virtual SurfPoint& nextElement();
 
    /// get the current element from the iterator
-   virtual SurfPoint * currentElement();
+   virtual SurfPoint& currentElement();
 
    /// is the iterator at the end 
    virtual bool isEnd();
 
    /// return number of elements in one complete iteration 
-   virtual int getElementCount() const;
+   virtual unsigned elementCount() const;
    
    /// add one point only to the list of points to skip
-   void skipPoint(int);
+   void skipPoint(unsigned index);
 
    /// unmark all elements currently being skipped
    void unSkipAll();

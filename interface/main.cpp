@@ -1,13 +1,3 @@
-#include "Surface.h"
-#include "SurfPoint.h"
-#include "SurfData.h"
-#include "PolynomialSurface.h"
-#include "KrigingSurface.h"
-//#include "ANNSurface.h"
-//#include "ParticleSwarmMLP.h"
-//#include "BackpropMLP.h"
-#include "SurfDataIterator.h"
-
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -16,6 +6,21 @@
 #include <vector>
 #include <cmath>
 #include <string>
+#include <ctime>
+#include <cstdlib>
+
+#include "SurfPoint.h"
+#include "SurfData.h"
+#include "Surface.h"
+#include "SurfDataIterator.h"
+#include "PolynomialSurface.h"
+#include "KrigingSurface.h"
+#include "MarsSurface.h"
+#include "surfpack.h"
+//#include "ANNSurface.h"
+//#include "ParticleSwarmMLP.h"
+//#include "BackpropMLP.h"
+
 
 typedef struct {
     double min;
@@ -41,13 +46,14 @@ void readInput(istream& is = cin)
     char line[MAX_CHAR];
     is.getline(line,MAX_CHAR);
     string sline = line;
-    istringstream streamline(sline);
-    streamline >> ndims;
+    istringstream istream(sline);
+    istream >> ndims;
     axes.resize(ndims);
     for (int i = 0; i < ndims; i++) {
         is.getline(line,MAX_CHAR);
         sline = line;
-	streamline.str(sline);
+	istringstream streamline(sline);
+	string thestring = streamline.str();
         char c;
         streamline >> c;
 	if (c == 'v') {
@@ -101,140 +107,246 @@ void populateSurfData(SurfData* surfData, string filename, Surface* surface=0)
     surfptx.resize(ndims);
     for (int i = 0; i < npts; i++) {
         for (int j = 0; j < ndims; j++) {
-	    surfptx[j] = axes[j].min + axes[j].interval*point[j];
+	    surfptx[j] = (axes[j].max - axes[j].min)*((double)rand()/(double)INT_MAX)+ axes[j].min;
     	    //cout << setw(10) << surfptx[j];
 	}
 	//cout << endl;
 	//double fx = surface ? surface->evaluate(surfptx) : rastrigin(surfptx)*.5;
-	surfData->shallowAddPoint(new SurfPoint(surfptx));
+        SurfPoint sp(surfptx);
+	surfData->addPoint(sp);
 	nextPoint();
     }
     //cout << "Number of points: " << npts << endl;
 }
 
-void gridPoints(vector< string >& args) 
-{
-    SurfData sd;
-    populateSurfData(&sd, args[1]);
-
-    ofstream outfile(args[2].c_str(), ios::out);
-    if (!outfile) {
-	    cerr << "Error: unable to open " << args[2] << " for output." << endl;
-	    return;
-    }
-
-    sd.write(outfile);
-    outfile.close();
+SurfData* pointSpecToSurfData(string filename) {
+  ifstream infile(filename.c_str(),ios::in);
+  if (!infile) {
+          cerr << "File " << filename << " not found." << endl;
+          return 0;
+  }
+  readInput(infile);
+  infile.close();
+  initialize();
+  surfptx.resize(ndims);
+  vector<SurfPoint> sps;
+  for (int i = 0; i < npts; i++) {
+      for (int j = 0; j < ndims; j++) {
+          surfptx[j] = axes[j].min + axes[j].interval*point[j];
+  	    //cout << setw(10) << surfptx[j];
+      }
+      //cout << endl;
+      //double fx = surface ? surface->evaluate(surfptx) : rastrigin(surfptx)*.5;
+      SurfPoint sp(surfptx);
+      sps.push_back(sp);
+      //surfData->addPoint(sp);
+      nextPoint();
+  }
+  return new SurfData(sps);
 }
 
-void createSurface(vector< string >& args)
+SurfData* randomPoints(string filename) {
+  ifstream infile(filename.c_str(),ios::in);
+  if (!infile) {
+          cerr << "File " << filename << " not found." << endl;
+          return 0;
+  }
+  readInput(infile);
+  infile.close();
+  initialize();
+  surfptx.resize(ndims);
+  vector<SurfPoint> sps;
+  for (int i = 0; i < npts; i++) {
+      for (int j = 0; j < ndims; j++) {
+	surfptx[j] = (axes[j].max - axes[j].min)*((double)rand()/(double)INT_MAX)+ axes[j].min;
+  	    //cout << setw(10) << surfptx[j];
+      }
+      //cout << endl;
+      //double fx = surface ? surface->evaluate(surfptx) : rastrigin(surfptx)*.5;
+      SurfPoint sp(surfptx);
+      sps.push_back(sp);
+      //surfData->addPoint(sp);
+      nextPoint();
+  }
+  return new SurfData(sps);
+}
+
+double rastrigin(const vector<double>& pt) 
+{
+  double result = 0.0;
+  for (unsigned i = 0; i < pt.size(); i++) {
+    double x = pt[i];
+    result += x*x-10*cos(4.0*acos(0.0)*x)+10.0;
+  }
+  return result;
+}
+
+double rosenbrock(const vector<double>& pt) 
+{
+  double result = 0.0;
+  for (unsigned i = 0; i < pt.size() - 1; i++) {
+    double x = pt[i];
+    double xp = pt[i+1];
+    result += 100.0*(xp-x*x)*(xp-x*x)+(x-1.0)*(x-1.0); 
+  }
+  return result;
+}
+
+
+double testFunction(const string name, const vector<double>& pt)
+{
+  if (name == "rosenbrock") {
+    return rosenbrock(pt);
+  } else {
+    return rastrigin(pt);
+  }
+}
+
+void randomSample(vector< string >& args) 
+{
+  SurfData* sd = randomPoints(args[1]);
+  if (sd && args.size() == 4) {
+    unsigned newindex = sd->addResponse();
+    for (unsigned i = 0; i < sd->size(); i++) {
+      double response = testFunction(args[3],sd->Point(i).X());
+      sd->Point(i).F(newindex,response);
+    }
+  }
+  if (sd) {
+    sd->write(args[2]);
+  }
+  delete sd;
+}
+
+void gridPoints(vector< string >& args) 
+{
+  SurfData* sd = pointSpecToSurfData(args[1]);
+  if (sd && args.size() == 4) {
+    unsigned newindex = sd->addResponse();
+    for (unsigned i = 0; i < sd->size(); i++) {
+      double response = testFunction(args[3],sd->Point(i).X());
+      sd->Point(i).F(newindex,response);
+    }
+  }
+  if (sd) {
+    sd->write(args[2]);
+  }
+  delete sd;
+}
+
+void create(vector< string >& args)
 {
     Surface* s = 0;
-    SurfData sd;
-    ifstream infile(args[1].c_str(), ios::in);
-    if (!infile) {
-	    cerr << "Error: unable to open" << args[1] << "." << endl;
-	    return;
-    }
-    sd.read(infile);
+    SurfData sd(args[1]);
+    //ifstream infile(args[1].c_str(), ios::in);
+    //if (!infile) {
+    //        cerr << "Error: unable to open" << args[1] << "." << endl;
+    //        return;
+    //}
+    //sd.read(infile);
     
     //ofstream outfile(args[2].c_str(), ios::out);
     //if (!outfile) {
     //        cerr << "Error: unable to open " << args[2] << " for output." << endl;
     //        return;
     //}
-
-    if (args[3] == "kriging") {
-	    s = new KrigingSurface(&sd);
-	    s->build();
-	    s->test(&sd);
-    } else if (args[3] == "polynomial") {
-	    int order = atoi(args[4].c_str());
-	    s = new PolynomialSurface(&sd,order);
-	    s->build();
+    if (args.size() == 4) {
+      // create surface with sd; responseIndex = 0
+      s = createSurface(args[3], sd, 0);
+    } else if (args.size() == 5) {
+      // must be a polynomial surface 
+      s = createSurface(args[3], sd, 0, atoi(args[4].c_str()));
     }
+    
+    //if (args[3] == "kriging") {
+    //        s = new KrigingSurface(&sd);
+    //        s->build();
+    //        s->test(&sd);
+    //} else if (args[3] == "polynomial") {
+    //        int order = atoi(args[4].c_str());
+    //        s = new PolynomialSurface(&sd,order);
+    //        s->build();
+    //}
     if (s) {
-	    s->saveBinary(args[2]);
+	    s->write(args[2]);
     }
-    infile.close();
+    //infile.close();
     delete s;
 }
 
 void evaluateSurface(vector< string >& args)
 {
     Surface* s = 0;
-    SurfData sd;
-    ifstream infile(args[1].c_str(), ios::in);
-    if (!infile) {
-	    cerr << "Error: unable to open" << args[1] << " for input." << endl;
-	    return;
-    }
-    sd.read(infile);
+    SurfData sd(args[1]);
+    //ifstream infile(args[1].c_str(), ios::in);
+    //if (!infile) {
+    //        cerr << "Error: unable to open" << args[1] << " for input." << endl;
+    //        return;
+    //}
+    //sd.read(infile);
 
-    ifstream insurface(args[3].c_str(), ios::in | ios::binary);
-    if (!insurface) {
-	    cerr << "Error: unable to open" << args[3] << " for input." << endl;
-	    return;
-    }
-    
+    //ifstream insurface(args[3].c_str(), ios::in | ios::binary);
+    //if (!insurface) {
+    //        cerr << "Error: unable to open" << args[3] << " for input." << endl;
+    //        return;
+    //}
+    //
     ofstream outfile(args[2].c_str(), ios::out);
     if (!outfile) {
-	    cerr << "Error: unable to open " << args[2] << " for output." << endl;
-	    return;
+            cerr << "Error: unable to open " << args[2] << " for output." << endl;
+            return;
     }
-    int surfaceID;
-    insurface.read((char*)&surfaceID, sizeof(int));
-    insurface.close();
-    switch (surfaceID) {
-	    case Surface::polynomialSurfaceID: 
-	        s=new PolynomialSurface(args[3]);
-		cout << "Polynomial" << endl;
-	        break;
-	    case Surface::krigingSurfaceID: 
-		s = new KrigingSurface(args[3]);
-	        cout << "Kriging" << endl; 
-		break;
-	    default:
-		cout << "Unknown Surface" << endl;
-    }
-    s->evaluate(&sd);
+    //int surfaceID;
+    //insurface.read((char*)&surfaceID, sizeof(int));
+    //insurface.close();
+    //switch (surfaceID) {
+    //        case Surface::polynomialSurfaceID: 
+    //            s=new PolynomialSurface(args[3]);
+    //    	cout << "Polynomial" << endl;
+    //            break;
+    //        case Surface::krigingSurfaceID: 
+    //    	s = new KrigingSurface(args[3]);
+    //            cout << "Kriging" << endl; 
+    //    	break;
+    //        default:
+    //    	cout << "Unknown Surface" << endl;
+    //}
+    s = createSurface(args[3]);
+    s->evaluate(sd);
     
-    sd.write(outfile);
-    infile.close();
-    outfile.close();
+    sd.writeText(outfile);
+    //infile.close();
+    //outfile.close();
     delete s;
 }
 
 void computeErrorMetric(vector< string>& args)
 {
-    ifstream insurface(args[1].c_str(), ios::in | ios::binary);
-    if (!insurface) {
-	    cerr << "Error: unable to open" << args[1] << " for input." << endl;
-	    return;
+    Surface* s = createSurface(args[1]);
+    SurfData* sd = 0;
+    AbstractSurfDataIterator* itr = 0;
+    if (args.size() == 4) {
+      sd = new SurfData(args[3]);
+      itr = new SurfDataIterator(*sd);
     }
-
-    int surfaceID;
-    insurface.read((char*)&surfaceID, sizeof(int));
-    insurface.close();
-    Surface* s = 0;
-    switch (surfaceID) {
-	    case Surface::polynomialSurfaceID: 
-	        s=new PolynomialSurface(args[1]);
-		cout << "Polynomial" << endl;
-	        break;
-	    case Surface::krigingSurfaceID: 
-		s = new KrigingSurface(args[1]);
-	        cout << "Kriging" << endl; 
-		break;
-	    default:
-		cout << "Unknown Surface" << endl;
+    if (s) {
+      double errorValue = s->errorMetric(args[2], itr);
+      cout << args[2] << ": " << errorValue << endl;
+      delete s;
     }
-    double errorValue = s->errorMetric(args[2]);
-    cout << args[2] << ": " << errorValue << endl;
-    delete s;
+    delete itr;
+    delete sd;
 
 
 }
+
+void conversion(vector< string>& args)
+{
+  Surface* s = createSurface(args[1]);
+  s->write(args[2]);
+  delete s;
+}
+
 void executeCommand(vector< string >& args) 
 {
 	cout << "Executing command: ";
@@ -245,12 +357,16 @@ void executeCommand(vector< string >& args)
 
 	if (args[0] == "gridpoints") {
 		gridPoints(args);
+        } else if (args[0] == "randomsample") {
+		randomSample(args);
 	} else if (args[0] == "create") {
-		createSurface(args);
+		create(args);
 	} else if (args[0] == "evaluate") {
 		evaluateSurface(args);
 	} else if (args[0] == "error") {
 		computeErrorMetric(args);
+	} else if (args[0] == "convert") {
+		conversion(args);
 	} else {
 		cout << "Unrecognized command" << endl;
 	}
@@ -314,19 +430,32 @@ void readEvalPrint()
 
 	    
 }
-
+void printHelp()
+{
+  cout << "Usage: " << endl
+       << "gridpoints <spec file> <output file>" << endl
+       << "create <data file> <output file> <surface type> [<surface arguments> ...]" << endl
+       << "evalute <data file> <output file> <surface file>" << endl
+       << "error <metric name> <surface file> " << endl;
+}
+       
+       
 int main(int argc, char* argv[]) 
 {
-    if (argc == 1) {
-	    readEvalPrint();
-    } else if (argc == 2) {
-	    executeScript(argv[1]);
-    } else {
-	    vector< string > args;
-	    for (int i = 1; i < argc; i++) {
-		    args.push_back(argv[i]);
-	    }
-	    executeCommand(args);
+  if (argc == 1) {
+    readEvalPrint();
+  } else if (argc == 2) {
+    if (string(argv[1]) == "help") {
+      printHelp();
+    } else {     
+      executeScript(argv[1]);
     }
-    return 0;
+  } else {
+    vector< string > args;
+    for (int i = 1; i < argc; i++) {
+      args.push_back(argv[i]);
+    }
+    executeCommand(args);
+  }
+  return 0;
 }    

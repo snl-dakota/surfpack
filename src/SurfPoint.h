@@ -91,7 +91,10 @@ public:
 // ____________________________________________________________________________
 
   /// Write point to stream in text or binary format
-  std::ostream& write(std::ostream& os, bool binary=false) const;
+  void writeBinary(std::ostream& os) const;
+  void writeText(std::ostream& os) const;
+  void readBinary(std::istream& is);
+  void readText(std::istream& is);
 
 // ____________________________________________________________________________
 // Data members 

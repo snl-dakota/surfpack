@@ -8,87 +8,93 @@
 //
 // Description: 
 // + The KrigingSurface class does Kriging interpolation 
-// (similar to splines) to fit on the points
+// (similar to splines) to fit the points
 // ----------------------------------------------------------
 
 #ifndef __KRIGING_SURFACE_H__
 #define __KRIGING_SURFACE_H__
 
-#include <iostream>
-#include <vector>
-#include <string>
-
-#include "SurfException.h"
-#include "SurfPoint.h"
-#include "Surface.h"
-#include "SkipSurfDataIterator.h"
-#include "SurfDataIterator.h"
-
-
 class KrigingSurface : public Surface
 {
 
+//_____________________________________________________________________________
+// Creation, Destruction, Initialization
+//_____________________________________________________________________________
+
 public:
-
-// constructor/destructor
-////////////////////////////////
-
-   //KrigingSurface(const std::vector<double> &);
-   KrigingSurface(SurfData* surfData, int responseIndex = 0);
-   KrigingSurface(std::istream& is);
-   KrigingSurface(std::string filename);
-//   KrigingSurface(SurfData *,const std::vector<double> &);
-//   KrigingSurface(const KrigingSurface &);
-   
-   // a do nothing destructor
-   //
-   virtual ~KrigingSurface(); 
-
-// member functions
-////////////////////////////////
+  //KrigingSurface(const std::vector<double> &);
+  KrigingSurface(AbstractSurfDataIterator* dataItr);
+  KrigingSurface(SurfData& sd, unsigned responseIndex = 0);
+  KrigingSurface(const std::string filename);
+  ~KrigingSurface(); 
+  void initialize();
+  void cleanup();
+private:
+  /// Explicitly disallow default constructor  
+  KrigingSurface();
+//_____________________________________________________________________________
+// Overloaded operators 
+//_____________________________________________________________________________
 
 
-   virtual int getMinPointCount(int dim) const;
-   virtual int getDimension() const;
-   virtual std::ostream& write(std::ostream & os = std::cout); 
-   virtual std::string getType() const;
-   virtual void save(std::string filename);
+//_____________________________________________________________________________
+// Queries 
+//_____________________________________________________________________________
+public:
+  
+  virtual const std::string surfaceName() const;
+  static unsigned minPointsRequired(unsigned xsize);
+  virtual unsigned minPointsRequired() const;
+  virtual double evaluate(const std::vector<double>& x);
 
-   /// Save the surface to a file in binary format
-   virtual void saveBinary(std::string filename);
+//_____________________________________________________________________________
+// Commands 
+//_____________________________________________________________________________
 
-   /// Load the surface from a file
-   virtual void loadBinary(std::string filename);
+  void usePreComputedCorrelationVector(std::vector<double> vals);
+  void build();
+  
+  /// Create a surface of the same type as 'this.'  This objects data should
+  /// be replaced with the dataItr passed in, but all other attributes should
+  /// be the same (e.g., a second-order polynomial should return another 
+  /// second-order polynomial.  Surfaces returned by this method can be used
+  /// to compute the PRESS statistic.
+  virtual KrigingSurface* makeSimilarWithNewData
+    (AbstractSurfDataIterator* dataItr);
 
-private: 
-   KrigingSurface();
-   std::ostream& printKrigEvalVars(ostream& os);
-   std::ostream& printKrigModelVariables(std::ostream& os);
-   std::ostream& printConminVariables(std::ostream& os);
+//_____________________________________________________________________________
+// Helper methods 
+//_____________________________________________________________________________
+
+  void buildModel();
+
+//_____________________________________________________________________________
+// I/O 
+//_____________________________________________________________________________
+
+  virtual void writeBinary(std::ostream& os);
+  virtual void writeText(std::ostream& os);
+  virtual void readBinary(std::istream& is);
+  virtual void readText(std::istream& is);
+  void printKrigEvalVars(std::ostream& os);
+  void printKrigModelVariables(std::ostream& os);
+  void printConminVariables(std::ostream& os);
+
+//_____________________________________________________________________________
+// Data members 
+//_____________________________________________________________________________
 
 protected:
 
-   bool needsCleanup;
-   int numdv;
-   int numsamp;
-   int dim;
-   int pts;
-   virtual double calculate(const std::vector<double> & x) throw(SurfException);
-   virtual void calculateInternals(AbstractSurfDataIterator* iter);
-   void initialize();
-   void cleanup();
-   void usePreComputedCorrelationVector(std::vector<double> vals) throw(SurfException);
-   virtual void build(AbstractSurfDataIterator* iter) throw(SurfException);
-   void buildModel();
-   bool runConminFlag;
+  static const std::string name;
+  bool needsCleanup;
+  int numdv;
+  int numsamp;
+  int dim;
+  int pts;
+  bool runConminFlag;
 
-
-
-    //
-    //- Heading: Data
-    //
-
-  /*******************CONMIN DATA**************************/
+  //*******************CONMIN DATA**************************/
 
   /// Size variable for CONMIN arrays. See CONMIN manual.
   /** N1 = number of variables + 2 */
@@ -268,6 +274,20 @@ protected:
   double *workVectorQuad;
   /// Internal array for kriging Fortran77 code: temporary storage.
   int  *iworkVector;
+
+//_____________________________________________________________________________
+// Testing 
+//_____________________________________________________________________________
+
+#ifdef __TESTING_MODE__ 
+  friend class KrigingUnitTest;
+  friend class SurfaceUnitTest;
+
+public:
+  static int constructCount;
+  static int copyCount;
+  static int destructCount;
+#endif
 };
 
 #endif

@@ -15,13 +15,16 @@
 #define fmod fmod_
 #endif
 
-extern "C" void mars(int&, int&, float&, float&, float&, int&, int&, int&,
-  float&, int&, float&, double&, int&);
+int MarsSurface::nk = 25;
+int MarsSurface::mi = 2;
 
-extern "C" void fmod(int&, int&, float&, float&, int&, float&, float&);
+extern "C" void mars(int&, int&, real&, real&, real&, int&, int&, int&,
+  real&, int&, real&, double&, int&);
+
+extern "C" void fmod(int&, int&, real&, real&, int&, real&, real&);
 using namespace std;
 
-void printMatrix(float* mat, unsigned rows, unsigned columns, ostream& os)
+void printMatrix(real* mat, unsigned rows, unsigned columns, ostream& os)
 {
   for (unsigned r = 0; r < rows; r++) {
     for (unsigned c = 0; c < columns; c++) {
@@ -135,16 +138,16 @@ double MarsSurface::evaluate(const std::vector<double>& x)
   //delete [] sp;
   //delete [] mm;
   int n = 1;
-  float* xVector = new float[x.size()];
+  real* xVector = new real[x.size()];
   for (unsigned i = 0; i < x.size(); i++) {
-    xVector[i] = static_cast<float>(x[i]);
+    xVector[i] = static_cast<real>(x[i]);
   }
-  float* sp = new float[2];
-  float* f = new float[1];
+  real* sp = new real[2];
+  real* f = new real[1];
   fmod(m,n,xVector[0],fm[0],im[0],f[0],sp[0]);
   delete [] sp;
   delete [] xVector;
-  float result = *f;
+  real result = *f;
   delete [] f;
   return result;
 }
@@ -163,17 +166,17 @@ void MarsSurface::build()
     delete [] im;
     int nmcv = 0;
     int ntcv = 0;
-    int nk = 15;
-    int mi = 2;
+    //int nk = 15;
+    //int mi = 2;
     n = static_cast<int>(dataItr->elementCount());
     np = static_cast<int>(dataItr->xSize());
-    xMatrix = new float[n*np];
-    float* y = new float[n];
-    float* w = new float[n];
+    xMatrix = new real[n*np];
+    real* y = new real[n];
+    real* w = new real[n];
     int* lx = new int[np];
-    fm = new float[ 3+nk*(5*mi+nmcv+6)+2*np+ntcv];
+    fm = new real[ 3+nk*(5*mi+nmcv+6)+2*np+ntcv];
     im = new int[ 21+nk*(3*mi+8) ];
-    float* sp = new float[2*(n*(max(nk+1,2)+3) + max(3*n+5*nk+np, max(2*np, 4*n))) 
+    real* sp = new real[2*(n*(max(nk+1,2)+3) + max(3*n+5*nk+np, max(2*np, 4*n))) 
       + 2*np + 4*nk];
     double* dp = new double[2*(max(n*nk,(nk+1)*(nk+1)) + max((nk+2)*(nmcv+3),4*nk))];
     int* mm = new int[2*(n*np+2*max(mi,nmcv))];
@@ -186,9 +189,9 @@ void MarsSurface::build()
       //cout << current->getF(responseIndex) << endl;
       //const vector<double> domain = current.X();
       for (int j = 0; j < np; j++) {
-        xMatrix[j*pts+i] = static_cast<float>(current.X()[j]); 
+        xMatrix[j*pts+i] = static_cast<real>(current.X()[j]); 
       }
-      y[i] = static_cast<float>(current.F(dataItr->responseIndex()));
+      y[i] = static_cast<real>(current.F(dataItr->responseIndex()));
       w[i] = 1.0f;
       dataItr->nextElement();
       i++;
@@ -212,6 +215,18 @@ void MarsSurface::build()
     originalData = true;
   }
 }
+
+/// Create a surface of the same type as 'this.'  This objects data should
+/// be replaced with the dataItr passed in, but all other attributes should
+/// be the same (e.g., a second-order polynomial should return another 
+/// second-order polynomial.  Surfaces returned by this method can be used
+/// to compute the PRESS statistic.
+MarsSurface* MarsSurface::makeSimilarWithNewData
+  (AbstractSurfDataIterator* dataItr)
+{
+  return new MarsSurface(dataItr);
+}
+
 //_____________________________________________________________________________
 // Helper methods 
 //_____________________________________________________________________________
@@ -225,8 +240,8 @@ void MarsSurface::writeBinary(std::ostream& os)
   int nmcv = 0;
   int ntcv = 0;
   np = static_cast<int>(dataItr->xSize());
-  int nk = 15;
-  int mi = 2;
+  //int nk = 15;
+  //int mi = 2;
   unsigned fmsize = 3+nk*(5*mi+nmcv+6)+2*np+ntcv;
   unsigned imsize = 21+nk*(3*mi+8);
   unsigned nameSize = name.size();
@@ -246,8 +261,8 @@ void MarsSurface::writeText(std::ostream& os)
     int nmcv = 0;
     int ntcv = 0;
     np = static_cast<int>(dataItr->xSize());
-    int nk = 15;
-    int mi = 2;
+    //int nk = 15;
+    //int mi = 2;
     unsigned fmsize = 3+nk*(5*mi+nmcv+6)+2*np+ntcv;
     unsigned imsize = 21+nk*(3*mi+8);
 
@@ -290,7 +305,7 @@ void MarsSurface::readBinary(std::istream& is)
   is.read(reinterpret_cast<char*>(&np),sizeof(np));
   unsigned fmsize = 3+nk*(5*mi+nmcv+6)+2*np+ntcv;
   unsigned imsize = 21+nk*(3*mi+8);
-  fm = new float[fmsize];
+  fm = new real[fmsize];
   im = new int[imsize];
   is.read(reinterpret_cast<char*>(fm),fmsize*sizeof(fm[0]));
   is.read(reinterpret_cast<char*>(im),imsize*sizeof(im[0]));
@@ -310,7 +325,7 @@ void MarsSurface::readText(std::istream& is)
        >> np;
     unsigned fmsize = 3+nk*(5*mi+nmcv+6)+2*np+ntcv;
     unsigned imsize = 21+nk*(3*mi+8);
-    fm = new float[fmsize];
+    fm = new real[fmsize];
     im = new int[imsize];
     unsigned i;
     for (i = 0; i < fmsize; i++) {

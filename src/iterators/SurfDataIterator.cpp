@@ -10,7 +10,12 @@
 // + SurfSurfDataIterator class - Iterator for the SurfData class
 // ----------------------------------------------------------
 
+#include <vector>
+#include <algorithm>
+#include <iostream>
 #include "SurfDataIterator.h"
+#include "SurfPoint.h"
+#include "SurfData.h"
 
 using namespace std;
 
@@ -18,7 +23,8 @@ using namespace std;
 ////////////////////////////////////
  
 /// iterate over elements in surfData
-SurfDataIterator::SurfDataIterator(SurfData* surfData) : AbstractSurfDataIterator(surfData)
+SurfDataIterator::SurfDataIterator(SurfData& sd, unsigned response_index) 
+  : AbstractSurfDataIterator(sd, response_index)
 {
 }
 
@@ -35,25 +41,22 @@ SurfDataIterator::~SurfDataIterator() { }
 ////////////////////////////////////
 
 /// return the next element in the iterator
-SurfPoint * SurfDataIterator::nextElement() 
+SurfPoint& SurfDataIterator::nextElement() 
 { 
-    if (currentIndex < surfData->size()) {
-	currentIndex++;
-    }
-    return currentElement();
+  if (currentIndex < sd.size()) {
+      currentIndex++;
+  }
+  return currentElement();
 }
 
 /// return the current element from the iterator
-SurfPoint * SurfDataIterator::currentElement() 
+SurfPoint& SurfDataIterator::currentElement() 
 { 
-    if (currentIndex < surfData->size()) { 
-	return surfData->getPoint(order[currentIndex]);
-    } 
-    return 0; 
+  return sd.Point(order[currentIndex]);
 }
 
 /// return the number of elements in one complete iteration
-int SurfDataIterator::getElementCount() const 
+unsigned SurfDataIterator::elementCount() const 
 { 
-    return surfData->size();
+  return sd.size();
 }    

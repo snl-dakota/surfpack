@@ -12,11 +12,8 @@
 #ifndef __ABSTRACT_SURFDATA_ITERATOR_H__
 #define __ABSTRACT_SURFDATA_ITERATOR_H__
 
-#include "SurfPoint.h"
+class SurfPoint;
 #include "SurfData.h"
-#include <algorithm>
-#include <vector>
-
 class AbstractSurfDataIterator
 {
 private:
@@ -33,14 +30,15 @@ private:
 //   AbstractSurfDataIterator & operator=(const AbstractSurfDataIterator &);
 
 protected:
-   AbstractSurfDataIterator() {}
+   AbstractSurfDataIterator(); 
 
 // data members
 ////////////////////////////////////
 
-   SurfData* surfData;
-   int currentIndex;
-   std::vector<int> order;
+   SurfData& sd;
+   unsigned response_index;
+   unsigned currentIndex;
+   std::vector<unsigned> order;
 
 public:
 
@@ -48,7 +46,7 @@ public:
 ////////////////////////////////////
  
    /// The SurfData object which will be iterated over must be provided in the constructor
-   AbstractSurfDataIterator(SurfData* surfData);
+   AbstractSurfDataIterator(SurfData& sd, unsigned response_index = 0);
    
    virtual ~AbstractSurfDataIterator(); 
 
@@ -56,10 +54,10 @@ public:
 ////////////////////////////////////
 
    /// return the next element in the iterator
-   virtual SurfPoint * nextElement() = 0;
+   virtual SurfPoint& nextElement() = 0;
 
    /// return the current element from the iterator
-   virtual SurfPoint * currentElement() = 0;
+   virtual SurfPoint& currentElement() = 0;
 
    /// reset the iterator to the first element 
    virtual void toFront();
@@ -68,10 +66,13 @@ public:
    virtual bool isEnd();
 
    /// return the number of SurfPoints that comprise a full iteration
-   virtual int getElementCount() const = 0;
+   virtual unsigned elementCount() const = 0;
 
-   /// return the number of dimensions in the surfData 
-   int getDimension() const;
+   /// return the number of dimensions in the SurfData
+   unsigned xSize() const;
+
+   /// Return index of response variable associated with this iterator
+   unsigned responseIndex() const;
 
    /// produce a randomly ordered iteration sequence
    virtual void shuffle();

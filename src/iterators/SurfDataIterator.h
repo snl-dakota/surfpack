@@ -46,7 +46,7 @@ public:
 ////////////////////////////////////
  
    /// default constructor
-   SurfDataIterator(SurfData* surfData);
+   SurfDataIterator(SurfData& sd, unsigned response_index = 0);
 
    virtual ~SurfDataIterator();
 
@@ -54,13 +54,13 @@ public:
 ////////////////////////////////////
 
    /// return the next element in the iterator
-   virtual SurfPoint * nextElement();
+   virtual SurfPoint& nextElement();
 
    /// return the current element from the iterator
-   virtual SurfPoint * currentElement();
+   virtual SurfPoint& currentElement();
 
-   /// get the number of elements in this iterator 
-   virtual int getElementCount() const;
+   /// Return the number of elements in this iterator 
+   virtual unsigned elementCount() const;
 };
 
 #endif
