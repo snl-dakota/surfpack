@@ -223,7 +223,7 @@ protected:
 
 #ifdef __TESTING_MODE__
   friend class SurfaceFactoryUnitTest;
-  friend class SurfaceUnitTest;
+  friend class SurfaceTest;
  
   static int constructCount;
   static int destructCount;
