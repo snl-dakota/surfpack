@@ -27,7 +27,7 @@ MDR_C2F77_UNDERSCORE
 #AC_CXX_BOOL
 #AC_CXX_MUTABLE
 
-#AC_DISABLE_SHARED
+AC_DISABLE_SHARED
 
 AC_LANG_CPLUSPLUS
 ACX_LAPACK
@@ -48,10 +48,10 @@ fi
 AC_CHECK_LIB([cxxstd],[strcpy])
 #
 ##Check for the linear algebra libraries that are needed on Sun/Solaris
-AC_CHECK_LIB([sunmath],[logf],[],[],[$WHOLE_LIB_PATH])
-AC_CHECK_LIB([F77],[etime_],[],[],[$WHOLE_LIB_PATH])
-AC_CHECK_LIB([fsu],[__c_exp],[],[],[$WHOLE_LIB_PATH])
-AC_CHECK_LIB([sunperf],[dgels_],[],[],[$WHOLE_LIB_PATH])
+#AC_CHECK_LIB([sunmath],[logf],[],[],[$WHOLE_LIB_PATH])
+#AC_CHECK_LIB([F77],[etime_],[],[],[$WHOLE_LIB_PATH])
+#AC_CHECK_LIB([fsu],[__c_exp],[],[],[$WHOLE_LIB_PATH])
+#AC_CHECK_LIB([sunperf],[dgels_],[],[],[$WHOLE_LIB_PATH])
 
 #
 ##Check for the linear algebra libraries on Linux machines
@@ -63,14 +63,14 @@ AC_CHECK_LIB([sunperf],[dgels_],[],[],[$WHOLE_LIB_PATH])
 ##AC_CHECK_LIB([gsl],[main],[],[],[$WHOLE_LIB_PATH])
 
 #Check for the linear algebra libraries that are needed on IRIX
-AC_CHECK_LIB([scs],[dgels_])
+#AC_CHECK_LIB([scs],[dgels_])
 
-#Chech for the linear algebra libraries that should be on OSF
-AC_CHECK_LIB([dxml],[dgels_])
+#Check for the linear algebra libraries that should be on OSF
+#AC_CHECK_LIB([dxml],[dgels_])
 
 
 #Check for libraries needed for CPP Unit test suite
-AC_CHECK_LIB([dl],[dlclose],[],[],[$WHOLE_LIB_PATH])
+#AC_CHECK_LIB([dl],[dlclose],[],[],[$WHOLE_LIB_PATH])
 MDR_CXX_CPPUNIT
 
 AC_DEFINE([__TESTING_MODE__],[],[1])
@@ -84,8 +84,8 @@ AC_DEFINE([__TESTING_MODE__],[],[1])
 AC_PROG_LIBTOOL
 
 CPPFLAGS="-DDATADIR='\"\$(top_srcdir)/share\"' "
-#CXXFLAGS="-fprofile-arcs -ftest-coverage -g -save-temps"
-CXXFLAGS="-g "
+CXXFLAGS="-fprofile-arcs -ftest-coverage -g -save-temps"
+#CXXFLAGS="-g "
 if test "$CXX" = "cxx"
 then
   echo "Compiling with cxx"
