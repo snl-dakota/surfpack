@@ -41,6 +41,14 @@ then
      AC_CONFIG_FILES([$1])
 fi])
 
+AC_DEFUN([MDR_C2F77_UNDERSCORE],
+  [ AC_F77_FUNC([func1])
+    if test "$func1" = "func1_" 
+    then
+      AC_DEFINE([C2F77_CALLS_NEED_UNDERSCORE],[],["Define if function calls from C/C++ to F77 need a trailing underscore"])
+    fi
+  ])
+
 AC_DEFUN([ACX_BLAS], [
 AC_PREREQ(2.50)
 AC_REQUIRE([AC_F77_LIBRARY_LDFLAGS])
@@ -136,7 +144,7 @@ fi
 if test $acx_blas_ok = no; then
 	AC_CHECK_LIB(blas, $sgemm,
 		[AC_CHECK_LIB(essl, $sgemm,
-			[acx_blas_ok=yes; BLAS_LIBS="-lessl -lblas"],
+			[mdr_essl=yes; acx_blas_ok=yes; BLAS_LIBS="-lessl -lblas"],
 			[], [-lblas $FLIBS])])
 fi
 
@@ -145,6 +153,7 @@ if test $acx_blas_ok = no; then
 	AC_CHECK_LIB(blas, $sgemm, [acx_blas_ok=yes; BLAS_LIBS="-lblas"])
 fi
 
+AM_CONDITIONAL([NEEDS_EXTRA_LAPACK_ROUTINES], [test "$mdr_essl"=yes])
 AC_SUBST(BLAS_LIBS)
 
 LIBS="$acx_blas_save_LIBS"
