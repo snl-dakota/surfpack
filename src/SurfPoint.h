@@ -5,32 +5,21 @@
 #endif
 // End of prepended lines
 
-// Project: SURFPACK++
-//
-// File:       SurfPoint.h
-// Author:     Eric Cyr 
-// Modified:   Mark Richards
-// 
-// Description
-// + SurfPoint class - a container class for a point and its response values
-// + Left shift (<<) operator for SurfPoint. Easy printing.
-// ____________________________________________________________________________
-
 #ifndef __SURF_POINT_H__
 #define __SURF_POINT_H__
 
-// INVARIANTS: for SurfPoint
-// ---------------------------
-
-// not yet specified
 #include <stdexcept>
 
-
+/// Holds a data point in a space of arbitrary dimension.  A SurfPoint object
+/// contains an n-tuple representing the location of the point in the space, 
+/// and list of zero or more response values for that point.  Includes methods
+/// for querying location and responses, adding new response values, and for
+/// stream I/O.
 class SurfPoint {
 
-// Nested Exception class used when an attempt is made to create a SurfPoint 
-// with 0 dimensions
 private:
+/// Nested exception class used when an attempt is made to create a SurfPoint 
+/// with 0 dimensions.
 class null_point : public std::runtime_error
 {
 public:
@@ -47,23 +36,24 @@ public:
   /// Initialize without any response values
   SurfPoint(const std::vector<double>& x);
 
-  /// Initialize point with one response value
+  /// Initialize with one response value
   SurfPoint(const std::vector<double>& x, double f0);
   
   /// Initialize with zero or more response values
   SurfPoint(const std::vector<double>& x, const std::vector<double>& f);
   
   /// Read point from istream in either text or binary format
-  SurfPoint(unsigned xsize, unsigned fsize, std::istream& is, bool binary = false);
+  SurfPoint(unsigned xsize, unsigned fsize, std::istream& is, 
+    bool binary = false);
 
   /// Copy constructor performs a deep copy
-  SurfPoint(const SurfPoint& sp);
+  SurfPoint(const SurfPoint& other);
 
-  /// STL data members x and f automatically cleaned up
   ~SurfPoint();
 
 private:
-  /// Initialization used by all regular constructors
+  /// Initialization used by all regular constructors.  Ensures that point has
+  /// at least one dimension.
   void init();
 
 protected:
@@ -76,24 +66,30 @@ protected:
 // ____________________________________________________________________________
 public:
 
-  /// Assign sp to this unless they are already identical
-  SurfPoint& operator=(const SurfPoint& sp);
+  /// Assign 'other' to 'this' unless they are already equal 
+  SurfPoint& operator=(const SurfPoint& other);
 
   /// Tests for deep equality
-  bool operator==(const SurfPoint& sp) const;
+  bool operator==(const SurfPoint& other) const;
   
   /// Tests for deep inequality
-  bool operator!=(const SurfPoint& sp) const;
+  bool operator!=(const SurfPoint& other) const;
   
-  /// Function object for use with sets of SurfPoint objects (in particular,
-  /// a SurfData object)
+  /// Function object for use with pairs of SurfPoint objects (particularly in
+  /// a SurfData object).  SurfPoint s1 is "less than" s2 if it has fewer
+  /// dimensions.  SurfPoint s1 is also less than s2 if, for some dimension i,
+  /// s1[i] < s2[i] AND s1[j] == s2[j] for all j, 0 <= j < i.  Note that the
+  /// SurfPoint's response values have no bearing on the results for this 
+  /// comparison.  Since the response values DO affect the results of 
+  /// SurfPoint::operator==, it is NOT necessarily the case that s1 == s2 and
+  /// (!SurfPointPtrLessThan(&s1,&s2) && !SurfPointPtrLessThan(&s2,&s1)) will
+  /// return the same boolean value.
   class SurfPointPtrLessThan
   {
   public:
     bool operator()(const SurfPoint* sp1, const SurfPoint* sp2) const;
   };
       
-
 // ____________________________________________________________________________
 // Queries 
 // ____________________________________________________________________________
@@ -104,7 +100,7 @@ public:
   /// Return number of response variables
   unsigned fSize() const;
 
-  /// Return point in the domain as an STL vector
+  /// Return point in the domain
   const std::vector<double>& X() const;
 
   /// Return response value at responseIndex
@@ -123,10 +119,16 @@ public:
 // I/O
 // ____________________________________________________________________________
 
-  /// Write point to stream in text or binary format
+  /// Write location and responses of this point to stream in binary format 
   void writeBinary(std::ostream& os) const;
+
+  /// Write location and responses of this point to stream in text format 
   void writeText(std::ostream& os) const;
+
+  /// Read location and responses of this point from stream in binary format 
   void readBinary(std::istream& is);
+  
+  /// Read location and responses of this point from stream in text format 
   void readText(std::istream& is);
 
 // ____________________________________________________________________________
@@ -134,8 +136,8 @@ public:
 // ____________________________________________________________________________
 
 protected:
-  /// The point in the domain.  The size of the vector
-  /// is the dimensionality of the space. 
+  /// The point in the domain.  The size of x is the dimensionality of the 
+  /// space. 
   std::vector<double> x;          
 
   /// Zero or more response values at x (i.e., f1(x), f2(x) ... )
@@ -146,16 +148,13 @@ protected:
 // ____________________________________________________________________________
 protected:
 
+/// Provides range checking on the response values.  Throws an exception if an
+/// index is requested that does not exist.
 void checkRange(const std::string& header, unsigned index) const;
-
 
 #ifdef __TESTING_MODE__
   friend class SurfPointTest;
   friend class SurfDataTest;
-public:
-  static int constructCount;
-  static int copyCount;
-  static int destructCount;
 #endif
 
 };

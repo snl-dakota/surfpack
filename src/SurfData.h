@@ -5,19 +5,6 @@
 #endif
 // End of prepended lines
 
-// ----------------------------------------------------------
-// Project: SURFPACK++
-//
-// File:        SurfData.h
-// Author:      Eric Cyr
-// Modified:	Mark Richards
-//
-// Description: 
-// + SurfData class - this is the container for all the data 
-//   from which an empirical model is created. 
-// + Left shift (<<) operator for SurfData. 
-// ----------------------------------------------------------
-
 #ifndef __SURF_DATA_H__
 #define __SURF_DATA_H__
 
@@ -25,22 +12,55 @@
 #include <list>
 
 #include "SurfPoint.h"
+
 class Surface;
 
+/// Contains a set of SurfPoint objects.  May be associated with zero or more
+/// Surface objects, which it notifies when its data changes or when it goes 
+/// out of existence.  Contains support for exclusion of some of the SurfPoint
+/// objects that are physically present, so that clients may operate on some
+/// subset of the data if they so choose (e.g., in a cross-validation 
+/// algorithm).  Contains methods for I/O support.  Does not allow duplicate
+/// points.
+/// \todo Allow the points to be weighted differently, as would be needed
+/// in weighted regression.
 class SurfData
 {
 public:
+/// Nested exception class. A bad_surf_data exception is thrown whenever a 
+/// client attempts to:
+/// 1) Add a SurfPoint to the SurfData object that has a different number of
+///    dimensions and/or a different number of response values than another
+///    SurfPoint already in the set;
+/// 2) invoke addResponse(...) when there are not yet any SurfPoints;
+/// 3) invoke addResponse(...) with the wrong number of values;
+/// 4) invoke addResponse(...) on an object where the logical size of the 
+///    data set does not match the phyiscal size (i.e., some of the SurfPoints
+///    have been marked for exclusion);
+/// 5) write a SurfData object that contains no data to a stream.
 class bad_surf_data : public std::runtime_error
 {
 public:
   bad_surf_data(const std::string& msg = "") : std::runtime_error(msg) {}
 };
 
-struct SurfDataStateConsistency 
+/// Used in conjunction with the caching of SurfData::xMatrix and 
+/// SurfData::yVector values.  If an action is taken that would invalidate
+/// either of those values (e.g., a new point added to the data set), then
+/// the corresponding value inside this StateConsistency object is set to 
+/// false.  The SurfData object then knows that if its xMatrix or yVector
+/// value is requested, it must be repopulated.
+struct StateConsistency 
 {
+  /// True if the SurfData::xMatrix value is valid.
   bool xMatrix;
+  
+  /// True if the SurfData::yVector is valid.
   bool yVector;
-  SurfDataStateConsistency() : xMatrix(false), yVector(false) {}
+  
+  /// Both values are initially false and are set to true when the SurfData 
+  /// members they correspond to are initially filled.
+  StateConsistency() : xMatrix(false), yVector(false) {}
 };
 
 // ____________________________________________________________________________
@@ -48,22 +68,22 @@ struct SurfDataStateConsistency
 // ____________________________________________________________________________
 
 public:
-  /// Vector of points will be copied
+  /// Vector of points will be copied and checked for duplicates
   SurfData(const std::vector<SurfPoint>& points_);
 
   /// Read a set of SurfPoints from a file
   SurfData(const std::string filename);
 
-  /// Read a set of SurfPoints from an istream
+  /// Read a set of SurfPoints from a std::istream
   SurfData(std::istream& is, bool binary = false);
 
-  /// Makes a deep copy of the object 
+  /// Make a deep copy of the object 
   SurfData(const SurfData& other); 
   
   /// STL data members' resources automatically deallocated 
   ~SurfData();
 
-  /// Copy only the "active" points
+  /// Copy only the points which have not been marked for exclusion
   SurfData copyActive();
   
 protected:
@@ -72,26 +92,27 @@ protected:
   SurfData();
 
 private:
-  /// Initialize data members
+  /// Data member initialization that is common to all constructors
   void init();
   
   /// Copy xMatrix and yVector from another SurfData object
   void copyBlockData(const SurfData& other);
 
-  /// Deallocate any memory allocated for xMatrix and/or yVector
+  /// Deallocate any memory allocated for xMatrix and/or yVector.
+  /// Call delete on the SurfPoint* in the data set.
   void cleanup();
 
 // ____________________________________________________________________________
 // Overloaded operators 
 // ____________________________________________________________________________
 public:
-  /// makes deep copy 
+  /// Makes deep copy 
   SurfData& operator=(const SurfData& other);
 
-  /// makes deep comparison
+  /// Makes deep comparison
   bool operator==(const SurfData& other) const;
 
-  /// makes deep comparison
+  /// Makes deep comparison
   bool operator!=(const SurfData& other) const;
 
   /// Return a const reference to SurfPoint at given index
@@ -110,23 +131,16 @@ public:
   /// Return the dimensionality of the SurfPoints 
   unsigned xSize() const;
 
-  /// Return the number of response values in the data set
+  /// Return the number of response functions in the data set
   unsigned fSize() const;
-
-  /// Return a point from the data set
-  //SurfPoint& Point(unsigned index);
-
-  /// Return a reference to the SurfPoints vector 
-  //std::vector<SurfPoint>& Points();
 
   /// Return the set of excluded points (the indices)
   const std::set<unsigned>& getExcludedPoints() const ; 
 
-  /// Get the response value of the (index)th point that corresponds to this
-  /// surface
+  /// Get the response value of the (index)th point
   double getResponse(unsigned index) const;
 
-  /// Get default index
+  /// Return defaultIndex
   unsigned getDefaultIndex() const;
 
   /// Return point domains as a matrix in a contiguous block.  Be careful.
@@ -137,19 +151,15 @@ public:
   /// Be careful. The data should not be changed.
   const double* getYVector() const;
 
-  /// Returns true if the filename extension is .sd.
-//  static bool hasBinaryExtension(const std::string& filename);
-  
-  /// Returns true if the filename extension is .txt.
-//  static bool hasTextExtension(const std::string& filename);
-  
-  
-
 // ____________________________________________________________________________
 // Commands 
 // ____________________________________________________________________________
 
-  /// Specify which response value getResponse will return
+  /// Specify which response value getResponse will return. When a Surface 
+  /// object that is associated with the SurfData object operates on the data,
+  /// it sets this value so that the response value lookup function will return
+  /// the value for the response variable that that particular Surface object
+  /// is interested in.  
   void setDefaultIndex(unsigned index); 
   
   /// Set the response value of the (index)th point that corresponds to this
@@ -163,14 +173,15 @@ public:
   /// Return the index of the new variable.
   unsigned addResponse(const std::vector<double>& newValues); 
   
-  /// Specify which points should be skipped
+  /// Specify which points should be skipped.  This can be used when only a 
+  /// subset of the SurfPoints should be used for some computation.
   void setExcludedPoints(const std::set<unsigned>& excludedPoints);
 
   /// Inform this object that a Surface wants to be notified when this object
   /// changes
   void addListener(Surface*);
  
-  /// remove the Surface from the list of surfaces that are notified when the
+  /// Remove the Surface from the list of surfaces that are notified when the
   /// data changes
   void removeListener(Surface*);
 
@@ -180,7 +191,7 @@ public:
   void buildOrderedPoints();
 
 private:
-  /// Maps all indices to themselves
+  /// Maps all indices to themselves in the mapping data member
   void defaultMapping();
 
   /// Creates a matrix of the domains for all of the points in a contiguous
@@ -199,7 +210,7 @@ public:
   /// Write a set of SurfPoints to a file
   void write(const std::string& filename) const;
 
-  /// Write a set of SurfPoints to an output stream
+  /// Read a set of SurfPoints from a file
   void read(const std::string& filename);
   
   /// Write the surface in binary format
@@ -229,10 +240,14 @@ private:
   /// The set of points in this data set
   std::vector<SurfPoint*> points; 
 
-  /// The indices of points in points that are skipped
+  /// The indices of points that are to be excluded in computation. This can
+  /// be used in a cross-validation scheme to systematically ignore parts of
+  /// data set at different times.  
   std::set<unsigned> excludedPoints;
 
-  /// For mapping the indices in points to the indices returned by operator[]
+  /// For mapping the indices in points to the indices returned by operator[].
+  /// Normally, mapping[i] is equal to i, but the set of excludedPoints is not
+  /// empty, this will not be the case.
   std::vector<unsigned> mapping;
 
   /// Pointer to the domain of the data points, represented as a contiguous 
@@ -246,38 +261,47 @@ private:
   /// The index of the response variable that will be returned by F
   mutable unsigned defaultIndex;
 
-  /// Keeps track of which data members are valid
-  mutable SurfDataStateConsistency valid;
-
-  mutable bool cleanupStarted;
+  /// Records whether xMatrix and yVector are valid.  They are not populated
+  /// unless/until getXMatrix() or getYVector() is called. 
+  mutable StateConsistency valid;
 
 public:
   typedef std::set<SurfPoint*,SurfPoint::SurfPointPtrLessThan> SurfPointSet;
+
 private:
-   SurfPointSet orderedPoints;
+  /// Stores the same set of SurfPoint* that points does, but because it is a 
+  /// set, membership tests can be done in O(log n) time.  When combined with
+  /// the SurfPointPtrLessThan functor object, it allows a SurfData object to
+  /// check all SurfPoints in the data set against all others for duplication.
+  /// This can be done in O(n log n) time instead of O(n^2).
+  SurfPointSet orderedPoints;
 
-
-  /// List of pointers to listening/observing Surface objects 
-  /// which need to be notified when this object changes
+  /// List of pointers to listening/observing Surface objects that need to be 
+  /// notified when this object changes
   std::list<Surface*> listeners;
 
 // ____________________________________________________________________________
 // Constants 
 // ____________________________________________________________________________
 public:
+  /// Used to send a message through Surface::notify(...) that this object is
+  /// going out of existence
   static const int GOING_OUT_OF_EXISTENCE;
+
+  /// Used to send a message through Surface::notify(...) that one or more
+  /// SurfPoints have been added or modified
   static const int DATA_MODIFIED;
   
 // ____________________________________________________________________________
 // Helper methods 
 // ____________________________________________________________________________
 
-  /// Notify listening surfaces whenever a SurfPoint
-  /// is added or removed.
+  /// Notify listening surfaces whenever something of interest happens to this
+  /// data set
   void notifyListeners(int msg); 
 
-  /// Returns true if file is opened in binary mode, false if it is opened
-  /// in text mode.  If file cannot be opened, an exception is thrown.
+  /// Returns true if file has .sd extension, false if it has .txt extension. 
+  /// Otherwise, an exception is thrown.
   bool testFileExtension(const std::string& filename) const;
 
 // ____________________________________________________________________________
@@ -295,19 +319,13 @@ protected:
   /// Make sure an index falls within acceptable boundaries
   void checkRangeNumResponses(const std::string& header, unsigned index) const;
 
-public:
-
 #ifdef __TESTING_MODE__ 
   friend class SurfDataTest;
   friend class SurfaceTest;
-
-  static int constructCount;
-  static int copyCount;
-  static int destructCount;
 #endif
 };
 
-/// so a SurfData object can be printed
+/// Print the SurfData to a stream 
 std::ostream& operator<<(std::ostream& os, const SurfData& data);
 
 #endif
