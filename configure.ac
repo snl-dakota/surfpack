@@ -16,6 +16,8 @@ AC_PROG_CXX([CC cxx xlc g++ c++ gcc])
 #AC_CXX_BOOL
 #AC_CXX_MUTABLE
 
+AC_DISABLE_SHARED
+
 AC_LANG_CPLUSPLUS
 #Check for the linear algebra libraries that are needed on Irix
 AC_CHECK_LIB([scs],[dgels_])

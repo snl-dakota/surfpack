@@ -1,14 +1,8 @@
-#! /bin/sh
-if ! [ $SURFPACK ]; then
-  echo "Run the setpath script to set your SURFPACK environment variable"
-  exit
-fi
+export SURFPACK=$(pwd)
+export PATH="$SURFPACK/tools/bin:$PATH"
+export M4="$SURFPACK/tools/bin/m4"
 
-if [ $(which aclocal) != "$SURFPACK/tools/bin/aclocal" ]; then
-  echo "Run setpath the setpath script to set your PATH environment variable to point to the autotools in $SURFPACK/tools/bin"
-fi
-
-aclocal 
+aclocal
 libtoolize --force --copy
 autoheader
 automake -a
