@@ -9,6 +9,7 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include <iomanip>
 #include <vector>
 #include <set>
 #include "SurfData.h"
@@ -154,4 +155,38 @@ double sample_var(std::vector<double>& vals)
 double sample_sd(std::vector<double>& vals)
 {
   return sqrt(sample_var(vals));
+}
+
+/// Make sure eof has not been reached unexpectedly
+void surfpack::checkForEOF(istream& is)
+{
+  if (is.eof()) {
+    throw surfpack::io_exception("End of file reached unexpectedly.");
+  }
+}
+
+void surfpack::writeMatrix(const string header, double* mat, unsigned rows, 
+  unsigned columns, ostream& os)
+{
+  if (header != "none" && header != "") {
+    cout << header << endl;
+  }
+  for (unsigned r = 0; r < rows; r++) {
+    for (unsigned c = 0; c < columns; c++) {
+      os << setw(15) << mat[r + c*rows];
+    }
+    os << endl;
+  }
+}
+
+void surfpack::writeMatrix(const string filename, double* mat, unsigned rows, 
+  unsigned columns)
+{
+  ofstream outfile(filename.c_str(),ios::out);
+  if (!outfile) {
+    cerr << "Could not open file (" << filename << ") in writeMatrix." << endl;
+    return;
+  }
+  writeMatrix("none",mat,rows,columns,outfile);
+  outfile.close();
 }

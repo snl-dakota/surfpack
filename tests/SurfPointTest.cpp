@@ -5,11 +5,14 @@
 #endif
 // End of prepended lines
 
-#include "SurfPointTest.h"
-#include "SurfPoint.h"
 #include <vector>
 #include <fstream>
 #include <iostream>
+#include <string>
+
+#include "SurfPointTest.h"
+#include "SurfPoint.h"
+#include "unittests.h"
 
 using namespace std;
 
@@ -88,11 +91,12 @@ void SurfPointTest::testConstructorFromIStreamBinary()
   //fs[0] = 3.0;
   //fs[1] = 4.0;
   //SurfPoint sp2(xs, fs);
-  //ofstream outfile("../share/point1.sp", ios::out | ios::binary);
+  //ofstream outfile(fullPath("point1.sp"), ios::out | ios::binary);
   //sp2.writeBinary(outfile);
   //outfile.close();
-  
-  ifstream infile("../share/point1.sp");
+ 
+  const string filename = fullPath("point1.sp"); 
+  ifstream infile(filename.c_str());
   SurfPoint sp(2, 2, infile, true);  
   infile.close();
   CPPUNIT_ASSERT_EQUAL(sp.x[0], 1.0);
@@ -105,7 +109,8 @@ void SurfPointTest::testConstructorFromIStreamBinary()
 
 void SurfPointTest::testConstructorFromIStreamText()
 {
-  ifstream infile("../share/point1.txt");
+  const string filename = fullPath("point1.txt");
+  ifstream infile(filename.c_str());
   SurfPoint sp(2, 2, infile, false);  
   infile.close();
   CPPUNIT_ASSERT_EQUAL(sp.x[0], 1.0);
@@ -259,7 +264,8 @@ void SurfPointTest::testWriteText()
 
 void SurfPointTest::testReadBinary()
 {
-  ifstream infile("../share/point2.sp", ios::in | ios::binary);
+  const string filename = fullPath("point2.sp");
+  ifstream infile(filename.c_str(), ios::in | ios::binary);
   SurfPoint sp(*spPtr2);
   sp.x[0] = 3.0;
   sp.readBinary(infile);
@@ -269,7 +275,8 @@ void SurfPointTest::testReadBinary()
 
 void SurfPointTest::testReadText()
 {
-  ifstream infile("../share/point2.txt", ios::in );
+  const string filename = fullPath("point2.txt");
+  ifstream infile(filename.c_str(), ios::in );
   SurfPoint sp(*spPtr2);
   sp.x[0] = 3.0;
   sp.readText(infile);
@@ -281,5 +288,7 @@ void SurfPointTest::testStreamInsertion()
 {
   // If this test doesn't throw an exception,
   // it is presumed to have worked
-  cout << (*spPtr) << endl;
+  ofstream blackhole("/dev/null",ios::out);
+  blackhole << (*spPtr) << endl;
 }
+

@@ -25,6 +25,7 @@
 #include <sstream>
 #include <fstream>
 
+#include "surfpack.h"
 #include "SurfData.h"
 #include "SurfPoint.h"
 //#include "Surface.h"
@@ -79,8 +80,8 @@ SurfData::SurfData(std::istream& is, bool binary) : valid()
 
 /// Makes a deep copy of the object 
 SurfData::SurfData(const SurfData& other) : xsize(other.xsize), 
-  fsize(other.fsize), points(other.points),excludedPoints(other.excludedPoints),
-  mapping(other.mapping), valid(other.valid)
+  fsize(other.fsize),points(other.points),excludedPoints(other.excludedPoints),
+  mapping(other.mapping), valid(other.valid), defaultIndex(other.defaultIndex)
 {
 #ifdef __TESTING_MODE__
   constructCount++;
@@ -111,15 +112,15 @@ void SurfData::init()
 }
 
 /// Copy only the "active" points
-SurfData* SurfData::copyActive()
+SurfData SurfData::copyActive()
 {
   vector<SurfPoint> activePoints;
   for (unsigned i = 0; i < mapping.size(); i++) {
     activePoints.push_back(points[mapping[i]]);
   }
-  SurfData* newSD = new SurfData(activePoints);
+  SurfData newSD(activePoints);
   if (!activePoints.empty()) {
-    newSD->setDefaultIndex(defaultIndex);
+    newSD.setDefaultIndex(defaultIndex);
   }
   return newSD;
 }
@@ -127,7 +128,8 @@ SurfData* SurfData::copyActive()
 // Copy xMatrix and yVector from another SurfData object
 void SurfData::copyBlockData(const SurfData& other)
 {
-  try {
+  // Prepared to catch an exception if memory allocation fails
+  //try {
     if (other.valid.xMatrix) {
       unsigned numElements = mapping.size() * xsize;
       xMatrix = new double[numElements];
@@ -143,12 +145,12 @@ void SurfData::copyBlockData(const SurfData& other)
     } else {
       yVector = 0;
     }
-  } catch (...) {
-    cerr << "Error in SurfData::copyBlockData.  Rethrowing exception." << endl;
-    // If xMatrix allocation succeeded but yVector failed, cleanup necessary
-    cleanup();
-    throw;
-  }
+  //} catch (std::bad_alloc&) {
+  //  cerr << "Error in SurfData::copyBlockData.  Rethrowing exception." << endl;
+  //  // If xMatrix allocation succeeded but yVector failed, cleanup necessary
+  //  cleanup();
+  //  throw;
+  //}
 }
   
 // Deallocate any memory allocated for xMatrix and/or yVector
@@ -183,7 +185,7 @@ SurfData& SurfData::operator=(const SurfData& sd)
 }
 
 /// makes deep comparison
-bool SurfData::operator==(const SurfData& sd)
+bool SurfData::operator==(const SurfData& sd) const
 {
   return (this->xsize == sd.xsize && 
           this->fsize == sd.fsize &&
@@ -192,18 +194,9 @@ bool SurfData::operator==(const SurfData& sd)
 }
       
 /// makes deep comparison
-bool SurfData::operator!=(const SurfData& sd)
+bool SurfData::operator!=(const SurfData& sd) const
 {
   return !(*this == sd);
-}
-
-/// Return a point from the data set
-//SurfPoint& SurfData::Point(unsigned index) 
-SurfPoint& SurfData::operator[](unsigned index) 
-{
-  static string header("Indexing error in SurfData::operator[].");
-  checkRange(header, index);
-  return points[mapping[index]];
 }
 
 /// Return a point from the data set
@@ -211,7 +204,7 @@ SurfPoint& SurfData::operator[](unsigned index)
 const SurfPoint& SurfData::operator[](unsigned index) const
 {
   static string header("Indexing error in SurfData::operator[] const.");
-  checkRange(header, index);
+  checkRangeNumPoints(header, index);
   return points[mapping[index]];
 }
 
@@ -254,7 +247,7 @@ const std::set<unsigned>& SurfData::getExcludedPoints() const
 double SurfData::getResponse(unsigned index) const
 {
   static string header("Indexing error in SurfData::getResponse.");
-  checkRange(header, index);
+  checkRangeNumPoints(header, index);
   return points[mapping[index]].F(defaultIndex);
 }
 
@@ -311,7 +304,7 @@ bool SurfData::hasTextExtension(const std::string& filename)
 void SurfData::setDefaultIndex(unsigned index)
 {
   static string header("Indexing error in SurfData::setDefaultIndex.");
-  checkRange(header, index);
+  checkRangeNumResponses(header, index);
   valid.yVector = false;
   defaultIndex = index;
 }
@@ -321,7 +314,7 @@ void SurfData::setDefaultIndex(unsigned index)
 void SurfData::setResponse(unsigned index, double value)
 {
   static string header("Indexing error in SurfData::setResponse.");
-  checkRange(header, index);
+  checkRangeNumPoints(header, index);
   points[mapping[index]].F(defaultIndex, value);
   valid.yVector = false;
 }
@@ -446,7 +439,7 @@ void SurfData::validateXMatrix() const
   xMatrix = new double[mapping.size() * xsize];
   for (unsigned pt = 0; pt < mapping.size(); pt++) {
     for (unsigned xval = 0; xval < xsize; xval++) {
-      xMatrix[xval+pt*mapping.size()] = points[mapping[pt]].X()[xval];
+      xMatrix[pt+xval*mapping.size()] = points[mapping[pt]].X()[xval];
     }
   }
   valid.xMatrix = true;
@@ -480,7 +473,7 @@ void SurfData::write(const std::string& filename) const
   bool binary = testFileExtension(filename);
   ofstream outfile(filename.c_str(), (binary ? ios::out|ios::binary : ios::out));
   if (!outfile) {
-    throw file_open_failure(filename);
+    throw surfpack::file_open_failure(filename);
   } else if (binary) {
     writeBinary(outfile);
   } else {
@@ -496,19 +489,22 @@ void SurfData::read(const string& filename)
   // Open file in binary or text mode based on filename extension (.sd or .txt)
   ifstream infile(filename.c_str(), (binary ? ios::in|ios::binary : ios::in));
   if (!infile) {
-    throw file_open_failure(filename);
+    throw surfpack::file_open_failure(filename);
   } else if (binary) {
     readBinary(infile);
   } else {
     readText(infile);
   }
+  // Object may have already been created
+  valid.xMatrix = false;
+  valid.yVector = false;
   infile.close();
 }
 
 /// Write a set of SurfPoints to an output stream
 void SurfData::writeBinary(ostream& os) const 
 {
-  try {
+  //try {
     unsigned s = mapping.size();
     os.write((char*)&s,sizeof(s));
     os.write((char*)&xsize,sizeof(xsize));
@@ -516,16 +512,16 @@ void SurfData::writeBinary(ostream& os) const
     for (unsigned i = 0; i < mapping.size(); i++) {
       points[mapping[i]].writeBinary(os);
     }
-  } catch(...) {
-    cerr << "Unknown exception caught in SurfData::writeBinary" << endl;
-    throw;
-  }
+  //} catch(...) {
+  //  cerr << "Exception caught and rethrown in SurfData::writeBinary" << endl;
+  //  throw;
+  //}
 }
 
 /// Write a set of SurfPoints to an output stream
 void SurfData::writeText(ostream& os) const
 {
-  try {
+  //try {
     // Write an extra space after last token to prevent
     // ifstream from setting the bad_bit when data is later read in.
     os << mapping.size() << " " << endl
@@ -534,41 +530,47 @@ void SurfData::writeText(ostream& os) const
     for (unsigned i = 0; i < mapping.size(); i++) {
       points[mapping[i]].writeText(os);
     }
-  } catch(...) {
-    cerr << "Unknown exception caught in SurfData::writeText" << endl;
-    throw;
-  }
+  //} catch(...) {
+  //  cerr << "Exception caught and rethrown in SurfData::writeText" << endl;
+  //  throw;
+  //}
 }
 
 /// Read a set of SurfPoints from an input stream
 void SurfData::readBinary(istream& is) 
 {
+  unsigned numPointsRead = 0;
+  unsigned size;
   try {
-    unsigned size;  
     is.read((char*)&size,sizeof(size));
     is.read((char*)&xsize,sizeof(xsize));
     is.read((char*)&fsize,sizeof(fsize));
     points.clear();
-    for (unsigned i = 0; i < size; i++) {
+    for (numPointsRead = 0; numPointsRead < size; numPointsRead++) {
       // True for second argument signals a binary read
-      checkForEOF(is);
+      surfpack::checkForEOF(is);
       points.push_back(SurfPoint(xsize,fsize,is,true));  
     }
     defaultMapping();
-  } catch(...) {
-    cerr << "Unknown exception caught in SurfData::readBinary" << endl;
+  } catch(surfpack::io_exception&) {
+    cerr << "Expected: " << size << " points.  "
+         << "Read: " << numPointsRead << " points." << endl;
     throw;
-  }
+  } //catch(...) {
+  //  cerr << "Exception caught and rethrown in SurfData::readBinary" << endl;
+  //  throw;
+  //}
 }
 
 /// Read a set of SurfPoints from an input stream
 void SurfData::readText(istream& is) 
 {
+  unsigned numPointsRead = 0;
+  unsigned size;
   try {
     string sline;
     getline(is,sline);
     istringstream streamline(sline);
-    unsigned size;
     streamline >> size;
     getline(is,sline);
     streamline.str(sline);
@@ -577,16 +579,20 @@ void SurfData::readText(istream& is)
     streamline.str(sline);
     streamline >> fsize;
     points.clear();
-    for (unsigned i = 0; i < size; i++) {
-      checkForEOF(is);
+    for (numPointsRead = 0; numPointsRead < size; numPointsRead++) {
+      surfpack::checkForEOF(is);
       // False for last argument signals a text read
       points.push_back(SurfPoint(xsize,fsize,is,false));  
     }
     defaultMapping();
-  } catch(...) {
-    cerr << "Unknown exception caught in SurfData::readText" << endl;
+  } catch(surfpack::io_exception&) {
+    cerr << "Expected: " << size << " points.  "
+         << "Read: " << numPointsRead << " points." << endl;
     throw;
-  }
+  } //catch(...) {
+  //  cerr << "Exception caught and rethrown in SurfData::readText" << endl;
+  //  throw;
+  //}
 }
 
 // so a SurfData object can be printed
@@ -609,8 +615,8 @@ bool SurfData::testFileExtension(const std::string& filename) const
   } else if (hasTextExtension(filename)) {
     return false;
   } else {
-    throw io_exception(
-      "Unrecognized filename extension in SurfData::read.  Use .sd or .txt"
+    throw surfpack::io_exception(
+      "Unrecognized filename extension.  Use .sd or .txt"
     );
   }
 }
@@ -651,9 +657,9 @@ void SurfData::sanityCheck() const
 
 /// Check that the index falls within acceptable boundaries (i.e., is
 /// less than mapping.size()
-void SurfData::checkRange(const string& header, unsigned index) const
+void SurfData::checkRangeNumPoints(const string& header, unsigned index) const
 {
-  if (index > mapping.size()) {
+  if (index >= mapping.size()) {
     ostringstream errormsg;
     errormsg << header << endl;
     if (mapping.empty()) {
@@ -671,39 +677,26 @@ void SurfData::checkRange(const string& header, unsigned index) const
   }
 }
 
-/// Make sure eof has not been reached unexpectedly
-void SurfData::checkForEOF(istream& is) const
+void SurfData::checkRangeNumResponses(const string& header, unsigned index) const
 {
-  if (is.eof()) {
-    throw io_exception("End of file reached unexpectedly.");
-  }
-}
-
-void SurfData::writeMatrix(const string header, double* mat, unsigned rows, 
-  unsigned columns, ostream& os)
-{
-  if (header != "none" && header != "") {
-    cout << header << endl;
-  }
-  for (unsigned r = 0; r < rows; r++) {
-    for (unsigned c = 0; c < columns; c++) {
-      os << setw(15) << mat[r + c*rows];
+  if (index >= fsize) {
+    ostringstream errormsg;
+    errormsg << header << endl;
+    if (fsize == 0) {
+      errormsg << "Index " << index << " specified, but there are zero response"
+	       << "values."
+               << endl;
+    } else {
+      errormsg << "Requested: " 
+	     << index 
+	     << "; actual max index: "
+	     << fsize - 1
+	     << endl;
     }
-    os << endl;
+    throw range_error(errormsg.str());
   }
 }
 
-void SurfData::writeMatrix(const string filename, double* mat, unsigned rows, 
-  unsigned columns)
-{
-  ofstream outfile(filename.c_str(),ios::out);
-  if (!outfile) {
-    cerr << "Could not open file (" << filename << ") in writeMatrix." << endl;
-    return;
-  }
-  writeMatrix("none",mat,rows,columns,outfile);
-  outfile.close();
-}
 #ifdef __TESTING_MODE__
   int SurfData::constructCount = 0;
   int SurfData::copyCount = 0;

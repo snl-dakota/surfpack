@@ -1,27 +1,54 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-AC_PREREQ(2.57)
+AC_PREREQ(2.58)
 AC_INIT(Surfpack, 0.1, mricha@sandia.gov)
 AM_CONFIG_HEADER(config.h)
 AM_INIT_AUTOMAKE
 # Check to make sure this file exists as a safety check
 AC_CONFIG_SRCDIR([src/Surface.cpp])
 
+AC_LANG_CPLUSPLUS
+WHOLE_LIB_PATH=`echo $LD_LIBRARY_PATH | sed -e 's/^/-L/;s/:/ -L/g'`
+AC_CHECK_LIB([m],[main],[],[],[$WHOLE_LIB_PATH])
+AC_CHECK_LIB([g2c],[main],[],[],[$WHOLE_LIB_PATH])
+AC_CHECK_LIB([blas],[main],[],[],[$WHOLE_LIB_PATH])
+AC_CHECK_LIB([gslcblas],[main],[],[],[$WHOLE_LIB_PATH])
+AC_CHECK_LIB([gsl],[main],[],[],[$WHOLE_LIB_PATH])
+AC_CHECK_LIB([dl],[main],[],[],[$WHOLE_LIB_PATH])
+AC_CHECK_LIB([cppunit],[main],[],[],[$WHOLE_LIB_PATH])
+#AC_CHECK_LIB([m], [main])
+#AC_CHECK_LIB([pam], [main])
+#AC_CHECK_LIB([osp], [main])
+#AC_CHECK_LIB([ogg], [main])
+#AC_CHECK_LIB([newt], [main])
+#AC_CHECK_LIB([gck], [main])
+#AC_CHECK_LIB([blas], [main])
+#AC_CHECK_LIB([socket], [main])
+#AC_CHECK_LIB([gsl], [main])
+#AC_CHECK_LIB([cppunit], [main])
+
+AC_DEFINE([__TESTING_MODE__],[],[1])
 
 # Checks for programs.
-AC_PROG_AWK
-AC_PROG_CXX
+#AC_PROG_AWK
+#AC_PROG_CXX
+#AC_CXX_NAMESPACES
+#AC_CXX_HAVE_STL
+#AC_CXX_BOOL
+#AC_CXX_MUTABLE
+
 AC_PROG_F77
-AC_PROG_CC
-AC_PROG_INSTALL
-AC_PROG_LN_S
-AC_PROG_YACC
-AC_PROG_MAKE_SET
+#AC_PROG_CC
+#AC_PROG_INSTALL
+#AC_PROG_LN_S
+#AC_PROG_YACC
+#AC_PROG_MAKE_SET
 AC_PROG_LIBTOOL
 
-CXXFLAGS="-fprofile-arcs -ftest-coverage -g"
-AC_DEFINE([__TESTING_MODE__], [], [1])
+CPPFLAGS="-DDATADIR='\"\$(top_srcdir)/share\"' "
+CXXFLAGS="-fprofile-arcs -ftest-coverage -g -save-temps"
+
 # Checks for libraries.
 ## FIXME: Replace `main' with a function in `-lF':
 #AC_CHECK_LIB([F], [main])
@@ -85,13 +112,13 @@ AC_DEFINE([__TESTING_MODE__], [], [1])
 # Checks for header files.
 
 # Checks for typedefs, structures, and compiler characteristics.
-AC_HEADER_STDBOOL
-AC_C_CONST
+#AC_HEADER_STDBOOL
+#AC_C_CONST
 
 # Checks for library functions.
-AC_FUNC_MALLOC
-AC_HEADER_STDC
-AC_CHECK_FUNCS([floor pow sqrt])
+#AC_FUNC_MALLOC
+#AC_HEADER_STDC
+#AC_CHECK_FUNCS([floor pow sqrt])
 
 AC_CONFIG_FILES([Makefile
 		 src/Makefile
@@ -99,7 +126,9 @@ AC_CONFIG_FILES([Makefile
 		 src/kriging/Makefile
 		 src/mars/Makefile
                  src/ann/Makefile
-		 interface/Makefile
-		 tests/Makefile])
-AC_DEFINE([__TESTING_MODE__],[])
+		 interface/Makefile])
+testsuite=yes
+if testsuite=yes; then
+AC_CONFIG_FILES([tests/Makefile])
+fi
 AC_OUTPUT

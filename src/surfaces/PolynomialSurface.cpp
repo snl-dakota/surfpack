@@ -20,10 +20,10 @@
 extern "C" void dgels_(char&, int&, int&, int&, double*,
                        int&, double*, int&, double*, int&, int&);
 
-extern "C" double ddot_(int&, double*, int&, double*, int&);
-
-extern "C" void dgemv_(char&, int&, int&, double&, double*, int&, double*,
-		int&, double&, double*, int&);
+//extern "C" double ddot_(int&, double*, int&, double*, int&);
+//
+//extern "C" void dgemv_(char&, int&, int&, double&, double*, int&, double*,
+//		int&, double&, double*, int&);
 
 using namespace std;
 

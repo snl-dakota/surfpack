@@ -214,37 +214,57 @@ void SurfPoint::writeText(ostream& os) const
  
 void SurfPoint::readBinary(istream& is)
 {
+  unsigned xValsRead = 0;
+  unsigned fValsRead = 0;
   try {
     // read the point in binary format
-    unsigned i;
-    for (i = 0; i < x.size(); i++) {
-       is.read(reinterpret_cast<char*>(&x[i]),sizeof(x[i]));
+    for (xValsRead = 0; xValsRead < x.size(); xValsRead++) {
+       surfpack::checkForEOF(is);
+       is.read(reinterpret_cast<char*>(&x[xValsRead]),sizeof(x[xValsRead]));
     }
-    for (i = 0; i < f.size(); i++) {
-       is.read(reinterpret_cast<char*>(&f[i]),sizeof(f[i]));
+    for (fValsRead = 0; fValsRead < f.size(); fValsRead++) {
+       surfpack::checkForEOF(is);
+       is.read(reinterpret_cast<char*>(&f[fValsRead]),sizeof(f[fValsRead]));
     }
+  } catch (surfpack::io_exception&) {
+    cerr << "Expected on this line: " << x.size() << " domain value(s) "
+         << "and " << f.size() << " response value(s)." << endl
+         << "Found: " << xValsRead << " domain value(s) and " 
+         << fValsRead << " response value(s)." << endl;
+    throw;
   } catch (...) {
-    cerr << "Unknown error in SurfPoint::readBinary(istream& is)" << endl;
+    cerr << "Exception caught and rethrown in SurfPoint::readBinary(istream& is)" 
+         << endl;
     throw;
   }
 }
 
 void SurfPoint::readText(istream& is)
 {
+  unsigned xValsRead = 0;
+  unsigned fValsRead = 0;
   try {
     // read the point as text
-    unsigned i;
     string sline;
     getline(is,sline);
     istringstream streamline(sline);
-    for (i = 0; i < x.size(); i++) {
-       streamline >> x[i];
+    for (xValsRead = 0; xValsRead < x.size(); xValsRead++) {
+       surfpack::checkForEOF(is);
+       streamline >> x[xValsRead];
     }
-    for (i = 0; i < f.size(); i++) {
-       streamline >> f[i];
+    for (fValsRead = 0; fValsRead < f.size(); fValsRead++) {
+       surfpack::checkForEOF(is);
+       streamline >> f[fValsRead];
     }
+  } catch (surfpack::io_exception&) {
+    cerr << "Expected on this line: " << x.size() << " domain value(s) "
+         << "and " << f.size() << " response value(s)." << endl
+         << "Found: " << xValsRead << " domain value(s) and " 
+         << fValsRead << " response value(s)." << endl;
+    throw;
   } catch (...) {
-    cerr << "Unknown error in SurfPoint::readText(istream& is)" << endl;
+    cerr << "Exception caught and rethrown in SurfPoint::readText(istream& is)" 
+         << endl;
     throw;
   }
 }

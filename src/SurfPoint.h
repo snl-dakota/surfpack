@@ -142,6 +142,7 @@ void checkRange(const std::string& header, unsigned index) const;
 
 #ifdef __TESTING_MODE__
   friend class SurfPointTest;
+  friend class SurfDataTest;
 public:
   static int constructCount;
   static int copyCount;

@@ -26,13 +26,6 @@
 class SurfPoint;
 //class Surface;
 
-class file_open_failure: public std::runtime_error
-{
-public:
-  file_open_failure(const std::string& filename = "") 
-    : std::runtime_error("File " + filename + " could not be opened.") {}
-};
-  
 class SurfData
 {
 private:
@@ -40,12 +33,6 @@ class bad_surf_data : public std::runtime_error
 {
 public:
   bad_surf_data(const std::string& msg = "") : std::runtime_error(msg) {}
-};
-
-class io_exception: public std::runtime_error
-{
-public:
-  io_exception(const std::string& msg = "") : std::runtime_error(msg) {}
 };
 
 struct SurfDataStateConsistency 
@@ -76,7 +63,7 @@ public:
   ~SurfData();
 
   /// Copy only the "active" points
-  SurfData* copyActive();
+  SurfData copyActive();
   
 protected:
   /// Default constructor explicitly disallowed by clients, but subclassing 
@@ -101,13 +88,10 @@ public:
   SurfData& operator=(const SurfData& sd);
 
   /// makes deep comparison
-  bool operator==(const SurfData& sd);
+  bool operator==(const SurfData& sd) const;
 
   /// makes deep comparison
-  bool operator!=(const SurfData& sd);
-
-  /// Return a reference to SurfPoint at given index
-  SurfPoint& operator[](unsigned index);
+  bool operator!=(const SurfData& sd) const;
 
   /// Return a const reference to SurfPoint at given index
   const SurfPoint& operator[](unsigned index) const;
@@ -286,17 +270,13 @@ protected:
   void sanityCheck() const;
 
   /// Make sure an index falls within acceptable boundaries
-  void checkRange(const std::string& header, unsigned index) const;
+  void checkRangeNumPoints(const std::string& header, unsigned index) const;
 
-  /// Make sure eof has not been reached unexpectedly
-  void checkForEOF(std::istream& is) const;
+  /// Make sure an index falls within acceptable boundaries
+  void checkRangeNumResponses(const std::string& header, unsigned index) const;
 
 public:
 
-static void writeMatrix(const std::string header, double* mat, unsigned rows, 
-  unsigned columns, std::ostream& os);
-static void writeMatrix(const std::string filename, double* mat, unsigned rows, 
-  unsigned columns);
 #ifdef __TESTING_MODE__ 
   friend class SurfDataTest;
   friend class SurfaceTest;

@@ -10,6 +10,7 @@
 
 #include <string>
 #include <vector>
+#include <stdexcept>
 
 struct ErrorStruct {
   double observed;
@@ -38,6 +39,27 @@ void printVector(const std::string header, std::vector<double>& vec);
 namespace surfpack {
   const unsigned field_width = 26;
   const unsigned output_precision = 17;
+
+class file_open_failure: public std::runtime_error
+{
+public:
+  file_open_failure(const std::string& filename = "") 
+    : std::runtime_error("File " + filename + " could not be opened.") {}
+};
+  
+class io_exception: public std::runtime_error
+{
+public:
+  io_exception(const std::string& msg = "") : std::runtime_error(msg) {}
+};
+
+/// Make sure eof has not been reached unexpectedly
+void checkForEOF(std::istream& is);
+
+void writeMatrix(const std::string header, double* mat, unsigned rows, 
+  unsigned columns, std::ostream& os);
+void writeMatrix(const std::string filename, double* mat, unsigned rows, 
+  unsigned columns);
 }
 
 #endif
