@@ -107,7 +107,6 @@ void PolynomialSurface::config(const SurfpackParser::Arg& arg)
   if (argname == "order") {
     order = arg.lval.integer;
     digits.resize(order);
-    cout << "Setting order in PS::config " << order << endl;
   } else {
     Surface::config(arg);
   }
