@@ -75,6 +75,14 @@ void SurfpackInterpreter::commandLoop(std::ostream& os, std::ostream& es)
       }
     } catch (command_error& ce) {
       ce.print();
+    } catch (std::runtime_error& rte) {
+      es << "FailedInstruction: " << commands[i].cmdstring << endl;
+      es << rte.what() << endl;
+    } catch (std::string& msg) {
+      es << "FailedInstruction: " << commands[i].cmdstring << endl;
+      es << msg << endl;
+    } catch (...) {
+      es << "FailedInstruction: " << commands[i].cmdstring << endl;
     }
   }
 }
