@@ -229,7 +229,9 @@ protected:
   /// Data used (or to be used) to create the approximation 
   SurfData* sd;
 
-  /// Necessary if data are to be scaled before calculating surface
+  /// Necessary if data are to be scaled before calculating surface.
+  /// The Surface object always owns (and deletes when it is destroyed) its own
+  /// SurfScaler object, so they should not be shared among Surfaces.
   SurfScaler* scaler;
 
   /// Number of dimensions in the data (sd)

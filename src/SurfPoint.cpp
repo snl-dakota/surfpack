@@ -182,7 +182,7 @@ void SurfPoint::F(unsigned responseIndex, double responseValue)
 /// Change the value of one of the dimensions of the point
 void SurfPoint::setX(unsigned index, double value)
 {
-  if (index > x.size()) {
+  if (index >= x.size()) {
     x.resize(index+1);
   }
   x[index] = value;

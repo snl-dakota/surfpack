@@ -371,6 +371,7 @@ void Surface::scaleUniform()
 void Surface::noScale()
 {
   delete scaler;
+  scaler = 0;
 }
 
 /// Set the state of the SurfData object to use the same defaultIndex and 
