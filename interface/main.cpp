@@ -5,8 +5,10 @@
 #endif
 // End of prepended lines
 
-#include <iostream>
 #include <fstream>
+#include <iostream>
+
+#include "surfpack.h"
 #include "SurfpackInterpreter.h"
 
 using namespace std;
