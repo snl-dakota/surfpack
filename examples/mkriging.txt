@@ -1,0 +1,4 @@
+LoadData[name = roseData, file = 'rose100.txt']
+CreateSurface[name = krigsurf, type = 'Kriging', data = roseData, theta_vars = (10,10)]
+Evaluate[surface = krigsurf, input_data = roseData]
+SaveData[data = roseData, file = 'results.txt']
