@@ -39,6 +39,9 @@ libsurfpack_la_SOURCES = SurfPoint.cpp \
 			ann/utilities.h \
 			ann/vector_enhancements.cpp \
 			ann/vector_enhancements.h
+libsurfpack_la_LIBADD =	$(top_builddir)/src/mars/libmars.la \
+			$(top_builddir)/src/kriging/libkriging.la \
+			$(LAPACK_LIBS) $(BLAS_LIBS) $(LIBS) $(FLIBS)
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src -I$(top_srcdir)/src/surfaces -I$(top_srcdir)/src/ann
 CLEANFILES = *.bb *.bbg *.da *.gcov *.ii *.s
 		
