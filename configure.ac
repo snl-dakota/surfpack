@@ -5,7 +5,7 @@ AC_PREREQ(2.57)
 AC_INIT(Surfpack++, 0.1, mricha@sandia.gov)
 AM_INIT_AUTOMAKE
 # Check to make sure this file exists as a safety check
-AC_CONFIG_SRCDIR([working/snapshot.m])
+AC_CONFIG_SRCDIR([src/Surface.cpp])
 
 # Checks for programs.
 AC_PROG_AWK

@@ -18,5 +18,5 @@ libsurfpack_la_SOURCES = SurfPoint.cpp \
 			surfaces/PolynomialSurface.h \
 			surfpack.cpp \
 			surfpack.h
-INCLUDES = -Isurfaces -Iann
+INCLUDES = -I$(top_srcdir)/src/surfaces -I$(top_srcdir)/src/ann
 		
