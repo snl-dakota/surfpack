@@ -216,7 +216,6 @@ void RBFNetSurface::build(SurfData& surfData)
   if (info < 0) {
           cerr << "dgels_ returned with an error" << endl;
   }
-  originalData = true;
   delete [] work;
   delete [] resultVector;
   delete [] hMatrix;
@@ -292,7 +291,6 @@ void RBFNetSurface::readBinary(std::istream& is)
     is.read(reinterpret_cast<char*>(&weight),sizeof(weight));
     weights.push_back(weight);
   }
-  originalData = false;
 }
 
 void RBFNetSurface::readText(std::istream& is)
@@ -340,7 +338,6 @@ void RBFNetSurface::readText(std::istream& is)
     //cout << "buffer: " << buffer << endl;
     weights.push_back(weight);
   }
-  originalData = false;
 }
 
 //_____________________________________________________________________________

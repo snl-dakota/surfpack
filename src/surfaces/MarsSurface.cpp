@@ -206,7 +206,6 @@ void MarsSurface::build(SurfData& data)
   delete [] sp;
   delete [] dp;
   delete [] mm;
-  originalData = true;
 }
 
 /// Create a surface of the same type as 'this.'  This objects data should
@@ -286,7 +285,6 @@ void MarsSurface::readBinary(std::istream& is)
   im = new int[imsize];
   is.read(reinterpret_cast<char*>(fm),fmsize*sizeof(fm[0]));
   is.read(reinterpret_cast<char*>(im),imsize*sizeof(im[0]));
-  originalData = false;
 }
 
 void MarsSurface::readText(std::istream& is)
@@ -326,7 +324,6 @@ void MarsSurface::readText(std::istream& is)
       streamline.str(sline); streamline.clear();
       streamline >> im[i];
     }
-    originalData = false;
 }
 
 //_____________________________________________________________________________

@@ -373,7 +373,6 @@ void KrigingSurface::build(SurfData& data)
     saveTheta = 0;
   }
   buildModel(data);
-  originalData = true;
 }
 
 /// Create a surface of the same type as 'this.'  This objects data should
@@ -453,7 +452,6 @@ void KrigingSurface::readBinary(istream& is)
   for(i=0;i<xsize;i++) { 
     is.read(reinterpret_cast<char*>(&thetaVector[i]),sizeof(thetaVector[i]));
   }
-  originalData = false;
 }
 
 void KrigingSurface::readText(istream& is)
@@ -484,7 +482,6 @@ void KrigingSurface::readText(istream& is)
     getline(is,sline); streamline.str(sline);
     streamline >> thetaVector[i];
   }
-  originalData = false;
 
 }
 

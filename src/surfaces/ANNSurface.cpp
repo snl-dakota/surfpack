@@ -156,7 +156,6 @@ void ANNSurface::readBinary(std::istream& is)
   delete annObject;
   annObject = new ANNApprox;
   annObject->readBinary(is);
-  originalData = false;
 }
 
 void ANNSurface::readText(std::istream& is)
@@ -164,7 +163,6 @@ void ANNSurface::readText(std::istream& is)
   delete annObject;
   annObject = new ANNApprox;
   annObject->readText(is);
-  originalData = false;
 }
 
 //_____________________________________________________________________________
