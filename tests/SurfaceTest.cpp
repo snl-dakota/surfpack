@@ -242,6 +242,8 @@ void SurfaceTest::badFileExtension()
 
 void SurfaceTest::print()
 {
-  cout << *polysurf << endl;
+  // only checking for non-crashing behavior
+  ostringstream os;
+  os << *polysurf << endl;
 }
 
