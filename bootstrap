@@ -1,3 +1,4 @@
+#! /bin/sh
 if ! [ $SURFPACK ]; then
   echo "Run the setpath script to set your SURFPACK environment variable"
   exit
