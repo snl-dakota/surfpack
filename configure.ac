@@ -10,9 +10,18 @@ AC_CONFIG_SRCDIR([src/Surface.cpp])
 
 AC_LANG_CPLUSPLUS
 WHOLE_LIB_PATH=`echo $LD_LIBRARY_PATH | sed -e 's/^/-L/;s/:/ -L/g'`
+#Check for the linear algebra libraries that are needed on Sun/Solaris
+AC_CHECK_LIB([fsu],[main],[],[],[$WHOLE_LIB_PATH])
+AC_CHECK_LIB([sunmath],[main],[],[],[$WHOLE_LIB_PATH])
+AC_CHECK_LIB([-lF77],[main],[],[],[$WHOLE_LIB_PATH])
+AC_CHECK_LIB([sunperf],[main],[],[],[$WHOLE_LIB_PATH])
+
+
+#Check for the linear algebra libraries on non-sun machines
 AC_CHECK_LIB([m],[main],[],[],[$WHOLE_LIB_PATH])
 AC_CHECK_LIB([g2c],[main],[],[],[$WHOLE_LIB_PATH])
 AC_CHECK_LIB([blas],[main],[],[],[$WHOLE_LIB_PATH])
+AC_CHECK_LIB([lapack],[main],[],[],[$WHOLE_LIB_PATH])
 AC_CHECK_LIB([gslcblas],[main],[],[],[$WHOLE_LIB_PATH])
 AC_CHECK_LIB([gsl],[main],[],[],[$WHOLE_LIB_PATH])
 AC_CHECK_LIB([dl],[main],[],[],[$WHOLE_LIB_PATH])
@@ -61,4 +70,5 @@ AC_CONFIG_FILES([Makefile
 if test $include_tests = yes; then
   AC_CONFIG_FILES([tests/Makefile])
 fi
+echo $LIBS
 AC_OUTPUT
