@@ -113,7 +113,7 @@ protected:
 // ____________________________________________________________________________
 
 #ifdef __TESTING_MODE__
-  friend class SurfPointUnitTest;
+  friend class SurfPointTest;
 public:
   static int constructCount;
   static int copyCount;
