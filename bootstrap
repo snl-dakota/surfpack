@@ -1,6 +1,15 @@
-aclocal -I $HOME/local/share/aclocal
+if ! [ $SURFPACK ]; then
+  echo "Run the setpath script to set your SURFPACK environment variable"
+  exit
+fi
+
+if [ $(which aclocal) != "$SURFPACK/tools/bin/aclocal" ]; then
+  echo "Run setpath the setpath script to set your PATH environment variable to point to the autotools in $SURFPACK/tools/bin"
+fi
+
+aclocal 
 libtoolize --force --copy
 autoheader
 automake -a
 autoconf
-configure -C --prefix=$HOME/Working/Surfpack/Surfpack --disable-shared --verbose
+configure -C --prefix=$SURFPACK

@@ -1,0 +1,66 @@
+#! /bin/sh
+# if the tools/ directory doesn't exist, create it
+if test ! -d "tools"
+then
+  mkdir tools
+fi
+
+# set the SURFPACK and PATH environment variables
+./setpath 2> /dev/null
+
+cd toolsrc || (echo "Could not cd to toolsrc/" && exit)
+echo `pwd`
+# Unpack the tar balls.  The toolsrc directory is intended to include the gzipped tarballs for 
+# -automake
+# -autoconf
+# -libtool
+# -m4
+# -cppunit
+# This loop should unpack each tarball, descend into the untarred directory, run configure (with the install location as $SURFPACK/tools), make, and make install.  The .tar archive is then rezippedi, and the unpacked directories are removed.  So the toolsrc directory should be left in the same state it was in at the beginning.
+
+# Traverse each directory, installing the packages in the tools/ directory
+preface="[build tools]: "
+for i in `ls *.tar.gz 2> /dev/null`
+do
+  gunzip "$i"
+  gunzippeddir=${i%.gz}
+  echo $gunzippeddir
+  tar xf "$gunzippeddir"
+  echo $preface $gunzippeddir
+  gzip "$gunzippeddir"
+  untarreddir=${gunzippeddir%.tar}
+  echo $preface $untarreddir
+  if test -d "$untarreddir" 
+  then
+    echo $preface $untarreddir
+    cd "$untarreddir"
+    ./configure --prefix="$SURFPACK/tools"
+    make
+    make install
+    cd ..
+    rm -rf "$untarreddir"
+  fi 
+done
+
+# if m4 was installed, set the environment variable to point to it
+# aclocal will default to /usr/bin/m4 if the M4 environment variable is not set
+if test -f "tools/bin/m4" 
+then
+  export M4=$SURFPACK/tools/bin/m4
+  echo "M4=$M4"
+else
+  echo "Environment variable M4 not set because m4 was not installed"
+fi
+
+# apply the patch to cppunit.m4
+needspatch="tools/share/aclocal/cppunit.m4"
+if test -f "$needspatch"
+then
+  patch "$needspatch" "toolsrc/cppunitpatch"
+  echo Applied CPPUnit patch
+else
+  echo Patch not applied because tools/share/aclocal/cppunit.m4 was not found.
+fi 
+
+
+   
