@@ -34,6 +34,8 @@ class SurfPointTest : public CppUnit::TestFixture
   CPPUNIT_TEST( testReadBinary );
   CPPUNIT_TEST( testReadText );
   CPPUNIT_TEST( testStreamInsertion );
+  CPPUNIT_TEST( testResize );
+  CPPUNIT_TEST( testSetX );
   CPPUNIT_TEST_SUITE_END();
 public:
   void setUp();
@@ -66,6 +68,8 @@ public:
   void testAddResponse();
   void testFAssign();
   void testFAssignBadIndex();
+  void testResize();
+  void testSetX();
 
 // I/O
   void testWriteBinary();

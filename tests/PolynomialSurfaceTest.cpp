@@ -92,6 +92,7 @@ void PolynomialSurfaceTest::constructor()
 {
   SurfData sd(fullPath("oneDimQuadratic.txt"));
   PolynomialSurface ps(&sd, 2);
+  CPPUNIT_ASSERT(ps.scaler == 0);
   CPPUNIT_ASSERT(ps.xsize == 1);
   CPPUNIT_ASSERT(!ps.builtOK);
   CPPUNIT_ASSERT(!ps.dataModified);
@@ -109,6 +110,7 @@ void PolynomialSurfaceTest::constructor()
 void PolynomialSurfaceTest::constructorNullData()
 {
   PolynomialSurface ps(NULL, 3);
+  CPPUNIT_ASSERT(ps.scaler == 0);
   CPPUNIT_ASSERT(ps.xsize == 0);
   CPPUNIT_ASSERT(!ps.builtOK);
   CPPUNIT_ASSERT(!ps.dataModified);
@@ -127,6 +129,7 @@ void PolynomialSurfaceTest::constructorZeroOrder()
 {
   SurfData sd(fullPath("oneDimQuadratic.txt"));
   PolynomialSurface ps(&sd, 0);
+  CPPUNIT_ASSERT(ps.scaler == 0);
   CPPUNIT_ASSERT(ps.xsize == 1);
   CPPUNIT_ASSERT(!ps.builtOK);
   CPPUNIT_ASSERT(!ps.dataModified);
@@ -145,6 +148,7 @@ void PolynomialSurfaceTest::constructorFromTextFile()
 {
   SurfData sd(fullPath("oneDimQuadratic.txt"));
   PolynomialSurface ps(fullPath("oneDQpoly2.txt"));
+  CPPUNIT_ASSERT(ps.scaler == 0);
   CPPUNIT_ASSERT(ps.xsize == 1);
   CPPUNIT_ASSERT(ps.builtOK);
   CPPUNIT_ASSERT(!ps.dataModified);
@@ -162,6 +166,7 @@ void PolynomialSurfaceTest::constructorFromBinaryFile()
 {
   SurfData sd(fullPath("oneDimQuadratic.txt"));
   PolynomialSurface ps(fullPath("oneDQpoly2.srf"));
+  CPPUNIT_ASSERT(ps.scaler == 0);
   CPPUNIT_ASSERT(ps.xsize == 1);
   CPPUNIT_ASSERT(ps.builtOK);
   CPPUNIT_ASSERT(!ps.dataModified);
@@ -182,6 +187,7 @@ void PolynomialSurfaceTest::constructorExplicit()
   coefficients[1] = 0.0;
   coefficients[2] = 1.0;
   PolynomialSurface ps(1,2,coefficients);
+  CPPUNIT_ASSERT(ps.scaler == 0);
   CPPUNIT_ASSERT(ps.xsize == 1);
   CPPUNIT_ASSERT(ps.builtOK);
   CPPUNIT_ASSERT(!ps.dataModified);
@@ -208,6 +214,7 @@ void PolynomialSurfaceTest::constructorCopy()
   coefficients[2] = 1.0;
   PolynomialSurface ps2(1,2,coefficients);
   PolynomialSurface ps(ps2);
+  CPPUNIT_ASSERT(ps.scaler == 0);
   CPPUNIT_ASSERT(ps.xsize == 1);
   CPPUNIT_ASSERT(ps.builtOK);
   CPPUNIT_ASSERT(!ps.dataModified);

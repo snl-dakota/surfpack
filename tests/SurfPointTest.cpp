@@ -235,6 +235,24 @@ void SurfPointTest::testFAssignBadIndex()
   sp.F(3, 1.0); 
 }
 
+void SurfPointTest::testResize()
+{
+  SurfPoint x(vector<double>(1));
+  x.resize(2);
+  CPPUNIT_ASSERT_EQUAL(static_cast<unsigned>(2),x.x.size());
+  CPPUNIT_ASSERT_EQUAL(static_cast<unsigned>(2),x.xSize());
+}
+
+void SurfPointTest::testSetX()
+{
+  SurfPoint x4(*spPtr);
+  x4.setX(2,1);
+  CPPUNIT_ASSERT_EQUAL(1.0,x4.x[2]);  
+  // Expand beyond current limits
+  x4.setX(3,1);
+  CPPUNIT_ASSERT_EQUAL(static_cast<unsigned>(4),x4.xSize());
+  CPPUNIT_ASSERT_EQUAL(static_cast<unsigned>(4),x4.x.size());
+}
 // I/O
 void SurfPointTest::testWriteBinary()
 {

@@ -8,6 +8,8 @@ check_PROGRAMS = $(TESTS)
 # These are the source files needed for the srftest target.
 srftest_SOURCES = SurfPointTest.h \
 		SurfPointTest.cpp \
+		SurfScalerTest.h \
+		SurfScalerTest.cpp \
 		unittests.h \
 		unittests.cpp \
 		SurfDataTest.h \
