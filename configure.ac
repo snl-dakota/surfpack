@@ -29,6 +29,7 @@ WHOLE_LIB_PATH=`echo $LD_LIBRARY_PATH | sed -e 's/^/-L/;s/:/ -L/g'`
 #
 ##Chech for the linear algebra libraries that should be on OSF
 #AC_CHECK_LIB([dxml],[dgels_])
+AC_CHECK_LIB([cxxstd],[strcpy])
 #
 ##Check for the linear algebra libraries that are needed on Sun/Solaris
 AC_CHECK_LIB([sunmath],[logf],[],[],[$WHOLE_LIB_PATH])
@@ -44,6 +45,13 @@ AC_CHECK_LIB([sunperf],[dgels_],[],[],[$WHOLE_LIB_PATH])
 #AC_CHECK_LIB([lapack],[dgels_],[],[],[$WHOLE_LIB_PATH])
 ##AC_CHECK_LIB([gslcblas],[main],[],[],[$WHOLE_LIB_PATH])
 ##AC_CHECK_LIB([gsl],[main],[],[],[$WHOLE_LIB_PATH])
+
+#Check for the linear algebra libraries that are needed on IRIX
+AC_CHECK_LIB([scs],[dgels_])
+
+#Chech for the linear algebra libraries that should be on OSF
+AC_CHECK_LIB([dxml],[dgels_])
+
 
 #Check for libraries needed for CPP Unit test suite
 AC_CHECK_LIB([dl],[dlclose],[],[],[$WHOLE_LIB_PATH])
@@ -65,6 +73,11 @@ AC_PROG_LIBTOOL
 CPPFLAGS="-DDATADIR='\"\$(top_srcdir)/share\"' "
 #CXXFLAGS="-fprofile-arcs -ftest-coverage -g -save-temps"
 CXXFLAGS="-g "
+if test $CXX = "cxx"
+then
+  echo "Compiling with cxx"
+  CXXFLAGS="-g -std strict_ansi"
+fi
 
 # Checks for header files.
 
