@@ -4,8 +4,8 @@ srftest_SOURCES = SurfPointTest.h \
 		SurfPointTest.cpp \
 		SurfDataTest.h \
 		SurfDataTest.cpp \
-		SurfaceTest.h \
-		SurfaceTest.cpp \
+		PolynomialSurfaceTest.h \
+		PolynomialSurfaceTest.cpp \
 		unittests.h \
 		unittests.cpp \
 		srftestmain.cpp 
