@@ -1,5 +1,6 @@
 aclocal -I $HOME/local/share/aclocal
 libtoolize --force --copy
+autoheader
 automake -a
 autoconf
 configure -C --prefix=$HOME/Working/Surfpack/Surfpack --disable-shared 
