@@ -13,8 +13,6 @@
 #include <vector>
 #include <set>
 #include <cmath>
-#include "SurfData.h"
-#include "Surface.h"
 #include "surfpack.h"
 
 //______________________________________________________________________________
@@ -23,29 +21,35 @@
 
 using namespace std;
 
-const string surfaceName(const string filename)
+const string surfpack::surfaceName(const string filename)
 {
   bool binary = (filename.find(".txt") != filename.size() - 4);
   ifstream infile(filename.c_str(), (binary ? ios::in|ios::binary : ios::in));
   if (!infile) {
     cerr << "Could not open " << filename << "." << endl;
     return "none";
-  } else if (binary) {
-    unsigned nameSize;
-    infile.read(reinterpret_cast<char*>(&nameSize),sizeof(nameSize));
-    char* surfaceType = new char[nameSize+1];
-    infile.read(surfaceType,nameSize);
-    surfaceType[nameSize] = '\0';
-    infile.close();
-    return string(surfaceType);
   } else {
-    string nameInFile;
-    getline(infile,nameInFile);
+    string nameInFile = readName(infile, binary);  
     infile.close();
     return nameInFile;
   }
-    
 } 
+  
+const string surfpack::readName(istream& is, bool binary)
+{
+  string nameInFile;
+  if (!binary) {
+    getline(is,nameInFile);
+    return nameInFile;
+  } else {
+    unsigned nameSize;
+    is.read(reinterpret_cast<char*>(&nameSize),sizeof(nameSize));
+    char* surfaceType = new char[nameSize+1];
+    is.read(surfaceType,nameSize);
+    surfaceType[nameSize] = '\0';
+    return string(surfaceType);
+  }
+}
 
 double euclideanDistance(const vector<double>& pt1, const vector<double>& pt2)
 {
@@ -117,27 +121,107 @@ void surfpack::checkForEOF(istream& is)
 }
 
 void surfpack::writeMatrix(const string header, double* mat, unsigned rows, 
-  unsigned columns, ostream& os)
+  unsigned columns, ostream& os, bool c_style)
 {
   if (header != "none" && header != "") {
     cout << header << endl;
   }
   for (unsigned r = 0; r < rows; r++) {
     for (unsigned c = 0; c < columns; c++) {
-      os << setw(15) << mat[r + c*rows];
+      if (c_style) {
+        os << setw(15) << mat[c + r * columns];
+      } else {
+        os << setw(15) << mat[r + c * rows];
+      }
+    }
+    os << endl;
+  }
+}
+
+void surfpack::writeMatrix(const string header, unsigned* mat, unsigned rows, 
+  unsigned columns, ostream& os, bool c_style)
+{
+  if (header != "none" && header != "") {
+    cout << header << endl;
+  }
+  for (unsigned r = 0; r < rows; r++) {
+    for (unsigned c = 0; c < columns; c++) {
+      if (c_style) {
+        os << setw(15) << mat[c + r * columns];
+      } else {
+        os << setw(15) << mat[r + c * rows];
+      }
     }
     os << endl;
   }
 }
 
 void surfpack::writeMatrix(const string filename, double* mat, unsigned rows, 
-  unsigned columns)
+  unsigned columns, bool c_style)
 {
   ofstream outfile(filename.c_str(),ios::out);
   if (!outfile) {
     cerr << "Could not open file (" << filename << ") in writeMatrix." << endl;
     return;
   }
-  writeMatrix("none",mat,rows,columns,outfile);
+  writeMatrix("none",mat,rows,columns,outfile, c_style);
   outfile.close();
 }
+
+void surfpack::writeMatrix(const string filename, unsigned* mat, unsigned rows, 
+  unsigned columns, bool c_style)
+{
+  ofstream outfile(filename.c_str(),ios::out);
+  if (!outfile) {
+    cerr << "Could not open file (" << filename << ") in writeMatrix." << endl;
+    return;
+  }
+  writeMatrix("none",mat,rows,columns,outfile, c_style);
+  outfile.close();
+}
+
+double surfpack::sphere(const vector<double>& pt) 
+{
+  double result = 0.0;
+  for (unsigned i = 0; i < pt.size(); i++) {
+    double x = pt[i];
+    result += x*x;
+  }
+  return result;
+}
+
+double surfpack::rastrigin(const vector<double>& pt) 
+{
+  double result = 0.0;
+  for (unsigned i = 0; i < pt.size(); i++) {
+    double x = pt[i];
+    result += x*x-10*cos(4.0*acos(0.0)*x)+10.0;
+  }
+  return result;
+}
+
+double surfpack::rosenbrock(const vector<double>& pt) 
+{
+  double result = 0.0;
+  for (unsigned i = 0; i < pt.size() - 1; i++) {
+    double x = pt[i];
+    double xp = pt[i+1];
+    result += 100.0*(xp-x*x)*(xp-x*x)+(x-1.0)*(x-1.0); 
+  }
+  return result;
+}
+
+double surfpack::sumofall(const vector<double>& pt) 
+{
+  double result = 0.0;
+  for (unsigned i = 0; i < pt.size() - 1; i++) {
+    result += pt[i];
+  }
+  return result;
+}
+
+bool surfpack::hasExtension(const std::string& filename, const std::string extension)
+{
+  return (filename.find(extension) == filename.size() - extension.size());
+}
+

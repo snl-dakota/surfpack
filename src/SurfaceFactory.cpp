@@ -31,7 +31,7 @@ using namespace std;
 
 Surface* SurfaceFactory::createSurface(const string& filename)
 {
-  const string name = surfaceName(filename);
+  const string name = surfpack::surfaceName(filename);
   if (name == "Polynomial") {
     return new PolynomialSurface(filename); 
   } else if (name == "Kriging") {
