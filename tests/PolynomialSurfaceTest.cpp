@@ -16,7 +16,7 @@
 #include "SurfData.h"
 #include "Surface.h"
 #include "unittests.h"
-#include "SurfaceTest.h"
+#include "PolynomialSurfaceTest.h"
 
 using namespace std;
 
@@ -24,9 +24,15 @@ CPPUNIT_TEST_SUITE_REGISTRATION( PolynomialSurfaceTest );
 
 void PolynomialSurfaceTest::setUp()
 {
+  initialize();
 }
 
 void PolynomialSurfaceTest::tearDown()
 {
+}
+
+void PolynomialSurfaceTest::constructorTest()
+{
+  CPPUNIT_ASSERT(1 == 1);
 }
 

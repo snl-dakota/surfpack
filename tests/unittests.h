@@ -18,5 +18,12 @@ const unsigned unsignedZero = 0;
 const double doubleZero = 0.0;
 const int intZero = 0;
 
+void writePoint1Files();
+void writePoint2Files();
+void writeRastriginAndClaimsTooManyFiles();
+void writeManyPtsFiles();
+void setOstreamFlags(std::ostream& os);
+void initialize();
+void cleanup();
 
 #endif

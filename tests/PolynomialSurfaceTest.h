@@ -15,10 +15,12 @@
 class PolynomialSurfaceTest : public CppUnit::TestFixture
 {
   CPPUNIT_TEST_SUITE( PolynomialSurfaceTest );
+  CPPUNIT_TEST( constructorTest );
   CPPUNIT_TEST_SUITE_END();
 public:
   void setUp();
   void tearDown();
+  void constructorTest();
 private:
 };
 

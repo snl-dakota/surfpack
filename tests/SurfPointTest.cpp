@@ -20,6 +20,7 @@ CPPUNIT_TEST_SUITE_REGISTRATION( SurfPointTest );
 
 void SurfPointTest::setUp()
 {
+  initialize();
   x1.resize(3);
   x1[0] = 3.0;
   x1[1] = -3.0;

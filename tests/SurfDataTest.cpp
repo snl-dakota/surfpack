@@ -26,6 +26,7 @@ const unsigned numResponses = 3;
 
 void SurfDataTest::setUp()
 {
+  initialize();
   // surfpoints has numPoints points
   // Each point has 3 dimensions and 3 response values
   surfpoints.reserve(numPoints);
@@ -182,6 +183,7 @@ void SurfDataTest::testConstructorIStreamBinary()
   const string filename = fullPath("rast100.sd");
   ifstream infile(filename.c_str(), ios::in | ios::binary);
   SurfData sd(infile, true);
+  sd.write("frombinary.txt");
   infile.close();
 
   // Read it in as text as well and make sure the values are the same
@@ -189,6 +191,7 @@ void SurfDataTest::testConstructorIStreamBinary()
   ifstream infileText(filenameText.c_str(), ios::in);
   SurfData sdText(infileText, false);
   infileText.close();
+  sdText.write("fromtext.txt");
 
   CPPUNIT_ASSERT_EQUAL(sd.points.size(), pointsInFile);
   CPPUNIT_ASSERT_EQUAL(sd.xsize, static_cast<unsigned>(2));
