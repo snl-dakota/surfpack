@@ -29,6 +29,7 @@ SurfPoint::SurfPoint(const vector<double>& x) : x(x)
 #ifdef __TESTING_MODE__
   constructCount++;
 #endif
+  init();
 }
 
 /// Initialize point with one response value
@@ -38,6 +39,7 @@ SurfPoint::SurfPoint(const vector<double>& x, double f0) : x(x), f(1)
   constructCount++;
 #endif
   f[0] = f0;
+  init();
 }
 
 /// Initialize with zero or more response values
@@ -47,6 +49,7 @@ SurfPoint::SurfPoint(const vector<double>& x, const vector<double>& f)
 #ifdef __TESTING_MODE__
   constructCount++;
 #endif
+  init();
 }
 
 /// Read point from istream in either text or binary format
@@ -62,6 +65,7 @@ SurfPoint::SurfPoint(unsigned xsize, unsigned fsize, istream& is, bool binary)
   } else { 
     readText(is);
   }
+  init();
 }
 
 /// Copy constructor performs a deep copy
@@ -71,6 +75,15 @@ SurfPoint::SurfPoint(const SurfPoint& sp) : x(sp.x), f(sp.f)
   constructCount++;
   copyCount++;
 #endif
+  init();
+}
+
+/// Initialization used by all regular constructors
+void SurfPoint::init()
+{
+  if (x.empty()) {
+    throw null_point();
+  }
 }
 
 /// STL data members x and f automatically cleaned up
@@ -133,11 +146,10 @@ const vector<double>& SurfPoint::X() const
 double SurfPoint::F(unsigned responseIndex) const
 { 
   if (responseIndex >= f.size()) {
-    cerr << "Invalid response index. Requested: " 
-	 << responseIndex 
-	 << "; max: "
-	 << f.size() - 1
-	 << endl;
+    string header(
+      "Error in query SurfPoint::F. Invalid responseIndex."
+    );
+    throwRangeError(header, responseIndex);
   } 
   return f[responseIndex]; 
 }
@@ -157,15 +169,12 @@ unsigned SurfPoint::addResponse(double val)
 void SurfPoint::F(unsigned responseIndex, double responseValue)
 { 
   if (responseIndex >= f.size()) {
-    cerr << "Invalid response index. Requested: " 
-	 << responseIndex 
-	 << "; max: "
-	 << f.size() - 1
-	 << ".  No update was made." 
-	 << endl;
-  } else {
-    f[responseIndex] = responseValue; 
-  }
+    string header(
+      "Error in command SurfPoint::F. Invalid responseIndex. No update made."
+    );
+    throwRangeError(header, responseIndex);
+  } 
+  f[responseIndex] = responseValue; 
 }
 
 // ____________________________________________________________________________
@@ -237,6 +246,22 @@ ostream& operator<<(ostream& os, const SurfPoint& sp)
 // Testing 
 // ____________________________________________________________________________
 
+void SurfPoint::throwRangeError(const string& header, unsigned index) const
+{
+    ostringstream errormsg;
+    errormsg << header << endl;
+    if (f.empty()) {
+      errormsg << "There are no response values associated with this point"
+               << endl;
+    } else {
+      errormsg << "Requested: " 
+	     << index 
+	     << "; actual max index: "
+	     << f.size() - 1
+	     << endl;
+    }
+    throw range_error(errormsg.str());
+}
 #ifdef __TESTING_MODE__
   int SurfPoint::constructCount = 0;
   int SurfPoint::copyCount = 0;

@@ -16,8 +16,21 @@
 // ---------------------------
 
 // not yet specified
+#include <stdexcept>
+
 
 class SurfPoint {
+
+// Nested Exception class used when an attempt is made to create a SurfPoint 
+// with 0 dimensions
+private:
+class null_point : public std::runtime_error
+{
+public:
+  null_point(const std::string& msg = 
+    "Error: attempt to make SurfPoint with 0 dimensions.") 
+    : std::runtime_error(msg) {}
+};
   
 // ____________________________________________________________________________
 // Creation, Destruction, Initialization 
@@ -41,6 +54,10 @@ public:
 
   /// STL data members x and f automatically cleaned up
   ~SurfPoint();
+
+private:
+  /// Initialization used by all regular constructors
+  void init();
 
 protected:
   /// Default constructor explicitly disallowed.  A SurfPoint must at least
@@ -111,6 +128,9 @@ protected:
 // ____________________________________________________________________________
 // Testing 
 // ____________________________________________________________________________
+protected:
+  void throwRangeError(const std::string& header, unsigned index) const;
+
 
 #ifdef __TESTING_MODE__
   friend class SurfPointTest;
