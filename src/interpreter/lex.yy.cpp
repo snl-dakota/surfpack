@@ -664,77 +664,77 @@ case 11:
 case 12:
 YY_RULE_SETUP
 #line 22 "lexer.lex"
-{ /*cmdstream << yytext; cout << "Keyword: " << yytext << endl;*/ return STANDARD_COMMAND; }
+{ cmdstream << yytext;/* cout << "Keyword: " << yytext << endl;*/ return STANDARD_COMMAND; }
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
 #line 23 "lexer.lex"
-{ /*cmdstream << yytext; cout << "Identifier: " << yytext << endl;*/ return IDENTIFIER;}
+{ cmdstream << yytext;/* cout << "Identifier: " << yytext << endl;*/ return IDENTIFIER;}
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
 #line 24 "lexer.lex"
-{ /*cmdstream << yytext; cout << "StringLiteral: " << yytext << endl;*/ return STRING; }
+{ cmdstream << yytext;/* cout << "StringLiteral: " << yytext << endl;*/ return STRING; }
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
 #line 25 "lexer.lex"
-{ /*cmdstream << yytext; cout << "Comment: " << yytext << endl;*/ }
+{ cmdstream << yytext;/* cout << "Comment: " << yytext << endl;*/ }
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
 #line 26 "lexer.lex"
-{ /*cmdstream << yytext; cout << "ShellCommand: " << yytext << endl;*/ } 
+{ cmdstream << yytext;/* cout << "ShellCommand: " << yytext << endl;*/ } 
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
 #line 27 "lexer.lex"
-{ /*cmdstream << yytext; cout << "Integer: " << yytext << endl;*/ return INTEGER;}
+{ cmdstream << yytext;/* cout << "Integer: " << yytext << endl;*/ return INTEGER;}
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
 #line 28 "lexer.lex"
-{ /*cmdstream << yytext; cout << "Real: " << yytext << endl;*/ return REAL;}
+{ cmdstream << yytext;/* cout << "Real: " << yytext << endl;*/ return REAL;}
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
 #line 29 "lexer.lex"
-{ /*cmdstream << yytext; cout << "Punctuation: " << yytext << endl;*/ return '('; }
+{ cmdstream << yytext;/* cout << "Punctuation: " << yytext << endl;*/ return '('; }
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
 #line 30 "lexer.lex"
-{ /*cmdstream << yytext; cout << "Punctuation: " << yytext << endl;*/ return ')'; }
+{ cmdstream << yytext;/* cout << "Punctuation: " << yytext << endl;*/ return ')'; }
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
 #line 31 "lexer.lex"
-{ /*cmdstream << yytext; cout << "Punctuation: " << yytext << endl;*/ return '{'; }
+{ cmdstream << yytext;/* cout << "Punctuation: " << yytext << endl;*/ return '{'; }
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
 #line 32 "lexer.lex"
-{ /*cmdstream << yytext; cout << "Punctuation: " << yytext << endl;*/ return '}'; }
+{ cmdstream << yytext;/* cout << "Punctuation: " << yytext << endl;*/ return '}'; }
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
 #line 33 "lexer.lex"
-{ /*cmdstream << yytext; cout << "Punctuation: " << yytext << endl;*/ return ','; }
+{ cmdstream << yytext;/* cout << "Punctuation: " << yytext << endl;*/ return ','; }
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
 #line 34 "lexer.lex"
-{ /*cmdstream << yytext; cout << "Punctuation: " << yytext << endl;*/ return '='; }
+{ cmdstream << yytext;/* cout << "Punctuation: " << yytext << endl;*/ return '='; }
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
 #line 35 "lexer.lex"
-{ /*cmdstream << yytext; cout << "LeftBracket: " << yytext << endl;*/ return '['; }
+{ cmdstream << yytext;/* cout << "LeftBracket: " << yytext << endl;*/ return '['; }
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
 #line 36 "lexer.lex"
-{ /*cmdstream << yytext; cout << "RightBracket: " << yytext << endl;*/ return ']'; }
+{ cmdstream << yytext;/* cout << "RightBracket: " << yytext << endl;*/ return ']'; }
 	YY_BREAK
 case 27:
 YY_RULE_SETUP
@@ -749,11 +749,11 @@ YY_RULE_SETUP
 case 29:
 YY_RULE_SETUP
 #line 39 "lexer.lex"
-{ /*cmdstream << yytext; cout << "Unrecognized: " << yytext << endl;*/ }
+{ cmdstream << yytext;/* cout << "Unrecognized: " << yytext << endl;*/ }
 	YY_BREAK
 case 30:
 YY_RULE_SETUP
-#line 41 "lexer.lex"
+#line 40 "lexer.lex"
 ECHO;
 	YY_BREAK
 #line 760 "lex.yy.cc"
@@ -1561,4 +1561,4 @@ int main()
 	return 0;
 	}
 #endif
-#line 41 "lexer.lex"
+#line 40 "lexer.lex"
