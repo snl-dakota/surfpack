@@ -1,0 +1,7 @@
+Simple install:
+
+./configure --prefix=`pwd`
+make
+make install
+
+Executable will be installed in ./bin/

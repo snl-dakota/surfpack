@@ -47,6 +47,10 @@ The simplest way to compile this package is:
      Running `configure' takes awhile.  While running, it prints some
      messages telling which features it is checking for.
 
+     If you do not have superuser privileges, the recommended approach is 
+     to install Surfpack in the same directory that you unpacked it.  To
+     do this, use the --prefix=`pwd` option whn you run configure.  
+
   2. Type `make' to compile the package.
 
   3. Optionally, type `make check' to run any self-tests that come with
@@ -54,6 +58,10 @@ The simplest way to compile this package is:
 
   4. Type `make install' to install the programs and any data files and
      documentation.
+
+     If you used the --prefix=`pwd` option (see #1), the surfpack executable
+     will be installed in the bin/ subdirectory of the the directory where 
+     the source was unpacked.
 
   5. You can remove the program binaries and object files from the
      source code directory by typing `make clean'.  To also remove the
