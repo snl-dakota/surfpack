@@ -8,4 +8,4 @@ libtoolize --force --copy
 autoheader
 automake-1.8 --gnu -a
 autoconf
-configure -C --prefix=$SURFPACK
+./configure -C --prefix=$SURFPACK

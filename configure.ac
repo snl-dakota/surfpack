@@ -76,7 +76,8 @@ CXXFLAGS="-g "
 if test $CXX = "cxx"
 then
   echo "Compiling with cxx"
-  CXXFLAGS="-g -std strict_ansi"
+  #CXXFLAGS="-g "
+  AC_DEFINE([__USE_STD_IOSTREAM],[],[Define if sstream is used with cxx])
 fi
 
 # Checks for header files.
