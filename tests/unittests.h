@@ -22,8 +22,11 @@ void writePoint1Files();
 void writePoint2Files();
 void writeRastriginAndClaimsTooManyFiles();
 void writeManyPtsFiles();
+void writeOneDimQuadratic();
+void writeUnknownSurfaceFile();
 void setOstreamFlags(std::ostream& os);
 void initialize();
 void cleanup();
+bool matches(double observed, double target, double margin = 1.0e-2);
 
 #endif

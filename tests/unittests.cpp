@@ -172,6 +172,111 @@ void writeManyPtsFiles()
 
 }
 
+void writeOneDimQuadratic()
+{
+  ofstream outfile(fullPath("oneDimQuadratic.txt").c_str(),ios::out);
+  outfile << "7\n1\n1" << endl;
+  outfile << "0.0 0.0" << endl;
+  outfile << "1.0 1.0" << endl;
+  outfile << "-1.0 1.0" << endl;
+  outfile << "2.0 4.0" << endl;
+  outfile << "-2.0 4.0" << endl;
+  outfile << "3.0 9.0" << endl;
+  outfile << "-3.0 9.0" << endl;
+  outfile.close();
+}
+
+void writeOneDQpoly2Files()
+{
+  ofstream outfile(fullPath("oneDQpoly2.txt").c_str(),ios::out);
+  outfile << "Polynomial" << endl;
+  outfile << "1 dimensions" << endl;
+  outfile << "2 order" << endl;
+  outfile << "0                          +" << endl;
+  outfile << "0                         x1 +" << endl;
+  outfile << "1                         x1^2" << endl;
+  outfile << "0 response index for surface data" << endl;
+  outfile << "7" << endl;
+  outfile << "1" << endl;
+  outfile << "1" << endl;
+  outfile << "   0.00000000000000000e+00   0.00000000000000000e+00" << endl;
+  outfile << "   1.00000000000000000e+00   1.00000000000000000e+00" << endl;
+  outfile << "  -1.00000000000000000e+00   1.00000000000000000e+00" << endl;
+  outfile << "   2.00000000000000000e+00   4.00000000000000000e+00" << endl;
+  outfile << "  -2.00000000000000000e+00   4.00000000000000000e+00" << endl;
+  outfile << "   3.00000000000000000e+00   9.00000000000000000e+00" << endl;
+  outfile << "  -3.00000000000000000e+00   9.00000000000000000e+00" << endl;
+  outfile.close();
+  
+  // write the same surface out in binary
+  ofstream binoutfile(fullPath("oneDQpoly2.srf").c_str(),ios::out|ios::binary);
+  // write out the name
+  string name = "Polynomial";
+  unsigned nameSize = name.length();
+  binoutfile.write(reinterpret_cast<char*>(&nameSize),sizeof(nameSize));
+  binoutfile.write(name.c_str(),nameSize);
+  // write out size and order
+  unsigned dim = 1;
+  binoutfile.write(reinterpret_cast<char*>(&dim),sizeof(dim));
+  unsigned polyorder = 2;
+  binoutfile.write(reinterpret_cast<char*>(&polyorder),sizeof(polyorder));
+  // write out coefficients
+  double vals[3];
+  vals[0] = 0.0;
+  vals[1] = 0.0;
+  vals[2] = 1.0;
+  binoutfile.write(reinterpret_cast<char*>(&vals[0]),sizeof(double)*3);
+  // write out response index
+  unsigned responseIndex = 0;
+  // write out data
+  binoutfile.write(reinterpret_cast<char*>(&responseIndex),sizeof(unsigned));
+  unsigned intvals[3];
+  intvals[0] = 7;
+  intvals[1] = 1;
+  intvals[2] = 1;
+  binoutfile.write(reinterpret_cast<char*>(&intvals[0]),sizeof(unsigned)*3);
+  double dvals[14];
+  dvals[0] = 0.0;
+  dvals[1] = 0.0;
+  dvals[2] = 1.0;
+  dvals[3] = 1.0;
+  dvals[4] = -1.0;
+  dvals[5] = 1.0;
+  dvals[6] = 2.0;
+  dvals[7] = 4.0;
+  dvals[8] = -2.0;
+  dvals[9] = 4.0;
+  dvals[10] = 3.0;
+  dvals[11] = 9.0;
+  dvals[12] = -3.0;
+  dvals[13] = 9.0;
+  binoutfile.write(reinterpret_cast<char*>(&dvals[0]),sizeof(double)*14);
+  binoutfile.close(); 
+}
+
+void writeUnknownSurfaceFile()
+{
+  ofstream outfile(fullPath("unknown.txt").c_str(),ios::out);
+  outfile << "Unknown" << endl;
+  outfile << "1 dimensions" << endl;
+  outfile << "2 order" << endl;
+  outfile << "0                          +" << endl;
+  outfile << "0                         x1 +" << endl;
+  outfile << "1                         x1^2" << endl;
+  outfile << "0 response index for surface data" << endl;
+  outfile << "7" << endl;
+  outfile << "1" << endl;
+  outfile << "1" << endl;
+  outfile << "   0.00000000000000000e+00   0.00000000000000000e+00" << endl;
+  outfile << "   1.00000000000000000e+00   1.00000000000000000e+00" << endl;
+  outfile << "  -1.00000000000000000e+00   1.00000000000000000e+00" << endl;
+  outfile << "   2.00000000000000000e+00   4.00000000000000000e+00" << endl;
+  outfile << "  -2.00000000000000000e+00   4.00000000000000000e+00" << endl;
+  outfile << "   3.00000000000000000e+00   9.00000000000000000e+00" << endl;
+  outfile << "  -3.00000000000000000e+00   9.00000000000000000e+00" << endl;
+  outfile.close();
+}
+
 void setOstreamFlags(ostream& os)
 {
     ios::fmtflags old_flags = os.flags();
@@ -199,6 +304,9 @@ void initialize()
     writePoint2Files();
     writeRastriginAndClaimsTooManyFiles();
     writeManyPtsFiles();
+    writeOneDimQuadratic();
+    writeOneDQpoly2Files();
+    writeUnknownSurfaceFile();
   }
 }
 
@@ -210,4 +318,13 @@ void cleanup()
           << "rm -rf /tmp/SurfpackData" << endl
           << "RMDIREOF" << endl;
   system(heredoc.str().c_str()); 
+}
+
+bool matches(double observed, double target, double margin)
+{
+  if (abs(target - 0.0) < 1e-100) {
+    return (observed - 0.0) < margin;
+  } else {
+    return (observed - target) / target < margin;
+  }
 }

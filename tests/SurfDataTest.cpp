@@ -591,28 +591,26 @@ void SurfDataTest::testGetYVector()
 
 void SurfDataTest::testHasBinaryExtension()
 {
-  CPPUNIT_ASSERT(sdPtr1->hasBinaryExtension("abc.sd"));
-  CPPUNIT_ASSERT(SurfData::hasBinaryExtension("abc.sd"));
-  CPPUNIT_ASSERT(SurfData::hasBinaryExtension(".sd"));
-  CPPUNIT_ASSERT(!SurfData::hasBinaryExtension(".sdx"));
-  CPPUNIT_ASSERT(!SurfData::hasBinaryExtension("file.sdx"));
-  CPPUNIT_ASSERT(!SurfData::hasBinaryExtension(".sd.txt"));
-  CPPUNIT_ASSERT(SurfData::hasBinaryExtension("file.txt.sd"));
-  CPPUNIT_ASSERT(SurfData::hasBinaryExtension("/dir/dir/dir/file.txt.sd"));
+  CPPUNIT_ASSERT(surfpack::hasExtension("abc.sd",".sd"));
+  CPPUNIT_ASSERT(surfpack::hasExtension(".sd",".sd"));
+  CPPUNIT_ASSERT(!surfpack::hasExtension(".sdx",".sd"));
+  CPPUNIT_ASSERT(!surfpack::hasExtension("file.sdx",".sd"));
+  CPPUNIT_ASSERT(!surfpack::hasExtension(".sd.txt",".sd"));
+  CPPUNIT_ASSERT(surfpack::hasExtension("file.txt.sd",".sd"));
+  CPPUNIT_ASSERT(surfpack::hasExtension("/dir/dir/dir/file.txt.sd",".sd"));
 }
 
 void SurfDataTest::testHasTextExtension()
 {
-  CPPUNIT_ASSERT(sdPtr1->hasTextExtension("abc.txt"));
-  CPPUNIT_ASSERT(SurfData::hasTextExtension("abc.txt"));
-  CPPUNIT_ASSERT(SurfData::hasTextExtension(".txt"));
-  CPPUNIT_ASSERT(!SurfData::hasTextExtension(".txtx"));
-  CPPUNIT_ASSERT(!SurfData::hasTextExtension(".tmt"));
-  CPPUNIT_ASSERT(!SurfData::hasTextExtension("file.txx"));
-  CPPUNIT_ASSERT(!SurfData::hasTextExtension(".txt.sd"));
-  CPPUNIT_ASSERT(!SurfData::hasTextExtension("file. txt"));
-  CPPUNIT_ASSERT(SurfData::hasTextExtension("file.sd.txt"));
-  CPPUNIT_ASSERT(SurfData::hasTextExtension("/dir/dir/dir/file.sd.txt"));
+  CPPUNIT_ASSERT(surfpack::hasExtension("abc.txt",".txt"));
+  CPPUNIT_ASSERT(surfpack::hasExtension(".txt",".txt"));
+  CPPUNIT_ASSERT(!surfpack::hasExtension(".txtx",".txt"));
+  CPPUNIT_ASSERT(!surfpack::hasExtension(".tmt",".txt"));
+  CPPUNIT_ASSERT(!surfpack::hasExtension("file.txx",".txt"));
+  CPPUNIT_ASSERT(!surfpack::hasExtension(".txt.sd",".txt"));
+  CPPUNIT_ASSERT(!surfpack::hasExtension("file. txt",".txt"));
+  CPPUNIT_ASSERT(surfpack::hasExtension("file.sd.txt",".txt"));
+  CPPUNIT_ASSERT(surfpack::hasExtension("/dir/dir/dir/file.sd.txt",".txt"));
 }
 
 // Commands
