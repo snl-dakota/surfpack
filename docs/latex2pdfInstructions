@@ -1,0 +1,5 @@
+#! /usr/bin/perl
+$arg = $ARGS[0];
+system "latex $arg"; 
+system "dvips -Ppdf -G0 -tletter $arg.dvi";
+system "ps2pdf $arg.ps $arg.pdf";
