@@ -19,5 +19,5 @@ libsurfpack_la_SOURCES = SurfPoint.cpp \
 			surfpack.cpp \
 			surfpack.h
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/surfaces -I$(top_srcdir)/src/ann
-CLEANFILES = *.bb *.bbg *.ba *.gcov
+CLEANFILES = *.bb *.bbg *.da *.gcov *.ii *.s
 		
