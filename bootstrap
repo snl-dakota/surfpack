@@ -1,7 +1,7 @@
 #! /bin/sh
 SURFPACK=`pwd`; export SURFPACK
-PATH="$SURFPACK/tools/bin:$PATH"; export PATH 
-M4="$SURFPACK/tools/bin/m4"; export M4 
+PATH="$SURFPACK/../../bin:$PATH"; export PATH 
+M4="$SURFPACK/../../bin/m4"; export M4 
 
 aclocal
 libtoolize --force --copy
