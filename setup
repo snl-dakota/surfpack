@@ -1,7 +1,10 @@
 #! /bin/sh
+SURFPACK=`pwd`; export SURFPACK
+PATH="$SURFPACK/tools/bin:$PATH"; export PATH 
+M4="$SURFPACK/tools/bin/m4"; export M4 
 echo executing
 
-export SURFPACK=`pwd`
+SURFPACK=`pwd`; export SURFPACK
 # if the tools/ directory doesn't exist, create it
 if test ! -d "tools"
 then
@@ -22,15 +25,16 @@ echo `pwd`
 # Traverse each directory, installing the packages in the tools/ directory
 echo Installing autotools
 preface="[build tools]: "
-for i in `ls *.tar.gz 2> /dev/null`
+# Do a reverse sort so that m4 get installed before autoconf 
+for i in `ls *.tar.gz | sort -r 2> /dev/null`
 do
   gunzip "$i"
-  gunzippeddir=${i%.gz}
+  gunzippeddir=`echo $i | sed 's/.gz$//'`
   echo $gunzippeddir
   tar xf "$gunzippeddir"
   echo $preface $gunzippeddir
   gzip "$gunzippeddir"
-  untarreddir=${gunzippeddir%.tar}
+  untarreddir=`echo $gunzippeddir | sed 's/.tar$//'`
   echo $preface $untarreddir
   if test -d "$untarreddir" 
   then
@@ -43,16 +47,15 @@ do
     rm -rf "$untarreddir"
   fi 
 done
+echo installed tools
 
 # apply the patch to cppunit.m4
 needspatch="$SURFPACK/tools/share/aclocal/cppunit.m4"
 if test -f "$needspatch"
 then
-  patch "$needspatch" "toolsrc/cppunitpatch"
+  patch "$needspatch" "$SURFPACK/toolsrc/cppunitpatch"
   echo Applied CPPUnit patch
 else
   echo Patch not applied because tools/share/aclocal/cppunit.m4 was not found.
 fi 
 
-
-   
