@@ -67,11 +67,15 @@ PolynomialSurface::PolynomialSurface(const string filename) : Surface(0)
 
 PolynomialSurface::PolynomialSurface(const PolynomialSurface& other) 
   : Surface(other), order(other.order), coefficients(other.coefficients),
-  digits(other.order), termIndex(other.termIndex)
+  digits(other.order), termIndex(other.termIndex) 
 {
 #ifdef __TESTING_MODE__
   constructCount++;
 #endif
+  // Must assign after base constructor has been called, because if the
+  // surface has been built, the setData method called in the base
+  // copy constructor will set dataModified to true, perhaps unnecessarily
+  dataModified = other.dataModified;
 }
 
 /// Create a surface of the same type as 'this.'  This objects data should
@@ -102,6 +106,8 @@ void PolynomialSurface::config(const SurfpackParser::Arg& arg)
     order = arg.lval.integer;
     digits.resize(order);
     cout << "Setting order in PS::config " << order << endl;
+  } else {
+    Surface::config(arg);
   }
 }
 

@@ -49,32 +49,35 @@ using namespace std;
 //  init();
 //}
 
-Surface::Surface(SurfData* sd) : sd(sd)
+Surface::Surface(SurfData* sd_) : sd(0)
 { 
 #ifdef __TESTING_MODE__
   constructCount++;
 #endif
+  setData(sd_);
   init();
-  //if(surfData) {
-  //  surfData.addListener(this); 
-  //}
 }
 
-Surface::Surface(const Surface& other) : xsize(other.xsize), 
-  builtOK(other.builtOK), dataAdded(other.dataAdded), 
+Surface::Surface(const Surface& other) : sd(0), xsize(other.xsize), 
+  builtOK(other.builtOK), 
   dataModified(other.dataModified), responseIndex(other.responseIndex)
 {
 #ifdef __TESTING_MODE__
   constructCount++;
 #endif
-  this->sd = other.sd ? new SurfData(*(other.sd)) : 0;
+  //this->sd = other.sd ? new SurfData(*(other.sd)) : 0;
+  setData(other.sd);
+    
 }
 
 /// destructor, just removes itself from any SurfData objects
 Surface::~Surface() 
 { 
-  //if(surfData) {
-  //   surfData.removeListener(this);
+  if(sd) {
+     //cout << "Disconnecting: " << this << " from : " << sd << endl;
+     sd->removeListener(this);
+  } //else {
+     //cout << "Data is null; no removal necessary" << endl;
   //}
 #ifdef __TESTING_MODE__
   destructCount++;
@@ -83,10 +86,9 @@ Surface::~Surface()
 
 void Surface::init()
 {
-  dataAdded = dataModified = builtOK = false;
+  dataModified = builtOK = false;
   xsize = sd ? sd->xSize() : 0;
   responseIndex = 0;
-  
 }
 
 // Copy constructor goes here
@@ -103,7 +105,7 @@ unsigned Surface::xSize()
 
 bool Surface::hasOriginalData() const
 {
-  return (sd && builtOK && !dataAdded && !dataModified); 
+  return (sd && builtOK && !dataModified); 
 }
 
 bool Surface::acceptableData() const
@@ -163,10 +165,18 @@ void Surface::getValue(SurfData& surfData)
 
 void Surface::config(const SurfpackParser::Arg& arg)
 {
-
+  if (arg.name == "response_index") {
+    unsigned index = static_cast<unsigned>(arg.lval.integer);
+    if (!sd) {
+      throw string("Cannot set response index on NULL data");
+    } else {
+      sd->setDefaultIndex(index);
+      this->responseIndex = index; 
+    }
+  }
 }
 
-void Surface::config(const SurfpackParser::ArgList& arglist)
+void Surface::configList(const SurfpackParser::ArgList& arglist)
 {
   for (unsigned i = 0; i < arglist.size(); i++) {
     config(arglist[i]);
@@ -233,7 +243,7 @@ double Surface::press(SurfData& dataSet)
     // data points except the current one.  Evaluate the new
     // surface at the omitted point and compute the residual
     // between the actual value and the value predicted by the new 
-    // model at that point.
+    // model at That point.
     unsigned totalPoints = surfData.size();
     i = 0;
     set<unsigned> pointToSkip;
@@ -248,6 +258,8 @@ double Surface::press(SurfData& dataSet)
       surfData.setExcludedPoints(pointToSkip);
 
       Surface* allButOne = makeSimilarWithNewData(&surfData);
+      cout << "Surface: " << allButOne
+		<< " connected to: " << &surfData << endl;
       double fTilde = allButOne->getValue(currentPoint.X());
       // actual value of the function at this point
       double fx = currentPoint.F();
@@ -371,13 +383,20 @@ double Surface::mse(SurfData& dataSet)
 
 /// Associates a data set with this surface object.  If this surface has
 /// already been built, it is invalidated
-void Surface::setData(SurfData* sd)
+void Surface::setData(SurfData* sd_)
 {
   //Do a sanity check on the data
-  this->sd = sd;
-  dataModified = true;
-  dataAdded = true;
-  xsize = sd ? sd->xSize() : 0;
+  if (this->sd) {
+    this->sd->removeListener(this);
+  }
+  this->sd = sd_;
+  if (this->sd) {
+    this->sd->addListener(this);
+  }
+  if (builtOK) {
+    dataModified = true;
+  }
+  responseIndex = sd ? sd->getDefaultIndex() : 0;
 }
   
 /// Set the state of the SurfData object to use the default index and points
@@ -410,6 +429,23 @@ SurfData& Surface::checkData(SurfData* dataSet)
     }
 }
 
+void Surface::notify(int msg)
+{
+  if (!sd) {  // Then how did this get called!
+    cerr << "Notify called, but this Surface does not point to any data" 
+         << endl;
+  } else if (msg == SurfData::GOING_OUT_OF_EXISTENCE) {
+    sd = 0;
+    if (builtOK) {
+      dataModified = true;
+    }
+    responseIndex = sd ? sd->getDefaultIndex() : 0;
+  } else if (msg == SurfData::DATA_MODIFIED) {
+    if (builtOK) {
+      dataModified = true;
+    }
+  }
+}
 /// Check to make sure that data are acceptable and then build.
 /// Do not build if the surface has already been built and the data have not
 /// changed
@@ -418,19 +454,20 @@ void Surface::createModel(SurfData* surfData)
   if (surfData) {
     setData(surfData);
   }
-  if (builtOK && !dataAdded && !dataModified) {
+  if (builtOK && !dataModified) {
     //cerr << "Model is already valid and will not be rebuilt because the"
     //     << " data set has not changed"
     //     << endl;
     return;
   } 
   acceptableData();
+  xsize = sd->xSize();
   SurfData& sdRef = *sd;
   build(sdRef);
   excludedPoints = sd->getExcludedPoints();
-  responseIndex = sd->getDefaultIndex();
+  //responseIndex = sd->getDefaultIndex();
   builtOK = true;
-  dataAdded = dataModified = false;
+  dataModified = false;
 }
 
 // ____________________________________________________________________________
@@ -510,12 +547,13 @@ void Surface::read(const string filename)
     streamline >> index;
   }
   if (index >= 0) {
-    sd = new SurfData(infile, binary);
+    SurfData* fileData = new SurfData(infile, binary);
+    this->setData(fileData);
     responseIndex = static_cast<unsigned>(index);
   }    
   infile.close();
   builtOK = true;
-  dataAdded = dataModified = false;
+  dataModified = false;
 }
 
 /// Returns true if the filename extension is .srf

@@ -1,9 +1,12 @@
-bin_PROGRAMS = surfpack 
+bin_PROGRAMS = surfpack tpack
 #polybench datawriter driv
 surfpack_SOURCES = main.cpp \
 		   SurfDataGenerator.cpp \
 		   SurfDataGenerator.h
 surfpack_LDADD = $(top_builddir)/src/libsurfpack.la 
+tpack_SOURCES = tmain.cpp 
+tpack_LDADD = $(top_builddir)/src/libsurfpack.la
+
 #polybench_SOURCES = polybench.cpp $(top_srcdir)/tests/unittests.h $(top_srcdir)/tests/unittests.cpp
 #datawriter_SOURCES = datawriter.cpp SurfDataGenerator.cpp SurfDataGenerator.h
 #driv_SOURCES = drivmain.cpp 

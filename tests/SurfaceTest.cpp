@@ -46,7 +46,10 @@ void SurfaceTest::xSize()
   PolynomialSurface ps3(&sd,2);
   CPPUNIT_ASSERT_EQUAL( (unsigned)1, ps3.xSize() );
   ps3.setData(0);
-  CPPUNIT_ASSERT_EQUAL( (unsigned)0, ps3.xSize() );
+  // We don't want the xSize reset to zero just because
+  // the data may have gone away.  It could still be a valid
+  // surface.
+  CPPUNIT_ASSERT_EQUAL( (unsigned)1, ps3.xSize() );
 } 
 
 void SurfaceTest::hasOriginalData()
@@ -245,5 +248,6 @@ void SurfaceTest::print()
   // only checking for non-crashing behavior
   ostringstream os;
   os << *polysurf << endl;
+  cout << "End PolynomialSurfaceTest" << endl;
 }
 

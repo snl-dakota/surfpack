@@ -291,5 +291,6 @@ void SurfPointTest::testStreamInsertion()
   // it is presumed to have worked
   ofstream blackhole("/dev/null",ios::out);
   blackhole << (*spPtr) << endl;
+  cout << "End SurfPointTest" << endl;
 }
 

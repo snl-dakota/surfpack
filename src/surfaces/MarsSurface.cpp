@@ -226,6 +226,8 @@ void MarsSurface::config(const SurfpackParser::Arg& arg)
     } else {
       cerr << "Expected value for interpolation: 'linear' or 'cubic'" << endl;
     } 
+  } else {
+    Surface::config(arg);
   }
 }
 
@@ -251,7 +253,7 @@ void MarsSurface::writeBinary(std::ostream& os)
 {
   int nmcv = 0;
   int ntcv = 0;
-  np = static_cast<int>(sd->size());
+  np = static_cast<int>(xsize);
   unsigned fmsize = 3+max_bases*(5*max_interactions+nmcv+6)+2*np+ntcv;
   unsigned imsize = 21+max_bases*(3*max_interactions+8);
   os.write(reinterpret_cast<char*>(&max_bases),sizeof(max_bases));
@@ -267,7 +269,7 @@ void MarsSurface::writeText(std::ostream& os)
 {
     int nmcv = 0;
     int ntcv = 0;
-    np = static_cast<int>(sd->size());
+    np = static_cast<int>(xsize);
     unsigned fmsize = 3+max_bases*(5*max_interactions+nmcv+6)+2*np+ntcv;
     unsigned imsize = 21+max_bases*(3*max_interactions+8);
     

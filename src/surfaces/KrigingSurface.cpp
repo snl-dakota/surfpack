@@ -383,6 +383,8 @@ void KrigingSurface::config(const SurfpackParser::Arg& arg)
     setConminThetaVars(arg.lval.tuple); 
   } else if (argname == "theta_vars") {
     usePreComputedCorrelationVector(arg.lval.tuple);
+  } else {
+    Surface::config(arg);
   }
 }
 /// Create a surface of the same type as 'this.'  This objects data should

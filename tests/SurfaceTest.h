@@ -19,8 +19,8 @@ class SurfaceTest : public CppUnit::TestFixture
   CPPUNIT_TEST( xSize );
   CPPUNIT_TEST( hasOriginalData );
   CPPUNIT_TEST( acceptableData );
-  CPPUNIT_TEST_EXCEPTION( acceptableDataExceptionNull, Surface::bad_data );
-  CPPUNIT_TEST_EXCEPTION( acceptableDataExceptionNotEnough, Surface::bad_data );
+  CPPUNIT_TEST_EXCEPTION( acceptableDataExceptionNull, SurfData::bad_surf_data );
+  CPPUNIT_TEST_EXCEPTION( acceptableDataExceptionNotEnough, SurfData::bad_surf_data );
   CPPUNIT_TEST( getValueVector );
   CPPUNIT_TEST( getValueSurfPoint );
   CPPUNIT_TEST( getValueSurfData );
@@ -28,12 +28,12 @@ class SurfaceTest : public CppUnit::TestFixture
   CPPUNIT_TEST( goodnessOfFit );
   CPPUNIT_TEST_EXCEPTION( goodnessOfFitException, Surface::bad_metric );
   CPPUNIT_TEST( press );
-  CPPUNIT_TEST_EXCEPTION( pressExceptionInsufficient, Surface::bad_data );
+  CPPUNIT_TEST_EXCEPTION( pressExceptionInsufficient, SurfData::bad_surf_data );
   CPPUNIT_TEST( rSquared );
   CPPUNIT_TEST( mse );
   CPPUNIT_TEST( sse );
   CPPUNIT_TEST( mrae );
-  CPPUNIT_TEST_EXCEPTION( checkDataException, Surface::bad_data );
+  CPPUNIT_TEST_EXCEPTION( checkDataException, SurfData::bad_surf_data );
   CPPUNIT_TEST( createModelSurfData );
   CPPUNIT_TEST( recreateModel );
   CPPUNIT_TEST_EXCEPTION( writeNoFile, surfpack::file_open_failure);

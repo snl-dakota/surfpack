@@ -56,7 +56,10 @@ void SurfDataTest::tearDown()
 void SurfDataTest::testConstructorVectorPoints()
 {
   SurfData sd(surfpoints);
-  CPPUNIT_ASSERT_EQUAL(sd.points, surfpoints);
+  CPPUNIT_ASSERT_EQUAL(sd.points.size(), surfpoints.size());
+  for (unsigned i = 0; i < surfpoints.size(); i++) {
+    CPPUNIT_ASSERT_EQUAL(*sd.points[i], surfpoints[i]);
+  }
   CPPUNIT_ASSERT_EQUAL(sd.xsize, dimPoints);
   CPPUNIT_ASSERT_EQUAL(sd.fsize, dimPoints);
   CPPUNIT_ASSERT_EQUAL(sd.mapping.size(), numPoints);
@@ -75,7 +78,10 @@ void SurfDataTest::testConstructorVectorPointsEmpty()
 {
   vector<SurfPoint> noPoints;
   SurfData sd(noPoints);
-  CPPUNIT_ASSERT_EQUAL(sd.points, noPoints);
+  CPPUNIT_ASSERT_EQUAL(sd.points.size(), noPoints.size());
+  for (unsigned i = 0; i < sd.points.size(); i++) {
+    CPPUNIT_ASSERT_EQUAL(*sd.points[i], noPoints[i]);
+  }
   CPPUNIT_ASSERT_EQUAL(sd.xsize, unsignedZero);
   CPPUNIT_ASSERT_EQUAL(sd.fsize, unsignedZero);
   CPPUNIT_ASSERT_EQUAL(sd.mapping.size(), unsignedZero);
@@ -419,8 +425,8 @@ void SurfDataTest::testOperatorEquality()
   SurfData sdText(fullPath("rast100.txt").c_str());
   SurfData sdBinary(fullPath("rast100.sd").c_str());
   CPPUNIT_ASSERT_EQUAL(sdText, sdBinary);
-  sdText.points[0].f[0] = 0.0;
-  sdBinary.points[0].f[0] = 1.0;
+  sdText.points[0]->f[0] = 0.0;
+  sdBinary.points[0]->f[0] = 1.0;
   CPPUNIT_ASSERT(!(sdText == sdBinary));
 }
 
@@ -434,20 +440,20 @@ void SurfDataTest::testOperatorInequality()
   SurfData sdText(fullPath("rast100.txt").c_str());
   SurfData sdBinary(fullPath("rast100.sd").c_str());
   CPPUNIT_ASSERT(!(sdText != sdBinary));
-  sdText.points[0].f[0] = 0.0;
-  sdBinary.points[0].f[0] = 1.0;
+  sdText.points[0]->f[0] = 0.0;
+  sdBinary.points[0]->f[0] = 1.0;
   CPPUNIT_ASSERT(sdText != sdBinary);
 }
 
 void SurfDataTest::testOperatorIndexing()
 {
   const SurfPoint sp = (*sdPtr1)[0];
-  CPPUNIT_ASSERT_EQUAL(sp, sdPtr1->points[sdPtr1->mapping[0]]);
+  CPPUNIT_ASSERT_EQUAL(sp, *sdPtr1->points[sdPtr1->mapping[0]]);
   skipPoints.insert(0);
   sdPtr1->setExcludedPoints(skipPoints);
   const SurfPoint sp2 = (*sdPtr1)[0];
-  CPPUNIT_ASSERT_EQUAL(sp2, sdPtr1->points[sdPtr1->mapping[0]]);
-  CPPUNIT_ASSERT_EQUAL(sp2, sdPtr1->points[1]);
+  CPPUNIT_ASSERT_EQUAL(sp2, *sdPtr1->points[sdPtr1->mapping[0]]);
+  CPPUNIT_ASSERT_EQUAL(sp2, *sdPtr1->points[1]);
 }
 
 void SurfDataTest::testOperatorIndexingBadIndex()
@@ -547,7 +553,7 @@ void SurfDataTest::testGetXMatrix()
   for (unsigned i = 0; i < numPoints; i++) {
     for (unsigned j = 0; j < dimPoints; j++) {
       CPPUNIT_ASSERT_EQUAL(x[i+j*numPoints], 
-        sdPtr1->points[sdPtr1->mapping[i]].x[j]);
+        sdPtr1->points[sdPtr1->mapping[i]]->x[j]);
     }
   }
   CPPUNIT_ASSERT(sdPtr1->valid.xMatrix);
@@ -556,7 +562,7 @@ void SurfDataTest::testGetXMatrix()
   for (unsigned i = 0; i < numPoints; i++) {
     for (unsigned j = 0; j < dimPoints; j++) {
       CPPUNIT_ASSERT_EQUAL(x[i+j*numPoints], 
-        sdPtr1->points[sdPtr1->mapping[i]].x[j]);
+        sdPtr1->points[sdPtr1->mapping[i]]->x[j]);
     }
   }
   CPPUNIT_ASSERT(sdPtr1->valid.xMatrix);
@@ -568,7 +574,7 @@ void SurfDataTest::testGetYVector()
   const double* y = sdPtr1->getYVector();
   for (unsigned i = 0; i < numPoints; i++) {
     CPPUNIT_ASSERT_EQUAL(y[i], 
-      sdPtr1->points[sdPtr1->mapping[i]].f[0]);
+      sdPtr1->points[sdPtr1->mapping[i]]->f[0]);
   }
   CPPUNIT_ASSERT(sdPtr1->valid.yVector);
   sdPtr1->setDefaultIndex(1);
@@ -577,14 +583,14 @@ void SurfDataTest::testGetYVector()
   CPPUNIT_ASSERT(sdPtr1->valid.yVector);
   for (unsigned i = 0; i < numPoints; i++) {
     CPPUNIT_ASSERT_EQUAL(y[i], 
-      sdPtr1->points[sdPtr1->mapping[i]].f[1]);
+      sdPtr1->points[sdPtr1->mapping[i]]->f[1]);
   }
   // repeat function call after yVector has been validated
   y = sdPtr1->getYVector();
   CPPUNIT_ASSERT(sdPtr1->valid.yVector);
   for (unsigned i = 0; i < numPoints; i++) {
     CPPUNIT_ASSERT_EQUAL(y[i], 
-      sdPtr1->points[sdPtr1->mapping[i]].f[1]);
+      sdPtr1->points[sdPtr1->mapping[i]]->f[1]);
   }
   CPPUNIT_ASSERT(sdPtr1->valid.yVector);
 }
@@ -639,9 +645,9 @@ void SurfDataTest::testSetDefaultIndexNoResponses()
 
 void SurfDataTest::testSetResponse()
 {
-  CPPUNIT_ASSERT(sdPtr1->points[1].f[0] != 0.0);
+  CPPUNIT_ASSERT(sdPtr1->points[1]->f[0] != 0.0);
   sdPtr1->setResponse(1, -1.0);
-  CPPUNIT_ASSERT(sdPtr1->points[1].f[0] == -1.0);
+  CPPUNIT_ASSERT(sdPtr1->points[1]->f[0] == -1.0);
   skipPoints.insert(1);
   skipPoints.insert(2);
   skipPoints.insert(3);
@@ -855,5 +861,6 @@ void SurfDataTest::testStreamInsertion()
   // it is presumed to have worked
   ofstream blackhole("/dev/null",ios::out);
   blackhole << (*sdPtr1) << endl;
+  cout << "End SurfDataTest" << endl;
 }
 

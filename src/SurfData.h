@@ -22,9 +22,10 @@
 #define __SURF_DATA_H__
 
 #include <stdexcept>
+#include <list>
 
-class SurfPoint;
-//class Surface;
+#include "SurfPoint.h"
+class Surface;
 
 class SurfData
 {
@@ -48,7 +49,7 @@ struct SurfDataStateConsistency
 
 public:
   /// Vector of points will be copied
-  SurfData(const std::vector<SurfPoint>& points);
+  SurfData(const std::vector<SurfPoint>& points_);
 
   /// Read a set of SurfPoints from a file
   SurfData(const std::string filename);
@@ -85,13 +86,13 @@ private:
 // ____________________________________________________________________________
 public:
   /// makes deep copy 
-  SurfData& operator=(const SurfData& sd);
+  SurfData& operator=(const SurfData& other);
 
   /// makes deep comparison
-  bool operator==(const SurfData& sd) const;
+  bool operator==(const SurfData& other) const;
 
   /// makes deep comparison
-  bool operator!=(const SurfData& sd) const;
+  bool operator!=(const SurfData& other) const;
 
   /// Return a const reference to SurfPoint at given index
   const SurfPoint& operator[](unsigned index) const;
@@ -167,11 +168,17 @@ public:
 
   /// Inform this object that a Surface wants to be notified when this object
   /// changes
-  //void addListener(Surface *);
+  void addListener(Surface*);
  
   /// remove the Surface from the list of surfaces that are notified when the
   /// data changes
-  //void removeListener(Surface *);
+  void removeListener(Surface*);
+
+  /// For use with copy constructor and assignment operator-- creates a list of
+  /// pointers to the points in the data set which is used to check for 
+  /// duplication when other points are added in the future
+  void buildOrderedPoints();
+
 private:
   /// Maps all indices to themselves
   void defaultMapping();
@@ -220,7 +227,7 @@ private:
   unsigned fsize;
 
   /// The set of points in this data set
-  std::vector<SurfPoint> points; 
+  std::vector<SurfPoint*> points; 
 
   /// The indices of points in points that are skipped
   std::set<unsigned> excludedPoints;
@@ -242,23 +249,36 @@ private:
   /// Keeps track of which data members are valid
   mutable SurfDataStateConsistency valid;
 
+  mutable bool cleanupStarted;
+
+public:
+  typedef std::set<SurfPoint*,SurfPoint::SurfPointPtrLessThan> SurfPointSet;
+private:
+   SurfPointSet orderedPoints;
 
 
   /// List of pointers to listening/observing Surface objects 
   /// which need to be notified when this object changes
-  //std::list<Surface*> listeners;
+  std::list<Surface*> listeners;
 
+// ____________________________________________________________________________
+// Constants 
+// ____________________________________________________________________________
+public:
+  static const int GOING_OUT_OF_EXISTENCE;
+  static const int DATA_MODIFIED;
+  
 // ____________________________________________________________________________
 // Helper methods 
 // ____________________________________________________________________________
 
   /// Notify listening surfaces whenever a SurfPoint
   /// is added or removed.
-  //void notifyListeners(); 
+  void notifyListeners(int msg); 
 
- /// Returns true if file is opened in binary mode, false if it is opened
- /// in text mode.  If file cannot be opened, an exception is thrown.
- bool testFileExtension(const std::string& filename) const;
+  /// Returns true if file is opened in binary mode, false if it is opened
+  /// in text mode.  If file cannot be opened, an exception is thrown.
+  bool testFileExtension(const std::string& filename) const;
 
 // ____________________________________________________________________________
 // Testing 

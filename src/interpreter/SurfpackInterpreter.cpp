@@ -258,7 +258,7 @@ void SurfpackInterpreter::executeCreateSurface(const SurfpackParser::ParsedComma
     }
     SurfData* sd = iter->second;
     Surface* surf = SurfaceFactory::createSurface(type, sd);
-    surf->config(command.arglist);
+    surf->configList(command.arglist);
     surf->createModel();
     symbol_table.surfaceVars.insert(SurfaceSymbol(name,surf));
   }
@@ -408,7 +408,7 @@ void SurfpackInterpreter::executeGridPoints(const SurfpackParser::ParsedCommand&
   PointDefinition* pd = iter->second;
 
   // Extract the name of the SurfData object (it may already be in the symbol table) 
-  string dataName = SurfpackParser::parseOutIdentifier(string("data"), command.arglist);
+  string dataName = SurfpackParser::parseOutIdentifier(string("name"), command.arglist);
   //cout << "Data name: " << dataName << endl;
   if (dataName == "") {
     throw command_error(

@@ -127,6 +127,29 @@ bool SurfPoint::operator!=(const SurfPoint& sp) const
   return !(*this == sp);
 } 
 
+bool SurfPoint::SurfPointPtrLessThan::
+  operator()(const SurfPoint* sp1, const SurfPoint* sp2)
+{
+  if (sp1->x.size() < sp2->x.size()) {
+    return true;
+  } else if (sp1->x.size() > sp2->x.size()) {
+    return false;
+  } else {
+    for (unsigned i = 0; i < sp1->x.size(); i++) {
+      if (sp1->x[i] < sp2->x[i]) {
+        return true;
+      } else if (sp1->x[i] > sp2->x[i]) {
+        return false;
+      }
+    }
+    // If execution makes it this far, the points have the
+    // same dimensionality and are equivalent along each dimension.
+    cout << "Points are the same" << endl;
+    sp1->writeText(cout);
+    sp2->writeText(cout);
+    return false;
+  }
+}
 // ____________________________________________________________________________
 // Queries 
 // ____________________________________________________________________________

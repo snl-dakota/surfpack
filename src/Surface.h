@@ -65,7 +65,7 @@ protected:
 
 public:
   /// Data to be used to create surface is specified 
-  Surface(SurfData* sd);
+  Surface(SurfData* sd_);
 
   // Makes deep copy
   Surface(const Surface& s);
@@ -81,7 +81,7 @@ public:
   /// be the same (e.g., a second-order polynomial should return another 
   /// second-order polynomial.  Surfaces returned by this method can be used
   /// to compute the PRESS statistic.
-  virtual Surface* makeSimilarWithNewData(SurfData* sd)=0;
+  virtual Surface* makeSimilarWithNewData(SurfData* sd_)=0;
 
 // ____________________________________________________________________________
 // Queries 
@@ -147,7 +147,7 @@ public:
 
   /// Associates a data set with this surface object.  If this surface has
   /// already been built, it is invalidated
-  virtual void setData(SurfData* sd);
+  virtual void setData(SurfData* sd_);
 
   /// Set the state of the SurfData object to use the default index and points
   /// associated with this surface
@@ -159,7 +159,7 @@ public:
   virtual SurfData& checkData(SurfData* dataSet);
 
   /// Called when the SurfData object gets modified.
-  //virtual void notify();
+  virtual void notify(int msg);
 
   /// Select which response variable will be used in this surface.
   //virtual void responseIndex(unsigned index);
@@ -228,10 +228,6 @@ protected:
   /// that the surface matches the current data, only that there is something
   /// valid to evaluate
   bool builtOK;
-
-  /// True if one or more data points have been added since the surface was 
-  /// built
-  bool dataAdded;
 
   /// True if one or more data points have been modified since the surface was 
   /// built

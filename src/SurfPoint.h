@@ -84,6 +84,15 @@ public:
   
   /// Tests for deep inequality
   bool operator!=(const SurfPoint& sp) const;
+  
+  /// Function object for use with sets of SurfPoint objects (in particular,
+  /// a SurfData object)
+  class SurfPointPtrLessThan
+  {
+  public:
+    bool operator()(const SurfPoint* sp1, const SurfPoint* sp2);
+  };
+      
 
 // ____________________________________________________________________________
 // Queries 

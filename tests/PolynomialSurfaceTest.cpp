@@ -99,7 +99,6 @@ void PolynomialSurfaceTest::constructor()
   PolynomialSurface ps(&sd, 2);
   CPPUNIT_ASSERT(ps.xsize == 1);
   CPPUNIT_ASSERT(!ps.builtOK);
-  CPPUNIT_ASSERT(!ps.dataAdded);
   CPPUNIT_ASSERT(!ps.dataModified);
   CPPUNIT_ASSERT(!ps.hasOriginalData());
   CPPUNIT_ASSERT(ps.excludedPoints.size() == 0);
@@ -117,7 +116,6 @@ void PolynomialSurfaceTest::constructorNullData()
   PolynomialSurface ps(NULL, 3);
   CPPUNIT_ASSERT(ps.xsize == 0);
   CPPUNIT_ASSERT(!ps.builtOK);
-  CPPUNIT_ASSERT(!ps.dataAdded);
   CPPUNIT_ASSERT(!ps.dataModified);
   CPPUNIT_ASSERT(!ps.hasOriginalData());
   CPPUNIT_ASSERT(ps.excludedPoints.size() == 0);
@@ -136,7 +134,6 @@ void PolynomialSurfaceTest::constructorZeroOrder()
   PolynomialSurface ps(&sd, 0);
   CPPUNIT_ASSERT(ps.xsize == 1);
   CPPUNIT_ASSERT(!ps.builtOK);
-  CPPUNIT_ASSERT(!ps.dataAdded);
   CPPUNIT_ASSERT(!ps.dataModified);
   CPPUNIT_ASSERT(!ps.hasOriginalData());
   CPPUNIT_ASSERT(ps.excludedPoints.size() == 0);
@@ -155,7 +152,6 @@ void PolynomialSurfaceTest::constructorFromTextFile()
   PolynomialSurface ps(fullPath("oneDQpoly2.txt"));
   CPPUNIT_ASSERT(ps.xsize == 1);
   CPPUNIT_ASSERT(ps.builtOK);
-  CPPUNIT_ASSERT(!ps.dataAdded);
   CPPUNIT_ASSERT(!ps.dataModified);
   CPPUNIT_ASSERT(ps.hasOriginalData());
   CPPUNIT_ASSERT(ps.excludedPoints.size() == 0);
@@ -173,7 +169,6 @@ void PolynomialSurfaceTest::constructorFromBinaryFile()
   PolynomialSurface ps(fullPath("oneDQpoly2.srf"));
   CPPUNIT_ASSERT(ps.xsize == 1);
   CPPUNIT_ASSERT(ps.builtOK);
-  CPPUNIT_ASSERT(!ps.dataAdded);
   CPPUNIT_ASSERT(!ps.dataModified);
   CPPUNIT_ASSERT(ps.hasOriginalData());
   CPPUNIT_ASSERT(ps.excludedPoints.size() == 0);
@@ -194,7 +189,6 @@ void PolynomialSurfaceTest::constructorExplicit()
   PolynomialSurface ps(1,2,coefficients);
   CPPUNIT_ASSERT(ps.xsize == 1);
   CPPUNIT_ASSERT(ps.builtOK);
-  CPPUNIT_ASSERT(!ps.dataAdded);
   CPPUNIT_ASSERT(!ps.dataModified);
   CPPUNIT_ASSERT(!ps.hasOriginalData());
   CPPUNIT_ASSERT(ps.excludedPoints.size() == 0);
@@ -221,7 +215,6 @@ void PolynomialSurfaceTest::constructorCopy()
   PolynomialSurface ps(ps2);
   CPPUNIT_ASSERT(ps.xsize == 1);
   CPPUNIT_ASSERT(ps.builtOK);
-  CPPUNIT_ASSERT(!ps.dataAdded);
   CPPUNIT_ASSERT(!ps.dataModified);
   CPPUNIT_ASSERT(!ps.hasOriginalData());
   CPPUNIT_ASSERT(ps.excludedPoints.size() == 0);
@@ -249,7 +242,6 @@ void PolynomialSurfaceTest::makeSimilarWithNewData()
   PolynomialSurface* ps = ps2.makeSimilarWithNewData(&sd);
   CPPUNIT_ASSERT(ps->xsize == 1);
   CPPUNIT_ASSERT(ps->builtOK);
-  CPPUNIT_ASSERT(!ps->dataAdded);
   CPPUNIT_ASSERT(!ps->dataModified);
   CPPUNIT_ASSERT(ps->hasOriginalData());
   CPPUNIT_ASSERT(ps->excludedPoints.size() == 0);
@@ -264,6 +256,8 @@ void PolynomialSurfaceTest::makeSimilarWithNewData()
   CPPUNIT_ASSERT(ps->coefficients[1] == 0.0);
   CPPUNIT_ASSERT(ps->coefficients[2] == 1.0);
   CPPUNIT_ASSERT(ps->digits.size() == 2);
+  delete ps;
+  ps = 0;
 }
 
 void PolynomialSurfaceTest::surfaceName()
@@ -451,7 +445,6 @@ void PolynomialSurfaceTest::io()
   PolynomialSurface ps(fullPath("oneDQpoly2.txt"));
   CPPUNIT_ASSERT(ps.xsize == 1);
   CPPUNIT_ASSERT(ps.builtOK);
-  CPPUNIT_ASSERT(!ps.dataAdded);
   CPPUNIT_ASSERT(!ps.dataModified);
   CPPUNIT_ASSERT(ps.hasOriginalData());
   CPPUNIT_ASSERT(ps.excludedPoints.size() == 0);
@@ -467,7 +460,6 @@ void PolynomialSurfaceTest::io()
   PolynomialSurface ps3(fullPath("oneDQpoly2copy.srf"));
   CPPUNIT_ASSERT(ps3.xsize == 1);
   CPPUNIT_ASSERT(ps3.builtOK);
-  CPPUNIT_ASSERT(!ps3.dataAdded);
   CPPUNIT_ASSERT(!ps3.dataModified);
   CPPUNIT_ASSERT(ps3.hasOriginalData());
   CPPUNIT_ASSERT(ps3.excludedPoints.size() == 0);
@@ -514,5 +506,5 @@ void PolynomialSurfaceTest::printTermComponents()
   ostringstream ostr2;
   ps.printTermComponents(ostr2);
   CPPUNIT_ASSERT_EQUAL(ostr2.str(),string(" [3][2][][][] "));
-
+  cout << "End PolynomialSurfaceTest" << endl;
 }

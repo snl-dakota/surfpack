@@ -29,29 +29,36 @@
 #include "surfpack.h"
 #include "SurfData.h"
 #include "SurfPoint.h"
-//#include "Surface.h"
+#include "Surface.h"
 
 using namespace std;
+// ____________________________________________________________________________
+// Constants 
+// ____________________________________________________________________________
+const int SurfData::GOING_OUT_OF_EXISTENCE = 1;
+const int SurfData::DATA_MODIFIED = 2;
 
 // ____________________________________________________________________________
 // Creation, Destruction, Initialization 
 // ____________________________________________________________________________
 
 /// Vector of points will be copied
-SurfData::SurfData(const vector<SurfPoint>& points) : valid()
+SurfData::SurfData(const vector<SurfPoint>& points_) : valid()
 {
 #ifdef __TESTING_MODE__
   constructCount++;
 #endif
-  if (points.empty()) {
+  init();
+  if (points_.empty()) {
     this->xsize = 0;
     this->fsize = 0;
   } else {
-    this->xsize = points[0].xSize();
-    this->fsize = points[0].fSize();
-    this->points = points;
+    this->xsize = points_[0].xSize();
+    this->fsize = points_[0].fSize();
+    for (unsigned i = 0; i < points_.size(); i++) {
+      this->addPoint(points_[i]);
+    }
   }
-  init();
   // Check to make sure data points all have the same number of dimensions
   // and response values.  An exception will be thrown otherwise.
   sanityCheck();
@@ -63,41 +70,47 @@ SurfData::SurfData(const string filename) : valid()
 #ifdef __TESTING_MODE__
   constructCount++;
 #endif
-  read(filename);
   init();
+  read(filename);
 }
   
 /// Read a set of SurfPoints from an istream
 SurfData::SurfData(std::istream& is, bool binary) : valid()
 {
+  init();
   if (binary) {
     readBinary(is);
   } else {
     readText(is);
   }
-  init();
 }
 
 
 /// Makes a deep copy of the object 
 SurfData::SurfData(const SurfData& other) : xsize(other.xsize), 
-  fsize(other.fsize),points(other.points),excludedPoints(other.excludedPoints),
-  mapping(other.mapping), valid(other.valid), defaultIndex(other.defaultIndex)
+  fsize(other.fsize),excludedPoints(other.excludedPoints),
+  defaultIndex(other.defaultIndex)
 {
 #ifdef __TESTING_MODE__
   constructCount++;
   copyCount++;
 #endif
+  for (unsigned i = 0; i < other.points.size(); i++) {
+    this->addPoint(*other.points[i]);
+  }
   copyBlockData(other);
+  valid = other.valid;
+  mapping = other.mapping;
 }
 
 /// STL data members' resources automatically deallocated 
 SurfData::~SurfData() 
 {
+  cleanupStarted = true;
+  //cout << "Starting to cleanup: " << this << endl;
+  notifyListeners(GOING_OUT_OF_EXISTENCE);
   // clean up the related surfaces
-  //listeners.clear();
-  // clean up all the created points
-  //deletePoints();
+  listeners.clear();
 #ifdef __TESTING_MODE__
   destructCount++;
 #endif
@@ -110,6 +123,7 @@ void SurfData::init()
   defaultMapping();
   xMatrix = 0;
   yVector = 0;
+  cleanupStarted = false;
 }
 
 /// Copy only the "active" points
@@ -117,7 +131,7 @@ SurfData SurfData::copyActive()
 {
   vector<SurfPoint> activePoints;
   for (unsigned i = 0; i < mapping.size(); i++) {
-    activePoints.push_back(points[mapping[i]]);
+    activePoints.push_back(*points[mapping[i]]);
   }
   SurfData newSD(activePoints);
   if (!activePoints.empty()) {
@@ -146,12 +160,6 @@ void SurfData::copyBlockData(const SurfData& other)
     } else {
       yVector = 0;
     }
-  //} catch (std::bad_alloc&) {
-  //  cerr << "Error in SurfData::copyBlockData.  Rethrowing exception." << endl;
-  //  // If xMatrix allocation succeeded but yVector failed, cleanup necessary
-  //  cleanup();
-  //  throw;
-  //}
 }
   
 // Deallocate any memory allocated for xMatrix and/or yVector
@@ -159,45 +167,64 @@ void SurfData::cleanup()
 {
   delete xMatrix;
   delete yVector;
+  xMatrix=0;
+  yVector=0;
+  valid.xMatrix = false;
+  valid.yVector = false;
+  mapping.clear();
+  orderedPoints.clear();
+  for (unsigned j = 0; j < points.size(); j++) {
+    delete points[j];
+    points[j] =0;
+  }
+  points.clear();
+  excludedPoints.clear();
 }
 // ____________________________________________________________________________
 // Overloaded operators 
 // ____________________________________________________________________________
 
 /// makes deep copy 
-SurfData& SurfData::operator=(const SurfData& sd)
+SurfData& SurfData::operator=(const SurfData& other)
 {
-  if (*this != sd) {
-    this->xsize = sd.xsize;
-    this->fsize = sd.fsize;
-    this->points = sd.points;
-    this->excludedPoints = sd.excludedPoints;
-    this->mapping = sd.mapping;
-    this->valid = sd.valid;
-    this->defaultIndex = sd.defaultIndex;
+  if (*this != other) {
     cleanup();
-    copyBlockData(sd);
+    this->xsize = other.xsize;
+    this->fsize = other.fsize;
+    for (unsigned i = 0; i < other.points.size(); i++) {
+      this->addPoint(*other.points[i]);
+    }
+    this->excludedPoints = other.excludedPoints;
+    this->mapping = other.mapping;
+    this->valid = other.valid;
+    this->defaultIndex = other.defaultIndex;
+    copyBlockData(other);
 
-    // now all the surfaces need to be update
-    // or at least told of a change
-    //notifyListeners();
   }
   return (*this);
 }
 
 /// makes deep comparison
-bool SurfData::operator==(const SurfData& sd) const
+bool SurfData::operator==(const SurfData& other) const
 {
-  return (this->xsize == sd.xsize && 
-          this->fsize == sd.fsize &&
-          this->size() == sd.size() &&
-          this->points == sd.points);
+  if (this->xsize == other.xsize && 
+      this->fsize == other.fsize &&
+      this->size() == other.size()) {
+    for (unsigned i = 0; i < points.size(); i++) {
+      if (*this->points[i] != *other.points[i]) {
+        return false;
+      }
+    }
+    return true;
+  } else {
+    return false;
+  }
 }
       
 /// makes deep comparison
-bool SurfData::operator!=(const SurfData& sd) const
+bool SurfData::operator!=(const SurfData& other) const
 {
-  return !(*this == sd);
+  return !(*this == other);
 }
 
 /// Return a point from the data set
@@ -206,7 +233,7 @@ const SurfPoint& SurfData::operator[](unsigned index) const
 {
   static string header("Indexing error in SurfData::operator[] const.");
   checkRangeNumPoints(header, index);
-  return points[mapping[index]];
+  return *points[mapping[index]];
 }
 
 // ____________________________________________________________________________
@@ -249,7 +276,7 @@ double SurfData::getResponse(unsigned index) const
 {
   static string header("Indexing error in SurfData::getResponse.");
   checkRangeNumPoints(header, index);
-  return points[mapping[index]].F(defaultIndex);
+  return points[mapping[index]]->F(defaultIndex);
 }
 
 /// Get default index
@@ -316,7 +343,7 @@ void SurfData::setResponse(unsigned index, double value)
 {
   static string header("Indexing error in SurfData::setResponse.");
   checkRangeNumPoints(header, index);
-  points[mapping[index]].F(defaultIndex, value);
+  points[mapping[index]]->F(defaultIndex, value);
   valid.yVector = false;
 }
   
@@ -337,10 +364,34 @@ void SurfData::addPoint(const SurfPoint& sp)
       throw bad_surf_data(errormsg.str());
     }
   }
-  points.push_back(sp);
-  mapping.push_back(points.size()-1);
+  SurfPointSet::iterator iter;
+  // This should be a safe const cast.  All that's happening is a check
+  // to see if another data point at the same location in the space has already
+  // been added.
+  iter = orderedPoints.find(const_cast<SurfPoint*>(&sp));
+  if (iter == orderedPoints.end()) {
+    //cout << "Checked for dup" << endl;
+    points.push_back(new SurfPoint(sp));
+    int beforesize = orderedPoints.size();
+    orderedPoints.insert(points[points.size()-1]);
+    int aftersize = orderedPoints.size();
+    if (beforesize == aftersize) { 
+      cout << "Something went wrong" << endl;
+      cout << "beforesize: " << beforesize << " aftersize: " << aftersize << endl;
+    }
+    if (orderedPoints.size() != points.size()) {
+      cout << "oPsize: " << orderedPoints.size() << " points.size(): " << points.size() << endl;
+    }
+    mapping.push_back(points.size()-1);
+  } else {
+    cerr << "Duplication" << endl;
+    // Replace the old point with this new one
+    SurfPoint* spPtr = *iter;
+    *spPtr = sp;
+  }
   valid.xMatrix = false;
   valid.yVector = false;
+  notifyListeners(SurfData::DATA_MODIFIED);
 }
 
 /// Add a new response variable to each point. 
@@ -365,10 +416,10 @@ unsigned SurfData::addResponse(const vector<double>& newValues)
              << endl;
     throw bad_surf_data(errormsg.str());
   } else {
-    newindex = points[mapping[0]].addResponse(newValues[0]);
+    newindex = points[mapping[0]]->addResponse(newValues[0]);
     fsize++;
     for (unsigned i = 1; i < points.size(); i++) {
-      newindex = points[mapping[i]].addResponse(newValues[i]);
+      newindex = points[mapping[i]]->addResponse(newValues[i]);
       assert(newindex == fsize - 1);
     }
   }
@@ -403,25 +454,63 @@ void SurfData::setExcludedPoints(const std::set<unsigned>& excludedPoints)
   }
 }
 
-//void SurfData::addListener(Surface * surface)
-//{
-//  /// only add the listener if its not already there
-//  list<Surface*>::iterator itr = 
-//    find(listeners.begin(),listeners.end(),surface);
-//  if(itr==listeners.end()) {
-//    listeners.push_back(surface);
-//  }
-//}
-//
-//void SurfData::removeListener(Surface * surface)
-//{
-//  // make sure its OK to erase the object, then do so
-//  list<Surface*>::iterator itr =
-//    find(listeners.begin(),listeners.end(),surface);
-//  if(itr!=listeners.end()) {
-//    listeners.erase(itr);
-//  }
-//}
+void SurfData::addListener(Surface* surface)
+{
+  /// only add the listener if its not already there
+  cout << "SurfData: " << this
+       << " #listbef: " << listeners.size()
+       << " adding: " << surface;
+  list<Surface*>::iterator itr = 
+    find(listeners.begin(),listeners.end(),surface);
+  if(itr ==listeners.end() ) {
+    listeners.push_back(surface);
+    //cout << "Listener added: " << listeners.size() 
+    // 	   << "this: " << this << endl;
+  }
+  cout << " #listaft: " << listeners.size() << endl;
+}
+
+void SurfData::removeListener(Surface* surface)
+{
+  //// We had some problems if we were removing things from the list
+  //// while it was being iterated over
+  ////if (!cleanupStarted) {
+  //  // make sure its OK to erase the object, then do so
+  //  list<Surface*>::iterator itr =
+  //    find(listeners.begin(),listeners.end(),surface);
+  //  //cout << "remove: " << surface << endl;
+  //  if(itr!=listeners.end()) {
+  //    //cout << "remove: " << *itr << endl;
+  //    //listeners.erase(itr);
+  //    *itr = 0;
+  //    cout << "Listener removed: " << listeners.size()
+  //         << "this: " << this << endl;
+  //  }
+  //  for (list<Surface*>::iterator itr2 = listeners.begin();
+  //        itr2 != listeners.end();
+  //        ++itr2) {
+  //    cout << "Still listening: " << *itr << endl;
+  //  }
+  ////} else {
+  ////  cout << "Cleanup has already started" << endl;
+  ////}
+  cout << "SurfData: " << this
+       << " #listbef: " << listeners.size()
+       << " removing: " << surface;
+  listeners.remove(surface);
+  cout << " #listaft: " << listeners.size() << endl;
+}
+
+/// For use with copy constructor and assignment operator-- creates a list of
+/// pointers to the points in the data set which is used to check for 
+/// duplication when other points are added in the future
+void SurfData::buildOrderedPoints()
+{
+  orderedPoints.clear();
+  for (unsigned i = 0; i < points.size(); i++) {
+    orderedPoints.insert(points[i]);
+  }
+}
 
 /// Maps all indices to themselves
 void SurfData::defaultMapping()
@@ -440,7 +529,7 @@ void SurfData::validateXMatrix() const
   xMatrix = new double[mapping.size() * xsize];
   for (unsigned pt = 0; pt < mapping.size(); pt++) {
     for (unsigned xval = 0; xval < xsize; xval++) {
-      xMatrix[pt+xval*mapping.size()] = points[mapping[pt]].X()[xval];
+      xMatrix[pt+xval*mapping.size()] = points[mapping[pt]]->X()[xval];
     }
   }
   valid.xMatrix = true;
@@ -511,7 +600,7 @@ void SurfData::writeBinary(ostream& os) const
     os.write((char*)&xsize,sizeof(xsize));
     os.write((char*)&fsize,sizeof(fsize));
     for (unsigned i = 0; i < mapping.size(); i++) {
-      points[mapping[i]].writeBinary(os);
+      points[mapping[i]]->writeBinary(os);
     }
   //} catch(...) {
   //  cerr << "Exception caught and rethrown in SurfData::writeBinary" << endl;
@@ -532,7 +621,7 @@ void SurfData::writeText(ostream& os) const
        << xsize << endl 
        << fsize << endl;
     for (unsigned i = 0; i < mapping.size(); i++) {
-      points[mapping[i]].writeText(os);
+      points[mapping[i]]->writeText(os);
     }
   //} catch(...) {
   //  cerr << "Exception caught and rethrown in SurfData::writeText" << endl;
@@ -546,6 +635,7 @@ void SurfData::readBinary(istream& is)
   unsigned numPointsRead = 0;
   unsigned size;
   try {
+    cleanup();
     is.read((char*)&size,sizeof(size));
     is.read((char*)&xsize,sizeof(xsize));
     is.read((char*)&fsize,sizeof(fsize));
@@ -553,7 +643,8 @@ void SurfData::readBinary(istream& is)
     for (numPointsRead = 0; numPointsRead < size; numPointsRead++) {
       // True for second argument signals a binary read
       surfpack::checkForEOF(is);
-      points.push_back(SurfPoint(xsize,fsize,is,true));  
+      //points.push_back(SurfPoint(xsize,fsize,is,true));  
+      this->addPoint(SurfPoint(xsize,fsize,is,true));  
     }
     defaultMapping();
   } catch(surfpack::io_exception&) {
@@ -572,6 +663,7 @@ void SurfData::readText(istream& is)
   unsigned numPointsRead = 0;
   unsigned size;
   try {
+    cleanup();
     string sline;
     getline(is,sline);
     istringstream streamline(sline);
@@ -588,7 +680,8 @@ void SurfData::readText(istream& is)
     for (numPointsRead = 0; numPointsRead < size; numPointsRead++) {
       surfpack::checkForEOF(is);
       // False for last argument signals a text read
-      points.push_back(SurfPoint(xsize,fsize,is,false));  
+      //points.push_back(SurfPoint(xsize,fsize,is,false));  
+      this->addPoint(SurfPoint(xsize,fsize,is,false));  
     }
     defaultMapping();
   } catch(surfpack::io_exception&) {
@@ -627,12 +720,23 @@ bool SurfData::testFileExtension(const std::string& filename) const
   }
 }
 
-//void SurfData::notifyListeners()
-//{
-//  list<Surface*>::iterator itr;
-//  for(itr=listeners.begin();itr!=listeners.end();++itr)
-//    (*itr)->notify();
-//}
+void SurfData::notifyListeners(int msg)
+{
+  //cout << "Size: " << listeners.size() << endl;
+  if (listeners.size() != 0) {
+    cout << "SurfData: " << this
+         << " thinks it has " << listeners.size()
+         << " surfaces to notify: " << endl;
+  }
+  list<Surface*>::iterator itr = listeners.begin();
+  while (itr != listeners.end()) {
+    cout << "\tnotifying: " << *itr << " of " << msg << endl;
+    if (*itr) {
+      (*itr)->notify(msg);
+    }
+    ++itr;
+  }
+}
 
 // ____________________________________________________________________________
 // Testing 
@@ -643,17 +747,17 @@ bool SurfData::testFileExtension(const std::string& filename) const
 void SurfData::sanityCheck() const
 {
   if (!points.empty()) {
-    unsigned dimensionality = points[0].xSize();
-    unsigned numResponses = points[0].fSize();
+    unsigned dimensionality = points[0]->xSize();
+    unsigned numResponses = points[0]->fSize();
     for (unsigned i = 1; i < points.size(); i++) {
-      if (points[i].xSize() != dimensionality ||
-          points[i].fSize() != numResponses ) {
+      if (points[i]->xSize() != dimensionality ||
+          points[i]->fSize() != numResponses ) {
         ostringstream errormsg;
         errormsg << "Error in SurfData::sanityCheck." << endl
 		 << "Point 0 has " << dimensionality << " dimensions "
                  << "and " << numResponses << " response values, " << endl
-                 << "but point " << i << " has " << points[i].xSize()
- 		 << " dimensions and " << points[i].fSize() << "response "
+                 << "but point " << i << " has " << points[i]->xSize()
+ 		 << " dimensions and " << points[i]->fSize() << "response "
  		 << " values.";
 	throw bad_surf_data(errormsg.str());
       } // if mismatch

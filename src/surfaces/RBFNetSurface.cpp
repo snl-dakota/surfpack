@@ -230,6 +230,8 @@ void RBFNetSurface::config(const SurfpackParser::Arg& arg)
   string argname = arg.name;
   if (argname == "radius") {
     radius = arg.lval.real;
+  } else {
+    Surface::config(arg);
   }
 }
 /// Create a surface of the same type as 'this.'  This objects data should

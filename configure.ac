@@ -87,7 +87,7 @@ AC_PROG_LIBTOOL
 
 CPPFLAGS="-DDATADIR='\"\$(top_srcdir)/share\"' "
 #CXXFLAGS="-fprofile-arcs -ftest-coverage -g -save-temps"
-#CXXFLAGS="-g "
+CXXFLAGS="-g "
 if test "$CXX" = "cxx"
 then
   echo "Compiling with cxx"
