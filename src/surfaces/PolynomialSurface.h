@@ -44,7 +44,7 @@ public:
     std::vector<double> coefficients);
   PolynomialSurface(const std::string filename);
   PolynomialSurface(const PolynomialSurface& other);
-  virtual void config(const SurfpackParser::ArgList& arglist);
+  virtual void config(const SurfpackParser::Arg& arg);
   
   /// Create a surface of the same type as 'this.'  This objects data should
   /// be replaced with the dataItr passed in, but all other attributes should

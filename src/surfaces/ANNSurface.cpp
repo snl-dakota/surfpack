@@ -124,17 +124,17 @@ void ANNSurface::build(SurfData& data)
   annObject->build_approximation(svdfactor, num_neurons);
 }
 
-void ANNSurface::config(const SurfpackParser::ArgList& arglist)
+void ANNSurface::config(const SurfpackParser::Arg& arg)
 {
-  for (unsigned i = 0; i < arglist.size(); i++) {
-    string argname = arglist[i].name;
-    if (name == "norm_bound") {
-      norm_bound = arglist[i].lval.real;
-    } else if (name == "svdfactor") {
-      svdfactor = arglist[i].lval.real;
-    } else if (name == "fraction_withheld") {
-      percent = arglist[i].lval.real;
-    }
+  string argname = arg.name;
+  if (argname == "norm_bound") {
+    norm_bound = arg.lval.real;
+  } else if (argname == "svdfactor") {
+    svdfactor = arg.lval.real;
+  } else if (argname == "fraction_withheld") {
+    percent = arg.lval.real;
+  } else {
+    Surface::config(arg);
   }
 }
 

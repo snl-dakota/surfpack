@@ -211,23 +211,21 @@ void MarsSurface::build(SurfData& data)
   delete [] mm;
 }
 
-void MarsSurface::config(const SurfpackParser::ArgList& arglist)
+void MarsSurface::config(const SurfpackParser::Arg& arg)
 {
-  for (unsigned i = 0; i < arglist.size(); i++) {
-    string argname = arglist[i].name;
-    if (name == "max_bases") {
-      max_bases = arglist[i].lval.integer;
-    } else if (name == "max_interactions") {
-      max_interactions = arglist[i].lval.integer;
-    } else if (name == "interpolation") {
-      if (arglist[i].lval.literal == "linear") {
-        interpolation = 1;
-      } else if (arglist[i].lval.literal == "cubic") {
-        interpolation = 2;
-      } else {
-        cerr << "Expected value for interpolation: 'linear' or 'cubic'" << endl;
-      } 
-    }
+  string argname = arg.name;
+  if (argname == "max_bases") {
+    max_bases = arg.lval.integer;
+  } else if (argname == "max_interactions") {
+    max_interactions = arg.lval.integer;
+  } else if (argname == "interpolation") {
+    if (arg.lval.literal == "linear") {
+      interpolation = 1;
+    } else if (arg.lval.literal == "cubic") {
+      interpolation = 2;
+    } else {
+      cerr << "Expected value for interpolation: 'linear' or 'cubic'" << endl;
+    } 
   }
 }
 

@@ -95,15 +95,13 @@ PolynomialSurface::~PolynomialSurface()
 #endif
 }
 
-void PolynomialSurface::config(const SurfpackParser::ArgList& arglist)
+void PolynomialSurface::config(const SurfpackParser::Arg& arg)
 {
-  for (unsigned i = 0; i < arglist.size(); i++) {
-    string argname = arglist[i].name;
-    if (name == "order") {
-      order = arglist[i].lval.integer;
-      digits.resize(order);
-      cout << "Setting order in PS::config " << order << endl;
-    }
+  string argname = arg.name;
+  if (argname == "order") {
+    order = arg.lval.integer;
+    digits.resize(order);
+    cout << "Setting order in PS::config " << order << endl;
   }
 }
 

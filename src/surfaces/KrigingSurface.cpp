@@ -376,16 +376,13 @@ void KrigingSurface::build(SurfData& data)
   buildModel(data);
 }
 
-void KrigingSurface::config(const SurfpackParser::ArgList& arglist)
+void KrigingSurface::config(const SurfpackParser::Arg& arg)
 {
-  for (unsigned i = 0; i < arglist.size(); i++) {
-    string argname = arglist[i].name;
-    if (name == "conmin_seed") {
-      setConminThetaVars(arglist[i].lval.tuple); 
-    } else if (name == "theta_vars") {
-      usePreComputedCorrelationVector(arglist[i].lval.tuple);
-    }
-      
+  string argname = arg.name;
+  if (argname == "conmin_seed") {
+    setConminThetaVars(arg.lval.tuple); 
+  } else if (argname == "theta_vars") {
+    usePreComputedCorrelationVector(arg.lval.tuple);
   }
 }
 /// Create a surface of the same type as 'this.'  This objects data should

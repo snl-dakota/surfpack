@@ -161,9 +161,16 @@ void Surface::getValue(SurfData& surfData)
   surfData.addResponse(newValues);
 }
 
-void Surface::config(const SurfpackParser::ArgList& arglist)
+void Surface::config(const SurfpackParser::Arg& arg)
 {
 
+}
+
+void Surface::config(const SurfpackParser::ArgList& arglist)
+{
+  for (unsigned i = 0; i < arglist.size(); i++) {
+    config(arglist[i]);
+  }
 }
 /// Evaluate the empirical model at the points in surfData and output
 /// the points and their evaluations to os

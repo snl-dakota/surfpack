@@ -174,7 +174,8 @@ public:
 
   virtual void getValue(SurfData& sd, std::vector<ErrorStruct>& pts);
 
-  virtual void config(const SurfpackParser::ArgList& arglist);
+  virtual void config(const SurfpackParser::Arg& arg);
+  virtual void configList(const SurfpackParser::ArgList& arglist);
 
 // ____________________________________________________________________________
 // Helper methods 

@@ -53,7 +53,7 @@ public:
 
   virtual void build(SurfData& data);
   
-  virtual void config(const SurfpackParser::ArgList& arglist);
+  virtual void config(const SurfpackParser::Arg& arg);
   /// Create a surface of the same type as 'this.'  This objects data should
   /// be replaced with the dataItr passed in, but all other attributes should
   /// be the same (e.g., a second-order polynomial should return another 

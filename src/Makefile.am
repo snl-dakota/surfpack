@@ -25,7 +25,6 @@ libsurfpack_la_SOURCES = SurfPoint.cpp \
 			ann/ann.cpp \
 			ann/ann.h  \
 			ann/client.cpp \
-			ann/client.h \
 			ann/allocate.cpp \
 			ann/allocate.h \
 			ann/convert.cpp \

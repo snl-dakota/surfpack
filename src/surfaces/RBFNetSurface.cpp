@@ -225,13 +225,11 @@ void RBFNetSurface::build(SurfData& surfData)
   delete [] responseVector;
 }
 
-void RBFNetSurface::config(const SurfpackParser::ArgList& arglist)
+void RBFNetSurface::config(const SurfpackParser::Arg& arg)
 {
-  for (unsigned i = 0; i < arglist.size(); i++) {
-    string argname = arglist[i].name;
-    if (name == "radius") {
-      radius = arglist[i].lval.real;
-    }
+  string argname = arg.name;
+  if (argname == "radius") {
+    radius = arg.lval.real;
   }
 }
 /// Create a surface of the same type as 'this.'  This objects data should
