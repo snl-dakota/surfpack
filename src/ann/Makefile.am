@@ -1,7 +1,7 @@
 lib_LTLIBRARIES = libann.la
-libann_la_SOURCES = ann.C ann.h client.C allocate.C allocate.h \
-	convert.C convert.h dsvd2.C dsvd2.h gen_drno.C gen_drno.h \
-	random.C random.h system_defs.h utilities.C utilities.h \
-	vector_enhancements.C vector_enhancements.h
-INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src
+libann_la_SOURCES = ann.cpp ann.h client.cpp allocate.cpp allocate.h \
+	convert.cpp convert.h dsvd2.cpp dsvd2.h gen_drno.cpp gen_drno.h \
+	random.cpp random.h system_defs.h utilities.cpp utilities.h \
+	vector_enhancements.cpp vector_enhancements.h
+INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src -I$(top_srcdir)/src/ann
 CLEANFILES = *.bb *.bbg *.da *.gcov *.ii *.s
