@@ -8,7 +8,18 @@ AM_INIT_AUTOMAKE
 # Check to make sure this file exists as a safety check
 AC_CONFIG_SRCDIR([src/Surface.cpp])
 
+# Checks for programs.
+#AC_PROG_AWK
+AC_PROG_CXX([CC cxx xlc g++ c++ gcc])
+#AC_CXX_NAMESPACES
+#AC_CXX_HAVE_STL
+#AC_CXX_BOOL
+#AC_CXX_MUTABLE
+
 AC_LANG_CPLUSPLUS
+#Check for the linear algebra libraries that are needed on Irix
+AC_CHECK_LIB([scs],[dgels_])
+
 WHOLE_LIB_PATH=`echo $LD_LIBRARY_PATH | sed -e 's/^/-L/;s/:/ -L/g'`
 #Check for the linear algebra libraries that are needed on Sun/Solaris
 AC_CHECK_LIB([sunmath],[main],[],[],[$WHOLE_LIB_PATH])
@@ -31,13 +42,6 @@ AM_CONDITIONAL(INCLUDE_TESTS, test $include_tests = yes)
 
 AC_DEFINE([__TESTING_MODE__],[],[1])
 
-# Checks for programs.
-#AC_PROG_AWK
-#AC_PROG_CXX
-#AC_CXX_NAMESPACES
-#AC_CXX_HAVE_STL
-#AC_CXX_BOOL
-#AC_CXX_MUTABLE
 
 AC_PROG_F77
 #AC_PROG_CC
@@ -70,5 +74,5 @@ AC_CONFIG_FILES([Makefile
 if test $include_tests = yes; then
   AC_CONFIG_FILES([tests/Makefile])
 fi
-echo $LIBS
+echo 'LIBS:' $LIBS
 AC_OUTPUT
