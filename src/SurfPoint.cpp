@@ -145,12 +145,10 @@ const vector<double>& SurfPoint::X() const
 /// Return response value at responseIndex
 double SurfPoint::F(unsigned responseIndex) const
 { 
-  if (responseIndex >= f.size()) {
-    string header(
-      "Error in query SurfPoint::F. Invalid responseIndex."
-    );
-    throwRangeError(header, responseIndex);
-  } 
+  string header(
+    "Error in query SurfPoint::F. Invalid responseIndex."
+  );
+  checkRange(header, responseIndex);
   return f[responseIndex]; 
 }
 
@@ -168,12 +166,10 @@ unsigned SurfPoint::addResponse(double val)
 /// Set an existing response variable to a new value
 void SurfPoint::F(unsigned responseIndex, double responseValue)
 { 
-  if (responseIndex >= f.size()) {
-    string header(
-      "Error in command SurfPoint::F. Invalid responseIndex. No update made."
-    );
-    throwRangeError(header, responseIndex);
-  } 
+  string header(
+    "Error in command SurfPoint::F. Invalid responseIndex. No update made."
+  );
+  checkRange(header, responseIndex);
   f[responseIndex] = responseValue; 
 }
 
@@ -211,28 +207,38 @@ void SurfPoint::writeText(ostream& os) const
  
 void SurfPoint::readBinary(istream& is)
 {
-  // read the point in binary format
-  unsigned i;
-  for (i = 0; i < x.size(); i++) {
-     is.read(reinterpret_cast<char*>(&x[i]),sizeof(x[i]));
-  }
-  for (i = 0; i < f.size(); i++) {
-     is.read(reinterpret_cast<char*>(&f[i]),sizeof(f[i]));
+  try {
+    // read the point in binary format
+    unsigned i;
+    for (i = 0; i < x.size(); i++) {
+       is.read(reinterpret_cast<char*>(&x[i]),sizeof(x[i]));
+    }
+    for (i = 0; i < f.size(); i++) {
+       is.read(reinterpret_cast<char*>(&f[i]),sizeof(f[i]));
+    }
+  } catch (...) {
+    cerr << "Unknown error in SurfPoint::readBinary(istream& is)" << endl;
+    throw;
   }
 }
 
 void SurfPoint::readText(istream& is)
 {
-  // read the point as text
-  unsigned i;
-  string sline;
-  getline(is,sline);
-  istringstream streamline(sline);
-  for (i = 0; i < x.size(); i++) {
-     streamline >> x[i];
-  }
-  for (i = 0; i < f.size(); i++) {
-     streamline >> f[i];
+  try {
+    // read the point as text
+    unsigned i;
+    string sline;
+    getline(is,sline);
+    istringstream streamline(sline);
+    for (i = 0; i < x.size(); i++) {
+       streamline >> x[i];
+    }
+    for (i = 0; i < f.size(); i++) {
+       streamline >> f[i];
+    }
+  } catch (...) {
+    cerr << "Unknown error in SurfPoint::readText(istream& is)" << endl;
+    throw;
   }
 }
 /// Write point to an output stream in text format
@@ -246,8 +252,9 @@ ostream& operator<<(ostream& os, const SurfPoint& sp)
 // Testing 
 // ____________________________________________________________________________
 
-void SurfPoint::throwRangeError(const string& header, unsigned index) const
+void SurfPoint::checkRange(const string& header, unsigned index) const
 {
+  if (index >= f.size()) {
     ostringstream errormsg;
     errormsg << header << endl;
     if (f.empty()) {
@@ -261,6 +268,7 @@ void SurfPoint::throwRangeError(const string& header, unsigned index) const
 	     << endl;
     }
     throw range_error(errormsg.str());
+  }
 }
 #ifdef __TESTING_MODE__
   int SurfPoint::constructCount = 0;

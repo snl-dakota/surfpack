@@ -129,7 +129,8 @@ protected:
 // Testing 
 // ____________________________________________________________________________
 protected:
-  void throwRangeError(const std::string& header, unsigned index) const;
+
+void checkRange(const std::string& header, unsigned index) const;
 
 
 #ifdef __TESTING_MODE__
