@@ -7,6 +7,7 @@
 
 #include "surfpack.h"
 #include "SurfPoint.h"
+#include "SurfScaler.h"
 
 using namespace std;
 using namespace surfpack;
@@ -176,6 +177,21 @@ void SurfPoint::F(unsigned responseIndex, double responseValue)
   // Throw an exception if the responseIndex is out of range.
   checkRange(header, responseIndex);
   f[responseIndex] = responseValue; 
+}
+
+/// Change the value of one of the dimensions of the point
+void SurfPoint::setX(unsigned index, double value)
+{
+  if (index > x.size()) {
+    x.resize(index+1);
+  }
+  x[index] = value;
+}
+
+/// Change the dimensionality of the point
+void SurfPoint::resize(unsigned new_size)
+{
+  x.resize(new_size);
 }
 
 // ____________________________________________________________________________

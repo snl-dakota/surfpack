@@ -6,6 +6,7 @@
 #include <vector>
 
 class SurfData;
+#include "SurfPoint.h"
 
 class SurfScaler
 {
@@ -16,26 +17,19 @@ public:
     double divisor;
   };
   
-  /// Initialize data to 0.;
+  /// Initializes scaledPoint 
   SurfScaler();
  
-  /// Initialize data to data_, with scaledPoint set to appropriate size.
-  SurfScaler(SurfData* data_);
-
-  /// Initialize data to data_, with scaledPoint set to appropriate size.
-  void setData(SurfData* data_);
-
   /// Iterate over a data set, computing the scaling parameters for each 
   /// dimension.
-  void calculateParams();
+  void computeScalingParameters(const SurfData& data_);
 
-  /// Return a scaled version of the parameter SurfPoint
-  const std::vector<double>& operator()(const std::vector<double>& x) const;
+  /// Return a scaled version of the parameter point 
+  const SurfPoint& scale(const std::vector<double>& x) const;
 
 private:
   std::vector<ScalingParameterPair> parameters;
-  SurfData* data;
-  mutable std::vector<double> scaledPoint;
+  mutable SurfPoint scaledPoint;
    
 
 

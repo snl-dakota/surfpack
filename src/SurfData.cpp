@@ -13,6 +13,7 @@
 #include "SurfPoint.h"
 #include "SurfData.h"
 #include "Surface.h"
+#include "SurfScaler.h"
 
 using namespace std;
 
@@ -33,7 +34,8 @@ const int SurfData::DATA_MODIFIED = 2;
 // ____________________________________________________________________________
 
 /// Vector of points will be copied and checked for duplicates
-SurfData::SurfData(const vector<SurfPoint>& points_) : valid()
+SurfData::SurfData(const vector<SurfPoint>& points_) 
+  : scaler(0), valid()
 {
   init();
   if (points_.empty()) {
@@ -52,14 +54,16 @@ SurfData::SurfData(const vector<SurfPoint>& points_) : valid()
 }
 
 /// Read a set of SurfPoints from a file
-SurfData::SurfData(const string filename) : valid() 
+SurfData::SurfData(const string filename) 
+: scaler(0), valid() 
 {
   init();
   read(filename);
 }
   
 /// Read a set of SurfPoints from a std::istream
-SurfData::SurfData(std::istream& is, bool binary) : valid()
+SurfData::SurfData(std::istream& is, bool binary) 
+  : scaler(0), valid()
 {
   init();
   if (binary) {
@@ -70,9 +74,9 @@ SurfData::SurfData(std::istream& is, bool binary) : valid()
 }
 
 /// Makes a deep copy of the object 
-SurfData::SurfData(const SurfData& other) : xsize(other.xsize), 
-  fsize(other.fsize),excludedPoints(other.excludedPoints),
-  defaultIndex(other.defaultIndex)
+SurfData::SurfData(const SurfData& other) 
+  : xsize(other.xsize), fsize(other.fsize),scaler(other.scaler), 
+  excludedPoints(other.excludedPoints), defaultIndex(other.defaultIndex)
 {
   for (unsigned i = 0; i < other.points.size(); i++) {
     this->addPoint(*other.points[i]);
@@ -212,7 +216,11 @@ const SurfPoint& SurfData::operator[](unsigned index) const
 {
   static string header("Indexing error in SurfData::operator[] const.");
   checkRangeNumPoints(header, index);
-  return *points[mapping[index]];
+  if (!scaler) {
+    return *points[mapping[index]];
+  } else {
+    return scaler->scale(points[mapping[index]]->X());
+  }
 }
 
 // ____________________________________________________________________________
@@ -241,6 +249,12 @@ unsigned SurfData::xSize() const
 unsigned SurfData::fSize() const 
 { 
   return fsize; 
+}
+
+/// Returns true if the data has been scaled
+bool SurfData::isScaled() const
+{
+  return scaler != 0;
 }
 
 /// Return the set of excluded points (the indices)
@@ -311,6 +325,19 @@ void SurfData::setResponse(unsigned index, double value)
   valid.yVector = false;
 }
   
+/// Calculates parameters so that the data can be viewed as scaled
+void SurfData::setScaler(SurfScaler* scaler_)
+{
+  // Make sure the scaler isn't null before you go calling methods on it.
+  if (scaler_) {
+    // Call the scaling operation BEFORE making the assignment, because
+    // computeScalingParameters will call operator[] on this, and we want to make sure
+    // it calls the unscaled version during the scaling
+    scaler_->computeScalingParameters(*this);
+    this->scaler = scaler_;
+  }
+}
+    
 /// Add a point to the data set. The parameter point will be copied.
 void SurfData::addPoint(const SurfPoint& sp) 
 {

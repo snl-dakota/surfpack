@@ -14,6 +14,7 @@
 #include "SurfPoint.h"
 #include "SurfData.h"
 #include "Surface.h"
+#include "SurfScaler.h"
 
 using namespace std;
 
@@ -25,7 +26,8 @@ using namespace std;
 // sd must be initialized to NULL before setData(...) is called, because 
 // setData(...) will call delete on the old value of sd, which will be
 // garbage if it's not initialized to NULL.
-Surface::Surface(SurfData* sd_) : sd(0)
+Surface::Surface(SurfData* sd_) 
+  : sd(0), scaler(0)
 { 
   setData(sd_);
   init();
@@ -36,7 +38,8 @@ Surface::Surface(SurfData* sd_) : sd(0)
 // sd must be initialized to NULL before setData(...) is called, because 
 // setData(...) will call delete on the old value of sd, which will be
 // garbage if it's not initialized to NULL.
-Surface::Surface(const Surface& other) : sd(0), xsize(other.xsize), 
+Surface::Surface(const Surface& other) 
+  : sd(0), scaler(other.scaler), xsize(other.xsize), 
   builtOK(other.builtOK), dataModified(other.dataModified), 
   responseIndex(other.responseIndex)
 {
@@ -49,6 +52,8 @@ Surface::~Surface()
   if(sd) {
      sd->removeListener(this);
   } 
+  delete scaler;
+  scaler = 0;
 }
 
 /// Common initialization for new objects 
@@ -105,7 +110,11 @@ double Surface::getValue(const std::vector<double>& x)
   if (!builtOK || dataModified) {
     createModel();
   }
-  return evaluate(x);
+  if (!scaler) {
+    return evaluate(x);
+  } else {
+    return evaluate(scaler->scale(x).X());
+  }
 }
 
 /// Evaluate the approximation surface at point x and return the value.
@@ -350,6 +359,20 @@ void Surface::setData(SurfData* sd_)
   responseIndex = sd ? sd->getDefaultIndex() : 0;
 }
   
+/// Causes the data to be scaled along each dimension so that all of the
+/// values lie on the interval [0,1].  scaled_val = (old_val - min_val) /
+/// (max_val - min_val).
+void Surface::scaleUniform()
+{
+  this->scaler = new SurfScaler();
+}
+
+/// Causes data not to be scaled at all before building
+void Surface::noScale()
+{
+  delete scaler;
+}
+
 /// Set the state of the SurfData object to use the same defaultIndex and 
 /// set of excludedPoints that were used when the Surface approximation was
 /// built
@@ -414,6 +437,11 @@ void Surface::createModel(SurfData* surfData)
   } 
   acceptableData();
   xsize = sd->xSize();
+  // If a SurfScaler object has been created, the data should be scaled
+  // before building the surface
+  if (scaler) {
+    sd->setScaler(scaler);
+  }
   SurfData& sdRef = *sd;
   build(sdRef);
   excludedPoints = sd->getExcludedPoints();

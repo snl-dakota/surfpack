@@ -110,6 +110,12 @@ public:
 
   /// Set an existing response variable to a new value
   void F(unsigned responseIndex, double responseValue);
+ 
+  /// Change the value of one of the dimensions of the point
+  void setX(unsigned index, double value);
+ 
+  /// Change the dimensionality of the point
+  void resize(unsigned new_size);
 // ____________________________________________________________________________
 // I/O
 // ____________________________________________________________________________

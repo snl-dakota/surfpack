@@ -5,10 +5,12 @@
 
 class SurfPoint;
 class SurfData;
+class SurfScaler;
 
 /// \todo Eliminate the dependency on SurfpackParser.h in Surface.h
 #include "SurfpackParser.h"
 #include "surfpack.h"
+
 
 
 /// Abstract base class for implementation of a surface-fitting algorithm.  
@@ -149,6 +151,14 @@ public:
   /// approximation.
   virtual void setData(SurfData* sd_);
 
+  /// Causes the data to be scaled along each dimension so that all of the
+  /// values lie on the interval [0,1].  scaled_val = (old_val - min_val) /
+  /// (max_val - min_val).
+  virtual void scaleUniform();
+
+  /// Causes data not to be scaled at all before building
+  virtual void noScale();
+
   /// Set the state of the SurfData object to use the same defaultIndex and 
   /// set of excludedPoints that were used when the Surface approximation was
   /// built
@@ -218,6 +228,9 @@ protected:
 
   /// Data used (or to be used) to create the approximation 
   SurfData* sd;
+
+  /// Necessary if data are to be scaled before calculating surface
+  SurfScaler* scaler;
 
   /// Number of dimensions in the data (sd)
   unsigned xsize;
