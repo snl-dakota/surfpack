@@ -1,0 +1,99 @@
+# generate sample data files
+gridpoints ndef rast100.txt rastrigin
+gridpoints ndef rose100.txt rosenbrock
+gridpoints ndef sphere100.txt sphere
+
+#generate the sample data file for these tests
+gridpoints tdef sample_data.txt rastrigin
+
+# generate 25 test points on a grid
+gridpoints testPtDef2D query25.txt
+gridpoints bigdef biggrid.txt rastrigin
+
+# generate random data for three test functions
+randomsample ndef randrast.txt rastrigin
+randomsample ndef randrose.txt rosenbrock 
+randomsample ndef randsphere.txt sphere 
+
+#create four different surfaces from the same 100 points
+create sample_data.txt poly1.srf Polynomial 1
+create sample_data.txt poly2.srf Polynomial 2
+create sample_data.txt poly3.srf Polynomial 3
+create sample_data.txt krig.srf Kriging Thetas 1.0 1.0
+create sample_data.txt mars.srf Mars
+create sample_data.txt rbf.srf RBFNet
+create smallset.txt ann.srf ANN
+
+# evaluate the binary surfaces on the 25 test points
+evaluate biggrid.txt poly1test.txt poly1.srf
+evaluate biggrid.txt poly2test.txt poly2.srf
+evaluate biggrid.txt poly3test.txt poly3.srf
+evaluate biggrid.txt krigtest.txt krig.srf
+evaluate biggrid.txt marstest.txt mars.srf
+evaluate biggrid.txt rbftest.txt rbf.srf
+evaluate biggrid.txt anntest.txt ann.srf
+
+# convert the binary files to text files
+convert poly1.srf poly1.txt
+convert poly2.srf poly2.txt
+convert poly3.srf poly3.txt
+convert krig.srf krig.txt
+convert mars.srf mars.txt
+convert rbf.srf rbf.txt
+convert ann.srf ann.txt
+
+# evaluate the text surfaces on the 25 test points
+evaluate query25.txt poly1test.txt poly1.txt
+evaluate query25.txt poly2test.txt poly2.txt
+evaluate query25.txt poly3test.txt poly3.txt
+evaluate query25.txt krigtest.txt krig.txt
+evaluate query25.txt marstest.txt mars.txt
+evaluate query25.txt rbftest.txt rbf.txt
+evaluate query25.txt anntest.txt ann.txt
+
+## print r-squared for binary fits
+fitness poly1.srf rsquared
+fitness poly2.srf rsquared
+fitness poly3.srf rsquared
+fitness krig.srf rsquared
+fitness mars.srf rsquared
+fitness rbf.srf rsquared
+fitness ann.srf rsquared
+
+## print r-squared for binary fits
+fitness poly1.txt rsquared
+fitness poly2.txt rsquared
+fitness poly3.txt rsquared
+fitness krig.txt rsquared
+fitness mars.txt rsquared
+fitness rbf.txt rsquared
+fitness ann.txt rsquared
+
+## print PRESS statistic for the surfaces
+fitness poly1.srf press
+fitness poly2.srf press
+fitness poly3.srf press
+#fitness krig.srf press
+fitness mars.srf press
+fitness rbf.srf press
+fitness ann.srf press
+
+## print mse statistic for the surfaces
+fitness poly1.srf mse
+fitness poly2.srf mse
+fitness poly3.srf mse
+fitness krig.srf mse
+fitness mars.srf mse
+fitness rbf.srf mse
+fitness ann.srf mse
+
+## print mrae statistic for the surfaces
+fitness poly1.srf mrae
+fitness poly2.srf mrae
+fitness poly3.srf mrae
+fitness krig.srf mrae
+fitness mars.srf mrae
+fitness rbf.srf mrae
+fitness ann.srf mrae
+
+

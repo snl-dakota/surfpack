@@ -1,0 +1,10 @@
+gridpoints testPtDef2D newpts.txt
+create rast100.txt krig1.srf Kriging
+evaluate newpts.txt krig1test.txt krig1.srf
+create rast100.txt krig2.txt Kriging
+evaluate newpts.txt krig2test.txt krig2.txt
+convert krig1.srf krig22.txt
+convert krig2.txt krig12.srf
+evaluate newpts.txt krig22test.txt krig22.txt
+evaluate newpts.txt krig12test.txt krig12.srf
+

@@ -1,0 +1,69 @@
+Surfpack supports the following commands
+
+_______________________________________________________________________________
+1. gridpoints <spec file> <output file> [<test function>]
+Example: gridpoints ndef 100_rastrigin_points.txt rastrigin
+
+The first line of the spec file specifies the dimensionality of the data set.
+The rest of the lines have one of two formats:
+A. f val
+B. v min max numpts
+
+'f' stands for fixed and all points in the set will have value 'val' for that dimension.
+'v' stands for variable.  Points in the file will have values ranging from min to max for that dimension.  
+The numpts value specifies the number of intervals along that dimension
+
+Example
+2
+f 3.0
+v -1.0 1.0 11
+
+This will produce a file with 11 data two-dimensional data points.  The first dimension will be 3.0 for all points.
+The second dimension will range from -1.0 to 1.0, by increments of 0.2.
+
+The extension on the output file should be .txt for human-readable text data and .sd for machine-formatted data.
+The optional test function argument will add a response variable to each point of the data set.  
+The currently supported functions are Rastrigin, Rosenbrock, and Sphere.
+_______________________________________________________________________________
+2. randomsample <spec file> <output file> [<test function>]
+Example: randomsample ndef 100_rastrigin_points.txt rastrigin
+
+Similar to gridpoints, but the points produced are Monte Carlo sample points instead of points on a hypergrid.
+The number of sample points is the same as the number of points that would have been produced using the same spec file in a gridpoints command.  For example, the spec file shown above would yield 11 random samples.
+
+_______________________________________________________________________________
+3. create <data file> <output file> <surface type> [<surface argument> ...]
+Example: sample_points.txt quadpoly.txt Polynomial 2 
+
+Creates a surface-fit and writes it to a file.  The output file should have a .txt extension for human-readable format or .srf for machine-formatted output.  The data file should be a .sd or .txt file with an appropriate number of data points.  The data file should have the same format as the files produced by the randomsample and gridpoints commands.  The currently supported surface types are
+
+Polynomial (takes one argument specifying the order of the polynomial-- 1 for linear, 2 for quadratic, etc.)
+Kriging (user may specify 'Thetas' or 'ConminSeed' followed by a space delimited vector of values.)
+  Example: create datafile.txt krig.srf Kriging Thetas 1.0 1.0
+  Example: create datafile.txt krig.srf Kriging ConminSeed 1.0 1.0
+Mars
+RBFNet
+ANN
+_______________________________________________________________________________
+4. evaluate <data file> <output file> <surface file>
+Example: evaluate sample_data.txt result_points.txt quadpoly.srf
+
+The surface in the surface file is evaluated at the data points in the data file and the results are written in SurfData format to the output file.
+
+_______________________________________________________________________________
+5. fitness <metric name> <surface file> [<data file>]
+Example: fitness rsquared quadpoly.srf
+
+Evaluates the given fitness metric for the given surface.  If the optional data file is supplied, the computation will be done on that data set instead of the data set that was used to create the surface.  The metrics currently available are:
+sse (sum of squared errors)
+mse (mean squared error)
+mrae (maximum relative absolute error)
+rsquared
+press
+_______________________________________________________________________________
+6. convert <input file> <output file> 
+Example: convert quadpoly.srf quadpoly.txt
+Example: convert quadpoly.txt quadpoly.srf
+Example: convert rastrigin_data.txt rastrigin_data.sd
+
+Convert between human-readable and machine-formatted data or surfaces.  The input file is unchanged.

@@ -1,0 +1,11 @@
+gridpoints testPtDef2D newpts.txt
+create rast100.txt quadpoly1.srf Polynomial 2
+evaluate newpts.txt quadpoly1test.txt quadpoly1.srf
+create rast100.txt quadpoly2.txt Polynomial 2
+evaluate newpts.txt quadpoly2test.txt quadpoly2.txt
+convert quadpoly1.srf quadpoly22.txt
+convert quadpoly2.txt quadpoly12.srf
+evaluate newpts.txt quadpoly22test.txt quadpoly22.txt
+evaluate newpts.txt quadpoly12test.txt quadpoly12.srf
+error quadpoly22.txt sse
+
