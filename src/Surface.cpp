@@ -216,8 +216,8 @@ double Surface::press(SurfData& dataSet)
     // object where none of the points are excluded.  This will make
     // it easier to do the "leave one out" process
     bool containsInactives = !dataSet.getExcludedPoints().empty();
-    SurfData& surfData = (containsInactives) 
-      ? *(dataSet.copyActive()) : dataSet;
+    SurfData surfData = (containsInactives) 
+      ? dataSet.copyActive() : dataSet;
     double pressValue = 0.0;
     unsigned i = 0;
 
