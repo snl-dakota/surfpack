@@ -1,0 +1,4 @@
+#! /bin/sh
+SURFPACK=`pwd`; export SURFPACK
+PATH="$SURFPACK/../../bin:$PATH"; export PATH 
+M4="$SURFPACK/../../bin/m4"; export M4 
