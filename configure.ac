@@ -3,6 +3,7 @@
 
 AC_PREREQ(2.57)
 AC_INIT(Surfpack, 0.1, mricha@sandia.gov)
+AM_CONFIG_HEADER(config.h)
 AM_INIT_AUTOMAKE
 # Check to make sure this file exists as a safety check
 AC_CONFIG_SRCDIR([src/Surface.cpp])
@@ -20,6 +21,7 @@ AC_PROG_MAKE_SET
 AC_PROG_LIBTOOL
 
 CXXFLAGS="-fprofile-arcs -ftest-coverage -g"
+AC_DEFINE([__TESTING_MODE__], [], [1])
 # Checks for libraries.
 ## FIXME: Replace `main' with a function in `-lF':
 #AC_CHECK_LIB([F], [main])
