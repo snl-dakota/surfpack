@@ -19,6 +19,9 @@ AC_PROG_CXX([CC cxx xlc g++ c++ gcc])
 AC_DISABLE_SHARED
 
 AC_LANG_CPLUSPLUS
+#Chech for the linear algebra libraries that should be on OSF
+AC_CHECK_LIB([dxml],[dgels_])
+
 #Check for the linear algebra libraries that are needed on Irix
 AC_CHECK_LIB([scs],[dgels_])
 
@@ -30,13 +33,15 @@ AC_CHECK_LIB([fsu],[main],[],[],[$WHOLE_LIB_PATH])
 AC_CHECK_LIB([sunperf],[main],[],[],[$WHOLE_LIB_PATH])
 
 
-#Check for the linear algebra libraries on non-sun machines
+#Check for the linear algebra libraries on Linux machines
 AC_CHECK_LIB([m],[main],[],[],[$WHOLE_LIB_PATH])
 AC_CHECK_LIB([g2c],[main],[],[],[$WHOLE_LIB_PATH])
 AC_CHECK_LIB([blas],[main],[],[],[$WHOLE_LIB_PATH])
 AC_CHECK_LIB([lapack],[main],[],[],[$WHOLE_LIB_PATH])
 AC_CHECK_LIB([gslcblas],[main],[],[],[$WHOLE_LIB_PATH])
 AC_CHECK_LIB([gsl],[main],[],[],[$WHOLE_LIB_PATH])
+
+#Check for libraries needed for CPP Unit test suite
 AC_CHECK_LIB([dl],[main],[],[],[$WHOLE_LIB_PATH])
 include_tests=yes
 AC_CHECK_LIB([cppunit],[main],[],[include_tests=no],[$WHOLE_LIB_PATH])
