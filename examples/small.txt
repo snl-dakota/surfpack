@@ -11,7 +11,7 @@ Evaluate[surface = surf1, input_data = x, output_data = z]
 Fitness[surface = surf1, metric = 'rsquared']
 SaveData[data = z, file = 'z.txt']
 SaveSurface[surface = surf1, file = 'savedRast.txt']
-PointDefinition[name = point_def, file = 'cdef']
+AxesBounds[name = point_def, file = 'cdef']
 GridPoints[data = gridData, def = point_def]
 SaveData[data = gridData, file = 'gridData.txt']
 GridPoints[data = gridData2, def = point_def, test_function = 'rastrigin',

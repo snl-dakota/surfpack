@@ -1,3 +1,3 @@
-PointDefinition[name = pd, file='cdef']
+AxesBounds[name = pd, file='cdef']
 MonteCarloSample[def=pd,size=10,name=x]
 SaveData[data=x,file='x.txt'] 
