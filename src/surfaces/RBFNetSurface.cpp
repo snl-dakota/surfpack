@@ -11,6 +11,7 @@
 #include <fstream>
 #include <vector>
 #include <set>
+#include <cmath>
 #include "surfpack.h"
 #include "SurfPoint.h"
 #include "SurfData.h"

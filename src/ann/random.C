@@ -26,6 +26,9 @@
 #include "random.h" 
 //#include "data_types.h"
 #include "system_defs.h"
+#include <cstdlib>
+
+extern "C" void srand48(long int);
 
 using namespace std;
 /*

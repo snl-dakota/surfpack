@@ -12,6 +12,7 @@
 #include <iomanip>
 #include <vector>
 #include <set>
+#include <cmath>
 #include "SurfData.h"
 #include "Surface.h"
 #include "PolynomialSurface.h"

@@ -23,6 +23,7 @@
 #include "system_defs.h"
 #include <vector>
 #include <sstream>
+#include <cmath>
 #include "vector_enhancements.h"
 
 // ANN includes
@@ -34,6 +35,8 @@
 #include "allocate.h"
 #include "dsvd2.h"
 //}
+
+extern "C" double atanh(double);
 
 using namespace std;
 using namespace surfpack;

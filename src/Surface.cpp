@@ -29,6 +29,8 @@
 #include "Surface.h"
 #include "SurfPoint.h"
 #include "SurfData.h"
+#include <cstdlib>
+#include <cmath>
 //#include "SurfDataIterator.h"
 //#include "SkipSurfDataIterator.h"
 
