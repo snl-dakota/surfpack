@@ -270,7 +270,7 @@ double Surface::rSquared(SurfData& dataSet)
 
   for (unsigned i = 0; i < dataSet.size(); i++) {
     double observedF = dataSet.getResponse(i);
-    double estimatedF = evaluate(dataSet[i].X());
+    double estimatedF = getValue(dataSet[i].X());
     double residual = observedF - estimatedF;
     residualSumOfSquares += residual * residual;
     sumObserved += observedF;
