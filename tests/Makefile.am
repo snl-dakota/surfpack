@@ -4,8 +4,6 @@ srftest_SOURCES = SurfPointTest.h \
 		SurfPointTest.cpp \
 		SurfDataTest.h \
 		SurfDataTest.cpp \
-		CtorDtorCounts.h \
-		CtorDtorCounts.cpp \
 		unittests.h \
 		unittests.cpp \
 		srftestmain.cpp 
