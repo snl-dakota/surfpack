@@ -271,11 +271,11 @@ void create(vector< string >& args)
     if (args[3] == "Polynomial" && args.size() == 5) {
       // must be a polynomial surface 
       sd.setDefaultIndex(0);
-      s = createSurface(args[3], sd, atoi(args[4].c_str()));
+      s = SurfaceFactory::createSurface(args[3], sd, atoi(args[4].c_str()));
     } else {
       // create surface with sd; responseIndex = 0
       sd.setDefaultIndex(0);
-      s = createSurface(args[3], sd);
+      s = SurfaceFactory::createSurface(args[3], sd);
     }
     if (args[3] == "Kriging") {
       if (args.size() > 5) {
@@ -348,7 +348,7 @@ void evaluateSurface(vector< string >& args)
     //        default:
     //    	cout << "Unknown Surface" << endl;
     //}
-    s = createSurface(args[3]);
+    s = SurfaceFactory::createSurface(args[3]);
     s->getValue(sd);
     
     sd.writeText(outfile);
@@ -359,7 +359,7 @@ void evaluateSurface(vector< string >& args)
 
 void computeErrorMetric(vector< string>& args)
 {
-    Surface* s = createSurface(args[1]);
+    Surface* s = SurfaceFactory::createSurface(args[1]);
     SurfData* sd = 0;
     //AbstractSurfDataIterator* itr = 0;
     if (args.size() == 4) {
@@ -389,7 +389,7 @@ void conversion(vector< string>& args)
     } else if (args[1].find(".srf") == args[1].size() - 4 || 
         args[2].find(".srf") == args[2].size() - 4) {
       cout << "Converting Surface..." << endl;
-      Surface* s = createSurface(args[1]);
+      Surface* s = SurfaceFactory::createSurface(args[1]);
       s->write(args[2]);
       delete s;
     } else {
