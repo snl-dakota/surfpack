@@ -375,16 +375,16 @@ void SurfData::addPoint(const SurfPoint& sp)
     int beforesize = orderedPoints.size();
     orderedPoints.insert(points[points.size()-1]);
     int aftersize = orderedPoints.size();
-    if (beforesize == aftersize) { 
-      cout << "Something went wrong" << endl;
-      cout << "beforesize: " << beforesize << " aftersize: " << aftersize << endl;
-    }
-    if (orderedPoints.size() != points.size()) {
-      cout << "oPsize: " << orderedPoints.size() << " points.size(): " << points.size() << endl;
-    }
+    //if (beforesize == aftersize) { 
+    //  cout << "Something went wrong" << endl;
+    //  cout << "beforesize: " << beforesize << " aftersize: " << aftersize << endl;
+    //}
+    //if (orderedPoints.size() != points.size()) {
+    //  cout << "oPsize: " << orderedPoints.size() << " points.size(): " << points.size() << endl;
+    //}
     mapping.push_back(points.size()-1);
   } else {
-    cerr << "Duplication" << endl;
+    //cerr << "Duplication" << endl;
     // Replace the old point with this new one
     SurfPoint* spPtr = *iter;
     *spPtr = sp;
@@ -457,9 +457,6 @@ void SurfData::setExcludedPoints(const std::set<unsigned>& excludedPoints)
 void SurfData::addListener(Surface* surface)
 {
   /// only add the listener if its not already there
-  cout << "SurfData: " << this
-       << " #listbef: " << listeners.size()
-       << " adding: " << surface;
   list<Surface*>::iterator itr = 
     find(listeners.begin(),listeners.end(),surface);
   if(itr ==listeners.end() ) {
@@ -467,38 +464,11 @@ void SurfData::addListener(Surface* surface)
     //cout << "Listener added: " << listeners.size() 
     // 	   << "this: " << this << endl;
   }
-  cout << " #listaft: " << listeners.size() << endl;
 }
 
 void SurfData::removeListener(Surface* surface)
 {
-  //// We had some problems if we were removing things from the list
-  //// while it was being iterated over
-  ////if (!cleanupStarted) {
-  //  // make sure its OK to erase the object, then do so
-  //  list<Surface*>::iterator itr =
-  //    find(listeners.begin(),listeners.end(),surface);
-  //  //cout << "remove: " << surface << endl;
-  //  if(itr!=listeners.end()) {
-  //    //cout << "remove: " << *itr << endl;
-  //    //listeners.erase(itr);
-  //    *itr = 0;
-  //    cout << "Listener removed: " << listeners.size()
-  //         << "this: " << this << endl;
-  //  }
-  //  for (list<Surface*>::iterator itr2 = listeners.begin();
-  //        itr2 != listeners.end();
-  //        ++itr2) {
-  //    cout << "Still listening: " << *itr << endl;
-  //  }
-  ////} else {
-  ////  cout << "Cleanup has already started" << endl;
-  ////}
-  cout << "SurfData: " << this
-       << " #listbef: " << listeners.size()
-       << " removing: " << surface;
   listeners.remove(surface);
-  cout << " #listaft: " << listeners.size() << endl;
 }
 
 /// For use with copy constructor and assignment operator-- creates a list of
@@ -724,13 +694,13 @@ void SurfData::notifyListeners(int msg)
 {
   //cout << "Size: " << listeners.size() << endl;
   if (listeners.size() != 0) {
-    cout << "SurfData: " << this
-         << " thinks it has " << listeners.size()
-         << " surfaces to notify: " << endl;
+   // cout << "SurfData: " << this
+   //      << " thinks it has " << listeners.size()
+   //      << " surfaces to notify: " << endl;
   }
   list<Surface*>::iterator itr = listeners.begin();
   while (itr != listeners.end()) {
-    cout << "\tnotifying: " << *itr << " of " << msg << endl;
+   // cout << "\tnotifying: " << *itr << " of " << msg << endl;
     if (*itr) {
       (*itr)->notify(msg);
     }

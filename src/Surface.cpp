@@ -258,8 +258,6 @@ double Surface::press(SurfData& dataSet)
       surfData.setExcludedPoints(pointToSkip);
 
       Surface* allButOne = makeSimilarWithNewData(&surfData);
-      cout << "Surface: " << allButOne
-		<< " connected to: " << &surfData << endl;
       double fTilde = allButOne->getValue(currentPoint.X());
       // actual value of the function at this point
       double fx = currentPoint.F();
@@ -432,8 +430,8 @@ SurfData& Surface::checkData(SurfData* dataSet)
 void Surface::notify(int msg)
 {
   if (!sd) {  // Then how did this get called!
-    cerr << "Notify called, but this Surface does not point to any data" 
-         << endl;
+    //cerr << "Notify called, but this Surface does not point to any data" 
+    //     << endl;
   } else if (msg == SurfData::GOING_OUT_OF_EXISTENCE) {
     sd = 0;
     if (builtOK) {
