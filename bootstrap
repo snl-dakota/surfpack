@@ -6,6 +6,6 @@ M4="$SURFPACK/../../bin/m4"; export M4
 aclocal-1.8
 libtoolize --force --copy
 autoheader
-automake-1.8 -a
+automake-1.8 --gnu -a
 autoconf
 configure -C --prefix=$SURFPACK
