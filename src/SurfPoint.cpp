@@ -206,8 +206,7 @@ void SurfPoint::writeText(ostream& os) const
   for (unsigned i = 0; i < f.size(); i++) {
     os << setw(field_width) << f[i];
   }
-  // Tack on some extra space before the endl to circumvent istringstream bug
-  os << " " << endl;
+  os << endl;
   os.flags(old_flags);
   os.precision(old_precision);
 }

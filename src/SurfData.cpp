@@ -524,9 +524,12 @@ void SurfData::writeText(ostream& os) const
   //try {
     // Write an extra space after last token to prevent
     // ifstream from setting the bad_bit when data is later read in.
-    os << mapping.size() << " " << endl
-       << xsize << " " << endl 
-       << fsize << " " << endl;
+    //os << mapping.size() << " " << endl
+    //   << xsize << " " << endl 
+    //   << fsize << " " << endl;
+    os << mapping.size() << endl
+       << xsize << endl 
+       << fsize << endl;
     for (unsigned i = 0; i < mapping.size(); i++) {
       points[mapping[i]].writeText(os);
     }
@@ -574,9 +577,11 @@ void SurfData::readText(istream& is)
     streamline >> size;
     getline(is,sline);
     streamline.str(sline);
+    streamline.clear();
     streamline >> xsize;
     getline(is,sline);
     streamline.str(sline);
+    streamline.clear();
     streamline >> fsize;
     points.clear();
     for (numPointsRead = 0; numPointsRead < size; numPointsRead++) {
