@@ -131,8 +131,7 @@ unsigned PolynomialSurface::minPointsRequired(unsigned xsize, unsigned order)
 unsigned PolynomialSurface::minPointsRequired() const
 { 
   if (xsize == 0) {
-    throw Surface::null_dimension_surface(
-      "Cannot create surface with zero dimensionality");
+    throw string("Cannot create surface with zero dimensionality");
   } else if (order == 0) {
     return 1;
   } else {
