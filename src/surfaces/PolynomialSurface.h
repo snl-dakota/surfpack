@@ -24,6 +24,7 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <stdexcept>
 
 class SurfPoint;
 class Surface;
@@ -81,11 +82,11 @@ public:
 // Helper methods 
 // ____________________________________________________________________________
 
-  static unsigned fact(unsigned x);
-  static unsigned nChooseR(unsigned n, unsigned r); 
-  void resetTermCounter();
-  double computeTerm(const std::vector<double>& x);
-  void nextTerm();
+  //static unsigned fact(unsigned x);
+  //static unsigned nChooseR(unsigned n, unsigned r); 
+  void resetTermCounter() const;
+  double computeTerm(const std::vector<double>& x) const;
+  void nextTerm() const;
 // ____________________________________________________________________________
 // Data members 
 // ____________________________________________________________________________
@@ -94,8 +95,11 @@ protected:
   static const std::string name;
   unsigned order;
   std::vector<double> coefficients;
-  std::vector<unsigned> digits;
-  unsigned termIndex;
+  mutable std::vector<unsigned> digits;
+public:
+  mutable unsigned termIndex;
+  mutable bool lastTerm;
+//protected:
    
 // ____________________________________________________________________________
 // I/O 
@@ -112,14 +116,14 @@ protected:
   virtual void readText(std::istream& is);
 
   virtual void printTermLabel(std::ostream& os = std::cout);
+  virtual void printTermComponents(std::ostream& os = std::cout);
 
 // ____________________________________________________________________________
 // Testing 
 // ____________________________________________________________________________
 
 #ifdef __TESTING_MODE__ 
-  friend class SurfDataUnitTest;
-  friend class SurfaceUnitTest;
+  friend class PolynomialSurfaceTest;
 
 public:
   static int constructCount;

@@ -40,6 +40,7 @@ PolynomialSurface::PolynomialSurface(SurfData* sd, unsigned order)
 #ifdef __TESTING_MODE__
   constructCount++;
 #endif
+  resetTermCounter();
 }  
 
 PolynomialSurface::PolynomialSurface(unsigned xsize, unsigned order, 
@@ -50,6 +51,10 @@ PolynomialSurface::PolynomialSurface(unsigned xsize, unsigned order,
   constructCount++;
 #endif
   this->xsize = xsize;
+  builtOK = true;
+  //dataAdded = false;
+  //dataModified = false;
+  resetTermCounter();
 }
 
 PolynomialSurface::PolynomialSurface(const string filename) : Surface(0)
@@ -79,6 +84,7 @@ PolynomialSurface*
 {
   PolynomialSurface* newPS = new PolynomialSurface(*this);
   newPS->setData(surfData);
+  newPS->createModel();
   return newPS;
 }
 
@@ -100,16 +106,28 @@ const string PolynomialSurface::surfaceName() const
 
 unsigned PolynomialSurface::minPointsRequired(unsigned xsize, unsigned order)
 {
-  return nChooseR(xsize + order, order);
+  //return nChooseR(xsize + order, order);
+  vector<double> coeff;
+  PolynomialSurface tempps(xsize,order,coeff);
+  return tempps.minPointsRequired();
 }
 
 unsigned PolynomialSurface::minPointsRequired() const
 { 
-  if (!xsize) {
-    return INT_MAX;
+  if (xsize == 0) {
+    throw Surface::null_dimension_surface(
+      "Cannot create surface with zero dimensionality");
+  } else if (order == 0) {
+    return 1;
   } else {
-    unsigned result = minPointsRequired(xsize, order);
-    return result; 
+    //unsigned result = minPointsRequired(xsize, order);
+    //return result; 
+    resetTermCounter();
+    while (!lastTerm) {
+      nextTerm();
+    }
+    // Add one because the terms are numbered 0 to n-1
+    return termIndex + 1;
   }
 }
 
@@ -248,7 +266,8 @@ void PolynomialSurface::build(SurfData& data)
   // populate the A and B matrices in preparation for Ax=b
   for(unsigned i = 0; i < data.size(); i++) {
     resetTermCounter();
-    while (termIndex < static_cast<unsigned>(numCoeff)) {
+    //while (termIndex < static_cast<unsigned>(numCoeff)) {
+    while (!lastTerm) {
       a[i+termIndex*pts] = computeTerm(data[i].X());
       nextTerm();
     }
@@ -264,9 +283,9 @@ void PolynomialSurface::build(SurfData& data)
   dgels_(trans,pts,numCoeff,nrhs,a,pts,b,pts,work,lwork,info);
   //cout << "A Matrix after: " << endl;
   //writeMatrix(a,pts,numCoeff,cout);
-  if (info < 0) {
-          cerr << "dgels_ returned with an error" << endl;
-  }
+  //if (info < 0) {
+  //        cerr << "dgels_ returned with an error" << endl;
+  //}
 
   for(int i=0;i<numCoeff;i++) {
     coefficients[i] = b[i];
@@ -287,49 +306,54 @@ void PolynomialSurface::build(SurfData& data)
 // Helper methods 
 // ____________________________________________________________________________
 
-unsigned PolynomialSurface::fact(unsigned x)
-{
-  if (x > 12) {
-    cerr << x << "! exceeds the size of an integer. Don't do it." << endl;
-    return 1;
-  }
+//unsigned PolynomialSurface::fact(unsigned x)
+//{
+//  if (x > 12) {
+//    cerr << x << "! exceeds the size of an integer. Don't do it." << endl;
+//    return 1;
+//  }
+//
+//  unsigned result = 1;
+//  for (unsigned i = 1; i <= x; i++) {
+//    result *= i;
+//  }
+//  return result;
+//}
 
-  unsigned result = 1;
-  for (unsigned i = 1; i <= x; i++) {
-    result *= i;
-  }
-  return result;
-}
-
-unsigned PolynomialSurface::nChooseR(unsigned n, unsigned r)
-{
-  //return fact(n) / (fact(n-r)*fact(r));
-  unsigned num = 1;
-  unsigned den = 1;
-  unsigned lim = (n-r) < r ? n-r : r;
-  for (unsigned i = 0; i < lim; i++) {
-    num *= (n-i);
-    den *= i+1;
-  }
-  return num/den;
-}
+//unsigned PolynomialSurface::nChooseR(unsigned n, unsigned r)
+//{
+//  //return fact(n) / (fact(n-r)*fact(r));
+//  unsigned num = 1;
+//  unsigned den = 1;
+//  unsigned lim = (n-r) < r ? n-r : r;
+//  for (unsigned i = 0; i < lim; i++) {
+//    num *= (n-i);
+//    den *= i+1;
+//  }
+//  return num/den;
+//}
 	   
-void PolynomialSurface::resetTermCounter()
+void PolynomialSurface::resetTermCounter() const
 {
   for (unsigned i = 0; i < digits.size(); i++) {
     digits[i] = 0;
   }
   termIndex = 0;
+  lastTerm = false;
 }
 
-double PolynomialSurface::computeTerm(const std::vector<double>& x)
+double PolynomialSurface::computeTerm(const std::vector<double>& x) const
 {
   double product = 1.0;
   for (unsigned i = 0; i < digits.size(); i++) {
     if (digits[i] != 0) {
       if (digits[i] - 1 >= x.size()) {
-	cerr << "dimension mismatch in PolynomialSurface::computeTerm" << endl;
-	return 0.0;
+        ostringstream msg;
+        msg << "Error in PolynomialSurface::computeTerm.  "
+	    << "Variable " << digits[i] << " requested, but "
+ 	    << "point has only " << x.size() << " dimension(s)."
+	    << endl;
+        throw std::range_error(msg.str());
       }
       product *= x[digits[i]-1];
     }
@@ -337,21 +361,37 @@ double PolynomialSurface::computeTerm(const std::vector<double>& x)
   return product;
 }
 
-void PolynomialSurface::nextTerm()
+void PolynomialSurface::nextTerm() const
 {
-  unsigned curDig = 0;
-  while (digits[curDig] == xsize && curDig < order) {
-    curDig++;
-  }
-  // Don't go past last term
-  if (curDig < order) {
-    digits[curDig]++;
-    while(curDig > 0) {
-      curDig--;
-      digits[curDig] = digits[curDig+1];
+  if (!lastTerm) {
+    unsigned curDig = 0;
+    while (digits[curDig] == xsize && curDig < order) {
+      curDig++;
+    }
+    // Don't go past last term
+    if (curDig < order) {
+      digits[curDig]++;
+      while(curDig > 0) {
+        curDig--;
+        digits[curDig] = digits[curDig+1];
+      }
+      if (termIndex == INT_MAX) {
+        //for (unsigned j = 0; j < digits.size(); j++) {
+        //  cout << digits[j] << endl;
+        //}
+        throw std::range_error(
+          "Integer overflow: number of terms exceeds maximum integer");
+      } else {
+        termIndex++;
+      }
+    } else {
+      lastTerm = true;
     }
   }
-  termIndex++;
+  //printTermLabel(cout);
+  //printTermComponents(cout);
+  //cout << endl;
+ 
 }
 
 // ____________________________________________________________________________
@@ -394,12 +434,11 @@ void PolynomialSurface::readBinary(istream& is)
 {
   is.read(reinterpret_cast<char*>(&xsize),sizeof(xsize));
   is.read(reinterpret_cast<char*>(&order),sizeof(order));
+  digits.resize(order);
   coefficients.resize(minPointsRequired());
   for (unsigned i = 0; i < coefficients.size(); i++) {
     is.read(reinterpret_cast<char*>(&coefficients[i]),sizeof(coefficients[i]));
   }
-  digits.resize(order);
-  //originalData = false;
 }
 
 void PolynomialSurface::readText(istream& is)
@@ -414,6 +453,7 @@ void PolynomialSurface::readText(istream& is)
   getline(is,sline);   
   streamline.str(sline);
   streamline >> order;
+  digits.resize(order);
   // determine the number of terms that should be in the file
   coefficients.resize(minPointsRequired());
   for (unsigned i = 0; i < coefficients.size(); i++) {
@@ -422,8 +462,6 @@ void PolynomialSurface::readText(istream& is)
     // read each coefficient; ignore the label, if any, to the right 
     streamline >> coefficients[i];		
   }
-  digits.resize(order);
-  //originalData = false;
 }
 
 void PolynomialSurface::printTermLabel(ostream& os)
@@ -455,6 +493,18 @@ void PolynomialSurface::printTermLabel(ostream& os)
   os << label;
 }
 
+void PolynomialSurface::printTermComponents(std::ostream& os)
+{
+  os << " ";
+  for (unsigned i = 0; i < digits.size(); i++) {
+    os << "[";
+    if (digits[i] != 0) {
+	os << digits[i];
+    }
+    os << "]";
+  }
+  os << " ";
+}
   
 // ____________________________________________________________________________
 // Testing 
