@@ -201,9 +201,9 @@ void KrigingSurface::initialize()
     conminThetaUpperBnds[i] =  DBL_MAX;
   }
   for (i=0;i<xsize;i++) {
-    conminThetaVars[i]      = 4.0e+1 ;
+    conminThetaVars[i]      = 1.0;
     conminThetaLowerBnds[i] = 1.e-3; 
-    conminThetaUpperBnds[i] = 1.e+16; 
+    conminThetaUpperBnds[i] = 1.e+6; 
   }
 
   // now that all this memory has been allocated, we need to set a flag
