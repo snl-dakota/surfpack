@@ -1,69 +1,89 @@
-// ----------------------------------------------------------
+//----------------------------------------------------------------------------
 // Project: SURFPACK++
 //
-// File:        ANNSurface.h
-// Author:      Mark Richards	 
-// Created:     July 18, 2003
-// Modified:    
-//
-// Description: 
-// + The ANNSurface class uses an artificial neural network to fit the points 
-// ----------------------------------------------------------
+// File: 	ANNSurface.h
+// Author: 	Mark Richards
+//----------------------------------------------------------------------------
 
-#ifndef __ANN_SURFACE_H__
-#define __ANN_SURFACE_H__
+#ifndef __ANN_SURFACE_H__ 
+#define __ANN_SURFACE_H__ 
 
-#include <iostream>
-#include <vector>
-#include <string>
+class SurfData;
+class Surface;
+class AbstractSurfDataIterator;
+class ANNApprox;
 
-#include "SurfException.h"
-#include "SurfPoint.h"
-#include "Surface.h"
-#include "SurfDataIterator.h"
-#include "SkipSurfDataIterator.h"
-
-
-class MultiLayerPerceptron;
+typedef float real;
 
 class ANNSurface : public Surface
 {
-private:
-   ANNSurface() {}
+//_____________________________________________________________________________
+// Creation, Destruction, Initialization
+//_____________________________________________________________________________
 
 public:
+  ANNSurface(SurfData& sd, unsigned responseIndex = 0);
+  ANNSurface(AbstractSurfDataIterator* dataItr);
+  ANNSurface(const std::string filename);
+  ~ANNSurface();
+  void init();
 
-// constructor/destructor
-////////////////////////////////
+//_____________________________________________________________________________
+// Overloaded Operators 
+//_____________________________________________________________________________
 
-//   ANNSurface(const std::vector<double> &);
-//   ANNSurface(SurfData *);
-//   ANNSurface(SurfData *,const std::vector<double> &);
-//   ANNSurface(const ANNSurface &);
-     ANNSurface(SurfData* surfData, int responseIndex = 0, int size = 10, int maxTrainingIterations = 10000, double goalTrainingError = 1e-8, int trainingMethodCode = 1); 
-     ANNSurface(SurfData* surfData, MultiLayerPerceptron* mlp, int responseIndex = 0);
-     ANNSurface(std::istream& is);
-   
-   // a do nothing destructor
-   //
-   virtual ~ANNSurface(); 
+//_____________________________________________________________________________
+// Queries
+//_____________________________________________________________________________
 
-// member functions
-////////////////////////////////
+  virtual const std::string surfaceName() const;
+  
+  virtual unsigned minPointsRequired() const;
+  
+  virtual double evaluate(const std::vector<double>& x);
+//_____________________________________________________________________________
+// Commands 
+//_____________________________________________________________________________
 
-   virtual int getMinPointCount(int dim) const;
-   virtual int getDimension() const;
-   virtual std::ostream & write(ostream & os = cout); 
-   virtual void save(std::string filename);
-   virtual std::string getType() const;
-   
+  virtual void build();
+  
+  /// Create a surface of the same type as 'this.'  This objects data should
+  /// be replaced with the dataItr passed in, but all other attributes should
+  /// be the same (e.g., a second-order polynomial should return another 
+  /// second-order polynomial.  Surfaces returned by this method can be used
+  /// to compute the PRESS statistic.
+  virtual ANNSurface* makeSimilarWithNewData
+    (AbstractSurfDataIterator* dataItr);
 
+//_____________________________________________________________________________
+// Helper methods 
+//_____________________________________________________________________________
+  
+//_____________________________________________________________________________
+// I/O 
+//_____________________________________________________________________________
+
+  virtual void writeBinary(std::ostream& os);
+  virtual void writeText(std::ostream& os);
+  virtual void readBinary(std::istream& is);
+  virtual void readText(std::istream& is);
+//_____________________________________________________________________________
+// Data members 
+//_____________________________________________________________________________
 protected:
-   MultiLayerPerceptron* mlp;
-   bool ownMLP;
+  static const std::string name;
+  ANNApprox* annObject;
 
-   virtual double calculate(const std::vector<double> & x) throw(SurfException);
-   virtual void calculateInternals(AbstractSurfDataIterator* iter);
+//_____________________________________________________________________________
+// Testing 
+//_____________________________________________________________________________
+
+#ifdef __TESTING_MODE__
+public:
+  static int constructCount;
+  static int destructCount;
+#endif
+
 };
 
 #endif
