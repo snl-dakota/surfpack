@@ -9,6 +9,8 @@
 #define POLYNOMIAL_SURFACE_TEST_H 
 
 #include <cppunit/extensions/HelperMacros.h>
+#include <string>
+
 #include "surfpack.h"
 #include "PolynomialSurface.h"
 
@@ -30,8 +32,7 @@ class PolynomialSurfaceTest : public CppUnit::TestFixture
 //  CPPUNIT_TEST( nChooseR );
   CPPUNIT_TEST( minPointsRequiredStatic );
   CPPUNIT_TEST( minPointsRequiredNonStatic );
-  CPPUNIT_TEST_EXCEPTION( minPointsRequiredNullException, 
-    Surface::null_dimension_surface);
+  CPPUNIT_TEST_EXCEPTION( minPointsRequiredNullException, std::string);
   CPPUNIT_TEST( evaluate );
   CPPUNIT_TEST( build );
   CPPUNIT_TEST( computeTerm );
