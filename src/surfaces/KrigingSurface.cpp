@@ -411,7 +411,7 @@ void KrigingSurface::writeBinary(ostream& os)
 
 void KrigingSurface::writeText(ostream& os)
 {
-  long old_flags = os.flags();
+  ios::fmtflags old_flags = os.flags();
   unsigned old_precision = os.precision(surfpack::output_precision);
   os.setf(ios::scientific);
   int i;

@@ -198,7 +198,7 @@ void SurfPoint::writeBinary(ostream& os) const
 void SurfPoint::writeText(ostream& os) const
 {
   // ios_base::flags returns ios::fmtflags object, but OSF compiler doesn't like that
-  long old_flags = os.flags();
+  ios::fmtflags old_flags = os.flags();
   unsigned old_precision = os.precision(output_precision);
   os.setf(ios::scientific);
   for (unsigned i = 0; i < x.size(); i++) {

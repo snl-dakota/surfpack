@@ -624,7 +624,7 @@ void ANNApprox::writeBinary(std::ostream& os)
 void ANNApprox::writeText(std::ostream& os)
 {
   // ios_base::flags return object of type ios::fmtflags but OSF compiler doesn't like it
-  long old_flags = os.flags();
+  ios::fmtflags old_flags = os.flags();
   unsigned old_precision = os.precision(surfpack::output_precision);
   os.setf(ios::scientific);
   
