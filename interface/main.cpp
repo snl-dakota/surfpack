@@ -178,46 +178,15 @@ SurfData randomPoints(string filename) {
   return SurfData(sps);
 }
 
-double sphere(const vector<double>& pt) 
-{
-  double result = 0.0;
-  for (unsigned i = 0; i < pt.size(); i++) {
-    double x = pt[i];
-    result += x*x;
-  }
-  return result;
-}
-
-double rastrigin(const vector<double>& pt) 
-{
-  double result = 0.0;
-  for (unsigned i = 0; i < pt.size(); i++) {
-    double x = pt[i];
-    result += x*x-10*cos(4.0*acos(0.0)*x)+10.0;
-  }
-  return result;
-}
-
-double rosenbrock(const vector<double>& pt) 
-{
-  double result = 0.0;
-  for (unsigned i = 0; i < pt.size() - 1; i++) {
-    double x = pt[i];
-    double xp = pt[i+1];
-    result += 100.0*(xp-x*x)*(xp-x*x)+(x-1.0)*(x-1.0); 
-  }
-  return result;
-}
-
 
 double testFunction(const string name, const vector<double>& pt)
 {
   if (name == "rosenbrock") {
-    return rosenbrock(pt);
+    return surfpack::rosenbrock(pt);
   } else if (name == "sphere") {
-    return sphere(pt);
+    return surfpack::sphere(pt);
   } else {
-    return rastrigin(pt);
+    return surfpack::rastrigin(pt);
   }
 }
 
@@ -349,9 +318,13 @@ void evaluateSurface(vector< string >& args)
     //    	cout << "Unknown Surface" << endl;
     //}
     s = SurfaceFactory::createSurface(args[3]);
-    s->getValue(sd);
+    if (s) {
+      s->getValue(sd);
+      sd.writeText(outfile);
+    } else {
+      cerr << "Unable to evaluate surface." << endl;
+    }
     
-    sd.writeText(outfile);
     //infile.close();
     //outfile.close();
     delete s;
