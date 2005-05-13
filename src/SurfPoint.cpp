@@ -54,6 +54,14 @@ SurfPoint::SurfPoint(const SurfPoint& sp) : x(sp.x), f(sp.f)
   init();
 }
 
+
+/// Default constructor creates a one dimensional point at the origin 
+SurfPoint::SurfPoint() : x(1), f(0)
+{
+  x[0] = 0;
+  init();
+} 
+
 /// Initialization used by all regular constructors.  Ensures that point has
 /// at least one dimension.
 void SurfPoint::init()
@@ -94,6 +102,13 @@ bool SurfPoint::operator!=(const SurfPoint& other) const
   return !(*this == other);
 } 
 
+/// Return the value along the (xindex)th dimension;
+double SurfPoint::operator[](unsigned xindex) const
+{
+  if (xindex >= x.size()) throw string("Out of range in SurfPoint");
+  return x[xindex];
+}
+  
 /// Function object for use with pairs of SurfPoint objects (particularly in
 /// a SurfData object).  SurfPoint s1 is "less than" s2 if it has fewer
 /// dimensions.  SurfPoint s1 is also less than s2 if, for some dimension i,

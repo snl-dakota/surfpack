@@ -37,7 +37,6 @@ const int SurfData::DATA_MODIFIED = 2;
 SurfData::SurfData(const vector<SurfPoint>& points_) 
   : scaler(0), valid()
 {
-  init();
   if (points_.empty()) {
     this->xsize = 0;
     this->fsize = 0;
@@ -48,6 +47,7 @@ SurfData::SurfData(const vector<SurfPoint>& points_)
       this->addPoint(points_[i]);
     }
   }
+  init();
   // Check to make sure data points all have the same number of dimensions
   // and response values.  An exception will be thrown otherwise.
   sanityCheck();
@@ -85,6 +85,13 @@ SurfData::SurfData(const SurfData& other)
   valid = other.valid;
   mapping = other.mapping;
   buildOrderedPoints();
+}
+
+/// First SurfPoint added will determine the dimensions of the data set 
+SurfData::SurfData() : scaler(0), valid()
+{
+    this->xsize = 0;
+    this->fsize = 0;
 }
 
 /// STL data members' resources automatically deallocated 

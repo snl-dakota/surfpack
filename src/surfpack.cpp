@@ -193,11 +193,7 @@ double surfpack::mean(std::vector<double>& vals)
 /// Return the sample variance of the values in vals
 double surfpack::sample_var(std::vector<double>& vals)
 {
-  double sse = 0;
-  double avg = surfpack::mean(vals);
-  for (unsigned i = 0; i < vals.size(); i++) {
-    sse += (vals[i]-avg)*(vals[i]-avg);
-  }
+  double sse = sum_squared_deviations(vals);
   return sse / (vals.size() - 1);
 }
 
@@ -207,6 +203,17 @@ double surfpack::sample_sd(std::vector<double>& vals)
   return sqrt(surfpack::sample_var(vals));
 }
 
+/// Return the sum of squared deviations from the mean
+double surfpack::sum_squared_deviations(std::vector<double>& vals)
+{
+  double sse = 0;
+  double avg = surfpack::mean(vals);
+  for (unsigned i = 0; i < vals.size(); i++) {
+    sse += (vals[i]-avg)*(vals[i]-avg);
+  }
+  return sse;
+}
+  
 /// Return the euclidean distance between pt1 and pt2.  Throw an exception if
 /// the dimensionality of the two vectors does not match.
 double surfpack::euclideanDistance(const vector<double>& pt1, 

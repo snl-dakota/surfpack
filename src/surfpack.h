@@ -123,6 +123,9 @@ namespace surfpack {
   
   /// Return the sample standard deviation of the values in vals
   double sample_sd(std::vector<double>& vals);
+
+  /// Return the sum of squared deviations from the mean
+  double sum_squared_deviations(std::vector<double>& vals);
   
   /// Return the euclidean distance between pt1 and pt2.  Throw an exception if
   /// the dimensionality of the two vectors does not match.

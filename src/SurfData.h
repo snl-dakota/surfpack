@@ -83,9 +83,7 @@ public:
   /// Copy only the points which have not been marked for exclusion
   SurfData copyActive();
   
-protected:
-  /// Default constructor explicitly disallowed by clients, but subclassing 
-  /// permitted.
+  /// First SurfPoint added will determine the dimensions of the data set 
   SurfData();
 
 private:

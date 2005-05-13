@@ -44,6 +44,9 @@ public:
   /// Copy constructor performs a deep copy
   SurfPoint(const SurfPoint& other);
 
+  /// Default constructor creates a one dimensional point at the origin 
+  SurfPoint();
+
   ~SurfPoint();
 
 private:
@@ -51,10 +54,6 @@ private:
   /// at least one dimension.
   void init();
 
-protected:
-  /// Default constructor explicitly disallowed.  A SurfPoint must at least
-  /// specify a point in some domain space.
-  SurfPoint();
 
 // ____________________________________________________________________________
 // Overloaded operators 
@@ -69,6 +68,9 @@ public:
   
   /// Tests for deep inequality
   bool operator!=(const SurfPoint& other) const;
+
+  /// Return the value along the (xindex)th dimension;
+  double operator[](unsigned xindex) const;
   
   /// Function object for use with pairs of SurfPoint objects (particularly in
   /// a SurfData object).  SurfPoint s1 is "less than" s2 if it has fewer

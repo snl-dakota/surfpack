@@ -19,6 +19,27 @@ typedef float real;
 class RBFNetSurface : public Surface
 {
 //_____________________________________________________________________________
+// Basis Function Helper Classes 
+//_____________________________________________________________________________
+
+  class BasisFunction
+  {
+    public:
+      BasisFunction();
+      BasisFunction(unsigned dims);
+      void resize(unsigned dims);
+      double evaluate(const std::vector<double>& x);
+      double weightedEvaluate(const std::vector<double>& x);
+      SurfPoint center;
+      double weight;
+      std::vector<double> radii;
+      void setCenter(std::vector<double>& radii_);
+      void setRadii(std::vector<double>& radii_);
+      void print(std::ostream& os);
+  };
+      
+
+//_____________________________________________________________________________
 // Creation, Destruction, Initialization
 //_____________________________________________________________________________
 
@@ -46,6 +67,8 @@ public:
 //_____________________________________________________________________________
 
   virtual void build(SurfData& data);
+  virtual void buildCandidate(SurfData& data, std::vector<BasisFunction*>& cbfs);
+  virtual std::vector<BasisFunction*> generateManyOptions(SurfData& surfData);
   
   virtual void config(const SurfpackParser::Arg& arg);
   /// Create a surface of the same type as 'this.'  This objects data should
@@ -58,7 +81,15 @@ public:
 //_____________________________________________________________________________
 // Helper methods 
 //_____________________________________________________________________________
-  
+
+  virtual double computeMetric(std::vector<double>& left, 
+    std::vector<double>& right);
+
+  virtual void partition(SurfData& sd);
+
+  virtual void computeRBFCenters(
+    std::vector< std::vector< const SurfPoint*> >& partitions);
+
 //_____________________________________________________________________________
 // I/O 
 //_____________________________________________________________________________
@@ -76,6 +107,8 @@ protected:
   std::vector<double> sizes;
   std::vector<SurfPoint> centers;
   double radius;
+  std::vector<BasisFunction*> bfs;
+  std::vector<BasisFunction*> basis_functions;
 
 //_____________________________________________________________________________
 // Testing 
