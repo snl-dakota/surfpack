@@ -415,16 +415,36 @@ ccccccccccccccccccccccc
 
       sigmahat = dabs(sigmahat)
 
+c      if( sigmahat .lt. 1.0d-6 ) then
+c         write(*,*)
+c         write(*,*)"***********************************************"
+c         write(*,*)"  Error in Kriging Model: Sigma_hat Estimate"
+c         write(*,*)"***********************************************"
+c         write(*,*)
+c         stop
+c      endif
+
+c      MLE = -0.5d0*(numsamp*log(sigmahat) + log(detR))
+
+
+
       if( sigmahat .lt. 1.0d-6 ) then
          write(*,*)
-         write(*,*)"***********************************************"
-         write(*,*)"  Error in Kriging Model: Sigma_hat Estimate"
-         write(*,*)"***********************************************"
+         write(*,*)"************************************************"
+         write(*,*)"  Warning: Kriging model sigma_hat term is zero "
+         write(*,*)"     and the MLE value is also zero.            "
+         write(*,*)"  This can happen if all data points have the   "
+         write(*,*)"     same response value.                       "
+         write(*,*)"************************************************"
          write(*,*)
-         stop
+         MLE = 0.0d0
+      else
+         MLE = -0.5d0*(numsamp*log(sigmahat) + log(detR))
       endif
 
-      MLE = -0.5d0*(numsamp*log(sigmahat) + log(detR))
+
+
+
 
 * 
 * calculate the "right hand side" terms in the kriging model
