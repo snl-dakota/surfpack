@@ -415,19 +415,6 @@ ccccccccccccccccccccccc
 
       sigmahat = dabs(sigmahat)
 
-c      if( sigmahat .lt. 1.0d-6 ) then
-c         write(*,*)
-c         write(*,*)"***********************************************"
-c         write(*,*)"  Error in Kriging Model: Sigma_hat Estimate"
-c         write(*,*)"***********************************************"
-c         write(*,*)
-c         stop
-c      endif
-
-c      MLE = -0.5d0*(numsamp*log(sigmahat) + log(detR))
-
-
-
       if( sigmahat .lt. 1.0d-6 ) then
          write(*,*)
          write(*,*)"************************************************"
