@@ -120,7 +120,7 @@ CPPFLAGS=""
 # want to run the gcov profiler to test code coverage.  The save-temps
 # flag tells the compiler to keep the preprocessed source.
 #CXXFLAGS="-fprofile-arcs -ftest-coverage -g -save-temps"
-CXXFLAGS="-g "
+CXXFLAGS="-I/usr/local/include -g"
 
 # The cxx compiler on OSF needs the __USE_STD_IOSTREAM flag since
 # the sstream classes are used.

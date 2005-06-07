@@ -4,9 +4,9 @@
 #define PARTICLESWARMMLP_H 
 
 #include "MultiLayerPerceptron.h"
-#include "OptimizationProblem.h"
-#include "Swarm.h"
-#include "Particle.h"
+//#include "OptimizationProblem.h"
+//#include "Swarm.h"
+//#include "Particle.h"
 
 #include "SurfPoint.h"
 #include "SurfData.h"

@@ -5,7 +5,7 @@
 
 #include <string>
 #include <vector>
-#include "FlexLexer.h"
+#include <FlexLexer.h>
 #include "surfparse.tab.h"
 extern int yyparse();
 

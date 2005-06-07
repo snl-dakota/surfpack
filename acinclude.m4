@@ -20,8 +20,8 @@ AC_DEFUN([MDR_CXX_CPPUNIT], [
   AC_CACHE_CHECK([for CPPUnit libraries], ac_cv_cxx_cppunit,
     AC_LANG_SAVE
     mdr_save_CXXFLAGS=$CXXFLAGS
-    CXXFLAGS="-L$HOME/local/lib -I$HOME/local/include -lcppunit -ldl"
-    dnl CXXFLAGS="-I$HOME/local/include -lcppunit -ldl"
+    CXXFLAGS="-L/usr/netpub/cppunit/lib -I/usr/netpub/cppunit/include -lcppunit -ldl"
+    dnl CXXFLAGS="-I/usr/netpub/cppunit/include -lcppunit -ldl"
     AC_LANG(C++)
     AC_LINK_IFELSE(
       [AC_LANG_PROGRAM(

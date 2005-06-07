@@ -3,7 +3,7 @@
 #include <iostream>
 #include <cstdlib>
 #include "SurfpackParser.h"
-#include <FlexLexer.h>
+//#include <FlexLexer.h>
 #include <sstream>
 #include <string>
 

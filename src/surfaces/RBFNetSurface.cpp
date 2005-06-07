@@ -438,11 +438,12 @@ std::vector<RBFNetSurface::BasisFunction*> RBFNetSurface::generateManyOptions(Su
   cout << "mrae: " << this->goodnessOfFit("mrae",&surfData) << endl;
   cout << "rsquared: " << this->goodnessOfFit("rsquared",&surfData) << endl;
 
-    // Begin debug code
+  // Begin debug code
   SurfData dataCopy(testData);
   dataCopy.write("candidateFunctions.txt");
-    // End debug code
-  
+  // End debug code
+ 
+  return bestBases;
 }
 
 void RBFNetSurface::config(const SurfpackParser::Arg& arg)

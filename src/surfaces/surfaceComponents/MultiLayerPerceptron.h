@@ -5,8 +5,8 @@
 
 #include "SurfPoint.h"
 #include "SurfData.h"
-#include "SurfDataIterator.h"
-#include "SkipSurfDataIterator.h"
+//#include "SurfDataIterator.h"
+//#include "SkipSurfDataIterator.h"
 #include <vector>
 
 class MultiLayerPerceptron 

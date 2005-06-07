@@ -1,7 +1,7 @@
 #include "config.h"
 
 #include "ParticleSwarmMLP.h"
-#include "ANNWeights.h"
+//#include "ANNWeights.h"
 #include <iostream>
 #include <fstream>
 #include <sstream>
