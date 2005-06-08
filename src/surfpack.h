@@ -3,6 +3,7 @@
 #ifndef __SURFPACK_H__
 #define __SURFPACK_H__
 
+#include <cassert>
 #include <iostream>
 #include <stdexcept>
 #include <string>
