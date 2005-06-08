@@ -321,9 +321,16 @@ f = 'sin(x) + cos(x)'
 func.insert(END, f)
 #minimax([0.0, 10.0, -2.0, 2.0])
 
+def gotit(var) :
+  print var
+  return var + 3
+
 # Initialize command field with an example command
 cedit.delete(0,END)
 cedit.insert(END, "result = vals[0] + vals[1];")
 cedit.focus_set()
-try: root.mainloop()
-except: print "Error"
+if __name__ == '__main__' :
+  s = input("X: ")
+  gotit(s)
+  try: root.mainloop()
+  except: print "Error"
