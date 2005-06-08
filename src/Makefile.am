@@ -29,7 +29,7 @@ libsurfpack_la_SOURCES =$(top_srcdir)/src/SurfPoint.cpp \
 			$(top_srcdir)/src/Surface.cpp \
 			$(top_srcdir)/src/Surface.h \
 			$(top_srcdir)/src/SurfScaler.cpp \
-			$(top_srcdir)/src/SurfSclaer.h \
+			$(top_srcdir)/src/SurfScaler.h \
 			$(top_srcdir)/src/AxesBounds.cpp \
 			$(top_srcdir)/src/AxesBounds.h \
 			$(top_srcdir)/src/surfaces/KrigingSurface.cpp \
