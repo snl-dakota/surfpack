@@ -40,6 +40,26 @@ class RBFNetSurface : public Surface
       
 
 //_____________________________________________________________________________
+// Partition Node Helper Class 
+//_____________________________________________________________________________
+
+  class PartitionNode
+  {
+    public:
+      std::vector< const SurfPoint* > set;
+      BasisFunction* basis_function;
+      PartitionNode* parent;
+      PartitionNode* left_child;
+      PartitionNode* right_child;
+      PartitionNode(std::vector< const SurfPoint* >& set_, 
+        PartitionNode* parent_) : set(set_),
+        parent(parent_),left_child(0),right_child(0), basis_function(0) {}
+      ~PartitionNode() {}
+  };
+  
+
+
+//_____________________________________________________________________________
 // Creation, Destruction, Initialization
 //_____________________________________________________________________________
 
@@ -69,6 +89,7 @@ public:
   virtual void build(SurfData& data);
   virtual void buildCandidate(SurfData& data, std::vector<BasisFunction*>& cbfs);
   virtual std::vector<BasisFunction*> generateManyOptions(SurfData& surfData);
+  virtual std::vector<BasisFunction*> selectModelBasisFunctions(SurfData& surfData);
   
   virtual void config(const SurfpackParser::Arg& arg);
   /// Create a surface of the same type as 'this.'  This objects data should
@@ -88,7 +109,12 @@ public:
   virtual void partition(SurfData& sd);
 
   virtual void computeRBFCenters(
-    std::vector< std::vector< const SurfPoint*> >& partitions);
+    std::vector< PartitionNode* >& partitions);
+
+  virtual bool tryModel(SurfData& surfData, int currentIndex, int& bestIndex, 
+    double& bestMetric, std::vector< BasisFunction* >& currentSet, 
+    std::vector< BasisFunction* >& newBestSet);
+  virtual void printSet(std::string header, std::vector<BasisFunction*>& set);
 
 //_____________________________________________________________________________
 // I/O 
@@ -108,7 +134,9 @@ protected:
   std::vector<SurfPoint> centers;
   double radius;
   std::vector<BasisFunction*> bfs;
+  double free_param;
   std::vector<BasisFunction*> basis_functions;
+  std::vector<PartitionNode*> partition_nodes;
 
 //_____________________________________________________________________________
 // Testing 
