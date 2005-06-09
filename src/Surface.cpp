@@ -113,7 +113,9 @@ double Surface::getValue(const std::vector<double>& x)
   if (!scaler) {
     return evaluate(x);
   } else {
-    return evaluate(scaler->scale(x).X());
+    return scaler->descaleResponse(
+      evaluate(scaler->scale(x).X()),responseIndex
+    );
   }
 }
 
@@ -165,6 +167,16 @@ void Surface::config(const SurfpackParser::Arg& arg)
       sd->setDefaultIndex(index);
       this->responseIndex = index; 
     }
+  } else if (arg.name == "scaling") {
+    string scaleOption = arg.lval.literal;
+    if (scaleOption == "uniform") {
+      scaleUniform();
+      cout << "Uniform scaling" << endl;
+    } else if (scaleOption == "none") {
+      noScale();
+    } else {
+      throw string("Unrecognized option for surface parameter 'scaling'");
+    }  
   }
 }
 
@@ -448,6 +460,9 @@ void Surface::createModel(SurfData* surfData)
   excludedPoints = sd->getExcludedPoints();
   builtOK = true;
   dataModified = false;
+  if (scaler) {
+    sd->setScaler(0);
+  }
 }
 
 // ____________________________________________________________________________

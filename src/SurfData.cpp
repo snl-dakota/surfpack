@@ -278,7 +278,11 @@ double SurfData::getResponse(unsigned index) const
 {
   static string header("Indexing error in SurfData::getResponse.");
   checkRangeNumPoints(header, index);
-  return points[mapping[index]]->F(defaultIndex);
+  if (!scaler) {
+    return points[mapping[index]]->F(defaultIndex);
+  } else {
+    return scaler->scaleResponse(points[mapping[index]]->F(defaultIndex),defaultIndex);
+  }
 }
 
 /// Get default index
@@ -343,8 +347,8 @@ void SurfData::setScaler(SurfScaler* scaler_)
     // computeScalingParameters will call operator[] on this, and we want to make sure
     // it calls the unscaled version during the scaling
     scaler_->computeScalingParameters(*this);
-    this->scaler = scaler_;
   }
+  this->scaler = scaler_;
 }
     
 /// Add a point to the data set. The parameter point will be copied.

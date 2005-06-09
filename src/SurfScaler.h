@@ -30,8 +30,15 @@ public:
   /// Return a scaled version of the parameter point 
   const SurfPoint& scale(const std::vector<double>& x) const;
 
+  /// Return the scaled value of a response variable
+  double scaleResponse(double value, unsigned index);
+
+  /// Invert the scaling on the response variable
+  double descaleResponse(double value, unsigned index);
+
 protected:
-  std::vector<ScalingParameterPair> parameters;
+  std::vector<ScalingParameterPair> designVarParams;
+  std::vector<ScalingParameterPair> responseVarParams;
   mutable SurfPoint scaledPoint;
    
 #ifdef __TESTING_MODE__

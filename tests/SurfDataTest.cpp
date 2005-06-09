@@ -857,13 +857,13 @@ void SurfDataTest::testSetScalerNotNull()
 {
   SurfScaler s;
   sdPtr1->setScaler(&s);
-  CPPUNIT_ASSERT_EQUAL( (unsigned)3,s.parameters.size() );
-  CPPUNIT_ASSERT( matches(0.0,s.parameters[0].offset) );
-  CPPUNIT_ASSERT( matches(4.0,s.parameters[0].divisor) );
-  CPPUNIT_ASSERT( matches(1.0,s.parameters[1].offset) );
-  CPPUNIT_ASSERT( matches(4.0,s.parameters[1].divisor) );
-  CPPUNIT_ASSERT( matches(2.0,s.parameters[2].offset) );
-  CPPUNIT_ASSERT( matches(4.0,s.parameters[2].divisor) );
+  CPPUNIT_ASSERT_EQUAL( (unsigned)3,s.designVarParams.size() );
+  CPPUNIT_ASSERT( matches(0.0,s.designVarParams[0].offset) );
+  CPPUNIT_ASSERT( matches(4.0,s.designVarParams[0].divisor) );
+  CPPUNIT_ASSERT( matches(1.0,s.designVarParams[1].offset) );
+  CPPUNIT_ASSERT( matches(4.0,s.designVarParams[1].divisor) );
+  CPPUNIT_ASSERT( matches(2.0,s.designVarParams[2].offset) );
+  CPPUNIT_ASSERT( matches(4.0,s.designVarParams[2].divisor) );
 }
 
 void SurfDataTest::testIsScaled()

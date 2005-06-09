@@ -26,7 +26,7 @@ void SurfScalerTest::tearDown()
 void SurfScalerTest::testConstructor()
 {
   SurfScaler* ss = new SurfScaler();
-  CPPUNIT_ASSERT_EQUAL((unsigned)0, ss->parameters.size());
+  CPPUNIT_ASSERT_EQUAL((unsigned)0, ss->designVarParams.size());
   CPPUNIT_ASSERT_EQUAL((unsigned)1, ss->scaledPoint.xSize());
   CPPUNIT_ASSERT_EQUAL((double)0, ss->scaledPoint.X()[0]);
   delete ss;
@@ -54,10 +54,10 @@ void SurfScalerTest::testCopyConstructor()
   CPPUNIT_ASSERT_EQUAL((double)0, ss2->scaledPoint.X()[0]);
   CPPUNIT_ASSERT_EQUAL(ss->scaledPoint.xSize(), 
     ss2->scaledPoint.xSize());
-  CPPUNIT_ASSERT_EQUAL(ss->parameters.size(),
-     ss2->parameters.size());
+  CPPUNIT_ASSERT_EQUAL(ss->designVarParams.size(),
+     ss2->designVarParams.size());
   CPPUNIT_ASSERT_EQUAL((unsigned)0,
-     ss2->parameters.size());
+     ss2->designVarParams.size());
   delete ss;
   delete ss2;
 
@@ -91,9 +91,9 @@ void SurfScalerTest::testComputeScalingParameters()
   SurfData sd(spts);
   SurfScaler ss;
   ss.computeScalingParameters(sd);
-  CPPUNIT_ASSERT_EQUAL((unsigned)1,ss.parameters.size());
-  CPPUNIT_ASSERT(matches(ss.parameters[0].offset,1.0));
-  CPPUNIT_ASSERT(matches(ss.parameters[0].divisor,10.0));
+  CPPUNIT_ASSERT_EQUAL((unsigned)1,ss.designVarParams.size());
+  CPPUNIT_ASSERT(matches(ss.designVarParams[0].offset,1.0));
+  CPPUNIT_ASSERT(matches(ss.designVarParams[0].divisor,10.0));
 }
 
 void SurfScalerTest::testComputeScalingParametersFour1DPts()
@@ -108,9 +108,9 @@ void SurfScalerTest::testComputeScalingParametersFour1DPts()
   SurfData sd(spts);
   SurfScaler ss;
   ss.computeScalingParameters(spts);
-  CPPUNIT_ASSERT_EQUAL((unsigned)1,ss.parameters.size());
-  CPPUNIT_ASSERT(matches(ss.parameters[0].offset,-6.0));
-  CPPUNIT_ASSERT(matches(ss.parameters[0].divisor,12.0));
+  CPPUNIT_ASSERT_EQUAL((unsigned)1,ss.designVarParams.size());
+  CPPUNIT_ASSERT(matches(ss.designVarParams[0].offset,-6.0));
+  CPPUNIT_ASSERT(matches(ss.designVarParams[0].divisor,12.0));
 }
 
 void SurfScalerTest::testComputeScalingParametersFour2DPts()
@@ -125,11 +125,11 @@ void SurfScalerTest::testComputeScalingParametersFour2DPts()
   SurfData sd(spts);
   SurfScaler ss;
   ss.computeScalingParameters(spts);
-  CPPUNIT_ASSERT_EQUAL((unsigned)2,ss.parameters.size());
-  CPPUNIT_ASSERT(matches(ss.parameters[0].offset,-6.0));
-  CPPUNIT_ASSERT(matches(ss.parameters[0].divisor,12.0));
-  CPPUNIT_ASSERT(matches(ss.parameters[1].offset,1.0));
-  CPPUNIT_ASSERT(matches(ss.parameters[1].divisor,3.0));
+  CPPUNIT_ASSERT_EQUAL((unsigned)2,ss.designVarParams.size());
+  CPPUNIT_ASSERT(matches(ss.designVarParams[0].offset,-6.0));
+  CPPUNIT_ASSERT(matches(ss.designVarParams[0].divisor,12.0));
+  CPPUNIT_ASSERT(matches(ss.designVarParams[1].offset,1.0));
+  CPPUNIT_ASSERT(matches(ss.designVarParams[1].divisor,3.0));
 }
 
 void SurfScalerTest::testScale()
