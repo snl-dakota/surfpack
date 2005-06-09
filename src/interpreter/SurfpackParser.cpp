@@ -60,17 +60,17 @@ void SurfpackParser::print()
     cout << commands[i].name << endl;
     for (unsigned j = 0; j < commands[i].arglist.size(); j++) {
       cout << "   " << commands[i].arglist[j].name << " ";
-      if (commands[i].arglist[j].lval.tuple.size() != 0) {
-        for (unsigned k = 0; k < commands[i].arglist[j].lval.tuple.size(); k++) {
-          cout << commands[i].arglist[j].lval.tuple[k] << " ";
+      if (commands[i].arglist[j].rval.tuple.size() != 0) {
+        for (unsigned k = 0; k < commands[i].arglist[j].rval.tuple.size(); k++) {
+          cout << commands[i].arglist[j].rval.tuple[k] << " ";
         }
-      } else if (commands[i].arglist[j].lval.triplet.numPts != 0) {
+      } else if (commands[i].arglist[j].rval.triplet.numPts != 0) {
         cout << "{" 
-             <<	commands[i].arglist[j].lval.triplet.min
+             <<	commands[i].arglist[j].rval.triplet.min
              << ","
-             <<	commands[i].arglist[j].lval.triplet.max
+             <<	commands[i].arglist[j].rval.triplet.max
              << ","
-             <<	commands[i].arglist[j].lval.triplet.numPts
+             <<	commands[i].arglist[j].rval.triplet.numPts
              << "}" ;
       } 
       cout << endl;
@@ -106,7 +106,7 @@ void SurfpackParser::addArgValIdent()
   if (currentArgIndex == -1) {
     cerr << "currentArgIndex = -1; cannot assign Identifier" << endl;
   } else {
-    (*currentArgList)[currentArgIndex].lval.identifier = string(global_lexer.YYText());
+    (*currentArgList)[currentArgIndex].rval.identifier = string(global_lexer.YYText());
   }
 }
 
@@ -115,7 +115,7 @@ void SurfpackParser::addArgValInt()
   if (currentArgIndex == -1) {
     cerr << "currentArgIndex = -1; cannot assign Integer" << endl;
   } else {
-    (*currentArgList)[currentArgIndex].lval.integer = atoi(global_lexer.YYText());
+    (*currentArgList)[currentArgIndex].rval.integer = atoi(global_lexer.YYText());
   }
 }
 
@@ -130,7 +130,7 @@ void SurfpackParser::addArgValString()
     while ( (pos = currentToken.find('\'')) != string::npos) {
       currentToken.erase(pos,pos+1);
     }
-    (*currentArgList)[currentArgIndex].lval.literal= currentToken;
+    (*currentArgList)[currentArgIndex].rval.literal= currentToken;
     //cout << "Stripped string: " << currentToken << endl;
   }
 }
@@ -140,7 +140,7 @@ void SurfpackParser::addArgValReal()
   if (currentArgIndex == -1) {
     cerr << "currentArgIndex = -1; cannot assign Real" << endl;
   } else {
-    (*currentArgList)[currentArgIndex].lval.real = atof(global_lexer.YYText());
+    (*currentArgList)[currentArgIndex].rval.real = atof(global_lexer.YYText());
   }
 }
 
@@ -158,7 +158,7 @@ void SurfpackParser::addArgValArgList()
   if (currentArgIndex == -1) {
     cerr << "currentArgIndex = -1; cannot assign ArgList" << endl;
   } else {
-    currentArgList = &((*currentArgList)[currentArgIndex].lval.arglist);
+    currentArgList = &((*currentArgList)[currentArgIndex].rval.arglist);
   }
 }
 
@@ -168,9 +168,9 @@ void SurfpackParser::addNumberAsTriplet()
     cerr << "currentArgIndex = -1; cannot addNumberAsTriplet" << endl;
   } else {
     double val = atof(global_lexer.YYText());
-    (*currentArgList)[currentArgIndex].lval.triplet.min = val;
-    (*currentArgList)[currentArgIndex].lval.triplet.max = val;
-    (*currentArgList)[currentArgIndex].lval.triplet.numPts= 1;
+    (*currentArgList)[currentArgIndex].rval.triplet.min = val;
+    (*currentArgList)[currentArgIndex].rval.triplet.max = val;
+    (*currentArgList)[currentArgIndex].rval.triplet.numPts= 1;
   }
 }
 
@@ -185,7 +185,7 @@ void SurfpackParser::addTripletMin()
     cerr << "currentArgIndex = -1; cannot addTripletMin" << endl;
   } else {
     double val = atof(global_lexer.YYText());
-    (*currentArgList)[currentArgIndex].lval.triplet.min = val;
+    (*currentArgList)[currentArgIndex].rval.triplet.min = val;
   }
 }
 
@@ -195,7 +195,7 @@ void SurfpackParser::addTripletMax()
     cerr << "currentArgIndex = -1; cannot addTripletMax" << endl;
   } else {
     double val = atof(global_lexer.YYText());
-    (*currentArgList)[currentArgIndex].lval.triplet.max = val;
+    (*currentArgList)[currentArgIndex].rval.triplet.max = val;
   }
 }
 
@@ -205,7 +205,7 @@ void SurfpackParser::addTripletNumPts()
     cerr << "currentArgIndex = -1; cannot addTripletMax" << endl;
   } else {
     int val = atoi(global_lexer.YYText());
-    (*currentArgList)[currentArgIndex].lval.triplet.numPts = val;
+    (*currentArgList)[currentArgIndex].rval.triplet.numPts = val;
   }
 }
 
@@ -215,7 +215,7 @@ void SurfpackParser::addTupleVal()
     cerr << "currentArgIndex = -1; cannot addTupleVal" << endl;
   } else {
     double val = atof(global_lexer.YYText());
-    (*currentArgList)[currentArgIndex].lval.tuple.push_back(val);
+    (*currentArgList)[currentArgIndex].rval.tuple.push_back(val);
   }
 }
 
@@ -224,7 +224,7 @@ std::string SurfpackParser::parseOutIdentifier(const string& argname,
 {
   for (unsigned i = 0; i < arglist.size(); i++) {
     if (arglist[i].name == argname) {
-      return arglist[i].lval.identifier;
+      return arglist[i].rval.identifier;
     }
   }
   return string("");
@@ -235,7 +235,7 @@ std::string SurfpackParser::parseOutStringLiteral(const string& argname,
 {
   for (unsigned i = 0; i < arglist.size(); i++) {
     if (arglist[i].name == argname) {
-      return arglist[i].lval.literal;
+      return arglist[i].rval.literal;
     }
   }
   return string("");

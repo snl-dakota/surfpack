@@ -21,7 +21,7 @@ public:
     double max;
     unsigned numPts;
   };
-  struct Lval
+  struct Rval
   {
     int integer;
     double real;
@@ -34,7 +34,7 @@ public:
   struct Arg
   {
     std::string name;
-    Lval lval;
+    Rval rval;
   }; 
   struct ParsedCommand
   { 

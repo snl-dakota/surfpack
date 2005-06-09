@@ -427,7 +427,7 @@ void SurfpackInterpreter::executeGridPoints(const SurfpackParser::ParsedCommand&
   const SurfpackParser::ArgList& args = command.arglist;
   for (unsigned i = 0; i < args.size(); i++) {
     if (args[i].name == "test_function") {
-      testFunctions.push_back(args[i].lval.literal);
+      testFunctions.push_back(args[i].rval.literal);
     }
   }
   SurfData* gridData = pd->sampleGrid(testFunctions);
@@ -469,9 +469,9 @@ void SurfpackInterpreter::executeMonteCarloSample(const SurfpackParser::ParsedCo
   const SurfpackParser::ArgList& args = command.arglist;
   for (unsigned i = 0; i < args.size(); i++) {
     if (args[i].name == "test_function") {
-      testFunctions.push_back(args[i].lval.literal);
+      testFunctions.push_back(args[i].rval.literal);
     } else if (args[i].name == "size") {
-      numSamples = args[i].lval.integer;
+      numSamples = args[i].rval.integer;
     }
   }
   SurfData* gridData = pd->sampleMonteCarlo(numSamples, testFunctions);

@@ -375,9 +375,9 @@ void KrigingSurface::config(const SurfpackParser::Arg& arg)
 {
   string argname = arg.name;
   if (argname == "conmin_seed") {
-    setConminThetaVars(arg.lval.tuple); 
+    setConminThetaVars(arg.rval.tuple); 
   } else if (argname == "theta_vars") {
-    usePreComputedCorrelationVector(arg.lval.tuple);
+    usePreComputedCorrelationVector(arg.rval.tuple);
   } else {
     Surface::config(arg);
   }

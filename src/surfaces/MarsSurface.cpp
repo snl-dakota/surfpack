@@ -210,13 +210,13 @@ void MarsSurface::config(const SurfpackParser::Arg& arg)
 {
   string argname = arg.name;
   if (argname == "max_bases") {
-    max_bases = arg.lval.integer;
+    max_bases = arg.rval.integer;
   } else if (argname == "max_interactions") {
-    max_interactions = arg.lval.integer;
+    max_interactions = arg.rval.integer;
   } else if (argname == "interpolation") {
-    if (arg.lval.literal == "linear") {
+    if (arg.rval.literal == "linear") {
       interpolation = 1;
-    } else if (arg.lval.literal == "cubic") {
+    } else if (arg.rval.literal == "cubic") {
       interpolation = 2;
     } else {
       cerr << "Expected value for interpolation: 'linear' or 'cubic'" << endl;

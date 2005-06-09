@@ -616,7 +616,7 @@ void RBFNetSurface::config(const SurfpackParser::Arg& arg)
 {
   string argname = arg.name;
   if (argname == "radius") {
-    radius = arg.lval.real;
+    radius = arg.rval.real;
   } else {
     Surface::config(arg);
   }

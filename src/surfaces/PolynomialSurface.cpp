@@ -100,7 +100,7 @@ void PolynomialSurface::config(const SurfpackParser::Arg& arg)
 {
   string argname = arg.name;
   if (argname == "order") {
-    order = arg.lval.integer;
+    order = arg.rval.integer;
     digits.resize(order);
   } else {
     Surface::config(arg);

@@ -160,7 +160,7 @@ void Surface::config(const SurfpackParser::Arg& arg)
   // If the child class sees an argument it does not recognize, it should
   // call this method.
   if (arg.name == "response_index") {
-    unsigned index = static_cast<unsigned>(arg.lval.integer);
+    unsigned index = static_cast<unsigned>(arg.rval.integer);
     if (!sd) {
       throw string("Cannot set response index on NULL data");
     } else {
@@ -168,7 +168,7 @@ void Surface::config(const SurfpackParser::Arg& arg)
       this->responseIndex = index; 
     }
   } else if (arg.name == "scaling") {
-    string scaleOption = arg.lval.literal;
+    string scaleOption = arg.rval.literal;
     if (scaleOption == "uniform") {
       scaleUniform();
       cout << "Uniform scaling" << endl;

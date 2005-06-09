@@ -123,11 +123,11 @@ void ANNSurface::config(const SurfpackParser::Arg& arg)
 {
   string argname = arg.name;
   if (argname == "norm_bound") {
-    norm_bound = arg.lval.real;
+    norm_bound = arg.rval.real;
   } else if (argname == "svdfactor") {
-    svdfactor = arg.lval.real;
+    svdfactor = arg.rval.real;
   } else if (argname == "fraction_withheld") {
-    percent = arg.lval.real;
+    percent = arg.rval.real;
   } else {
     Surface::config(arg);
   }
