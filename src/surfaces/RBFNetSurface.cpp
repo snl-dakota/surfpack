@@ -38,25 +38,25 @@ const string RBFNetSurface::name = "RBFNet";
 // Basis Function Helper Classes 
 //_____________________________________________________________________________
 
-RBFNetSurface::BasisFunction::BasisFunction()
+BasisFunction::BasisFunction()
   : center(), weight(1.0), radii(1)
 {
 
 }
 
-RBFNetSurface::BasisFunction::BasisFunction(unsigned dims)
+BasisFunction::BasisFunction(unsigned dims)
   : center(), weight(1.0), radii(dims)
 {
   center.resize(dims);
 }
 
-void RBFNetSurface::BasisFunction::resize(unsigned dims)
+void BasisFunction::resize(unsigned dims)
 {
   center.resize(dims);
   radii.resize(dims);
 }
 
-double RBFNetSurface::BasisFunction::evaluate(const std::vector<double>& x)
+double BasisFunction::evaluate(const std::vector<double>& x)
 {
   if (x.size() != center.xSize()) throw "Dimension mismatch in BasisFunc:eval";
   double accumulator = 0.0;
@@ -70,24 +70,24 @@ double RBFNetSurface::BasisFunction::evaluate(const std::vector<double>& x)
   return sqrt(radii[0] + accumulator);
 }
 
-double RBFNetSurface::BasisFunction::weightedEvaluate(const std::vector<double>& x)
+double BasisFunction::weightedEvaluate(const std::vector<double>& x)
 {
   return weight*evaluate(x);
 }
 
-void RBFNetSurface::BasisFunction::setCenter(vector<double>& center_)
+void BasisFunction::setCenter(vector<double>& center_)
 {
   center = SurfPoint(center_);
   radii.resize(center.xSize());
 }
 
-void RBFNetSurface::BasisFunction::setRadii(vector<double>& radii_)
+void BasisFunction::setRadii(vector<double>& radii_)
 {
   if (radii_.size() != center.xSize()) throw "Dim mismatch in setRadii";
   radii = radii_;
 }
 
-void RBFNetSurface::BasisFunction::print(ostream& os)
+void BasisFunction::print(ostream& os)
 {
   for (unsigned i = 0; i < center.xSize(); i++) {
     os << center[i] << " ";
@@ -308,7 +308,7 @@ void RBFNetSurface::build(SurfData& surfData)
 }
 
 void RBFNetSurface::buildCandidate(SurfData& surfData, 
-  vector<RBFNetSurface::BasisFunction*>& cand_bfs)
+  vector<BasisFunction*>& cand_bfs)
 {
   int numpts = static_cast<int>(surfData.size());
   int numcenters = static_cast<int>(cand_bfs.size())+1;
@@ -408,7 +408,7 @@ void RBFNetSurface::buildCandidate(SurfData& surfData,
   delete [] responseVector;
 }
 
-void RBFNetSurface::printSet(std::string header, vector<RBFNetSurface::BasisFunction*>& set)
+void RBFNetSurface::printSet(std::string header, vector<BasisFunction*>& set)
 {
     cout << header << endl;
     for (unsigned k = 0; k < set.size(); k++) {
@@ -538,8 +538,8 @@ void RBFNetSurface::selectModelBasisFunctions(SurfData& surfData)
 }
 
 bool RBFNetSurface::tryModel(SurfData& surfData, int currentIndex, int& bestIndex, 
-    double& bestMetric, std::vector< RBFNetSurface::BasisFunction* >& currentSet, 
-    std::vector< RBFNetSurface::BasisFunction* >& newBestSet)
+    double& bestMetric, std::vector< BasisFunction* >& currentSet, 
+    std::vector< BasisFunction* >& newBestSet)
 {
   bool updated = false;
   printSet("Trying set", currentSet);
@@ -653,11 +653,11 @@ void RBFNetSurface::partition(SurfData& surf_data)
   }
   // stash: each set of points that will lead to a candidate basis function
   // will be stored on the stash after processing
-  vector< RBFNetSurface::PartitionNode* > stash;
+  vector< PartitionNode* > stash;
   // Collections of points that may still be subdivided are included in the var
   // sets 
-  stack< RBFNetSurface::PartitionNode* > sets;
-  sets.push(new RBFNetSurface::PartitionNode(allpts,0));
+  stack< PartitionNode* > sets;
+  sets.push(new PartitionNode(allpts,0));
   while (!sets.empty()) {
     int setSize = sets.size();
     vector<const SurfPoint* >& currentSet = sets.top()->set;
@@ -733,8 +733,8 @@ void RBFNetSurface::partition(SurfData& surf_data)
     sets.pop();
     // If the new 'left' and 'right' sets are big enough that they can be split
     // again, push them onto the stack; otherwise, put them on the stash
-    RBFNetSurface::PartitionNode* newRightNode = new RBFNetSurface::PartitionNode(newRight,currentNode);
-    RBFNetSurface::PartitionNode* newLeftNode = new RBFNetSurface::PartitionNode(newLeft,currentNode);
+    PartitionNode* newRightNode = new PartitionNode(newRight,currentNode);
+    PartitionNode* newLeftNode = new PartitionNode(newLeft,currentNode);
     currentNode->right_child = newRightNode;
     currentNode->left_child = newLeftNode;
     if (newRight.size() > 2) {
@@ -759,7 +759,7 @@ void RBFNetSurface::partition(SurfData& surf_data)
 }
 
 void RBFNetSurface::computeRBFCenters(
-  std::vector< RBFNetSurface::PartitionNode* >& partitions)
+  std::vector< PartitionNode* >& partitions)
 {
   // Debug code begin
   SurfData testData("linetest.txt");

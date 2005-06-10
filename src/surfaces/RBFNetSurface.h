@@ -16,49 +16,50 @@ class Surface;
 #include "SurfpackParser.h"
 typedef float real;
 
-class RBFNetSurface : public Surface
-{
 //_____________________________________________________________________________
 // Basis Function Helper Classes 
 //_____________________________________________________________________________
 
-  class BasisFunction
-  {
-    public:
-      BasisFunction();
-      BasisFunction(unsigned dims);
-      void resize(unsigned dims);
-      double evaluate(const std::vector<double>& x);
-      double weightedEvaluate(const std::vector<double>& x);
-      SurfPoint center;
-      double weight;
-      std::vector<double> radii;
-      void setCenter(std::vector<double>& radii_);
-      void setRadii(std::vector<double>& radii_);
-      void print(std::ostream& os);
-  };
-      
+ class BasisFunction
+ {
+   public:
+     BasisFunction();
+     BasisFunction(unsigned dims);
+     void resize(unsigned dims);
+     double evaluate(const std::vector<double>& x);
+     double weightedEvaluate(const std::vector<double>& x);
+     SurfPoint center;
+     double weight;
+     std::vector<double> radii;
+     void setCenter(std::vector<double>& radii_);
+     void setRadii(std::vector<double>& radii_);
+     void print(std::ostream& os);
+ };
+     
 
 //_____________________________________________________________________________
 // Partition Node Helper Class 
 //_____________________________________________________________________________
 
-  class PartitionNode
-  {
-    public:
-      std::vector< const SurfPoint* > set;
-      BasisFunction* basis_function;
-      PartitionNode* parent;
-      PartitionNode* left_child;
-      PartitionNode* right_child;
-      PartitionNode(std::vector< const SurfPoint* >& set_, 
-        PartitionNode* parent_) : set(set_),
-        parent(parent_),left_child(0),right_child(0), basis_function(0) {}
-      ~PartitionNode() {}
-  };
-  
+class PartitionNode
+{
+  public:
+    std::vector< const SurfPoint* > set;
+    BasisFunction* basis_function;
+    PartitionNode* parent;
+    PartitionNode* left_child;
+    PartitionNode* right_child;
+    PartitionNode(std::vector< const SurfPoint* >& set_, 
+      PartitionNode* parent_) : set(set_),
+      parent(parent_),left_child(0),right_child(0), basis_function(0) {}
+    ~PartitionNode() {}
+};
 
 
+
+
+class RBFNetSurface : public Surface
+{
 //_____________________________________________________________________________
 // Creation, Destruction, Initialization
 //_____________________________________________________________________________
