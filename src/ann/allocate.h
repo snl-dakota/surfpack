@@ -24,7 +24,7 @@
  * -------------------------------
  * This funcition will print error messages.
  */
-void nrerror(char error_text[]);
+void nrerror(const char* error_text);
 
 /*
  * Function: vector

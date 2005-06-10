@@ -22,7 +22,7 @@
 using namespace std;
 
 /* nrutil.c */
-void nrerror(char error_text[])
+void nrerror(const char* error_text)
 {
    //exit();
 
