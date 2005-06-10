@@ -112,11 +112,11 @@ void ANNSurface::build(SurfData& data)
       training_outputs[i][0] = data.getResponse(i);
     }
   }
-  double norm_bound = 0.8, percent = 0, svdfactor = 0.90;
-  annObject->normalize_data(training_inputs, training_outputs, norm_bound);
-  annObject->set_aside_test_exemplars(percent);
+  double local_norm_bound = 0.8, local_percent = 0, local_svdfactor = 0.90;
+  annObject->normalize_data(training_inputs, training_outputs, local_norm_bound);
+  annObject->set_aside_test_exemplars(local_percent);
   int num_neurons = annObject->numExemplars - 1;
-  annObject->build_approximation(svdfactor, num_neurons);
+  annObject->build_approximation(local_svdfactor, num_neurons);
 }
 
 void ANNSurface::config(const SurfpackParser::Arg& arg)

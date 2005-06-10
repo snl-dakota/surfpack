@@ -40,14 +40,14 @@ PolynomialSurface::PolynomialSurface(SurfData* sd, unsigned order)
   resetTermCounter();
 }  
 
-PolynomialSurface::PolynomialSurface(unsigned xsize, unsigned order, 
+PolynomialSurface::PolynomialSurface(unsigned x_size, unsigned order, 
   std::vector<double> coefficients) : Surface(0), order(order), 
   coefficients(coefficients), digits(order)
 {
 #ifdef __TESTING_MODE__
   constructCount++;
 #endif
-  this->xsize = xsize;
+  this->xsize = x_size;
   builtOK = true;
   //dataAdded = false;
   //dataModified = false;
