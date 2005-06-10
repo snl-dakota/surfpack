@@ -129,12 +129,12 @@ double Surface::getValue(const SurfPoint& sp)
 /// Evaluate the approximation surface at each point in the parameter
 /// SurfData object.  In the ErrorStruct list, store the expected value (as
 /// returned by sd.getResponse()) and the estimated value.
-void Surface::getValue(SurfData& sd, std::vector<surfpack::ErrorStruct>& pts)
+void Surface::getValue(SurfData& surf_data, std::vector<surfpack::ErrorStruct>& pts)
 {
-  for (unsigned i = 0; i < sd.size(); i++) {
+  for (unsigned i = 0; i < surf_data.size(); i++) {
     surfpack::ErrorStruct es;
-    es.estimated = getValue(sd[i].X());
-    es.observed = sd.getResponse(i);
+    es.estimated = getValue(surf_data[i].X());
+    es.observed = surf_data.getResponse(i);
     pts.push_back(es);
   }
 }

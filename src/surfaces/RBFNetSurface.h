@@ -88,8 +88,8 @@ public:
 
   virtual void build(SurfData& data);
   virtual void buildCandidate(SurfData& data, std::vector<BasisFunction*>& cbfs);
-  virtual std::vector<BasisFunction*> generateManyOptions(SurfData& surfData);
-  virtual std::vector<BasisFunction*> selectModelBasisFunctions(SurfData& surfData);
+  virtual void generateManyOptions(SurfData& surfData);
+  virtual void selectModelBasisFunctions(SurfData& surfData);
   
   virtual void config(const SurfpackParser::Arg& arg);
   /// Create a surface of the same type as 'this.'  This objects data should
@@ -97,7 +97,7 @@ public:
   /// be the same (e.g., a second-order polynomial should return another 
   /// second-order polynomial.  Surfaces returned by this method can be used
   /// to compute the PRESS statistic.
-  virtual RBFNetSurface* makeSimilarWithNewData(SurfData* surfData);
+  virtual RBFNetSurface* makeSimilarWithNewData(SurfData* surf_data);
 
 //_____________________________________________________________________________
 // Helper methods 

@@ -426,29 +426,29 @@ unsigned SurfData::addResponse(const vector<double>& newValues)
 
 /// Specify which points should be skipped.  This can be used when only a 
 /// subset of the SurfPoints should be used for some computation.
-void SurfData::setExcludedPoints(const std::set<unsigned>& excludedPoints)
+void SurfData::setExcludedPoints(const std::set<unsigned>& excluded_points)
 {
-  if (excludedPoints.size() > points.size()) {
+  if (excluded_points.size() > points.size()) {
     throw bad_surf_data(
       "Size of set of excluded points exceeds size of SurfPoint set"
     );
-  } else if (excludedPoints.empty()) {
+  } else if (excluded_points.empty()) {
     defaultMapping();
     this->excludedPoints.clear();
   } else {
     // The size of the logical data set is the size of the physical
     // data set less the number of excluded points    
-    mapping.resize(points.size() - excludedPoints.size());
+    mapping.resize(points.size() - excluded_points.size());
     unsigned mappingIndex = 0;
     unsigned sdIndex = 0;
     // map the valid indices to the physical points in points
     while (sdIndex < points.size()) {
-      if (excludedPoints.find(sdIndex) == excludedPoints.end()) {
+      if (excluded_points.find(sdIndex) == excluded_points.end()) {
         mapping[mappingIndex++] = sdIndex;
       }
       sdIndex++;
     }
-    this->excludedPoints = excludedPoints;
+    this->excludedPoints = excluded_points;
     assert(mappingIndex == mapping.size());
   }
 }

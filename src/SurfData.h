@@ -176,7 +176,7 @@ public:
   
   /// Specify which points should be skipped.  This can be used when only a 
   /// subset of the SurfPoints should be used for some computation.
-  void setExcludedPoints(const std::set<unsigned>& excludedPoints);
+  void setExcludedPoints(const std::set<unsigned>& excluded_points);
 
   /// Inform this object that a Surface wants to be notified when this object
   /// changes

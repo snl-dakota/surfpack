@@ -138,14 +138,14 @@ double MarsSurface::evaluate(const std::vector<double>& x)
   //delete [] srf;
   //delete [] sp;
   //delete [] mm;
-  int n = 1;
+  int nval = 1;
   real* xVector = new real[x.size()];
   for (unsigned i = 0; i < x.size(); i++) {
     xVector[i] = static_cast<real>(x[i]);
   }
   real* sp = new real[2];
   real* f = new real[1];
-  fmod(interpolation,n,xVector[0],fm[0],im[0],f[0],sp[0]);
+  fmod(interpolation,nval,xVector[0],fm[0],im[0],f[0],sp[0]);
   delete [] sp;
   delete [] xVector;
   real result = *f;
@@ -291,13 +291,13 @@ void MarsSurface::readBinary(std::istream& is)
 
   delete [] fm;
   delete [] im;
-  int nmcv,ntcv,np;
+  int nmcv,ntcv,npval;
   is.read(reinterpret_cast<char*>(&max_bases),sizeof(max_bases));
   is.read(reinterpret_cast<char*>(&max_interactions),sizeof(max_interactions));
   is.read(reinterpret_cast<char*>(&nmcv),sizeof(nmcv));
   is.read(reinterpret_cast<char*>(&ntcv),sizeof(ntcv));
-  is.read(reinterpret_cast<char*>(&np),sizeof(np));
-  unsigned fmsize = 3+max_bases*(5*max_interactions+nmcv+6)+2*np+ntcv;
+  is.read(reinterpret_cast<char*>(&npval),sizeof(npval));
+  unsigned fmsize = 3+max_bases*(5*max_interactions+nmcv+6)+2*npval+ntcv;
   unsigned imsize = 21+max_bases*(3*max_interactions+8);
   fm = new real[fmsize];
   im = new int[imsize];
@@ -309,7 +309,7 @@ void MarsSurface::readText(std::istream& is)
 {
     delete [] fm;
     delete [] im;
-    int nmcv,ntcv,np;
+    int nmcv,ntcv,npval;
     string sline;
     istringstream streamline;
     getline(is,sline);
@@ -326,8 +326,8 @@ void MarsSurface::readText(std::istream& is)
     streamline >> max_interactions;
     getline(is,sline);
     streamline.str(sline); streamline.clear();
-    streamline >> np;
-    unsigned fmsize = 3+max_bases*(5*max_interactions+nmcv+6)+2*np+ntcv;
+    streamline >> npval;
+    unsigned fmsize = 3+max_bases*(5*max_interactions+nmcv+6)+2*npval+ntcv;
     unsigned imsize = 21+max_bases*(3*max_interactions+8);
     fm = new real[fmsize];
     im = new int[imsize];

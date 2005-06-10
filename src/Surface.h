@@ -110,7 +110,7 @@ public:
   /// Evaluate the approximation surface at each point in the parameter
   /// SurfData object.  In the ErrorStruct list, store the expected value (as
   /// returned by sd.getResponse()) and the estimated value.
-  virtual void getValue(SurfData& sd, std::vector<surfpack::ErrorStruct>& pts);
+  virtual void getValue(SurfData& surf_data, std::vector<surfpack::ErrorStruct>& pts);
   
   /// Return the value of some error metric
   virtual double goodnessOfFit(const std::string metricName, 

@@ -415,7 +415,7 @@ void RBFNetSurface::printSet(std::string header, vector<RBFNetSurface::BasisFunc
       set[k]->print(cout);
     }
 }
-std::vector<RBFNetSurface::BasisFunction*> RBFNetSurface::selectModelBasisFunctions(SurfData& surfData)
+void RBFNetSurface::selectModelBasisFunctions(SurfData& surfData)
 {
   assert(surfData.size() > 0);
   int datadim = surfData[0].xSize();
@@ -564,7 +564,8 @@ bool RBFNetSurface::tryModel(SurfData& surfData, int currentIndex, int& bestInde
   printSet("best set seen so far",newBestSet);
   return updated;
 }
-std::vector<RBFNetSurface::BasisFunction*> RBFNetSurface::generateManyOptions(SurfData& surfData)
+
+void RBFNetSurface::generateManyOptions(SurfData& surfData)
 {
   // Debug code begin
   SurfData testData("linetest.txt");
@@ -609,7 +610,6 @@ std::vector<RBFNetSurface::BasisFunction*> RBFNetSurface::generateManyOptions(Su
   dataCopy.write("candidateFunctions.txt");
   // End debug code
  
-  return bestBases;
 }
 
 void RBFNetSurface::config(const SurfpackParser::Arg& arg)
@@ -626,9 +626,9 @@ void RBFNetSurface::config(const SurfpackParser::Arg& arg)
 /// be the same (e.g., a second-order polynomial should return another 
 /// second-order polynomial.  Surfaces returned by this method can be used
 /// to compute the PRESS statistic.
-RBFNetSurface* RBFNetSurface::makeSimilarWithNewData(SurfData* sd)
+RBFNetSurface* RBFNetSurface::makeSimilarWithNewData(SurfData* surf_data)
 {
-  return new RBFNetSurface(sd);
+  return new RBFNetSurface(surf_data);
 }
 
 //_____________________________________________________________________________
@@ -642,14 +642,14 @@ double RBFNetSurface::computeMetric(std::vector<double>& left,
 	 surfpack::sum_squared_deviations(right);
 }
 
-void RBFNetSurface::partition(SurfData& sd)
+void RBFNetSurface::partition(SurfData& surf_data)
 {
   // We will only look at the values for one response variable in the data
-  unsigned response = sd.getDefaultIndex();
+  unsigned response = surf_data.getDefaultIndex();
   // The first set to look at is the set of all points in the given data set
-  vector<const SurfPoint*> allpts(sd.size());
-  for (unsigned i = 0; i < sd.size(); i++) {
-    allpts[i] = &sd[i];
+  vector<const SurfPoint*> allpts(surf_data.size());
+  for (unsigned i = 0; i < surf_data.size(); i++) {
+    allpts[i] = &surf_data[i];
   }
   // stash: each set of points that will lead to a candidate basis function
   // will be stored on the stash after processing
@@ -856,10 +856,10 @@ void RBFNetSurface::computeRBFCenters(
 void RBFNetSurface::writeBinary(std::ostream& os)
 {
   unsigned numcenters = centers.size();
-  unsigned xsize = centers[0].xSize();
+  unsigned n_dimensions = centers[0].xSize();
   //unsigned fsize = centers[0].fSize();
   os.write(reinterpret_cast<char*>(&numcenters),sizeof(numcenters));
-  os.write(reinterpret_cast<char*>(&xsize),sizeof(xsize));
+  os.write(reinterpret_cast<char*>(&n_dimensions),sizeof(n_dimensions));
   //os.write(reinterpret_cast<char*>(&fsize),sizeof(fsize));
   for (unsigned j = 0; j < numcenters; j++) {
     centers[j].writeBinary(os);
@@ -888,16 +888,16 @@ void RBFNetSurface::writeText(std::ostream& os)
 void RBFNetSurface::readBinary(std::istream& is)
 {
   unsigned numcenters;  
-  unsigned xsize;
+  unsigned n_dimensions;
   //unsigned fsize;
   is.read(reinterpret_cast<char*>(&numcenters),sizeof(numcenters));
-  is.read(reinterpret_cast<char*>(&xsize),sizeof(xsize));
+  is.read(reinterpret_cast<char*>(&n_dimensions),sizeof(n_dimensions));
   //is.read(reinterpret_cast<char*>(&fsize),sizeof(fsize));
   double size;
   double weight;
   centers.clear();
   for (unsigned j = 0; j < numcenters; j++) {
-    centers.push_back(SurfPoint(xsize,0,is,true));
+    centers.push_back(SurfPoint(n_dimensions,0,is,true));
     is.read(reinterpret_cast<char*>(&size),sizeof(size));
     sizes.push_back(size);
     is.read(reinterpret_cast<char*>(&weight),sizeof(weight));
@@ -908,7 +908,7 @@ void RBFNetSurface::readBinary(std::istream& is)
 void RBFNetSurface::readText(std::istream& is)
 {
   unsigned numcenters;  
-  unsigned xsize;
+  unsigned n_dimensions;
   // read numcenters
   string sline;
   getline(is,sline);
@@ -916,12 +916,12 @@ void RBFNetSurface::readText(std::istream& is)
   streamline.str(sline);
   streamline >> numcenters;
   //cout << "numcenters: " << numcenters << endl;
-  // read xsize (dimensionality of the rbf centers)
+  // read n_dimensions (dimensionality of the rbf centers)
   getline(is,sline);
   streamline.str(sline);
   string buffer = streamline.str();
-  streamline >> xsize;
-  //cout << "xsize: " << xsize << endl;
+  streamline >> n_dimensions;
+  //cout << "n_dimensions: " << n_dimensions << endl;
   //cout << "buffer: " << buffer << endl;
 
   // read sizes and weights
@@ -929,7 +929,7 @@ void RBFNetSurface::readText(std::istream& is)
   double weight;
   for (unsigned j = 0; j < numcenters; j++) {
     // read the location of a center in as a surfpoint
-    centers.push_back(SurfPoint(xsize,0,is,false));
+    centers.push_back(SurfPoint(n_dimensions,0,is,false));
     //centers[j].writeText(cout);
     //cout << endl;
     // read size of rbf center;
