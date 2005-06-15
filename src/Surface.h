@@ -10,6 +10,7 @@ class SurfScaler;
 /// \todo Eliminate the dependency on SurfpackParser.h in Surface.h
 #include "SurfpackParser.h"
 #include "surfpack.h"
+#include <set>
 
 
 
