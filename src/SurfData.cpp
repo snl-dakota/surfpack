@@ -92,6 +92,7 @@ SurfData::SurfData() : scaler(0), valid()
 {
     this->xsize = 0;
     this->fsize = 0;
+    init();
 }
 
 /// STL data members' resources automatically deallocated 
