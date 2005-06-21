@@ -12,17 +12,20 @@ extern int yyparse();
 class SurfpackParser 
 {
 public:
-  struct Arg;
+  class Arg;
   typedef std::vector<Arg> ArgList;
   typedef std::vector<double> Tuple;
-  struct Triplet {
+  class Triplet 
+  {
+  public:
     Triplet() : min(0), max(0), numPts(0) {}
     double min;
     double max;
     unsigned numPts;
   };
-  struct Rval
+  class Rval
   {
+  public:
     int integer;
     double real;
     Tuple tuple;
@@ -30,14 +33,33 @@ public:
     std::string identifier;
     std::string literal;
     ArgList arglist;
+    Rval() {}
+    Rval(int integer_in) : integer(integer_in) {}
+    Rval(double real_in) : real(real_in) {}
+    Rval(const Tuple& tuple_in) : tuple(tuple_in) {}
+    Rval(const std::string& string_in, const std::string& type) 
+    {
+      if (type == "identifier") {
+        this->identifier = string_in;
+      } else if (type == "literal") {
+        this->literal = string_in;
+      } else {
+        throw std::string("Bad 2nd parameter to Rval ctor");
+      }
+    }
   };
-  struct Arg
+  class Arg
   {
+  public:
     std::string name;
     Rval rval;
+    Arg(const std::string& name_in, const Rval& rval_in) 
+      : name(name_in), rval(rval_in) {}
+    Arg() {}
   }; 
-  struct ParsedCommand
+  class ParsedCommand
   { 
+  public:
     std::string name;
     ArgList arglist;
     std::string cmdstring;
