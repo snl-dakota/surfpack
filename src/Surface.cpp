@@ -43,6 +43,7 @@ Surface::Surface(const Surface& other)
   builtOK(other.builtOK), dataModified(other.dataModified), 
   responseIndex(other.responseIndex)
 {
+  cout << "Surface copy constructor called" << endl;
   setData(other.sd);
 }
 
@@ -177,6 +178,8 @@ void Surface::config(const SurfpackParser::Arg& arg)
     } else {
       throw string("Unrecognized option for surface parameter 'scaling'");
     }  
+  } else if (arg.name == "xsize") {
+    setXSize(arg.rval.integer);
   }
 }
 
@@ -186,6 +189,12 @@ void Surface::configList(const SurfpackParser::ArgList& arglist)
   for (unsigned i = 0; i < arglist.size(); i++) {
     config(arglist[i]);
   }
+}
+
+/// Sets the number of dimensions in the surface
+void Surface::setXSize(unsigned xsize_in)
+{
+  this->xsize = xsize_in;
 }
 
 /// Return the value of some error metric

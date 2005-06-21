@@ -192,6 +192,9 @@ public:
   /// Process a list of configuration options
   virtual void configList(const SurfpackParser::ArgList& arglist);
 
+  /// Sets the number of dimensions in the surface
+  void setXSize(unsigned xsize_in);
+
 // ____________________________________________________________________________
 // I/O 
 // ____________________________________________________________________________
