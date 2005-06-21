@@ -103,11 +103,12 @@ const std::string MarsSurface::surfaceName() const
 
 unsigned MarsSurface::minPointsRequired() const
 {
-  if (sd) {
-    return 4 * sd->xSize();
+  if (xsize <= 0) {
+    throw string(
+      "Dimenstionality of data needed to determine number of required samples."
+    );
   } else {
-    cerr << "Cannot compute minPointsRequired without data" << endl;
-    return INT_MAX;
+    return 4*xsize; 
   }
 }
 

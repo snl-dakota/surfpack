@@ -259,16 +259,17 @@ const string KrigingSurface::surfaceName() const
 
 unsigned KrigingSurface::minPointsRequired(unsigned xsize) 
 { 
-  return xsize + 1;
+  return xsize * xsize;
 }
 
 unsigned KrigingSurface::minPointsRequired() const
 { 
-  if (sd) {
-    return sd->xSize(); 
+  if (xsize <= 0) {
+    throw string(
+      "Dimenstionality of data needed to determine number of required samples."
+    );
   } else {
-    cerr << "Cannot compute minPointsRequired without data" << endl;
-    return INT_MAX;
+    return minPointsRequired(xsize);
   }
 }
 
@@ -327,19 +328,15 @@ void KrigingSurface::setConminThetaVars(std::vector<double> vals)
 }
 void KrigingSurface::usePreComputedCorrelationVector(std::vector<double> vals)
 {
-  if (!sd) {
-    cout << "Can't set theta vars without data" << endl;
-  } else {
-    xsize = sd->xSize();
-    numsamp = sd->size();
-    if (!needsCleanup) {
-      initialize();
-    }
-    for (unsigned i = 0; i < vals.size(); i++) {
-            thetaVector[i] = vals[i];
-    }
-    runConminFlag = false;
+  if (needsCleanup) {
+    delete thetaVector;
   }
+  xsize = vals.size();
+  thetaVector = new double[xsize];
+  for (unsigned i = 0; i < vals.size(); i++) {
+          thetaVector[i] = vals[i];
+  }
+  runConminFlag = false;
 }
 
 void KrigingSurface::build(SurfData& data)

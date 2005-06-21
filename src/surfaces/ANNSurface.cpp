@@ -83,7 +83,13 @@ const std::string ANNSurface::surfaceName() const
 
 unsigned ANNSurface::minPointsRequired() const
 {
-  return sd->xSize() + 1;
+  if (xsize <= 0) {
+    throw string(
+      "Dimenstionality of data needed to determine number of required samples."
+    );
+  } else {
+    return 4*xsize;
+  }
 }
 
 double ANNSurface::evaluate(const std::vector<double>& x)
