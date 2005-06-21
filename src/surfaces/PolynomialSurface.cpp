@@ -100,8 +100,7 @@ void PolynomialSurface::config(const SurfpackParser::Arg& arg)
 {
   string argname = arg.name;
   if (argname == "order") {
-    order = arg.rval.integer;
-    digits.resize(order);
+    setOrder(arg.rval.integer);
   } else {
     Surface::config(arg);
   }
@@ -313,6 +312,12 @@ void PolynomialSurface::build(SurfData& data)
   
 }
 
+/// Set the degree of the polynomial fit (e.g., linear=1, quadratic=2, etc.)
+void PolynomialSurface::setOrder(unsigned order_in)
+{
+    this->order = order_in;
+    digits.resize(this->order);
+}
 // ____________________________________________________________________________
 // Helper methods 
 // ____________________________________________________________________________

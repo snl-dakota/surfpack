@@ -75,6 +75,10 @@ public:
   virtual void build(SurfData& data);
 
 
+  /// Set the degree of the polynomial fit (e.g., linear=1, quadratic=2, etc.)
+  void setOrder(unsigned order_in);
+
+
 // ____________________________________________________________________________
 // Helper methods 
 // ____________________________________________________________________________
