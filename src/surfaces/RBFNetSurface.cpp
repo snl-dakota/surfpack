@@ -434,7 +434,7 @@ void RBFNetSurface::selectModelBasisFunctions(SurfData& surfData)
   // baseline model consists of only the root rbf
   buildCandidate(surfData,bestSet);
   builtOK = true; dataModified = false;
-  double tmse = this->mse(surfData);
+  double tmse = this->goodnessOfFit(string("mean_squared"),&surfData);
   double bestMetric = tmse;
   //double bestMetric = surfData.size()*log(tmse) + 
    // bestSet.size()*log(2.0*(double)surfData.size());
@@ -525,9 +525,9 @@ void RBFNetSurface::selectModelBasisFunctions(SurfData& surfData)
   cout << "Best: " << bestMetric << endl;
   buildCandidate(surfData,bestSet);
   if (datadim == 1) this->getValue(testData);
-  cout << "sse: " << this->goodnessOfFit("sse",&surfData) << endl;
-  cout << "mse: " << this->goodnessOfFit("mse",&surfData) << endl;
-  cout << "mrae: " << this->goodnessOfFit("mrae",&surfData) << endl;
+  cout << "sse: " << this->goodnessOfFit("sum_squared",&surfData) << endl;
+  cout << "mse: " << this->goodnessOfFit("mean_squared",&surfData) << endl;
+  cout << "rmae: " << this->goodnessOfFit("max_relative",&surfData) << endl;
   cout << "rsquared: " << this->goodnessOfFit("rsquared",&surfData) << endl;
 
     // Begin debug code
@@ -544,7 +544,7 @@ bool RBFNetSurface::tryModel(SurfData& surfData, int currentIndex, int& bestInde
   bool updated = false;
   printSet("Trying set", currentSet);
   buildCandidate(surfData, currentSet);
-  double tmse = this->mse(surfData);
+  double tmse = this->goodnessOfFit(string("mean_squared"),&surfData);
   cout << "Mean squared error" << tmse << endl;
   //double metric = surfData.size()*log(tmse) + 
   //  currentSet.size()*log(2.0*(double)surfData.size());
@@ -586,7 +586,7 @@ void RBFNetSurface::generateManyOptions(SurfData& surfData)
     random_shuffle(bfs.begin(),bfs.end());
     for (unsigned j = 0; j < numToUse;j++) basesToUse.push_back(bfs[j]);
     buildCandidate(surfData,basesToUse);
-    double tmse = this->mse(surfData) ;
+    double tmse = this->goodnessOfFit(string("mean_squared"),&surfData);
     // Begin debug code
     if (xsize == 1) this->getValue(testData);
     // End debug code
