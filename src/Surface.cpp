@@ -141,6 +141,22 @@ void Surface::getValue(SurfData& surf_data, std::vector<surfpack::ErrorStruct>& 
 }
 
 /// Evaluate the approximation surface at each point in the parameter
+/// SurfData object. Return lists of the observed values (retrieved via
+/// sd.getResponse() for each point sd) and corresponding predicted values 
+/// returned by sd.getResponse()) and the estimated value.  These lists are
+/// returned through the second and third parameters.
+void Surface::getValue(SurfData& surf_data, std::vector<double>& observed_vals,
+  std::vector<double>& predicted_vals)
+{
+  observed_vals.resize(surf_data.size());
+  predicted_vals.resize(surf_data.size());
+  for (unsigned i = 0; i < surf_data.size(); i++) {
+    predicted_vals[i]  = getValue(surf_data[i].X());
+    observed_vals[i] = surf_data.getResponse(i);
+  }
+}
+
+/// Evaluate the approximation surface at each point in the parameter
 /// surfData object.  Append the evaluations as a new response variable in
 /// the data set.
 void Surface::getValue(SurfData& surfData)
@@ -200,19 +216,51 @@ void Surface::setXSize(unsigned xsize_in)
 /// Return the value of some error metric
 double Surface::goodnessOfFit(const string metricName, SurfData* surfData)
 {
+  // Make sure the surfData passed in is not null, and that it's configured
+  // to use the correct points and response value for this surface
   SurfData& sdRef = checkData(surfData);
-  if (metricName == "sse") {
-    return sse(sdRef);
-  } else if (metricName == "mse") {
-    return mse(sdRef);
-  } else if (metricName == "mrae") {
-    return mrae(sdRef);
-  } else if (metricName == "rsquared") {
+  if (metricName == "rsquared") {
     return rSquared(sdRef);
   } else if (metricName == "press") {
     return press(sdRef);
   } else {
-    throw string("No error metric of that type in this class");
+    // The rest of these metrics all have many computations in common
+    // and are grouped together in the genericMetric method
+    vector<double> observed;
+    vector<double> predicted;
+    getValue(sdRef, observed, predicted);
+    if (metricName == "min_abs" ) {
+      return genericMetric(observed,predicted,MT_MINIMUM,ABSOLUTE);
+    } else if (metricName == "max_abs") {
+      return genericMetric(observed,predicted,MT_MAXIMUM,ABSOLUTE);
+    } else if (metricName == "sum_abs") {
+      return genericMetric(observed,predicted,MT_SUM,ABSOLUTE);
+    } else if (metricName == "mean_abs") {
+      return genericMetric(observed,predicted,MT_MEAN,ABSOLUTE);
+    } else if (metricName == "max_relative") {
+      return genericMetric(observed,predicted,MT_RELATIVE_MAXIMUM,ABSOLUTE);
+    } else if (metricName == "mean_relative") {
+      return genericMetric(observed,predicted,MT_RELATIVE_AVERAGE,ABSOLUTE);
+    } else if (metricName == "min_squared" ) {
+      return genericMetric(observed,predicted,MT_MINIMUM,SQUARED);
+    } else if (metricName == "max_squared") {
+      return genericMetric(observed,predicted,MT_MAXIMUM,SQUARED);
+    } else if (metricName == "sum_squared") {
+      return genericMetric(observed,predicted,MT_SUM,SQUARED);
+    } else if (metricName == "mean_squared") {
+      return genericMetric(observed,predicted,MT_MEAN,SQUARED);
+    } else if (metricName == "min_scaled" ) {
+      return genericMetric(observed,predicted,MT_MINIMUM,SCALED);
+    } else if (metricName == "max_scaled") {
+      return genericMetric(observed,predicted,MT_MAXIMUM,SCALED);
+    } else if (metricName == "sum_scaled") {
+      return genericMetric(observed,predicted,MT_SUM,SCALED);
+    } else if (metricName == "mean_scaled") {
+      return genericMetric(observed,predicted,MT_MEAN,SCALED);
+    } else {
+      cerr << "Bad metric name: " << metricName << endl;
+      throw string("No error metric of that type in this class");
+    }
   }
 }
 
@@ -314,45 +362,58 @@ double Surface::rSquared(SurfData& dataSet)
   return (rSquaredValue < 0) ? 0 : rSquaredValue;
 } 
       
-/// The sum of squared errors.  The response variable at dataSet's 
-/// defaultIndex is interpreted as the true function value.
-double Surface::sse(SurfData& dataSet)
+/// Compute one of several goodness of fit metrics.  The observed parameter
+/// should be a list of observed (or true) function values; the vector of
+/// predicted values gives the corresponding estimates from this surface.
+/// The dt parameter specifies the kind of residuals to compute.  ABSOLUTE
+/// residuals are (observed - predicted), SQUARED residuals are the squares 
+/// of the absolute residuals.  SCALED residuals are the ABSOLUTE residuals
+/// divided by the observed value.  Given the type of residuals, the client
+/// may request the min, max, sum, or mean of the set of residuals over all
+/// the given data points.  Two additional metrics are possible.  The
+/// relative maximum absolute error is the maximum absolute error divided
+/// by the standard deviation of the observed data.  The relative average
+/// absolute error is the mean absolute error divided by the standard 
+/// deviation of observed data. 
+double Surface::genericMetric(std::vector<double>& observed,
+  std::vector<double>& predicted, enum MetricType mt, enum DifferenceType dt)
 {
-  vector<surfpack::ErrorStruct> results;
-  getValue(dataSet,results);
-  double sse = 0.0;
-  for (unsigned i = 0; i < results.size(); i++) {
-    double residual = results[i].observed - results[i].estimated;
-    sse += residual*residual;
+  /// Create a vector for storing the differences (absolute, relative, or 
+  /// scaled) between observed and predicted values.
+  std::vector<double> diffs;
+  // Iterator for capturing the max or min using STL generic algorithm
+  std::vector<double>::iterator iter;
+  // Compute the desired residuals (obs_i - pred_i); they may be
+  // absolute, squared, or scaled (obs_i - pred_i)/obs_i, depending
+  // on the value of dt
+  surfpack::differences(diffs, observed, predicted, dt);
+  // The main values for mt are min, max, sum, and mean
+  // Two special values give additional metrics: relative maximum and
+  // relative average
+  switch (mt) {
+    // Relative maximum absolute error = max absolute error divided by the
+    // standard deviation of the obs_i values.
+    case MT_RELATIVE_MAXIMUM:
+      iter = max_element(diffs.begin(),diffs.end());
+      return *iter / surfpack::sample_sd(observed);
+    // Relative average absolute error is the average absolute
+    // error (sum_over(obs_i - pred_i) / n) divided by the standard
+    // deviation of the obs_i values
+    case MT_RELATIVE_AVERAGE:
+      return surfpack::sum_vector(diffs) / 
+        (observed.size() * surfpack::sample_sd(observed));
+    case MT_MINIMUM:
+      iter = min_element(diffs.begin(),diffs.end());
+      return *iter;
+    case MT_MAXIMUM:
+      iter = max_element(diffs.begin(),diffs.end());
+      return *iter;
+    case MT_SUM:
+      return surfpack::sum_vector(diffs);
+    case MT_MEAN:
+    default:
+      return surfpack::mean(diffs);
   }
-  return sse;
-}
-
-/// The mean of squared errors.  The response variable at dataSet's 
-/// defaultIndex is interpreted as the true function value.
-double Surface::mse(SurfData& dataSet)
-{
-  return sse(dataSet) / static_cast<double>(dataSet.size());
-}
-
-/// The maximum relative absolute error is computed by dividing the maximum
-/// absolute error by the standard deviation of the data.  The response 
-/// variable at dataSet's defaultIndex is interpreted to be the true 
-/// function value.
-double Surface::mrae(SurfData& dataSet)
-{
-  vector<surfpack::ErrorStruct> results;
-  vector<double> trueVals(dataSet.size());
-  getValue(dataSet,results);
-  double max = abs(results[0].observed - results[0].estimated);
-  for (unsigned i = 1; i < results.size(); i++) {
-    double curr = abs(results[i].observed -results[i].estimated);
-    trueVals[i] = results[i].observed;
-    //cout << "residual: " << residual << " sq: " << residual*residual << endl;
-    if (curr > max) max = curr;
-  }
-  
-  return max / surfpack::sample_sd(trueVals);
 }
 
 // ____________________________________________________________________________

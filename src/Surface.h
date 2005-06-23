@@ -12,7 +12,14 @@ class SurfScaler;
 #include "surfpack.h"
 #include <set>
 
-
+enum MetricType {
+  MT_RELATIVE_MAXIMUM,
+  MT_RELATIVE_AVERAGE,
+  MT_MINIMUM,
+  MT_MAXIMUM,
+  MT_SUM,
+  MT_MEAN
+};
 
 /// Abstract base class for implementation of a surface-fitting algorithm.  
 /// Each algorithm produces a function approximation given a set of data.  Some
@@ -111,8 +118,17 @@ public:
   /// Evaluate the approximation surface at each point in the parameter
   /// SurfData object.  In the ErrorStruct list, store the expected value (as
   /// returned by sd.getResponse()) and the estimated value.
-  virtual void getValue(SurfData& surf_data, std::vector<surfpack::ErrorStruct>& pts);
+  virtual void getValue(SurfData& surf_data, 
+    std::vector<surfpack::ErrorStruct>& pts);
   
+  /// Evaluate the approximation surface at each point in the parameter
+  /// SurfData object. Return lists of the observed values (retrieved via
+  /// sd.getResponse() for each point sd) and corresponding predicted values 
+  /// returned by sd.getResponse()) and the estimated value.  These lists are
+  /// returned through the second and third parameters.
+  virtual void getValue(SurfData& surf_data, std::vector<double>& observed_vals,
+    std::vector<double>& predicted_vals);
+
   /// Return the value of some error metric
   virtual double goodnessOfFit(const std::string metricName, 
     SurfData* surfData);
@@ -129,19 +145,21 @@ public:
   /// accounted for by the model (the approximating surface).
   virtual double rSquared(SurfData& dataSet);
 
-  /// The sum of squared errors.  The response variable at dataSet's 
-  /// defaultIndex is interpreted to be the true function value.
-  virtual double sse(SurfData& dataSet);
-
-  /// The mean of squared errors.  The response variable at dataSet's 
-  /// defaultIndex is interpreted to be the true function value.
-  virtual double mse(SurfData& dataSet);
-
-  /// The maximum relative absolute error is computed by dividing the maximum
-  /// absolute error by the standard deviation of the data.  The response 
-  /// variable at dataSet's defaultIndex is interpreted to be the true 
-  /// function value.
-  virtual double mrae(SurfData& dataSet);
+  /// Compute one of several goodness of fit metrics.  The observed parameter
+  /// should be a list of observed (or true) function values; the vector of
+  /// predicted values gives the corresponding estimates from this surface.
+  /// The dt parameter specifies the kind of residuals to compute.  ABSOLUTE
+  /// residuals are (observed - predicted), SQUARED residuals are the squares 
+  /// of the absolute residuals.  SCALED residuals are the ABSOLUTE residuals
+  /// divided by the observed value.  Given the type of residuals, the client
+  /// may request the min, max, sum, or mean of the set of residuals over all
+  /// the given data points.  Two additional metrics are possible.  The
+  /// relative maximum absolute error is the maximum absolute error divided
+  /// by the standard deviation of the observed data.  The relative average
+  /// absolute error is the mean absolute error divided by the standard 
+  /// deviation of observed data. 
+  virtual double Surface::genericMetric(std::vector<double>& observed,
+  std::vector<double>& predicted, enum MetricType mt, enum DifferenceType dt);
   
 // ____________________________________________________________________________
 // Commands

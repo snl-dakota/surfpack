@@ -13,6 +13,12 @@
 class Surface;
 class SurfData;
 
+enum DifferenceType {
+  ABSOLUTE,
+  SQUARED,
+  SCALED
+};
+
 namespace surfpack {
 
 
@@ -20,10 +26,10 @@ namespace surfpack {
 // Constants 
 // _____________________________________________________________________________
   // Length of the field for double-precision number stream output
-  const unsigned field_width = 26;
+  const unsigned field_width = 12;
 
   // Precision of output for double precision numbers
-  const unsigned output_precision = 17;
+  const unsigned output_precision = 4;
 
 // _____________________________________________________________________________
 // Nested Types 
@@ -116,6 +122,9 @@ namespace surfpack {
 // Vector helper methods 
 // ____________________________________________________________________________
 
+  /// Return the sum of the vector of values
+  double sum_vector(std::vector<double>& vals);
+
   /// Return the arithmetic mean (average) of the values in vector vals
   double mean(std::vector<double>& vals);
 
@@ -127,6 +136,11 @@ namespace surfpack {
 
   /// Return the sum of squared deviations from the mean
   double sum_squared_deviations(std::vector<double>& vals);
+
+  /// Return absolute, squared, or relative differences of second and third
+  /// parameters through the first parameter
+  void differences(std::vector<double>& results, std::vector<double>& observed,
+    std::vector<double>& predicted, enum DifferenceType dp = ABSOLUTE);
   
   /// Return the euclidean distance between pt1 and pt2.  Throw an exception if
   /// the dimensionality of the two vectors does not match.

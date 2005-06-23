@@ -180,14 +180,20 @@ const string surfpack::readName(istream& is, bool binary)
 // Vector helper methods 
 // ____________________________________________________________________________
 
-/// Return the arithmetic mean (average) of the values in vector vals
-double surfpack::mean(std::vector<double>& vals)
+/// Return the sum of the vector of values
+double surfpack::sum_vector(std::vector<double>& vals)
 {
   double sum = 0;
   for (unsigned i = 0; i < vals.size(); i++) {
     sum += vals[i];
   }
-  return static_cast<double>(sum) / vals.size();
+  return sum;
+}
+
+/// Return the arithmetic mean (average) of the values in vector vals
+double surfpack::mean(std::vector<double>& vals)
+{
+  return sum_vector(vals) / vals.size();
 }
 
 /// Return the sample variance of the values in vals
@@ -214,6 +220,22 @@ double surfpack::sum_squared_deviations(std::vector<double>& vals)
   return sse;
 }
   
+/// Return absolute, squared, or relative differences of second and third
+/// parameters through the first parameter
+void surfpack::differences(std::vector<double>& results, 
+  std::vector<double>& observed, std::vector<double>& predicted, 
+  enum DifferenceType dp)
+{
+  results.resize(observed.size());
+  for (unsigned i = 0; i < observed.size(); i++) {
+    results[i] = abs(observed[i] - predicted[i]);
+    switch (dp) {
+      case SQUARED: results[i] *= results[i]; break;
+      case SCALED: results[i] /= observed[i]; break;
+    }
+  }
+}
+
 /// Return the euclidean distance between pt1 and pt2.  Throw an exception if
 /// the dimensionality of the two vectors does not match.
 double surfpack::euclideanDistance(const vector<double>& pt1, 
