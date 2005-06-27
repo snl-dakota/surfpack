@@ -261,6 +261,8 @@ void SurfpackInterpreter::executeCreateSurface(const SurfpackParser::ParsedComma
     }
     SurfData* sd = iter->second;
     Surface* surf = SurfaceFactory::createSurface(type, sd);
+    surf->config(SurfpackParser::Arg(string("xsize"),
+      SurfpackParser::Rval(static_cast<int>(sd->xSize()))));
     surf->configList(command.arglist);
     surf->createModel();
     symbol_table.surfaceVars.insert(SurfaceSymbol(name,surf));
