@@ -14,7 +14,11 @@
 #include "Surface.h"
 #include "PolynomialSurface.h"
 
-extern "C" void dgels_(char&, int&, int&, int&, double*,
+#ifdef C2F77_CALLS_NEED_UNDERSCORE
+#define dgels dgels_
+#endif
+
+extern "C" void dgels(char&, int&, int&, int&, double*,
                        int&, double*, int&, double*, int&, int&);
 
 //extern "C" double ddot_(int&, double*, int&, double*, int&);
@@ -227,7 +231,7 @@ double PolynomialSurface::evaluate(const std::vector<double> & x)
 //  //cout.precision(30);
 //  //writeMatrix(b,pts,1,cout);
 //  //cout.precision(defaultPrecision);
-//  dgels_(trans,pts,numCoeff,nrhs,a,pts,b,pts,work,lwork,info);
+//  dgels(trans,pts,numCoeff,nrhs,a,pts,b,pts,work,lwork,info);
 //  //cout << "A Matrix after: " << endl;
 //  //writeMatrix(a,pts,numCoeff,cout);
 //  if (info < 0) {
@@ -290,7 +294,7 @@ void PolynomialSurface::build(SurfData& data)
   char trans = 'N';
   //SurfData::writeMatrix("AMatrix",a,static_cast<unsigned>(pts),numCoeff);
   //SurfData::writeMatrix("BVector",b,static_cast<unsigned>(pts),1);
-  dgels_(trans,pts,numCoeff,nrhs,a,pts,b,pts,work,lwork,info);
+  dgels(trans,pts,numCoeff,nrhs,a,pts,b,pts,work,lwork,info);
   //cout << "A Matrix after: " << endl;
   //writeMatrix(a,pts,numCoeff,cout);
   //if (info < 0) {
