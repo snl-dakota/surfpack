@@ -46,7 +46,7 @@ private:
 public:
   
   virtual const std::string surfaceName() const;
-  static unsigned minPointsRequired(unsigned xsize);
+  static unsigned minPointsRequired(unsigned hypothetical_xsize);
   virtual unsigned minPointsRequired() const;
   virtual double evaluate(const std::vector<double>& x);
 
@@ -54,8 +54,9 @@ public:
 // Commands 
 //_____________________________________________________________________________
 
-  void setConminThetaVars(std::vector<double> vals);
-  void usePreComputedCorrelationVector(std::vector<double> vals);
+  void setConminThetaVars(const std::vector<double>& vals);
+  void useUniformCorrelationValue(double correlation);
+  void usePreComputedCorrelationVector(const std::vector<double>& vals);
   void build(SurfData& data);
   virtual void config(const SurfpackParser::Arg& arg);
   
@@ -92,7 +93,6 @@ protected:
 
   static const std::string name;
   bool needsCleanup;
-  int xsize;
   int numsamp;
   bool runConminFlag;
 
