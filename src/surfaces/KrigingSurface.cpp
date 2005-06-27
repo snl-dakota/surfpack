@@ -257,29 +257,29 @@ const string KrigingSurface::surfaceName() const
   return name;
 }
 
-unsigned KrigingSurface::minPointsRequired(unsigned xsize) 
+unsigned KrigingSurface::minPointsRequired(unsigned hypothetical_xsize) 
 { 
-  return xsize * xsize;
+  return hypothetical_xsize * hypothetical_xsize;
 }
 
 unsigned KrigingSurface::minPointsRequired() const
 { 
-  if (xsize <= 0) {
+  if (this->xsize <= 0) {
     throw string(
-      "Dimenstionality of data needed to determine number of required samples."
+      "Dimensionality of data needed to determine number of required samples."
     );
   } else {
-    return minPointsRequired(xsize);
+    return minPointsRequired(this->xsize);
   }
 }
 
 double KrigingSurface::evaluate(const std::vector<double>& x)
 { 
   //double* xArray = new double[xsize];
-  if (x.size() != static_cast<unsigned>(xsize)) {
+  if (x.size() != xsize) {
     cerr << "Wrong number of dimensions" << endl;
   } else {
-    for (int i = 0; i < xsize; i++) {
+    for (unsigned i = 0; i < xsize; i++) {
       xArray[i] = x[i];
     }
   }
@@ -292,7 +292,8 @@ double KrigingSurface::evaluate(const std::vector<double>& x)
 #endif
   //cout << "Calculate_________________" << endl;
   //printKrigEvalVars(cout);
-  krigmodel(xsize,numsamp,numNewPts,
+  int xsize_as_int = static_cast<int>(xsize);
+  krigmodel(xsize_as_int,numsamp,numNewPts,
             iFlag,thetaVector[0],xMatrix[0],yValueVector[0],xArray[0],
             yNewVector[0],betaHat,rhsTermsVector[0],maxLikelihoodEst,
             iPivotVector[0],correlationMatrix[0],invcorrelMatrix[0],
@@ -310,12 +311,11 @@ double KrigingSurface::evaluate(const std::vector<double>& x)
 // Commands 
 //_____________________________________________________________________________
 
-void KrigingSurface::setConminThetaVars(std::vector<double> vals)
+void KrigingSurface::setConminThetaVars(const std::vector<double>& vals)
 {
-  if (!sd) {
-    cout << "Can't set conmin seed without data" << endl;
+  if (sd && sd->xSize() != vals.size()) {
+    throw string("Dimension mismatch: conmin seed and data dimensionality");
   } else { 
-    xsize = sd->xSize();
     numsamp = sd->size();
     if (!needsCleanup) {
       initialize();
@@ -326,10 +326,24 @@ void KrigingSurface::setConminThetaVars(std::vector<double> vals)
     runConminFlag = true;
   }
 }
-void KrigingSurface::usePreComputedCorrelationVector(std::vector<double> vals)
+
+void KrigingSurface::useUniformCorrelationValue(double correlation)
+{
+  if (xsize == 0) {
+    throw string("Must know data arity to use uniform correlation value.");
+  }
+  std::vector<double> vals(xsize);
+  for (unsigned i = 0; i < xsize; i++) vals[i] = correlation;
+  usePreComputedCorrelationVector(vals);
+}
+void KrigingSurface::
+  usePreComputedCorrelationVector(const std::vector<double>& vals)
 {
   if (needsCleanup) {
     delete thetaVector;
+  }
+  if (sd && sd->xSize() != vals.size()) {
+    throw string("Dimension mismatch: correlations and data dimensionality");
   }
   xsize = vals.size();
   thetaVector = new double[xsize];
@@ -341,13 +355,12 @@ void KrigingSurface::usePreComputedCorrelationVector(std::vector<double> vals)
 
 void KrigingSurface::build(SurfData& data)
 {
-  double* saveTheta;
+  double* saveTheta = 0;
 
   // code from Surface::build that needs to be executed before
   // initialize
   // this could be cleaner
 
-  xsize = data.xSize();
   numsamp = data.size();
   
   if (!runConminFlag) {
@@ -375,6 +388,8 @@ void KrigingSurface::config(const SurfpackParser::Arg& arg)
     setConminThetaVars(arg.rval.tuple); 
   } else if (argname == "theta_vars") {
     usePreComputedCorrelationVector(arg.rval.tuple);
+  } else if (argname == "uniform_correlation") {
+    useUniformCorrelationValue(arg.rval.real);
   } else {
     Surface::config(arg);
   }
@@ -395,6 +410,7 @@ KrigingSurface* KrigingSurface::makeSimilarWithNewData(SurfData* surfData)
 void KrigingSurface::writeBinary(ostream& os)
 {
   int i;
+  unsigned j;
   os.write((char*)(&xsize),sizeof(int));
   os.write((char*)(&numsamp),sizeof(int));
   for(i=0;i<numsamp;i++) { 
@@ -407,8 +423,8 @@ void KrigingSurface::writeBinary(ostream& os)
   for(i=0;i<numsamp;i++) { 
     os.write(reinterpret_cast<char*>(&rhsTermsVector[i]),sizeof(rhsTermsVector[i]));
   }
-  for(i=0;i<xsize;i++) { 
-    os.write(reinterpret_cast<char*>(&thetaVector[i]),sizeof(thetaVector[i]));
+  for(j=0;j<xsize;j++) { 
+    os.write(reinterpret_cast<char*>(&thetaVector[j]),sizeof(thetaVector[j]));
   }
 }
 
@@ -418,6 +434,7 @@ void KrigingSurface::writeText(ostream& os)
   unsigned old_precision = os.precision(surfpack::output_precision);
   os.setf(ios::scientific);
   int i;
+  unsigned j;
   os << numsamp << " number of data points" << endl;
   os << xsize << " number of input variables" << endl;
   for(i=0;i<numsamp;i++) { 
@@ -430,8 +447,8 @@ void KrigingSurface::writeText(ostream& os)
   for(i=0;i<numsamp;i++) { 
     os <<  rhsTermsVector[i] << " rhsTermsVector[" << i << "]" << endl; 
   }
-  for(i=0;i<xsize;i++) { 
-    os << thetaVector[i] << " thetaVector[" << i << "]" << endl; 
+  for(j=0;j<xsize;j++) { 
+    os << thetaVector[j] << " thetaVector[" << j << "]" << endl; 
   }
   os.flags(old_flags);
   os.precision(old_precision);
@@ -440,6 +457,7 @@ void KrigingSurface::writeText(ostream& os)
 void KrigingSurface::readBinary(istream& is)
 {
   int i;
+  unsigned j;
   is.read((char*)(&xsize),sizeof(int));
   is.read((char*)(&numsamp),sizeof(int));
   initialize();
@@ -453,8 +471,8 @@ void KrigingSurface::readBinary(istream& is)
   for(i=0;i<numsamp;i++) { 
     is.read(reinterpret_cast<char*>(&rhsTermsVector[i]),sizeof(rhsTermsVector[i]));
   }
-  for(i=0;i<xsize;i++) { 
-    is.read(reinterpret_cast<char*>(&thetaVector[i]),sizeof(thetaVector[i]));
+  for(j=0;j<xsize;j++) { 
+    is.read(reinterpret_cast<char*>(&thetaVector[j]),sizeof(thetaVector[j]));
   }
 }
 
@@ -463,6 +481,7 @@ void KrigingSurface::readText(istream& is)
   string sline;
   istringstream streamline;
   int i;
+  unsigned j;
   getline(is,sline); streamline.str(sline);
   streamline >> numsamp;
   getline(is,sline); streamline.str(sline);
@@ -492,12 +511,13 @@ void KrigingSurface::readText(istream& is)
 void KrigingSurface::printKrigModelVariables(ostream& os)
 {
   int i;
+  unsigned j;
   os << "After call to krigmodel in modelbuild" << endl;
   os << "xsize: " << xsize << endl;
   os << "numsamp: " << numsamp  << endl;
   os << "numNewPts: " << numNewPts << endl;
   os << "iFlag" << iFlag << endl;
-  os << "thetaVector" << endl; for(i=0;i<xsize;i++) { os << thetaVector[i] << endl; }
+  os << "thetaVector" << endl; for(j=0;j<xsize;j++) { os << thetaVector[j] << endl; }
   os << "xMatrix" << endl; for(i=0;i<numsamp;i++) { os << xMatrix[i] << endl; }
   os << "yValueVector" << endl; for(i=0;i<numsamp;i++) { os <<  yValueVector[i] << endl; }
   os << "xNewVector" << endl; for(i=0;i<numsamp;i++) { os <<  xNewVector[i]  << endl; }
@@ -522,6 +542,7 @@ void KrigingSurface::printKrigModelVariables(ostream& os)
 void KrigingSurface::printKrigEvalVars(ostream& os)
 {
   int i;
+  unsigned j;
   os << "xMatrix" << endl; for(i=0;i<numsamp;i++) { os << xMatrix[i] << endl; }
   os << "rXhatVector" << endl; for(i=0;i<numsamp;i++) { os <<  rXhatVector[i] << endl; }
   os << "betaHat: " <<  betaHat << endl; 
@@ -529,7 +550,7 @@ void KrigingSurface::printKrigEvalVars(ostream& os)
   os << "numsamp: " << numsamp  << endl;
   os << "xsize: " << xsize << endl;
   os << "numNewPts: " << numNewPts << endl;
-  os << "thetaVector: " << endl; for(i=0;i<xsize;i++) { os << thetaVector[i] << endl; }
+  os << "thetaVector: " << endl; for(j=0;j<xsize;j++) { os << thetaVector[j] << endl; }
   os << "yNewVector" << endl; for(i=0;i<numsamp;i++) { os <<  yNewVector[i] << endl; }
 }
 
@@ -613,10 +634,9 @@ void KrigingSurface::printConminVariables(ostream& os)
 
 void KrigingSurface::buildModel(SurfData& data)
 {
-  xsize = static_cast<int>(data.xSize());
   numsamp = static_cast<int>(data.size());
   for (unsigned i = 0; i < data.size(); i++) {
-    for (int j = 0; j < xsize; j++) {
+    for (unsigned j = 0; j < xsize; j++) {
        xMatrix[j*numsamp+i] = data[i].X()[j];
     }
     yValueVector[i] = data.getResponse(i);
@@ -645,13 +665,14 @@ void KrigingSurface::buildModel(SurfData& data)
     printConminVariables(before);
     before.close();
 #endif
+    int xsize_as_int = static_cast<int>(xsize);
     callconmin(conminThetaVars[0], conminThetaLowerBnds[0],
 	       conminThetaUpperBnds[0],
 	       constraintVector[0],SCAL[0],DF[0],A[0],S[0],G1[0],G2[0],
 	       B[0],C[0],ISC[0],IC[0],MS1[0],N1,N2,N3,N4,N5,
 	       DELFUN,DABFUN,FDCH,FDCHM,CT,CTMIN,CTL,CTLMIN,ALPHAX,ABOBJ1,THETA,
-	       maxLikelihoodEst,xsize,numcon,NSIDE,IPRINT,NFDG,NSCAL,LINOBJ,
-	       ITMAX,ITRM,ICNDIR,IGOTO,NAC,
+	       maxLikelihoodEst,xsize_as_int,numcon,NSIDE,IPRINT,NFDG,NSCAL,
+	       LINOBJ,ITMAX,ITRM,ICNDIR,IGOTO,NAC,
 	       conminInfo,INFOG,ITER,numsamp,numNewPts,iFlag, 
 	       xMatrix[0],yValueVector[0],xNewVector[0],yNewVector[0],betaHat,
 	       rhsTermsVector[0],iPivotVector[0],correlationMatrix[0],
@@ -667,8 +688,9 @@ void KrigingSurface::buildModel(SurfData& data)
 #endif
     // copy CONMIN's theta variables to the thetaVector array for use in the
     // kriging model evaluation phase
-    for (int i=0;i<xsize;i++) {
+    for (unsigned i=0;i<xsize;i++) {
       thetaVector[i] = conminThetaVars[i];
+      cout << "theta[" << i << "]: " << thetaVector[i] << endl;
     }
 
     ////  run_conmin_flag = 0;
@@ -682,7 +704,8 @@ void KrigingSurface::buildModel(SurfData& data)
     os << "Before call to krigmodel in buildModel" << endl;
     printKrigModelVariables(os);
 #endif
-    krigmodel(xsize,numsamp,numNewPts,
+    int xsize_as_int = static_cast<int>(xsize);
+    krigmodel(xsize_as_int,numsamp,numNewPts,
 	      iFlag,thetaVector[0],xMatrix[0],yValueVector[0],xNewVector[0],
 	      yNewVector[0],betaHat,rhsTermsVector[0],maxLikelihoodEst,
 	      iPivotVector[0],correlationMatrix[0],invcorrelMatrix[0],
