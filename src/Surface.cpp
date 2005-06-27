@@ -70,9 +70,9 @@ void Surface::init()
 // ____________________________________________________________________________
 
 /// Return dimensionality of the surface or zero if not built
-unsigned Surface::xSize()
+unsigned Surface::xSize() const
 {
-  return xsize;
+  return this->xsize;
 }
 
 /// Return true if the data that was used to create the surface is available.
@@ -257,6 +257,8 @@ double Surface::goodnessOfFit(const string metricName, SurfData* surfData)
       return genericMetric(observed,predicted,MT_SUM,SCALED);
     } else if (metricName == "mean_scaled") {
       return genericMetric(observed,predicted,MT_MEAN,SCALED);
+    } else if (metricName == "root_mean_squared") {
+      return rootMeanSquared(observed,predicted);
     } else {
       cerr << "Bad metric name: " << metricName << endl;
       throw string("No error metric of that type in this class");
@@ -416,6 +418,11 @@ double Surface::genericMetric(std::vector<double>& observed,
   }
 }
 
+double Surface::rootMeanSquared(std::vector<double>& observed,
+  std::vector<double>& predicted)
+{
+  return sqrt(genericMetric(observed,predicted,MT_MEAN,SQUARED));
+}
 // ____________________________________________________________________________
 // Commands 
 // ____________________________________________________________________________
@@ -518,8 +525,8 @@ void Surface::createModel(SurfData* surfData)
     // changed.
     return;
   } 
-  acceptableData();
   xsize = sd->xSize();
+  acceptableData();
   // If a SurfScaler object has been created, the data should be scaled
   // before building the surface
   if (scaler) {

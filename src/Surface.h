@@ -83,7 +83,7 @@ public:
   virtual const std::string surfaceName() const = 0;
   
   /// Return dimensionality of the surface or zero if not built
-  virtual unsigned xSize();
+  virtual unsigned xSize() const;
 
   /// Return true if the data that was used to create the surface is available.
   /// Some error metrics require the original data.
@@ -158,9 +158,12 @@ public:
   /// by the standard deviation of the observed data.  The relative average
   /// absolute error is the mean absolute error divided by the standard 
   /// deviation of observed data. 
-  virtual double Surface::genericMetric(std::vector<double>& observed,
-  std::vector<double>& predicted, enum MetricType mt, enum DifferenceType dt);
+  virtual double genericMetric(std::vector<double>& observed,
+    std::vector<double>& predicted, enum MetricType mt, enum DifferenceType dt);
   
+  /// Return the square root of the mean-squared-error
+  double rootMeanSquared(std::vector<double>& observed,
+    std::vector<double>& predicted);
 // ____________________________________________________________________________
 // Commands
 // ____________________________________________________________________________
