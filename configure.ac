@@ -44,7 +44,9 @@ AC_PROG_F77([xlf f77 g77])
 
 # Checks for a C++ compiler.  Preference is given to the options listed
 # first, as in the Fortran example above
-AC_PROG_CXX([CC cxx xlC g++ c++ gcc])
+echo "CXX=$CXX"
+echo "CC=$CC"
+AC_PROG_CXX([cxx xlC g++ c++ gcc CC])
 
 # This is a kludgy test.  The goal is to turn on the -fpe3 flag for the
 # OSF fortran compiler, which allows the program to continue if when  there 
@@ -120,7 +122,7 @@ CPPFLAGS=""
 # want to run the gcov profiler to test code coverage.  The save-temps
 # flag tells the compiler to keep the preprocessed source.
 #CXXFLAGS="-fprofile-arcs -ftest-coverage -g -save-temps"
-CXXFLAGS="$CXXFLAGS -I/usr/local/include -g"
+CXXFLAGS="$CXXFLAGS -I/usr/local/include -g -Wall"
 
 # The cxx compiler on OSF needs the __USE_STD_IOSTREAM flag since
 # the sstream classes are used.
