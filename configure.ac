@@ -95,6 +95,8 @@ else
   WHOLE_LIB_PATH=
 fi
 
+LDFLAGS="$LDFLAGS -L/usr/local/flex-2.5.4/lib -L/usr/freeware/lib32 -L/usr/local/lib -L/usr/lib "
+
 # Checks for the flex library that the parser/scanner code needs to link
 # against.
 AC_CHECK_LIB([fl], [yywrap])
