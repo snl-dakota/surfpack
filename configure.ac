@@ -63,10 +63,9 @@ then
   fi 
 fi
 
-# A macro written by Mark Richards.  The macro is listed in acinclude.m4.  
-# It tests whether C/C++ programs should to the extern "C" declaration for 
-# fortran routines with or without a trailing underscore.
-MDR_C2F77_UNDERSCORE
+# Macro invocation to determine whether references to FORTRAN 77
+# subroutines and functions from C/C++ code require underscores.
+AC_F77_WRAPPERS
 
 # This macro causes autoconf to tell automake to create Makefiles that
 # generate static libraries by default.  The user could still request

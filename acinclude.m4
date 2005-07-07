@@ -56,30 +56,6 @@ AC_DEFUN([MDR_CPPUNIT_MAKEFILE], [
        AC_CONFIG_FILES([$1])
   fi])
 
-dnl If C++ programs invoke fortran routines, the fortran routines must be 
-dnl declared extern "C" in the C++ code (to disable name-mangling). Depending
-dnl on the platform an underscore may need to be appended to the name of the
-dnl fortran calls.  This macro will cause C2F77_CALLS_NEED_UNDERSCORE to be
-dnl #defined iff the trailing underscore is required.
-AC_DEFUN([MDR_C2F77_UNDERSCORE], [
-  AC_CACHE_CHECK(
-    whether calls to fortran from C++ require trailing underscore, 
-    ac_cv_add_underscore, [
-      AC_F77_FUNC([func1])
-      if test "$func1" = "func1_" 
-      then
-        ac_cv_add_underscore=yes
-      else
-        ac_cv_add_underscore=no
-      fi]
-  )
-  if test "$ac_cv_add_underscore" = "yes"
-  then 
-      AC_DEFINE([C2F77_CALLS_NEED_UNDERSCORE],[],[
-        "Define if function calls from C++ to F77 need a trailing underscore"])
-  fi
-  ])
-
 dnl Checks for a library with BLAS routines.  This macro was downloaded from
 dnl www.gnu.org/software/ac-archive (current August 2004).  Some modifications
 dnl were made for the Solaris platform.  This macro is inherently kludgy, 

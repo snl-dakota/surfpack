@@ -12,16 +12,6 @@
 #include "Surface.h"
 #include "MarsSurface.h"
 
-#ifdef C2F77_CALLS_NEED_UNDERSCORE 
-#define mars mars_ 
-#define plot plot_ 
-#define fmod fmod_
-#endif
-
-extern "C" void mars(int&, int&, real&, real&, real&, int&, int&, int&,
-  real&, int&, real&, double&, int&);
-
-extern "C" void fmod(int&, int&, real&, real&, int&, real&, real&);
 using namespace std;
 using namespace surfpack;
 
@@ -146,7 +136,7 @@ double MarsSurface::evaluate(const std::vector<double>& x)
   }
   real* sp = new real[2];
   real* f = new real[1];
-  fmod(interpolation,nval,xVector[0],fm[0],im[0],f[0],sp[0]);
+  FMODM_F77(interpolation,nval,xVector[0],fm[0],im[0],f[0],sp[0]);
   delete [] sp;
   delete [] xVector;
   real result = *f;
@@ -198,7 +188,7 @@ void MarsSurface::build(SurfData& data)
   //printMatrix(w,n,1,cout);
   //printMatrix(y,n,1,cout);
   //printIntMatrix(lx,np,1,cout);
-  mars(n,np,xMatrix[0],y[0],w[0],max_bases,max_interactions,lx[0],fm[0],im[0],sp[0],dp[0],mm[0]);
+  MARS_F77(n,np,xMatrix[0],y[0],w[0],max_bases,max_interactions,lx[0],fm[0],im[0],sp[0],dp[0],mm[0]);
   delete [] y;
   delete [] w;
   delete [] lx;

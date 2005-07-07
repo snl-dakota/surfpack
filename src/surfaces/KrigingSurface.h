@@ -18,6 +18,34 @@
 
 #include "SurfpackParser.h"
 
+// Prototypes for the DAKOTA-to-CONMIN interface subroutine "callconmin"
+// and for the kriging model evaluation subroutine "krigmodel".
+#define CALLCONMIN_F77 F77_FUNC(callconmin,CALLCONMIN)
+#ifdef __cplusplus
+extern "C" /* prevent C++ name mangling */
+#endif
+void CALLCONMIN_F77(double&, double&, double&, double&, double&, double&,
+		    double&, double&, double&, double&, double&, double&,
+		    int&, int&, int&, int&, int&, int&, int&, int&,
+		    double&, double&, double&, double&, double&, double&,
+		    double&, double&, double&, double&, double&, double&,
+		    int&, int&, int&, int&, int&, int&, int&, int&,
+		    int&, int&, int&, int&, int&, int&, int&,
+		    int&, int&, int&,
+		    double&, double&, double&, double&, double&, double&, int&,
+		    double&, double&, double&, double&, double&, double&, 
+		    double&, double&, double&, int&, int&, int&);
+
+#define KRIGMODEL_F77 F77_FUNC(krigmodel,KRIGMODEL)
+#ifdef __cplusplus
+extern "C" /* prevent C++ name mangling */
+#endif
+void KRIGMODEL_F77(int&, int&, int&,
+		   int&, double&, double&, double&, const double&,
+		   double&, double&, double&, double&, int&, 
+		   double&, double&, double&, double&, double&, 
+		   double&, double&, double&, double&, int&, int&);
+
 class KrigingSurface : public Surface
 {
 

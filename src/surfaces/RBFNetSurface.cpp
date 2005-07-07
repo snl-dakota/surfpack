@@ -16,23 +16,6 @@
 #include "Surface.h"
 #include "RBFNetSurface.h"
 
-#ifdef C2F77_CALLS_NEED_UNDERSCORE
-#define dgels dgels_
-#define dgemm dgemm_
-#define dgemv dgemv_
-#endif
-
-extern "C" void dgels(char& trans, int& m, int& n, int& nrhs, double* A,
-      int& lda, double* B, int& ldb, double* work, int& lwork, int& info);
-
-extern "C" void dgemm(char& transa, char& transb, int& m, int& n, int& k, 
-  double& alpha, double* A, int& lda, double* B, int& ldb, double& beta, 
-  double* C, int& ldc);
-
-extern "C" void dgemv(char& trans, int& m, int& n, double& alpha, 
-  double* A, int& lda, double* x, int& incx, double& beta, double* y, 
-  int& incy);
-
 using namespace std;
 //_____________________________________________________________________________
 // Data members 
@@ -266,8 +249,8 @@ void RBFNetSurface::build(SurfData& surfData)
   // don't perform the optional addition
   double beta = 0.0; 
 
-  dgemv(trans,numpts,numcenters,alpha,hMatrix,numpts,responseVector,inc,
-    beta,resultVector,inc);
+  DGEMV_F77(trans,numpts,numcenters,alpha,hMatrix,numpts,responseVector,inc,
+	    beta,resultVector,inc);
   //writeMatrix("result vector after dgemv",resultVector,numcenters,1,cout);
   
   // now responseVector holds H'y
@@ -280,7 +263,7 @@ void RBFNetSurface::build(SurfData& surfData)
   int k = static_cast<int>(numpts);
   char transa = 'T';
   char transb = 'N';
-  dgemm(transa,transb,m,n,k,alpha,hMatrix,k,hMatrix,k,beta,hTransHMatrix,m);
+  DGEMM_F77(transa,transb,m,n,k,alpha,hMatrix,k,hMatrix,k,beta,hTransHMatrix,m);
 
   //writeMatrix("hTransHMatrix",hTransHMatrix,numcenters,numcenters,cout);
   // values must be passed by reference to Fortran, so variables must be declared for info, nrhs, trans
@@ -293,8 +276,8 @@ void RBFNetSurface::build(SurfData& surfData)
   ////writeMatrix(b,pts,1,cout);
   int lwork = numcenters * numcenters * 2;
   double* work = new double[lwork];
-  dgels(trans,numcenters,numcenters,nrhs,hTransHMatrix,numcenters,
-    resultVector,numcenters,work,lwork,info);
+  DGELS_F77(trans,numcenters,numcenters,nrhs,hTransHMatrix,numcenters,
+	    resultVector,numcenters,work,lwork,info);
   //writeMatrix("weights after dgels",resultVector,numcenters,1,cout);
   
   weights.resize(numcenters);
@@ -363,8 +346,8 @@ void RBFNetSurface::buildCandidate(SurfData& surfData,
   // don't perform the optional addition
   double beta = 0.0; 
 
-  dgemv(trans,numpts,numcenters,alpha,hMatrix,numpts,responseVector,inc,
-    beta,resultVector,inc);
+  DGEMV_F77(trans,numpts,numcenters,alpha,hMatrix,numpts,responseVector,inc,
+	    beta,resultVector,inc);
   //writeMatrix("result vector after dgemv",resultVector,numcenters,1,cout);
   
   // now responseVector holds H'y
@@ -378,7 +361,7 @@ void RBFNetSurface::buildCandidate(SurfData& surfData,
   char transa = 'T';
   char transb = 'N';
   //cout << "m : " << m << endl;
-  dgemm(transa,transb,m,n,k,alpha,hMatrix,k,hMatrix,k,beta,hTransHMatrix,m);
+  DGEMM_F77(transa,transb,m,n,k,alpha,hMatrix,k,hMatrix,k,beta,hTransHMatrix,m);
 
   //writeMatrix("hTransHMatrix",hTransHMatrix,numcenters,numcenters,cout);
   // values must be passed by reference to Fortran, so variables must be declared for info, nrhs, trans
@@ -391,7 +374,7 @@ void RBFNetSurface::buildCandidate(SurfData& surfData,
   ////writeMatrix(b,pts,1,cout);
   int lwork = numcenters * numcenters * 2;
   double* work = new double[lwork];
-  dgels(trans,numcenters,numcenters,nrhs,hTransHMatrix,numcenters,
+  DGELS_F77(trans,numcenters,numcenters,nrhs,hTransHMatrix,numcenters,
     resultVector,numcenters,work,lwork,info);
   //writeMatrix("weights after dgels",resultVector,numcenters,1,cout);
   

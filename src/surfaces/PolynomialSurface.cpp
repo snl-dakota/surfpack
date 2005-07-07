@@ -14,18 +14,6 @@
 #include "Surface.h"
 #include "PolynomialSurface.h"
 
-#ifdef C2F77_CALLS_NEED_UNDERSCORE
-#define dgels dgels_
-#endif
-
-extern "C" void dgels(char&, int&, int&, int&, double*,
-                       int&, double*, int&, double*, int&, int&);
-
-//extern "C" double ddot_(int&, double*, int&, double*, int&);
-//
-//extern "C" void dgemv_(char&, int&, int&, double&, double*, int&, double*,
-//		int&, double&, double*, int&);
-
 using namespace std;
 
 const string PolynomialSurface::name = "Polynomial";
@@ -294,7 +282,7 @@ void PolynomialSurface::build(SurfData& data)
   char trans = 'N';
   //SurfData::writeMatrix("AMatrix",a,static_cast<unsigned>(pts),numCoeff);
   //SurfData::writeMatrix("BVector",b,static_cast<unsigned>(pts),1);
-  dgels(trans,pts,numCoeff,nrhs,a,pts,b,pts,work,lwork,info);
+  DGELS_F77(trans,pts,numCoeff,nrhs,a,pts,b,pts,work,lwork,info);
   //cout << "A Matrix after: " << endl;
   //writeMatrix(a,pts,numCoeff,cout);
   //if (info < 0) {

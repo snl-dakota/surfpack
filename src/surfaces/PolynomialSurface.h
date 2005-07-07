@@ -22,6 +22,18 @@
 #include <stdexcept>
 #include "SurfpackParser.h"
 
+#define DGELS_F77 F77_FUNC(dgels,DGELS)
+#ifdef __cplusplus
+extern "C" /* prevent C++ name mangling */
+#endif
+void DGELS_F77(char&, int&, int&, int&, double*,
+	       int&, double*, int&, double*, int&, int&);
+
+//extern "C" double ddot_(int&, double*, int&, double*, int&);
+//
+//extern "C" void dgemv_(char&, int&, int&, double&, double*, int&, double*,
+//		int&, double&, double*, int&);
+
 class SurfPoint;
 class Surface;
 

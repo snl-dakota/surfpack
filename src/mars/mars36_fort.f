@@ -575,7 +575,8 @@ c
      1n(im(10)),  fmn(im(13)),fmn(im(14)),sp,mm)                           58
       return                                                               59
       end                                                                  60
-      subroutine fmod (m,n,x,fm,im,f,sp)                                   61
+c     subroutine fmod (m,n,x,fm,im,f,sp)                                SLB05
+      subroutine fmodm(m,n,x,fm,im,f,sp)                                   61
       integer im(*)                                                        62
       real x(*),fm(*),f(*),sp(*)                                           63
       if(m .ne. 1) go to 1                                                 64

@@ -119,7 +119,8 @@ c
       xeval(4,4) = 0.143
       xeval(4,5) = 0.091
       
-      call fmod (m,neval,xeval,fm,im,f,sp)
+c      call fmod (m,neval,xeval,fm,im,f,sp)                              SLB05
+      call fmodm(m,neval,xeval,fm,im,f,sp)
       open(11,file='mars_2d.surf',status='unknown')
       write(11,*) (f(i),i=1,neval)
 

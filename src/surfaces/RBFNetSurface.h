@@ -16,6 +16,29 @@ class Surface;
 #include "SurfpackParser.h"
 typedef float real;
 
+#define DGELS_F77 F77_FUNC(dgels,DGELS)
+#ifdef __cplusplus
+extern "C"  /* prevent C++ name mangling */
+#endif
+void DGELS_F77(char& trans, int& m, int& n, int& nrhs, double* A,
+	       int& lda, double* B, int& ldb, double* work, int& lwork, int& info);
+
+#define DGEMM_F77 F77_FUNC(dgemm,DGEMM)
+#ifdef __cplusplus
+extern "C"  /* prevent C++ name mangling */
+#endif
+void DGEMM_F77(char& transa, char& transb, int& m, int& n, int& k, 
+	       double& alpha, double* A, int& lda, double* B, int& ldb, double& beta, 
+	       double* C, int& ldc);
+
+#define DGEMV_F77 F77_FUNC(dgemv,DGEMV)
+#ifdef __cplusplus
+extern "C"  /* prevent C++ name mangling */
+#endif
+void DGEMV_F77(char& trans, int& m, int& n, double& alpha, 
+	       double* A, int& lda, double* x, int& incx, double& beta, double* y, 
+	       int& incy);
+
 //_____________________________________________________________________________
 // Basis Function Helper Classes 
 //_____________________________________________________________________________
