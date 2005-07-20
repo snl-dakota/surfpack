@@ -132,4 +132,4 @@ CLEANFILES = *.bb *.bbg *.da *.gcov *.ii *.s
 		
 bin_PROGRAMS = surfpack 
 surfpack_SOURCES = $(top_srcdir)/interface/main.cpp 
-surfpack_LDADD = $(top_builddir)/src/libsurfpack.la 
+surfpack_LDADD = $(top_builddir)/src/libsurfpack.la $(LEXLIB)

@@ -2,12 +2,12 @@
 # Process this file with autoconf to produce a configure script.
 
 # The version of autoconf must be 2.58 or later
-AC_PREREQ(2.58)
+AC_PREREQ([2.58])
 
 # This is Surfpack, version 0.1.  User will be invited to send email
 # to the address specified in the third argument when something goes
 # wrong.
-AC_INIT(Surfpack, 0.1, mricha@sandia.gov)
+AC_INIT([Surfpack], [0.1], [mricha@sandia.gov])
 
 # The macros with the AM prefix are instructions to automake.
 # Automake will base some of its behavior on things it sees in this file.
@@ -26,12 +26,15 @@ AC_INIT(Surfpack, 0.1, mricha@sandia.gov)
 
 # The file config.h.in should be generated automatically using the autoheader
 # utility.  Autoheader scans configure.ac to see which symbols it may #define.
-AM_CONFIG_HEADER(config.h)
+AM_CONFIG_HEADER([config.h])
 AM_INIT_AUTOMAKE
 
 # Check to make sure this file exists as a safety check.  This is merely
 # sanity check to make sure you're not running autoconf recklessly
 AC_CONFIG_SRCDIR([src/Surface.cpp])
+
+# Add all the necessary m4 directories to aclocal's search path.
+AC_CONFIG_MACRO_DIR([m4])
 
 # Checks for one of the following fortran compilers.  Preference is given
 # to those listed first.  For example, if the macro is listed as
@@ -94,14 +97,13 @@ else
   WHOLE_LIB_PATH=
 fi
 
-LDFLAGS="$LDFLAGS -L/usr/local/flex-2.5.4/lib -L/usr/freeware/lib32 -L/usr/local/lib -L/usr/lib "
+# Checks for the flex version and associated library (may not be -lfl)
+# that the parser/scanner code needs to link against.
+AC_PROG_LEX
 
-# Checks for the flex library that the parser/scanner code needs to link
-# against.
-AC_CHECK_LIB([fl], [yywrap])
-
-# Checks for cxx STL implementation.
-AC_CHECK_LIB([cxxstd],[strcpy])
+# Checks for C++ STL implementation (and ISO standard compliance).
+AC_CXX_HAVE_STL
+AC_CXX_HAVE_STD
 
 # Macro written by Mark Richards.  Writes a little C++ program and tries
 # to link against -lcppunit.
@@ -123,7 +125,7 @@ CPPFLAGS=""
 # want to run the gcov profiler to test code coverage.  The save-temps
 # flag tells the compiler to keep the preprocessed source.
 #CXXFLAGS="-fprofile-arcs -ftest-coverage -g -save-temps"
-CXXFLAGS="$CXXFLAGS -I/usr/local/include -g -Wall"
+CXXFLAGS="$CXXFLAGS -I/usr/local/include -g"
 
 # The cxx compiler on OSF needs the __USE_STD_IOSTREAM flag since
 # the sstream classes are used.

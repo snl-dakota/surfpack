@@ -1,3 +1,6 @@
+# Add all the necessary m4 directories to aclocal's search path.
+ACLOCAL_AMFLAGS = -I m4 -I /usr/netpub/cppunit/share/aclocal
+
 # Automake if/else/endif construction.  The MDR_CXX_CPPUNIT macro that is
 # invoked in autoconf invokes and AM_CONDITIONAL macro for INCLUDE_TESTS.
 # In other words, if the test to link against CPP Unit succeeds, the
