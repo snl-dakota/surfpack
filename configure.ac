@@ -49,7 +49,7 @@ AC_PROG_F77([xlf f77 g77])
 # first, as in the Fortran example above
 echo "CXX=$CXX"
 echo "CC=$CC"
-AC_PROG_CXX([cxx xlC g++ c++ gcc CC])
+AC_PROG_CXX([xlC cxx CC c++ g++])
 
 # This is a kludgy test.  The goal is to turn on the -fpe3 flag for the
 # OSF fortran compiler, which allows the program to continue if when  there 
