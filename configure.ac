@@ -98,8 +98,10 @@ else
 fi
 
 # Checks for the flex version and associated library (may not be -lfl)
-# that the parser/scanner code needs to link against.
+# that the parser/scanner code needs to link against.  Also check for
+# bison.
 AC_PROG_LEX
+AC_PROG_YACC
 
 # Checks for C++ STL implementation (and ISO standard compliance).
 AC_CXX_HAVE_STL

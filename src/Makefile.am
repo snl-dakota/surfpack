@@ -33,7 +33,6 @@ extra_lapack_routines=	$(top_srcdir)/src/kriging/dgecon.f \
 			$(top_srcdir)/src/kriging/ilaenv.f \
 			$(top_srcdir)/src/kriging/lsame.f \
 			$(top_srcdir)/src/kriging/xerbla.f
-			
 else
 extra_lapack_routines=
 endif
@@ -51,6 +50,13 @@ lib_LTLIBRARIES = libsurfpack.la
 # may not need to be compiled. The _SOURCES part is automake's way of 
 # specifying which files need to be compiled in order to build the 
 # libsurfpack.la target.
+
+BUILT_SOURCES = $(top_srcdir)/src/interpreter/lexer.cpp \
+		$(top_srcdir)/src/interpreter/surfparse.cpp \
+		$(top_srcdir)/src/interpreter/surfparse.h
+
+AM_LFLAGS = -+ -o$(LEX_OUTPUT_ROOT).c
+AM_YFLAGS = -d
 
 libsurfpack_la_SOURCES =$(top_srcdir)/src/SurfPoint.cpp \
 			$(top_srcdir)/src/SurfPoint.h \
@@ -94,13 +100,13 @@ libsurfpack_la_SOURCES =$(top_srcdir)/src/SurfPoint.cpp \
 			$(top_srcdir)/src/ann/utilities.h \
 			$(top_srcdir)/src/ann/vector_enhancements.cpp \
 			$(top_srcdir)/src/ann/vector_enhancements.h \
+			$(top_srcdir)/src/interpreter/lexer.lpp \
+			$(top_srcdir)/src/interpreter/surfparse.ypp \
+			$(top_srcdir)/src/interpreter/surfparse.h \
 			$(top_srcdir)/src/interpreter/SurfpackParser.cpp \
 			$(top_srcdir)/src/interpreter/SurfpackParser.h \
 			$(top_srcdir)/src/interpreter/SurfpackInterpreter.cpp \
 			$(top_srcdir)/src/interpreter/SurfpackInterpreter.h \
-			$(top_srcdir)/src/interpreter/surfparse.tab.cpp \
-			$(top_srcdir)/src/interpreter/surfparse.tab.h \
-			$(top_srcdir)/src/interpreter/lex.yy.cpp \
 			$(top_srcdir)/interface/SurfDataGenerator.cpp \
 			$(top_srcdir)/interface/SurfDataGenerator.h \
 			$(top_srcdir)/src/conmin/conmin.f \
@@ -114,7 +120,7 @@ libsurfpack_la_SOURCES =$(top_srcdir)/src/SurfPoint.cpp \
 # gets set by automake. LAPACK_LIBS, BLAS_LIBS, LIBS, and FLIBS are all set
 # by the configure script.
 
-libsurfpack_la_LIBADD = $(LAPACK_LIBS) $(BLAS_LIBS) $(LIBS) $(FLIBS)
+libsurfpack_la_LIBADD = $(LAPACK_LIBS) $(BLAS_LIBS) $(LIBS) $(FLIBS) $(LEXLIB)
 
 # Specifies additional places for the compiler to look for files that are
 # requested via #include.
@@ -129,7 +135,6 @@ INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src -I$(top_srcdir)/src/surfaces \
 # gcov profiler.  The *.ii and *.s files are temporary fils that may be
 # produce during C/C++ compilation. 
 CLEANFILES = *.bb *.bbg *.da *.gcov *.ii *.s
-		
 bin_PROGRAMS = surfpack 
 surfpack_SOURCES = $(top_srcdir)/interface/main.cpp 
-surfpack_LDADD = $(top_builddir)/src/libsurfpack.la $(LEXLIB)
+surfpack_LDADD = $(top_builddir)/src/libsurfpack.la

@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 #include <FlexLexer.h>
-#include "surfparse.tab.h"
+#include "surfparse.h"
 extern int yyparse();
 
 class SurfpackParser 
