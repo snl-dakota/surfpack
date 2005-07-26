@@ -68,8 +68,12 @@ libsurfpack_la_SOURCES =$(top_srcdir)/src/SurfPoint.cpp \
 			$(top_srcdir)/src/SurfScaler.h \
 			$(top_srcdir)/src/AxesBounds.cpp \
 			$(top_srcdir)/src/AxesBounds.h \
+			$(top_srcdir)/src/SurfpackMatrix.tpl \
+			$(top_srcdir)/src/SurfpackMatrix.h \
 			$(top_srcdir)/src/surfaces/KrigingSurface.cpp \
 			$(top_srcdir)/src/surfaces/KrigingSurface.h \
+			$(top_srcdir)/src/surfaces/KrigingCPPSurface.cpp \
+			$(top_srcdir)/src/surfaces/KrigingCPPSurface.h \
 			$(top_srcdir)/src/surfaces/MarsSurface.cpp \
 			$(top_srcdir)/src/surfaces/MarsSurface.h \
 			$(top_srcdir)/src/surfaces/RBFNetSurface.cpp \
