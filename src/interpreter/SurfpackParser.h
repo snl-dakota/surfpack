@@ -60,6 +60,10 @@ public:
   class ParsedCommand
   { 
   public:
+    ParsedCommand() : shellCommand(false) {}
+    ParsedCommand(bool shell_command) : shellCommand(shell_command) {}
+    bool isShellCommand() const { return shellCommand; }
+    bool shellCommand;
     std::string name;
     ArgList arglist;
     std::string cmdstring;
@@ -83,6 +87,7 @@ public:
   void init();
   void print();
   void storeCommandString();
+  void shellCommand();
 
 
   static SurfpackParser& instance();
@@ -95,6 +100,8 @@ public:
     const ArgList& arglist);
   static std::string parseOutStringLiteral(const std::string& argname,
     const ArgList& arglist);
+  static int parseOutInteger(const std::string& argname,
+    const ArgList& arglist, bool& valid);
 protected:
 // Default constructor, copy constructor and assignment operator declared 
 // protected and not implemented, in order to make sure that only one

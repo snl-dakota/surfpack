@@ -31,6 +31,7 @@ public:
   void executeAxesBounds(const SurfpackParser::ParsedCommand& command);
   void executeGridPoints(const SurfpackParser::ParsedCommand& command);
   void executeMonteCarloSample(const SurfpackParser::ParsedCommand& command);
+  void executeShellCommand(const SurfpackParser::ParsedCommand& command);
   
   
 protected:

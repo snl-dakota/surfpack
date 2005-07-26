@@ -14,6 +14,7 @@
 #include "SurfaceFactory.h"
 
 using namespace std;
+extern ostringstream cmdstream;
 
 SurfpackInterpreter::SurfpackInterpreter() : parser(SurfpackParser::instance())
 {
@@ -32,6 +33,7 @@ void SurfpackInterpreter::execute(std::istream& is, std::ostream& os,
     commandLoop(os, es);
   } else {
     es << "Parse error.  Command(s) not executed." << endl;
+    es << cmdstream.str() << endl; 
   }
 }
 
@@ -40,7 +42,9 @@ void SurfpackInterpreter::commandLoop(std::ostream& os, std::ostream& es)
   const vector<SurfpackParser::ParsedCommand>& commands = parser.commandList();
   for (unsigned i = 0; i < commands.size(); i++) {
     try {
-      if (commands[i].name == "LoadSurface") {
+      if (commands[i].isShellCommand()) {
+	executeShellCommand(commands[i]);
+      } else if (commands[i].name == "LoadSurface") {
         os << commands[i].cmdstring << endl;
         executeLoadSurface(commands[i]);
       } else if (commands[i].name == "LoadData") {
@@ -220,8 +224,9 @@ void SurfpackInterpreter::executeSaveSurface(
   // Look up the surface in the symbol table 
   SurfaceMap::iterator iter = symbol_table.surfaceVars.find(surface);
   if (iter == symbol_table.surfaceVars.end()) {
-    throw command_error(
-      string("Symbol not found"), command.cmdstring);
+    ostringstream os;
+    os << "Surface not found in symbol table: " << surface;
+    throw command_error(os.str() , command.cmdstring);
   } else {
     Surface* surf = iter->second;
     surf->write(filename);
@@ -365,6 +370,15 @@ void SurfpackInterpreter::executeFitness(const SurfpackParser::ParsedCommand& co
       throw command_error(
         string("No fitness metric specified."), command.cmdstring);
   }
+
+  // Extract the response index for the input data set
+  bool has_response_index = false;
+  int response_index = SurfpackParser::parseOutInteger(string("response_index"), 
+    command.arglist, has_response_index);
+  if (has_response_index) {
+    isd->setDefaultIndex(response_index);
+  }
+
   double fitness = surf->goodnessOfFit(metric, isd);
   cout << metric << " fitness value for surface " << surfaceName << ": "
        << fitness << endl;
@@ -480,4 +494,10 @@ void SurfpackInterpreter::executeMonteCarloSample(const SurfpackParser::ParsedCo
   symbol_table.dataVars.insert(SurfDataSymbol(name, gridData));
   //cout << "Executed MonteCarloSample" << endl;
 
+}
+
+void SurfpackInterpreter::
+  executeShellCommand(const SurfpackParser::ParsedCommand& command)
+{
+  system(&(command.cmdstring.c_str()[1]));
 }

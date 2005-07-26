@@ -241,3 +241,22 @@ std::string SurfpackParser::parseOutStringLiteral(const string& argname,
   return string("");
 }
 
+int SurfpackParser::parseOutInteger(const string& argname,
+  const ArgList& arglist, bool& valid)
+{
+  valid = false;
+  for (unsigned i = 0; i < arglist.size(); i++) {
+    if (arglist[i].name == argname) {
+      valid = true;
+      return arglist[i].rval.integer;
+    }
+  }
+  return -1;
+}
+
+void SurfpackParser::shellCommand()
+{
+  ParsedCommand pc(true); // ctor arg specifies that it's a shell command
+  commands.push_back(pc);
+  storeCommandString();
+}
