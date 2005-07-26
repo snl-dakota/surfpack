@@ -1,0 +1,298 @@
+\documentclass{article}
+\usepackage{rotating}
+\usepackage{verbatim}
+
+\begin{document}
+
+\title{Surfpack\\
+  Version 0.1}
+
+\author{Mark Richards}
+
+\maketitle
+
+\pagebreak
+
+\section {Overview}\label{sec:overview}
+Surfpack is a collection of surface-fitting methods and metrics to evaluate or predict the quality of the generated surfaces.  The concept of creating a global approximation or ``fit'' from a collection of data samples is utilized in many scientific disciplines, but the nomenclature varies widely from field to field.  The results fromthe application of such methods are commonly called empirical models, response surfaces, surrogate models, function approximations, or neural networks.  Many different algorithms have been developed and used to generalize from a set of data; these algorithms have different strengths and weaknesses.  The goals of Surfpack are
+
+\begin{itemize}
+\item 1. to give users the option to use any of several methods, depending on the nature of the specific application; and
+\item 2. to put data-fitting methods that are commonly used in various disciplines into a common framework, where their properties can be more easily compared and analyzed.
+\end{itemize}
+
+With this end in mind\ldots
+
+\section{Installation}\label{sec:installation}
+\subsection{UNIX-like environments}
+\subsubsection{Requirements}
+\begin{itemize}
+\item Flex
+\item Bison
+\item BLAS
+\item LAPACK
+\item C
+\item C++ 
+\item Fortran 77
+\end{itemize}
+\subsubsection{Options}
+\begin{itemize}
+\item CPP Unit
+\end{itemize}
+\subsubsection{Targeted platforms}
+\begin{itemize}
+\item Linux
+\item SunOS
+\item TFlops 
+\item IRIX
+\item OSF
+\item AIX 
+\end{itemize}
+\subsubsection{Standard build}
+configure
+
+make
+
+make install
+
+\subsubsection{Advanced options}
+\begin{itemize}
+\item Specifying your compiler 
+\item Specifying non-standard locations for libraries
+\item Building with Dakota 
+\end{itemize}
+
+\subsubsection{Troubleshooting}
+\subsection{Windows and Macintosh}
+Not yet supported, but hopefully sometime down the road.
+
+\section{Getting Started}
+\subsection{Data file format}\label{sec:format}
+
+\begin{itemize}
+\item First line: number of points
+\item Second line: dimensionality of data set
+\item Third line: number of response values
+\end{itemize}
+
+The rest of the lines contain the points themselves, one point per
+line.  For the first three lines, Surfpack ignores everything after
+the first value, so it is permissible to add some explanation about
+the variables.
+
+\verbatiminput{example.txt}
+
+\subsection{\textup{Examples}}\label{sec:example}
+
+
+\subsubsection{Example: Timing Data}
+\subsubsection{Example: Topology }
+\subsubsection{Example: Rosenbrock}
+
+\subsection{Modes of Use}
+\begin{itemize}
+\item As an interactive command-line program
+\item As a standalone program through shell scripts
+\item Through Dakota
+\item As a library
+\end{itemize}
+
+\section{Catalog of Surfpack Commands}\label{sec:commands}
+\subsection{Conventions}
+
+Surfpack commands consist of a (capitalized command name followed by a
+comma-delimited list of arguments in square brackets \texttt{[]}.
+Whitespace is ignored.
+
+
+\subsection{Command Arguments}\label{sec:arguments}
+
+Each argument has the following format: \texttt{argument\_name =
+  argument\_value}.  An argument name is an identifier--a letter
+followed by a combination of letters, digits, and underscores.  An
+\texttt{argument\_value} may be an identifier, an integer or
+real-valued number, a string literal (enclosed in single quotes ''),
+or a tuple (a comma-separated list of numbers enclosed in parenthesis,
+e.g. \texttt{(1.0,3.5,4.0)}.  Arguments may appear in any order.
+
+\section{Surfpack Library API}
+Brief explanation for writing custom C++ code and linking against the Surfpack library.
+
+\section{Using Surfpack with Dakota}
+Brief explanation of how Surfpack fits in with Dakota.  Pointer to Dakota manuals for detailed information about accessing the various options.
+
+\section{Extending Surfpack}
+\subsection{Adding a new surface method}
+\subsection{Adding a goodness-of-fit metric}
+\subsection{Adding a new command-line option}
+
+\section{Troubleshooting}
+List of error messages with probable causes and suggestions for resolving them.
+
+\appendix
+
+\begin{sidewaystable}[h]
+  \centering
+  \begin{tabular}{|c|c|c|c|c|}
+    \hline
+    \textbf{Command} & \textbf{Argument} & \textbf{Type} &
+    \textbf{Req.} & \textbf{Meaning}\\
+    \hline
+    LoadSurface & name & identifier & yes & Variable name by which
+    this surface can be referred to in later commands.\\
+    \hline
+    & file & string & yes & Name of file to be read.  Must have .txt
+    or .srf extension.\\
+    \hline
+    SaveSurface & surface & identifier & yes & Variable name of
+    surface to be saved.  Must have been defined in a previous
+    command.\\
+    \hline
+    & file & string & yes & Name of file to be written to.  Must have .txt
+    or .srf extension.\\
+    \hline
+    LoadData & name & identifier & yes & Variable name by which this
+    data can be referred to in later commands.\\
+    \hline
+    & file & string & yes & Name of file to be read.\\
+    & & & & Must have .txt or .sd extension.\\
+    \hline
+    SaveData & data & identifier & yes & Variable name of data to be
+    saved.  Must have been defined in a previous command.\\
+    \hline
+    & file & string & yes & Name of file to be written to.  Must have
+    .txt or .sd extension.\\
+    \hline
+    CreateSurface & name & identifier & yes & Variable name by which
+    this surface can be referred to in later commands.\\
+    \hline
+    & type & string & yes & Must be one of 'Polynomial', 'Kriging',
+    'Mars', 'ANN' or 'RBFNet'.\\
+    \hline
+    & data & identifier & yes & Variable name of the data set used to
+    build surface.\\
+    \hline
+    & response\_index & integer & no & Specifies which response
+    variable in the data set should be used to create this surface.\\
+    & & & & The default value is 0 (i.e., the first response value
+    listed).\\
+    \hline
+    Evaluate & surface & identifier & yes & The name of the surface to
+    be evaluated.\\
+    & & & & Must have been created or loaded in a previous command.\\
+    \hline
+    & input\_data & identifier & yes & Data set that the surface is to
+    be evaluated on.\\
+    & & & & Must have been created  or loaded in a previous command.\\
+    \hline
+    & output\_data & identifier & no & Data set to which the
+    evaluations of the surface should be appended.\\
+    & & & & It must NOT be the name of a data set that was created or
+    loaded\\
+    & & & & in a previous command.\\
+    \hline
+    ConvertSurface & input & string & yes & Name of file to be read.
+    Must have .txt or .srf extension.\\
+    \hline
+    & output & string & yes & Name of file to be written to.
+    Must have .txt or .srf extension.\\
+    \hline
+    ConvertData & input & string & yes & Name of file to be read.
+    Must have .txt or .sd extension.\\
+    \hline
+    & output & string & yes & Name of file to be written to.
+    Must have .txt or .sd extension.\\
+    \hline
+    Fitness & surface & identifier & yes & Name of surface to be
+    evaluated.\\
+    \hline
+    & metric & string & yes & Must be one of 'press', 'rsquared',
+    'mean\_squared', 'sum\_squared' or 'max\_relative'.\\
+    \hline
+    & data & identifier & no & The data used to compute the metric.
+    If not specified, the default\\
+    & & & & is to use the same data that were used to build the
+    surface.\\
+    \hline
+    PointDefinition & name & identifier & yes & Variable name by which
+    this definition can be referred to in later commands.\\
+    \hline
+    & file & string & yes & File to be read.\\
+    \hline
+    MonteCarloSample & name & identifier & yes & Variable name by
+    which the resulting data set can be referred to in later commands.\\
+    \hline
+    & def & identifier & yes & PointDefinition that specifies the
+    boundaries along each dimension.\\
+    & & & & Must have been created in a previous command.\\
+    \hline
+    & test\_function & string & no & Name of a test function to add on
+    as a response variable for this data.\\
+    & & & & Must be one of 'rosenbrock', 'rastrigin', 'quasisine',
+    'shpere' or 'sumofall'.\\
+    & & & & Multiple test\_function arguments may be included in a
+    single command.\\
+    \hline
+    & size & integer & no & Number of random samples.  Default is
+    100.\\
+    \hline
+    GridPoints & name & identifier & yes & Variable name by which the
+    resulting data set can be referred to in later commands.\\
+    \hline
+    & def & identifier & yes & PointDefinition that specifies the
+    boundaries\\
+    & & & & and number of points along each dimension.\\
+    \hline
+    & test\_function & identifier & no & Same as for the
+    MonteCarloSample command.\\
+    \hline
+  \end{tabular}
+  \caption{\textbf{Surfpack Command Summary}}
+\end{sidewaystable}
+
+\begin{sidewaystable}
+  \centering
+  \begin{tabular}{|l|l|l|l|l|l|}
+    \hline
+    \textbf{Argument} & \textbf{For} & \textbf{Type} & \textbf{Req.} &
+    \textbf{Default} & \textbf{Meaning}\\
+    \hline
+    order & Polynomial & integer & no & 2 & Maximum order of
+    polynomial regression.\\
+    \hline
+    norm\_bound & ANN & real & no & 0.8 & ?\\
+    \hline
+    svdfactor & ANN & real & no & 0.9 & Range 0-1.\\
+    \hline
+    fraction\_withheld & ANN & real & no & 0.0 & Fraction of data set
+    used for validation.\\
+    \hline
+    conmin\_seed & Kriging & tuple & no & (1.0,\ldots,1.0) & Initial
+    values of correlation parameters passed to conmin optimizer.\\
+    & & & & & The tuple (vector must have the same dimensionality as
+    the data set.\\
+    \hline
+    theta\_vars & Kriging & tuple & no & conmin & Exact correlation
+    parameters to be used.  If theta\_vars are specified,\\
+    & & & & & conmin is bypassed altogether.  The tuple (vector)
+    must have the\\
+    & & & & & same dimensionality as the data set.\\
+    \hline
+    max\_bases & Mars & integer & no & 25 & Maximum number of basis
+    functions.\\
+    \hline
+    max\_interactions & Mars & integer & no & 2 & Maximum number of
+    varaible interactions that will be considered.\\
+    \hline
+    interpolation & Mars & string & no & 'cubic' & Must be either
+    'linear' or cubic'.  Determines what kind of splines\\
+    & & & & & are used after surface is built.\\
+    \hline
+    radius & RBFNet & real & no & 0.1 & Radius of the basis
+    functions.\\
+    \hline
+  \end{tabular}
+  \caption{\textbf{Surface Method Argument Summary}}
+\end{sidewaystable}
+
+\end{document}
