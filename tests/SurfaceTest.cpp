@@ -171,12 +171,12 @@ void SurfaceTest::goodnessOfFit()
   // The purpose of this test is only to make sure the flow
   // of execution does not produce an exception under one
   // set of normal circumstances.  Accuracy of the metrics
-  // is examined in other tests
+  // should be examined in other tests
   polysurf->goodnessOfFit("press",0);
   polysurf->goodnessOfFit("rsquared",0);
-  polysurf->goodnessOfFit("sse",0);
-  polysurf->goodnessOfFit("mse",0);
-  polysurf->goodnessOfFit("mrae",0);
+  polysurf->goodnessOfFit("sum_squared",0);
+  polysurf->goodnessOfFit("mean_squared",0);
+  polysurf->goodnessOfFit("max_relative",0);
 }
  
 void SurfaceTest::goodnessOfFitException()
@@ -202,17 +202,17 @@ void SurfaceTest::rSquared()
 
 void SurfaceTest::mse()
 {
-  CPPUNIT_ASSERT(matches(polysurf->goodnessOfFit("mse",0), 0.0));
+  CPPUNIT_ASSERT(matches(polysurf->goodnessOfFit("mean_squared",0), 0.0));
 }
 
 void SurfaceTest::sse()
 {
-  CPPUNIT_ASSERT(matches(polysurf->goodnessOfFit("sse",0), 0.0));
+  CPPUNIT_ASSERT(matches(polysurf->goodnessOfFit("sum_squared",0), 0.0));
 }
 
 void SurfaceTest::mrae()
 {
-  CPPUNIT_ASSERT(matches(polysurf->goodnessOfFit("mrae",surfd), 0.0));
+  CPPUNIT_ASSERT(matches(polysurf->goodnessOfFit("max_relative",surfd), 0.0));
 }
 
 void SurfaceTest::checkDataException()

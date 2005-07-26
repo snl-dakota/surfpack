@@ -349,7 +349,7 @@ void PolynomialSurfaceTest::evaluate()
   vector<double> x(2);
   x[0] = 2.0;
   x[1] = -1.0;
-  CPPUNIT_ASSERT(matches(ps2.evaluate(x),40.0)); 
+  CPPUNIT_ASSERT(matches(ps2.evaluate(x),22.0)); 
 }
 
 void PolynomialSurfaceTest::build()
@@ -372,6 +372,9 @@ void PolynomialSurfaceTest::computeTerm()
   ps.resetTermCounter();
   vector <double> x(1);
   x[0] = 4.0;
+  CPPUNIT_ASSERT( matches(ps.computeTerm(x),1.0));  
+  ps.nextTerm();
+  CPPUNIT_ASSERT( matches(ps.computeTerm(x),4.0));  
   ps.nextTerm();
   CPPUNIT_ASSERT( matches(ps.computeTerm(x),16.0));  
 
@@ -439,6 +442,199 @@ void PolynomialSurfaceTest::nextTermException()
   ps.termIndex = INT_MAX - 1;
   ps.nextTerm();
   ps.nextTerm();
+}
+
+void PolynomialSurfaceTest::derivative_1d_0o()
+{
+  vector<double> coefficients(1);
+  coefficients[0] = 3.0;
+  PolynomialSurface ps(1,0,coefficients);
+  vector<double> gradient(1);
+  vector<double> testPoint(1);
+  testPoint[0] = 1.0;
+  CPPUNIT_ASSERT(matches(ps.getValue(testPoint), 3.0));
+  ps.gradient(testPoint,gradient);
+  CPPUNIT_ASSERT(matches(gradient[0],0.0));
+  testPoint[0] = -1.0;
+  ps.gradient(testPoint,gradient);
+  CPPUNIT_ASSERT(matches(gradient[0],0.0));
+  coefficients[0] = -4.0;
+  ps = PolynomialSurface(1,0,coefficients);
+  CPPUNIT_ASSERT(matches(ps.getValue(testPoint), -4.0));
+  ps.gradient(testPoint,gradient);
+  CPPUNIT_ASSERT(matches(gradient[0],0.0));
+}
+
+void PolynomialSurfaceTest::derivative_1d_2o()
+{
+  vector<double> coefficients(3);
+  coefficients[0] = 3.0;
+  coefficients[1] = 2.0;
+  coefficients[2] = 5.0;
+  PolynomialSurface ps(1,2,coefficients);
+  vector<double> gradient(1);
+  vector<double> testPoint(1);
+  testPoint[0] = 1.0;
+  CPPUNIT_ASSERT(matches(ps.getValue(testPoint), 10.0));
+  ps.gradient(testPoint,gradient);
+  CPPUNIT_ASSERT(matches(gradient[0],12.0));
+  testPoint[0] = -1.0;
+  ps.gradient(testPoint,gradient);
+  CPPUNIT_ASSERT(matches(gradient[0],-8.0));
+  coefficients[0] = -3.0;
+  coefficients[1] = -2.0;
+  ps = PolynomialSurface(1,2,coefficients);
+  ps.gradient(testPoint,gradient);
+  CPPUNIT_ASSERT(matches(gradient[0],-12.0));
+}
+
+void PolynomialSurfaceTest::derivative_2d_0o()
+{
+  vector<double> coefficients(1);
+  coefficients[0] = 3.0;
+  PolynomialSurface ps(2,0,coefficients);
+  vector<double> gradient(2);
+  vector<double> testPoint(2);
+  testPoint[0] = 1.0;
+  testPoint[1] = 1.0;
+  CPPUNIT_ASSERT(matches(ps.getValue(testPoint), 3.0));
+  ps.gradient(testPoint,gradient);
+  CPPUNIT_ASSERT(matches(gradient[0],0.0));
+  CPPUNIT_ASSERT(matches(gradient[1],0.0));
+  testPoint[0] = -1.0;
+  testPoint[1] = -1.0;
+  ps.gradient(testPoint,gradient);
+  CPPUNIT_ASSERT(matches(gradient[0],0.0));
+  CPPUNIT_ASSERT(matches(gradient[1],0.0));
+  coefficients[0] = -4.0;
+  ps = PolynomialSurface(2,0,coefficients);
+  CPPUNIT_ASSERT(matches(ps.getValue(testPoint), -4.0));
+  ps.gradient(testPoint,gradient);
+  CPPUNIT_ASSERT(matches(gradient[0],0.0));
+  CPPUNIT_ASSERT(matches(gradient[1],0.0));
+}
+
+void PolynomialSurfaceTest::derivative_2d_2o()
+{
+  // f(x1,x2) = 3 - 2*x1 + x2 + 6*x1*x2 - 4*x2^2
+  // df(x1,x2)/dx1 = -2 + 6*x2
+  // df(x1,x2)/dx2 = 1+6*x1 - 8*x2
+  vector<double> coefficients(6);
+  coefficients[0] = 3.0;
+  coefficients[1] = -2.0;
+  coefficients[2] = 1.0;
+  coefficients[3] = 0.0;
+  coefficients[4] = 6.0;
+  coefficients[5] = -4.0;
+  PolynomialSurface ps(2,2,coefficients);
+  vector<double> gradient(2);
+  vector<double> testPoint(2);
+  testPoint[0] = 1.0;
+  testPoint[1] = 1.0;
+  CPPUNIT_ASSERT(matches(ps.getValue(testPoint), 4.0));
+  ps.gradient(testPoint,gradient);
+  CPPUNIT_ASSERT(matches(gradient[0],4.0));
+  CPPUNIT_ASSERT(matches(gradient[1],-1.0));
+  testPoint[0] = -1.0;
+  testPoint[1] = -1.0;
+  CPPUNIT_ASSERT(matches(ps.getValue(testPoint), 6.0));
+  ps.gradient(testPoint,gradient);
+  CPPUNIT_ASSERT(matches(gradient[0],-8.0));
+  CPPUNIT_ASSERT(matches(gradient[1],3.0));
+  coefficients[0] = -3.0;
+  coefficients[1] = 2.0;
+  ps = PolynomialSurface(2,2,coefficients);
+  ps.gradient(testPoint,gradient);
+  CPPUNIT_ASSERT(matches(gradient[0],-4.0));
+  CPPUNIT_ASSERT(matches(gradient[1],3.0));
+}
+
+void PolynomialSurfaceTest::leastSquares()
+{
+  // f(x1,x2) = 3 - 2*x1 + x2 + 6*x1*x2 - 4*x2^2
+  // df(x1,x2)/dx1 = -2 + 6*x2
+  // df(x1,x2)/dx2 = 1+6*x1 - 8*x2
+  vector<double> coefficients(6);
+  coefficients[0] = 3.0;
+  coefficients[1] = -2.0;
+  coefficients[2] = 1.0;
+  coefficients[3] = 0.0;
+  coefficients[4] = 6.0;
+  coefficients[5] = -4.0;
+  PolynomialSurface ps(2,2,coefficients);
+  vector<double> x(2);
+  SurfData sd;
+  double f;
+  x[0] =  0.0; x[1] =  0.0; f =   3.0; sd.addPoint(SurfPoint(x,f));
+  x[0] =  1.0; x[1] =  1.0; f =   4.0; sd.addPoint(SurfPoint(x,f));
+  x[0] = -1.0; x[1] =  1.0; f =  -4.0; sd.addPoint(SurfPoint(x,f));
+  x[0] =  1.0; x[1] = -1.0; f = -10.0; sd.addPoint(SurfPoint(x,f));
+  x[0] = -1.0; x[1] = -1.0; f =   6.0; sd.addPoint(SurfPoint(x,f));
+  x[0] =  2.0; x[1] =  3.0; f =   2.0; sd.addPoint(SurfPoint(x,f));
+  CPPUNIT_ASSERT( matches(ps.getValue(sd[0]),sd.getResponse(0)));
+  CPPUNIT_ASSERT( matches(ps.getValue(sd[1]),sd.getResponse(1)));
+  CPPUNIT_ASSERT( matches(ps.getValue(sd[2]),sd.getResponse(2)));
+  CPPUNIT_ASSERT( matches(ps.getValue(sd[3]),sd.getResponse(3)));
+  CPPUNIT_ASSERT( matches(ps.getValue(sd[4]),sd.getResponse(4)));
+  CPPUNIT_ASSERT( matches(ps.getValue(sd[5]),sd.getResponse(5)));
+
+  // Now create a surface from the data and see if everything matches
+  PolynomialSurface ps2(&sd,2);
+  ps2.createModel();
+  CPPUNIT_ASSERT( ps2.coefficients.size() == 6 );
+  CPPUNIT_ASSERT( matches(ps2.coefficients[0],coefficients[0]));
+  CPPUNIT_ASSERT( matches(ps2.coefficients[1],coefficients[1]));
+  CPPUNIT_ASSERT( matches(ps2.coefficients[2],coefficients[2]));
+  CPPUNIT_ASSERT( matches(ps2.coefficients[3],coefficients[3]));
+  CPPUNIT_ASSERT( matches(ps2.coefficients[4],coefficients[4]));
+  CPPUNIT_ASSERT( matches(ps2.coefficients[5],coefficients[5]));
+}
+
+void PolynomialSurfaceTest::leastSquaresWithConstraints()
+{
+  // f(x1,x2) = 3 - 2*x1 + x2 + 6*x1*x2 - 4*x2^2
+  // df(x1,x2)/dx1 = -2 + 6*x2
+  // df(x1,x2)/dx2 = 1+6*x1 - 8*x2
+  vector<double> coefficients(6);
+  coefficients[0] = 3.0;
+  coefficients[1] = -2.0;
+  coefficients[2] = 1.0;
+  coefficients[3] = 0.0;
+  coefficients[4] = 6.0;
+  coefficients[5] = -4.0;
+  PolynomialSurface ps(2,2,coefficients);
+  vector<double> x(2);
+  vector<double> gradient(2);
+  SurfData sd;
+  double f;
+  x[0] =  4.0; x[1] =  5.0; f =  20.0; sd.addPoint(SurfPoint(x,f));
+  x[0] =  0.0; x[1] =  0.0; f =   3.0; sd.addPoint(SurfPoint(x,f));
+  x[0] =  1.0; x[1] =  1.0; f =   4.0; sd.addPoint(SurfPoint(x,f));
+  x[0] = -1.0; x[1] =  1.0; f =  -4.0; sd.addPoint(SurfPoint(x,f));
+  //x[0] = -1.0; x[1] = -1.0; f =   6.0; sd.addPoint(SurfPoint(x,f));
+  //x[0] =  2.0; x[1] =  3.0; f =   2.0; sd.addPoint(SurfPoint(x,f));
+  //x[0] =  1.0; x[1] = -1.0; f = -10.0; sd.addPoint(SurfPoint(x,f));
+  x[0] =  1.0; x[1] = -1.0; f = -10.0; SurfPoint sp(x,f);
+  gradient[0] = -8.0;
+  gradient[1] = 15.0;
+  
+  
+
+  // Now create a surface from the data and see if everything matches
+  PolynomialSurface ps2(&sd,2);
+  ps2.setEqualityConstraints(3,sp,sp.F(),&gradient,0);
+  ps2.createModel();
+  CPPUNIT_ASSERT( ps2.coefficients.size() == 6 );
+  CPPUNIT_ASSERT( matches(coefficients[0],ps2.coefficients[0]));
+  CPPUNIT_ASSERT( matches(coefficients[1],ps2.coefficients[1]));
+  CPPUNIT_ASSERT( matches(coefficients[2],ps2.coefficients[2]));
+  CPPUNIT_ASSERT( matches(coefficients[3],ps2.coefficients[3]));
+  CPPUNIT_ASSERT( matches(coefficients[4],ps2.coefficients[4]));
+  CPPUNIT_ASSERT( matches(coefficients[5],ps2.coefficients[5]));
+
+  CPPUNIT_ASSERT( matches(ps.getValue(sd[0]),sd.getResponse(0)));
+  //CPPUNIT_ASSERT( matches(ps.getValue(sd[1]),sd.getResponse(1)));
+  //CPPUNIT_ASSERT( matches(ps.getValue(sd[2]),sd.getResponse(2)));
 }
 
 void PolynomialSurfaceTest::io()

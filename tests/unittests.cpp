@@ -317,9 +317,14 @@ void cleanup()
 
 bool matches(double observed, double target, double margin)
 {
-  if (abs(target - 0.0) < 1e-100) {
-    return (observed - 0.0) < margin;
+  bool result;
+  if (abs(target) < 1e-10) {
+    result = abs(observed) < margin;
   } else {
-    return (observed - target) / target < margin;
+    result = abs((observed - target) / target) < margin;
   }
+
+  if (result) return true;
+  cerr << "Test Value: " << observed << " Expected: " << target << endl;
+  return false;
 }

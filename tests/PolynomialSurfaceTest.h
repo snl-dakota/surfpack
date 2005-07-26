@@ -34,6 +34,12 @@ class PolynomialSurfaceTest : public CppUnit::TestFixture
   CPPUNIT_TEST_EXCEPTION( computeTermException, std::range_error );
   CPPUNIT_TEST( nextTerm );
   CPPUNIT_TEST_EXCEPTION( nextTermException, std::range_error);
+  CPPUNIT_TEST( derivative_1d_0o );
+  CPPUNIT_TEST( derivative_1d_2o );
+  CPPUNIT_TEST( derivative_2d_0o );
+  CPPUNIT_TEST( derivative_2d_2o );
+  CPPUNIT_TEST( leastSquares );
+  CPPUNIT_TEST( leastSquaresWithConstraints );
   CPPUNIT_TEST( io );
   CPPUNIT_TEST( printTermLabel );
   CPPUNIT_TEST( printTermComponents );
@@ -62,6 +68,12 @@ public:
   void computeTermException();
   void nextTerm();
   void nextTermException();
+  void derivative_1d_0o();
+  void derivative_1d_2o();
+  void derivative_2d_0o();
+  void derivative_2d_2o();
+  void leastSquares();
+  void leastSquaresWithConstraints();
   void io();
   void printTermLabel();
   void printTermComponents();

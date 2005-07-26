@@ -93,7 +93,7 @@ void SurfScalerTest::testComputeScalingParameters()
   ss.computeScalingParameters(sd);
   CPPUNIT_ASSERT_EQUAL((unsigned)1,ss.designVarParams.size());
   CPPUNIT_ASSERT(matches(ss.designVarParams[0].offset,1.0));
-  CPPUNIT_ASSERT(matches(ss.designVarParams[0].divisor,10.0));
+  CPPUNIT_ASSERT(matches(ss.designVarParams[0].divisor,9.0));
 }
 
 void SurfScalerTest::testComputeScalingParametersFour1DPts()
