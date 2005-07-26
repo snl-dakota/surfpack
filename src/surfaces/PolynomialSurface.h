@@ -21,13 +21,7 @@
 #include <string>
 #include <stdexcept>
 #include "SurfpackParser.h"
-
-#define DGELS_F77 F77_FUNC(dgels,DGELS)
-#ifdef __cplusplus
-extern "C" /* prevent C++ name mangling */
-#endif
-void DGELS_F77(char&, int&, int&, int&, double*,
-	       int&, double*, int&, double*, int&, int&);
+#include "SurfpackMatrix.h"
 
 //extern "C" double ddot_(int&, double*, int&, double*, int&);
 //
@@ -84,6 +78,7 @@ public:
 // Commands 
 // ____________________________________________________________________________
 
+  PolynomialSurface& operator=(const PolynomialSurface& other);
   virtual void build(SurfData& data);
 
 
@@ -99,7 +94,18 @@ public:
   //static unsigned nChooseR(unsigned n, unsigned r); 
   void resetTermCounter() const;
   double computeTerm(const std::vector<double>& x) const;
+  void accumulateLikeFactors(std::vector<unsigned>& factorCounts);
   void nextTerm() const;
+
+  double computeDerivTerm(const std::vector<double>& x,
+  const std::vector<unsigned>& factorCounts, 
+  const std::vector<unsigned>& differentiationCounts) const;
+
+  void gradient(const std::vector<double> & x, 
+    std::vector<double>& gradient_vector);
+
+  void setEqualityConstraints(unsigned asv,const SurfPoint& sp, double valuePtr,
+    std::vector<double>* gradientPtr, SurfpackMatrix<double>* hessianPtr);
 // ____________________________________________________________________________
 // Data members 
 // ____________________________________________________________________________
@@ -109,7 +115,10 @@ protected:
   unsigned order;
   std::vector<double> coefficients;
   mutable std::vector<unsigned> digits;
-public:
+  //std::vector<unsigned> factorCounts;
+  SurfpackMatrix<double> eqConLHS;
+  std::vector<double> eqConRHS;
+private:
   mutable unsigned termIndex;
   mutable bool lastTerm;
 //protected:

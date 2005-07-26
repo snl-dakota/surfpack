@@ -88,7 +88,7 @@ unsigned ANNSurface::minPointsRequired() const
       "Dimensionality of data needed to determine number of required samples."
     );
   } else {
-    return 4*xsize;
+    return 1+xsize;
   }
 }
 
@@ -109,20 +109,28 @@ void ANNSurface::build(SurfData& data)
   annObject = new ANNApprox;
   vector< vector< double > > training_inputs;
   vector< vector< double > > training_outputs;
+  cout << "Points: " << data.size() << " Dimensions: " << data.xSize() << endl;
   reshape_2d(training_inputs, data.size(), data.xSize());
   reshape_2d(training_outputs, data.size(), 1);
   for (unsigned i = 0; i < data.size(); i++) {
     const SurfPoint& sp = data[i];
     for (unsigned j = 0; j < data.xSize(); j++) {
       training_inputs[i][j] = sp.X()[j];
+      //cout << "inputs[" << i << "][" << j << "]: " << training_inputs[i][j] << endl;
+
       training_outputs[i][0] = data.getResponse(i);
+      //cout << "outputs[" << i << "]: " << training_outputs[i][0] << endl;
     }
   }
-  double local_norm_bound = 0.8, local_percent = 0, local_svdfactor = 0.90;
+  double local_norm_bound = 0.8, local_percent = 0, local_svdfactor = 0.99;
   annObject->normalize_data(training_inputs, training_outputs, local_norm_bound);
   annObject->set_aside_test_exemplars(local_percent);
   int num_neurons = annObject->numExemplars - 1;
   annObject->build_approximation(local_svdfactor, num_neurons);
+
+  //for (unsigned k = 0; k < data.size(); k++) {
+  //  cout << "Prediction " << k << " " << evaluate(data[k].X()) << endl;
+  //}
 }
 
 void ANNSurface::config(const SurfpackParser::Arg& arg)

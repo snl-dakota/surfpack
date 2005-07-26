@@ -7,6 +7,8 @@
 #include <set>
 #include <sstream>
 #include <vector>
+#include <iterator>
+#include <algorithm>
 
 #include "surfpack.h"
 #include "SurfPoint.h"
@@ -112,6 +114,7 @@ unsigned PolynomialSurface::minPointsRequired(unsigned xsize, unsigned order)
   //return nChooseR(xsize + order, order);
   vector<double> coeff;
   PolynomialSurface tempps(xsize,order,coeff);
+  tempps.eqConRHS.clear(); // Make sure it's empty
   return tempps.minPointsRequired();
 }
 
@@ -129,7 +132,7 @@ unsigned PolynomialSurface::minPointsRequired() const
       nextTerm();
     }
     // Add one because the terms are numbered 0 to n-1
-    return termIndex + 1;
+    return termIndex + 1 - eqConRHS.size();
   }
 }
 
@@ -143,6 +146,105 @@ double PolynomialSurface::evaluate(const std::vector<double> & x)
     nextTerm();
   }
   return sum;
+}
+
+void PolynomialSurface::gradient(const std::vector<double> & x, std::vector<double>& gradient_vector)
+{ 
+  // Add sanity check on x
+  assert(x.size() == xsize);
+  gradient_vector = vector<double>(xsize,0.0);
+  vector<unsigned> factorCounts;
+  // Entry difVar tells how many times to differentiate with respect to the ith var
+  // For example d^2f/dx1^2 would have a 2 for the x1 entry, d^2f/dx1,x2 would
+  // have 1s for both the x1 and x2 entries.
+  vector<unsigned> differentiationCounts;
+  // Differentiate with respect to each variable
+  for (unsigned difVar = 0; difVar < xsize; difVar++) {
+    resetTermCounter();
+    differentiationCounts = vector<unsigned>(xsize,0);
+    differentiationCounts[difVar] = 1;
+    for (unsigned term = 0; term < coefficients.size(); term++) {
+      accumulateLikeFactors(factorCounts);
+      gradient_vector[difVar] += coefficients[term] * computeDerivTerm(x, factorCounts, differentiationCounts);
+      nextTerm();
+    }
+  }
+}
+
+void PolynomialSurface::setEqualityConstraints(unsigned asv,const SurfPoint& sp,  double valuePtr, vector<double>* gradientPtr, SurfpackMatrix<double>* hessianPtr)
+{
+  coefficients.resize(minPointsRequired(xsize,order));
+  unsigned numConstraints = 0;
+  if (asv & 1) numConstraints += 1; // value at a particular point
+  if (asv & 2) numConstraints += xsize; // gradient at a point
+  if (asv & 4) numConstraints += xsize*xsize; // hessian at a point
+  eqConRHS.resize( numConstraints );
+  // Must compute number of terms first
+  SurfpackMatrix<double> temp(eqConRHS.size(),coefficients.size(),true);
+  eqConLHS = temp;
+  //eqConLHS.reshape(eqConRHS.size(),coefficients.size());
+  // Marks the index of the next constraint to be added (necessary since
+  // indices of e.g. the gradient constraints will be different depending on
+  // whether or not the value constraint is used
+  unsigned index = 0;
+  // If requested, add the equality constraint for the point value
+  if (asv & 1) {
+    resetTermCounter();
+    while (!lastTerm) {
+      eqConLHS[index][termIndex] = computeTerm(sp.X());
+      nextTerm();
+    }
+    eqConRHS[index] = valuePtr;
+    ++index;
+  }
+
+  // If requested, add the equality constraints for the gradient
+  if (asv & 2) {
+    const vector<double>& gradient = *gradientPtr;
+    assert(gradient.size() == xsize);
+    vector<unsigned> factorCounts;
+    vector<unsigned> differentiationCounts;
+    for (unsigned difVar = 0; difVar < xsize; difVar++ ) {
+      differentiationCounts = vector<unsigned>(xsize,0);
+      differentiationCounts[difVar] = 1;
+      resetTermCounter(); 
+      while (!lastTerm) {
+        accumulateLikeFactors(factorCounts);
+        eqConLHS[index][termIndex] = 
+          computeDerivTerm(sp.X(), factorCounts, differentiationCounts);
+        nextTerm();
+      }
+      eqConRHS[index] = gradient[difVar];
+      ++index;
+    }
+  }
+
+  // If requested, add the equality constraints for the hessian
+  if (asv & 4) {
+    SurfpackMatrix<double>& hessian = *hessianPtr;
+    assert(hessian.getNCols() == xsize);
+    assert(hessian.getNRows() == xsize);
+    vector<unsigned> factorCounts;
+    vector<unsigned> differentiationCounts;
+    for (unsigned difVar1 = 0; difVar1 < xsize; difVar1++ ) {
+      for (unsigned difVar2 = 0; difVar2 < xsize; difVar2++ ) {
+        differentiationCounts = vector<unsigned>(xsize,0);
+        differentiationCounts[difVar1]++;
+        differentiationCounts[difVar2]++;
+        resetTermCounter(); 
+        while (!lastTerm) {
+          accumulateLikeFactors(factorCounts);
+          eqConLHS[index][termIndex] = 
+            computeDerivTerm(sp.X(), factorCounts, differentiationCounts);
+          nextTerm();
+        }
+        eqConRHS[index] = hessian[difVar1][difVar2];
+        ++index;
+      } // difVar2
+    } // difVar1
+  } // if hessian needed
+  cout << "\n" << eqConLHS.asString() << endl;
+  copy(eqConRHS.begin(),eqConRHS.end(),ostream_iterator<double>(cout,"\n"));
 }
 
 //double PolynomialSurface::errorMetric(string metricName)
@@ -251,57 +353,40 @@ double PolynomialSurface::evaluate(const std::vector<double> & x)
 // Commands 
 // ____________________________________________________________________________
 
-// This function should only be called by Surface::createModel, which should
-// check to make sure all of the necessary data is available
+PolynomialSurface& PolynomialSurface::operator=(const PolynomialSurface& other)
+{
+  ///\todo check for assignment to self
+  order = other.order;
+  coefficients = other.coefficients;
+  digits = other.digits;
+  eqConLHS = other.eqConLHS;
+  eqConRHS = other.eqConRHS;
+  termIndex = other.termIndex;
+  lastTerm = other.lastTerm;
+  return *this;
+}
+
 void PolynomialSurface::build(SurfData& data)
 {
-  int numCoeff = static_cast<int>(minPointsRequired());
-  coefficients.resize(numCoeff);
-  int pts = static_cast<int>(data.size());
-  int lwork = pts * numCoeff * 2;
-
-  // allocate space for the matrices
-  double* a = new double[numCoeff*pts];
-  double* b = new double[pts];
-  double* work = new double[lwork];
-
+  coefficients.resize(static_cast<int>(minPointsRequired(xsize,order)));
+  SurfpackMatrix<double> A(data.size(),coefficients.size(),true);
+  vector<double> b(data.size());
   // populate the A and B matrices in preparation for Ax=b
   for(unsigned i = 0; i < data.size(); i++) {
     resetTermCounter();
-    //while (termIndex < static_cast<unsigned>(numCoeff)) {
     while (!lastTerm) {
-      a[i+termIndex*pts] = computeTerm(data[i].X());
+      A[i][termIndex] = computeTerm(data[i].X());
       nextTerm();
     }
     b[i] = data.getResponse(i);
   }
-
-  // values must be passed by reference to Fortran, so variables must be declared for info, nrhs, trans
-  int info;
-  int nrhs=1;
-  char trans = 'N';
-  //SurfData::writeMatrix("AMatrix",a,static_cast<unsigned>(pts),numCoeff);
-  //SurfData::writeMatrix("BVector",b,static_cast<unsigned>(pts),1);
-  DGELS_F77(trans,pts,numCoeff,nrhs,a,pts,b,pts,work,lwork,info);
-  //cout << "A Matrix after: " << endl;
-  //writeMatrix(a,pts,numCoeff,cout);
-  //if (info < 0) {
-  //        cerr << "dgels_ returned with an error" << endl;
-  //}
-
-  for(int i=0;i<numCoeff;i++) {
-    coefficients[i] = b[i];
-    double approx = floor(coefficients[i]+.5);
-    if (abs(approx-coefficients[i]) < 1.0e-5) {
-    	coefficients[i] = approx;
-    }
+  // Solve the system of equations
+  if (eqConRHS.empty()) {
+    surfpack::linearSystemLeastSquares(A,coefficients,b);
+  } else {
+    surfpack::leastSquaresWithEqualityConstraints
+      (A,coefficients,b,eqConLHS,eqConRHS);
   }
-
-  //writeText(cout);
-  delete [] work;
-  delete [] b;
-  delete [] a;
-  
 }
 
 /// Set the degree of the polynomial fit (e.g., linear=1, quadratic=2, etc.)
@@ -369,11 +454,40 @@ double PolynomialSurface::computeTerm(const std::vector<double>& x) const
   return product;
 }
 
+double PolynomialSurface::computeDerivTerm(const std::vector<double>& x,
+  const std::vector<unsigned>& factorCounts, 
+  const std::vector<unsigned>& differentiationCounts) const
+{
+  double product = 1.0;
+  for (unsigned var = 0; var < factorCounts.size(); var++) {
+    if (factorCounts[var] < differentiationCounts[var])  {
+      return 0.0;
+    } else {
+      for (unsigned i = 0; i < differentiationCounts[var]; i++) {
+        product *= static_cast<double>(factorCounts[var]-i);
+      }
+      for (unsigned i = 0; i < factorCounts[var] - differentiationCounts[var];
+		i++) {
+        product *= x[var];
+      }
+    }
+  } 
+  return product;
+}
+
+void PolynomialSurface::accumulateLikeFactors(vector<unsigned>& factorCounts)
+{
+  factorCounts = vector<unsigned>(xsize,0);
+  for (unsigned difVar = 0; difVar < digits.size(); difVar++) {
+    factorCounts[digits[difVar]-1]++;
+  }
+}
+
 void PolynomialSurface::nextTerm() const
 {
   if (!lastTerm) {
     unsigned curDig = 0;
-    while (digits[curDig] == xsize && curDig < order) {
+    while (curDig < order && digits[curDig] == xsize) {
       curDig++;
     }
     // Don't go past last term
@@ -412,8 +526,8 @@ void PolynomialSurface::writeBinary(ostream& os)
   prepareData();
   os.write(reinterpret_cast<char*>(&xsize),sizeof(xsize));
   os.write(reinterpret_cast<char*>(&order),sizeof(order));
-  for (unsigned i = 0; i < coefficients.size(); i++) {
-    os.write(reinterpret_cast<char*>(&coefficients[i]),sizeof(coefficients[i]));
+  for (unsigned difVar = 0; difVar < coefficients.size(); difVar++) {
+    os.write(reinterpret_cast<char*>(&coefficients[difVar]),sizeof(coefficients[difVar]));
   }
   // figure out what to do with data
 }
@@ -425,11 +539,11 @@ void PolynomialSurface::writeText(ostream& os)
   os << xsize << " dimensions" << endl;
   os << order << " order" << endl;
   os.setf(ios::left);
-  for (unsigned i = 0; i < coefficients.size(); i++) {
-    os << setprecision(17) << setw(26) << coefficients[i];
+  for (unsigned difVar = 0; difVar < coefficients.size(); difVar++) {
+    os << setprecision(17) << setw(26) << coefficients[difVar];
     printTermLabel(os);
     nextTerm();
-    if (i+1 < coefficients.size()) {
+    if (difVar+1 < coefficients.size()) {
       os << " +";
     }
     os << endl;
@@ -443,9 +557,9 @@ void PolynomialSurface::readBinary(istream& is)
   is.read(reinterpret_cast<char*>(&xsize),sizeof(xsize));
   is.read(reinterpret_cast<char*>(&order),sizeof(order));
   digits.resize(order);
-  coefficients.resize(minPointsRequired());
-  for (unsigned i = 0; i < coefficients.size(); i++) {
-    is.read(reinterpret_cast<char*>(&coefficients[i]),sizeof(coefficients[i]));
+  coefficients.resize(minPointsRequired(xsize,order));
+  for (unsigned difVar = 0; difVar < coefficients.size(); difVar++) {
+    is.read(reinterpret_cast<char*>(&coefficients[difVar]),sizeof(coefficients[difVar]));
   }
 }
 
@@ -463,12 +577,12 @@ void PolynomialSurface::readText(istream& is)
   streamline >> order;
   digits.resize(order);
   // determine the number of terms that should be in the file
-  coefficients.resize(minPointsRequired());
-  for (unsigned i = 0; i < coefficients.size(); i++) {
+  coefficients.resize(minPointsRequired(xsize,order));
+  for (unsigned difVar = 0; difVar < coefficients.size(); difVar++) {
     getline(is,sline);   
     streamline.str(sline);
     // read each coefficient; ignore the label, if any, to the right 
-    streamline >> coefficients[i];		
+    streamline >> coefficients[difVar];		
   }
 }
 
@@ -476,13 +590,13 @@ void PolynomialSurface::printTermLabel(ostream& os)
 {
   ostringstream labelStream;
   bool needStar = false;
-  unsigned i = 0;
-  while (i < order) {
-	if (digits[i] != 0) {
-          unsigned var = digits[i];
+  unsigned difVar = 0;
+  while (difVar < order) {
+	if (digits[difVar] != 0) {
+          unsigned var = digits[difVar];
 	    unsigned count = 1;
-	    while (i+1 < order && digits[i+1] == var) {
-		i++;
+	    while (difVar+1 < order && digits[difVar+1] == var) {
+		difVar++;
 		count++;
 	    }
 	    if (needStar) {
@@ -495,7 +609,7 @@ void PolynomialSurface::printTermLabel(ostream& os)
 	        labelStream << "^" << count;
 	    }	
 	}
-	i++;
+	difVar++;
   }
   string label = labelStream.str();
   os << label;
@@ -504,10 +618,10 @@ void PolynomialSurface::printTermLabel(ostream& os)
 void PolynomialSurface::printTermComponents(std::ostream& os)
 {
   os << " ";
-  for (unsigned i = 0; i < digits.size(); i++) {
+  for (unsigned difVar = 0; difVar < digits.size(); difVar++) {
     os << "[";
-    if (digits[i] != 0) {
-	os << digits[i];
+    if (digits[difVar] != 0) {
+	os << digits[difVar];
     }
     os << "]";
   }
