@@ -187,11 +187,14 @@ void dsvdcmp1(double **a, int m,int n,double *w,double **v)
     }
     for ( k=(n-1); k>=0; k-- )
     {
+	
         for ( its=1; its<=30; its++ )
         {
+	//	printf("Entered 30 iteration limit\n");
             flag = 1;
             for ( l=k; l>=0; l-- )
             {
+ 	//	printf("nm: %d\n",nm);
                 nm = l-1;
                 if ( fabs(rv1[l])+anorm == anorm )
                 {
@@ -202,6 +205,10 @@ void dsvdcmp1(double **a, int m,int n,double *w,double **v)
             }
             if (flag) // line changed by Mark Richards
             {
+		printf("Entered the flag zone\n");
+                nm = l-1;
+ 		printf("nm: %d\n",nm);
+ 		if (nm < 0) nm = 0;
                 c = 0.0;
                 s = 1.0;
                 for ( i=l; i<=k; i++ )

@@ -273,6 +273,11 @@ int  ANNApprox::build_approximation(double svdfactor, int Neurons)
    }
 
    //**********************
+   //for (unsigned mm = 0; mm < svd_matrix.size(); mm++) {
+   //  for (unsigned nn = 0; nn < svd_matrix[0].size(); nn++) {
+   //    printf("mm: %d nn: %d val: %3.2f\n",mm,nn,svd_matrix[mm][nn]);
+   //  }
+   //}
    DakotaToPtrMatrix(svd_matrix,&SVD_MATRIX);
    DakotaToPtrMatrix(u,&U);
    DakotaToPtrMatrix(v,&V);
