@@ -43,7 +43,6 @@ Surface::Surface(const Surface& other)
   builtOK(other.builtOK), dataModified(other.dataModified), 
   responseIndex(other.responseIndex)
 {
-  cout << "Surface copy constructor called" << endl;
   setData(other.sd);
 }
 
@@ -260,7 +259,6 @@ double Surface::goodnessOfFit(const string metricName, SurfData* surfData)
     } else if (metricName == "root_mean_squared") {
       return rootMeanSquared(observed,predicted);
     } else {
-      cerr << "Bad metric name: " << metricName << endl;
       throw string("No error metric of that type in this class");
     }
   }

@@ -8,6 +8,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <iterator>
 
 #include "surfpack.h"
 
@@ -252,7 +253,6 @@ double surfpack::euclideanDistance(const vector<double>& pt1,
     distance = sqrt(distance);
   }
   return distance;
-
 }
 
 /// Store the vector difference between pt1 and pt2 in the paramter diff.
@@ -267,6 +267,154 @@ void surfpack::vectorDifference(vector<double>& diff, const vector<double>& pt1,
   for (unsigned i = 0; i < pt1.size(); i++) {
     diff[i] = pt1[i] - pt2[i];
   }
+}
+
+// ____________________________________________________________________________
+// Functions for common linear algebra tasks 
+// ____________________________________________________________________________
+void surfpack::linearSystemLeastSquares(SurfpackMatrix<double>& A, 
+  std::vector<double>& x, std::vector<double>& b)
+{
+  // Rows in A must == size of b
+  assert(A.getNRows() == b.size()); 
+  // System must be square or over-constrained
+  assert(A.getNRows() >= A.getNCols());
+  int n_rows = static_cast<int>(A.getNRows());
+  int n_cols = static_cast<int>(A.getNCols());
+  // Client may supply a "blank" initialized vector for x
+  int lwork = n_rows*n_cols * 2;
+  vector<double> work(lwork);
+  // values must be passed by reference to Fortran, so variables must be 
+  // declared for info, nrhs, trans
+  int info;
+  int nrhs=1;
+  char trans = 'N';
+  DGELS_F77(trans,n_rows,n_cols,nrhs,&A[0][0],n_rows,&b[0],
+    n_rows,&work[0],lwork,info);
+  x = b;
+  x.resize(n_cols);
+}
+
+void surfpack::leastSquaresWithEqualityConstraints(SurfpackMatrix<double>& A, 
+  std::vector<double>& x, std::vector<double>& c,
+  SurfpackMatrix<double>& B, std::vector<double>& d)
+{
+  int m = static_cast<int>(A.getNRows());
+  int n = static_cast<int>(A.getNCols());
+  int p = static_cast<int>(B.getNRows());
+  int B_cols = static_cast<int>(B.getNCols());
+  assert(B_cols == n);
+  assert(p <= n);
+  assert(n <= p + m);
+  assert(x.size() == static_cast<unsigned>(n));
+  int lwork = (m + n + p);
+  lwork *= lwork;
+  ///\todo Compute optimal blocksize before running dgglse
+  vector<double> work(lwork);
+  int info = 0;
+  //SurfpackMatrix<double> Acopy = A;
+  //SurfpackMatrix<double> Bcopy = B;
+  //cout << endl;
+  //cout << "A" << endl;
+  //cout << A.asString() << endl;
+  //cout << A.asArrayString() << endl;
+  //cout << endl;
+  //cout << "B" << endl;
+  //cout << B.asString() << endl;
+  //cout << B.asArrayString() << endl;
+  //cout << "c" << endl;
+  //copy(c.begin(),c.end(),ostream_iterator<double>(cout,"\n"));
+  //cout << "d" << endl;
+  //copy(d.begin(),d.end(),ostream_iterator<double>(cout,"\n"));
+  //cout << "x before" << endl;
+  //copy(x.begin(),x.end(),ostream_iterator<double>(cout,"\n"));
+  DGGLSE_F77(m,n,p,&A[0][0],m,&B[0][0],p,&c[0],&d[0],&x[0],&work[0],lwork,info);
+  //cout << "x after" << endl;
+  //copy(x.begin(),x.end(),ostream_iterator<double>(cout,"\n"));
+  //vector<double> result;
+  //cout << "B*x after" << endl;
+  //surfpack::matrixVectorMult(result,Bcopy,x);
+  //copy(result.begin(),result.end(),ostream_iterator<double>(cout,"\n"));
+  if (info != 0) throw string("Error in dgglse\n");
+}
+
+SurfpackMatrix< double >& surfpack::inverse(SurfpackMatrix< double>& matrix)
+{
+  int n_rows = static_cast<int>(matrix.getNRows());
+  int n_cols = static_cast<int>(matrix.getNCols());
+  /// \todo compute optimal blocksize
+  int lwork = n_cols;  // should be optimal blocksize
+  vector<int> ipvt(n_rows);
+  vector<double> work(lwork);
+  int lda = n_cols;
+  int info = 0;
+  DGETRF_F77(n_rows,n_cols,&matrix[0][0],lda,&ipvt[0],info);
+  DGETRI_F77(n_rows,&matrix[0][0],lda,&ipvt[0],&work[0],lwork,info);
+  return matrix;
+}
+
+SurfpackMatrix< double >& surfpack::LUFact(SurfpackMatrix< double>& matrix,
+  vector<int>& ipvt)
+{
+  int n_rows = static_cast<int>(matrix.getNRows());
+  int n_cols = static_cast<int>(matrix.getNCols());
+  // dgetrf may reorder the rows, the mapping between old and new rows
+  // is returned in ipvt.
+  ipvt.resize(n_rows);
+  int lda = n_cols;
+  int info = 0;
+  DGETRF_F77(n_rows,n_cols,&matrix[0][0],lda,&ipvt[0],info);
+  return matrix;
+}
+
+SurfpackMatrix< double >& surfpack::inverseAfterLUFact(SurfpackMatrix< double>& matrix, vector<int>& ipvt)
+{
+  int n_rows = static_cast<int>(matrix.getNRows());
+  int n_cols = static_cast<int>(matrix.getNCols());
+  int lwork = n_cols;  // should be optimal blocksize
+  vector<double> work(lwork);
+  int lda = n_rows;
+  int info = 0;
+  DGETRI_F77(n_rows,&matrix[0][0],lda,&ipvt[0],&work[0],lwork,info);
+  return matrix;
+}
+
+vector< double >& surfpack::matrixVectorMult(vector< double >& result,
+  SurfpackMatrix< double >& matrix, vector< double >& the_vector)
+{
+  assert(matrix.getNCols() == the_vector.size());
+  result.resize(matrix.getNRows());
+  char transpose = 'N';
+  int n_rows = static_cast<int>(matrix.getNRows());
+  int n_cols = static_cast<int>(matrix.getNCols());
+  int incx = 1;
+  int incy = 1;
+  double alpha = 1.0;
+  double beta = 0.0;
+  DGEMV_F77(transpose,n_rows,n_cols,alpha,&matrix[0][0],n_rows,&the_vector[0],
+    incx, beta, &result[0], incy);
+  return result;
+}
+
+double surfpack::dot_product(const std::vector< double >& vector_a, 
+	     const std::vector< double >& vector_b)
+{
+  assert(vector_a.size() == vector_b.size()); 
+  int size = static_cast<int>(vector_a.size());
+  int inc = 1;
+  // ddot will not violate the constness
+  return DDOT_F77(size, const_cast<double*>( &vector_a[0] ), inc,
+			const_cast<double*>( &vector_b[0] ), inc);
+}
+
+vector< double >& surfpack::vectorShift(vector< double >& the_vector,
+  double shift_value)
+{
+  for (vector< double >::iterator iter = the_vector.begin();
+       iter != the_vector.end(); ++iter) {
+    *iter -= shift_value;
+  }
+  return the_vector;
 }
 
 // ____________________________________________________________________________
@@ -295,6 +443,8 @@ double surfpack::testFunction(const string name, const vector<double>& pt)
     return surfpack::quasisine(pt);
   } else if (name == "xplussinex") {
     return surfpack::xplussinex(pt);
+  } else if (name == "noise") {
+    return surfpack::noise(pt);
   } else {
     return surfpack::rastrigin(pt);
   }
@@ -392,7 +542,7 @@ double surfpack::sphere(const vector<double>& pt)
 double surfpack::sumofall(const vector<double>& pt) 
 {
   double result = 0.0;
-  for (unsigned i = 0; i < pt.size() - 1; i++) {
+  for (unsigned i = 0; i < pt.size(); i++) {
     result += pt[i];
   }
   return result;
@@ -407,4 +557,10 @@ double surfpack::xplussinex(const std::vector<double>& pt)
     result += x + sin(x);
   }
   return result;
+}
+
+/// Random (different queries for the same point will give different results)
+double surfpack::noise(const std::vector<double>& pt)
+{
+  return static_cast<double>(rand());
 }

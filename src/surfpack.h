@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 #include <algorithm>
+#include "SurfpackMatrix.h"
 
 //class AbstractSurfDataIterator;
 class Surface;
@@ -20,6 +21,56 @@ enum DifferenceType {
   SCALED
 };
 
+
+// Perform LU factorization
+#define DGETRF_F77 F77_FUNC(dgetrf,DGETRF)
+#ifdef __cplusplus
+extern "C"  /* prevent C++ name mangling */
+#endif
+void DGETRF_F77(int& m, int& n, double* a, int& lda, int* ipiv,
+  int& info);
+
+// Compute the inverse of a matrix expressed as an LU decomposition
+// (i.e., call dgetrf on the matrix first)
+#define DGETRI_F77 F77_FUNC(dgetri,DGETRI)
+#ifdef __cplusplus
+extern "C"  /* prevent C++ name mangling */
+#endif
+void DGETRI_F77(int& n, double* a, int& lda, int* ipiv, double* work,
+  int& lwork, int& info);
+
+// Matrix-vector multiplication
+#define DGEMV_F77 F77_FUNC(dgemv,DGEMV)
+#ifdef __cplusplus
+extern "C"  /* prevent C++ name mangling */
+#endif
+void DGEMV_F77(char& trans, int& m, int& n, double& alpha, 
+	       double* A, int& lda, double* x, int& incx, double& beta, double* y, int& incy);
+
+// Vector-vector inner product
+#define DDOT_F77 F77_FUNC(ddot, DDOT)
+#ifdef __cplusplus
+extern "C" /* prevents C++ name mangling */
+#endif
+double DDOT_F77(int& n, double* x, int& incx, double* y, int& incy);
+
+// Least-squares solution to linear system of equations
+#define DGELS_F77 F77_FUNC(dgels,DGELS)
+#ifdef __cplusplus
+extern "C" /* prevent C++ name mangling */
+#endif
+void DGELS_F77(char& trans, int& nrows, int& ncols, int& nrhs, double* A,
+       int& lda, double* b, int& ldb, double* work, int& lwork, int& info);
+
+// Performs least-squares solve subject to equality constraints
+#define DGGLSE_F77 F77_FUNC(dgglse,DGGLSE)
+#ifdef __cplusplus
+extern "C" /* prevent C++ name mangling */
+#endif
+void DGGLSE_F77(int& m, int& n, int& p , double* A, int& lda,
+	       double* B, int& ldb, double* c, double* d, double* x,
+	       double* work, int& lwork, int& info);
+
 namespace surfpack {
 
 
@@ -27,10 +78,10 @@ namespace surfpack {
 // Constants 
 // _____________________________________________________________________________
   // Length of the field for double-precision number stream output
-  const unsigned field_width = 12;
+  const unsigned field_width = 26;
 
   // Precision of output for double precision numbers
-  const unsigned output_precision = 4;
+  const unsigned output_precision = 17;
 
 // _____________________________________________________________________________
 // Nested Types 
@@ -152,7 +203,41 @@ namespace surfpack {
   /// Throw an exception if the dimensionality of the points does not match.
   void vectorDifference(std::vector<double>& diff, 
     const std::vector<double>& pt1, const std::vector<double>& pt2);
+// ____________________________________________________________________________
+// Functions for common linear algebra tasks 
+// ____________________________________________________________________________
+  /// Least squares solve of system Ax = b
+  void linearSystemLeastSquares(SurfpackMatrix<double>& A, 
+    std::vector<double>& x, std::vector<double>& b);
 
+  /// Least squares solve os system Ax = c, subject to Bx = d
+  void leastSquaresWithEqualityConstraints(SurfpackMatrix<double>& A, 
+    std::vector<double>& x, std::vector<double>& c,
+    SurfpackMatrix<double>& B, std::vector<double>& d);
+
+  /// Calls dgetrf followed by dgetri
+  SurfpackMatrix< double >& inverse(SurfpackMatrix< double >& matrix);
+
+  /// Calls dgetrf to compute LU Decomposition
+  SurfpackMatrix< double >& LUFact(SurfpackMatrix< double >& matrix, 
+    std::vector<int>& ipvt);
+
+  /// Calls dgetri to compute matrix inverse, after prior call to dgetrf
+  SurfpackMatrix< double >& 
+    inverseAfterLUFact(SurfpackMatrix<double>& matrix, std::vector<int>& ipvt);
+
+  /// matrix-vector mutltiplication
+  std::vector< double >& matrixVectorMult(std::vector< double >& result,
+    SurfpackMatrix< double >& matrix, std::vector< double >& the_vector);
+
+  /// vector-vector inner product
+  double dot_product(const std::vector< double >& vector_a, 
+    const std::vector< double >& vector_b);
+
+  /// Adds or subtracts same value to all vector elements
+  std::vector< double >& vectorShift(std::vector< double >& the_vector,
+    double shift_value);
+ 
 // ____________________________________________________________________________
 // Testing 
 // ____________________________________________________________________________
@@ -192,5 +277,8 @@ namespace surfpack {
 
   /// f(x) = sigma{i=1 to n}(x_i + sin x_i)
   double xplussinex(const std::vector<double>& pt);
+
+  /// Random (different queries for the same point will give different results)
+  double noise(const std::vector<double>& pt);
 } // namespace surfpack
 #endif
