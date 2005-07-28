@@ -37,11 +37,13 @@ public:
       double interval;
   };
 
+  enum ParamType {file = 1, data = 2};
+
   /// Object is created from an existing list of Axis objects
   AxesBounds( std::vector<Axis> axes_);
 
   /// Object is created from a text file
-  AxesBounds( std::string filename);
+  AxesBounds( std::string fileOrData, ParamType pt = file);
 
   /// No special behavior
   ~AxesBounds();
@@ -68,6 +70,9 @@ public:
   /// odometer) to (4,0).  This will signify that the next point to be added
   /// should be (axes[0].min+4*axes[0].interval, axes[1].min+0*axes[1].interval.
   void nextPoint();
+
+protected:
+  void parseBounds(std::istream& is);
 
 protected:
   /// Counter used to iterate through the dimensions for grid data.  The 

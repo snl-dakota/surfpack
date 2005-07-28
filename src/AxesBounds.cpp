@@ -1,5 +1,6 @@
 #include "config.h"
 
+#include <algorithm>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -23,7 +24,7 @@ AxesBounds::AxesBounds(vector<AxesBounds::Axis> axes_)
 }
 
 /// Object is created from a text file
-AxesBounds::AxesBounds(string filename) 
+AxesBounds::AxesBounds(string fileOrData, ParamType pt) 
 {
     // Consider a file with the following data:
 
@@ -44,21 +45,38 @@ AxesBounds::AxesBounds(string filename)
     // x[2] = 3.
     
     // Make sure file is opened successfully.
-    ifstream infile(filename.c_str(), ios::in);
-    if (!infile) {
-      throw surfpack::file_open_failure(filename);
-    } 
+    assert(pt == file || pt == data);
+    ifstream infile(fileOrData.c_str(), ios::in);
+    switch(pt) {
+      case file:
+        if (!infile) {
+          throw surfpack::file_open_failure(fileOrData);
+        } 
+        parseBounds(infile);
+        break;
+      case data:
+        replace(fileOrData.begin(),fileOrData.end(),'|','\n');
+        istringstream is(fileOrData);
+        parseBounds(is);
+        break;
+    }
+    infile.close();
+}    
+
+void AxesBounds::parseBounds(std::istream& is)
+{
+
     // Read the number of dimensions.
     npts = 1;
     string sline;
-    getline(infile, sline);
+    getline(is, sline);
     istringstream istream(sline);
     istream >> ndims;
     axes.resize(ndims);
     point.resize(ndims);
     // Read the values for each dimension
     for (int i = 0; i < ndims; i++) {
-        getline(infile, sline);
+        getline(is, sline);
 	istringstream streamline(sline);
         char c;
         streamline >> c;
@@ -85,14 +103,12 @@ AxesBounds::AxesBounds(string filename)
             ostringstream msg;
             msg << "Expected 'f' or 'v' on line " 
                 << i+1
-                << "in file " 
-                << filename
+                << "in AxesBounds::parseBounds" 
                 << endl;
  	    throw surfpack::io_exception(msg.str());
 	}
     }
-    infile.close();
-}    
+}
      
 /// No special behavior
 AxesBounds::~AxesBounds()
