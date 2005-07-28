@@ -44,7 +44,18 @@ void SurfpackParser::init()
 void SurfpackParser::storeCommandString()
 {
   if (commands.size() > 0) {
-    commands[commands.size()-1].cmdstring = cmdstream.str();
+    int loc;
+    string newcommand = cmdstream.str();
+    if (newcommand.find("/*") == 0) {
+      newcommand.erase(0,2);
+    }
+    if ((loc = newcommand.find("*/")) != string::npos) {
+      newcommand.erase(loc,2);
+    }
+    if (newcommand.find("!") == 0) {
+       newcommand.erase(0,1);
+    }
+    commands[commands.size()-1].cmdstring = newcommand;
     cmdstream.str("");
   }
 }

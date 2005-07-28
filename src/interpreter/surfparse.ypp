@@ -19,13 +19,16 @@ using namespace std;
 %token STRING
 %token INTEGER
 %token REAL
+%token SHELL_COMMAND
 
 %%
 
 input:		/* empty */
 	|	statement input
+	|	shellcommand input
 ;
 
+shellcommand:	SHELL_COMMAND {parser.shellCommand();}
 statement: 	STANDARD_COMMAND {parser.addCommandName();} arglist	{parser.storeCommandString();}
 ;
 

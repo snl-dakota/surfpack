@@ -387,25 +387,32 @@ void SurfpackInterpreter::executeFitness(const SurfpackParser::ParsedCommand& co
   
 void SurfpackInterpreter::executeAxesBounds(const SurfpackParser::ParsedCommand& command)
 {
-
-  // Extract the variable name for this SurfData object
-  string name = SurfpackParser::parseOutIdentifier(string("name"), command.arglist);
+  AxesBounds* sd = 0;
+  // Extract the variable name for this AxesBounds object
+  string name = 
+    SurfpackParser::parseOutIdentifier(string("name"), command.arglist);
   if (name == "") {
     throw command_error(
       string("No name argument specified."), command.cmdstring);
   }
+
   //cout << "Variable name: " << name << endl;
-
-  // Extract the name of the file to be read
-  string filename = SurfpackParser::parseOutStringLiteral(string("file"), command.arglist);
-  //cout << "Filename: " << filename << endl;
-  if (filename == "") {
-    throw command_error(
-      string("No filename specified."), command.cmdstring);
+  string bounds = 
+    SurfpackParser::parseOutStringLiteral(string("bounds"), command.arglist);
+  if (bounds == "") {
+    // Extract the name of the file to be read
+    string filename = 
+      SurfpackParser::parseOutStringLiteral(string("file"), command.arglist);
+    //cout << "Filename: " << filename << endl;
+    if (filename == "") {
+      throw command_error(
+        string("No filename specified."), command.cmdstring);
+    }
+    sd = new AxesBounds(filename);
+  } else {
+    sd = new AxesBounds(bounds,AxesBounds::data);
   }
-
   // Read the file into a SurfData object and add it to the symbol table
-  AxesBounds* sd = new AxesBounds(filename);
   symbol_table.pointDefinitionVars.insert(AxesBoundsSymbol(name,sd));
   //cout << "Executed AxesBounds" << endl;
 }
@@ -499,5 +506,5 @@ void SurfpackInterpreter::executeMonteCarloSample(const SurfpackParser::ParsedCo
 void SurfpackInterpreter::
   executeShellCommand(const SurfpackParser::ParsedCommand& command)
 {
-  system(&(command.cmdstring.c_str()[1]));
+  system(command.cmdstring.c_str());
 }
