@@ -232,7 +232,7 @@ void surfpack::differences(std::vector<double>& results,
     results[i] = abs(observed[i] - predicted[i]);
     switch (dp) {
       case SQUARED: results[i] *= results[i]; break;
-      case SCALED: results[i] /= observed[i]; break;
+      case SCALED: results[i] /= abs(observed[i]); break;
     }
   }
 }
