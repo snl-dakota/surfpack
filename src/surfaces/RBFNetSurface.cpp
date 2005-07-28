@@ -410,7 +410,7 @@ void RBFNetSurface::selectModelBasisFunctions(SurfData& surfData)
   int datadim = surfData[0].xSize();
   assert(partition_nodes.size() != 0);
   // Debug code begin
-  SurfData testData("linetest.txt");
+  //SurfData testData("linetest.txt");
   // End debug code
 
   vector<BasisFunction*> bestSet;
@@ -427,7 +427,7 @@ void RBFNetSurface::selectModelBasisFunctions(SurfData& surfData)
   double bestMetric = tmse;
   //double bestMetric = surfData.size()*log(tmse) + 
    // bestSet.size()*log(2.0*(double)surfData.size());
-  if (datadim == 1) this->getValue(testData);
+  //if (datadim == 1) this->getValue(testData);
   cout << "Initial metric: " << bestMetric << endl;
   // while there are active nodes, iterate through the list, and for each node
   // in the list, try adding either or both of its children.  Then, if the
@@ -448,12 +448,12 @@ void RBFNetSurface::selectModelBasisFunctions(SurfData& surfData)
       // add left child
       cout << "Trying +L" << endl;
       currentSet.push_back(currentNode.left_child->basis_function);
-      if (tryModel(surfData,i,bestIndex,bestMetric,currentSet,bestSet)) this->getValue(testData);
+      tryModel(surfData,i,bestIndex,bestMetric,currentSet,bestSet);
   //if (datadim == 1) this->getValue(testData);
       // add right child
       cout << "Trying +LR" << endl;
       currentSet.push_back(currentNode.right_child->basis_function);
-      if (tryModel(surfData,i,bestIndex,bestMetric,currentSet,bestSet)) this->getValue(testData);
+      tryModel(surfData,i,bestIndex,bestMetric,currentSet,bestSet);
   //if (datadim == 1) this->getValue(testData);
       // remove left child
       cout << "Trying +R" << endl;
@@ -461,7 +461,7 @@ void RBFNetSurface::selectModelBasisFunctions(SurfData& surfData)
         currentSet.end(), currentNode.left_child->basis_function);
       assert(ritr != currentSet.end());
       currentSet.erase(ritr);
-      if (tryModel(surfData,i,bestIndex,bestMetric,currentSet,bestSet)) this->getValue(testData);
+      tryModel(surfData,i,bestIndex,bestMetric,currentSet,bestSet);
   //if (datadim == 1) this->getValue(testData);
       // try four additional options if parent of current node is present
       ritr = find(currentSet.begin(),currentSet.end(),
@@ -470,7 +470,7 @@ void RBFNetSurface::selectModelBasisFunctions(SurfData& surfData)
         // remove parent
         cout << "Trying -P +R" << endl;
         currentSet.erase(ritr);
-      if (tryModel(surfData,i,bestIndex,bestMetric,currentSet,bestSet)) this->getValue(testData);
+      tryModel(surfData,i,bestIndex,bestMetric,currentSet,bestSet);
   //if (datadim == 1) this->getValue(testData);
         // remove right child
         cout << "Trying -P " << endl;
@@ -478,17 +478,17 @@ void RBFNetSurface::selectModelBasisFunctions(SurfData& surfData)
           currentNode.right_child->basis_function);
  	assert(ritr != currentSet.end());
         currentSet.erase(ritr);
-      if (tryModel(surfData,i,bestIndex,bestMetric,currentSet,bestSet)) this->getValue(testData);
+      tryModel(surfData,i,bestIndex,bestMetric,currentSet,bestSet);
   //if(datadim == 1) this->getValue(testData);
         // add left child
         cout << "Trying -P +L" << endl;
         currentSet.push_back(currentNode.left_child->basis_function);
-      if (tryModel(surfData,i,bestIndex,bestMetric,currentSet,bestSet)) this->getValue(testData);
+      tryModel(surfData,i,bestIndex,bestMetric,currentSet,bestSet);
   //if(datadim == 1) this->getValue(testData);
         // add right child
         cout << "Trying -P +LR" << endl;
         currentSet.push_back(currentNode.right_child->basis_function);
-      if (tryModel(surfData,i,bestIndex,bestMetric,currentSet,bestSet)) this->getValue(testData);
+      tryModel(surfData,i,bestIndex,bestMetric,currentSet,bestSet);
   //if(datadim == 1) this->getValue(testData);
       }
     }
@@ -513,15 +513,15 @@ void RBFNetSurface::selectModelBasisFunctions(SurfData& surfData)
   }
   cout << "Best: " << bestMetric << endl;
   buildCandidate(surfData,bestSet);
-  if (datadim == 1) this->getValue(testData);
+  //if (datadim == 1) this->getValue(testData);
   cout << "sse: " << this->goodnessOfFit("sum_squared",&surfData) << endl;
   cout << "mse: " << this->goodnessOfFit("mean_squared",&surfData) << endl;
   cout << "rmae: " << this->goodnessOfFit("max_relative",&surfData) << endl;
   cout << "rsquared: " << this->goodnessOfFit("rsquared",&surfData) << endl;
 
     // Begin debug code
-  SurfData dataCopy(testData);
-  dataCopy.write("considered.txt");
+  //SurfData dataCopy(testData);
+  //dataCopy.write("considered.txt");
     // End debug code
   
 }
@@ -557,7 +557,7 @@ bool RBFNetSurface::tryModel(SurfData& surfData, int currentIndex, int& bestInde
 void RBFNetSurface::generateManyOptions(SurfData& surfData)
 {
   // Debug code begin
-  SurfData testData("linetest.txt");
+  //SurfData testData("linetest.txt");
   // End debug code
 
   vector<BasisFunction*> bestBases;
@@ -577,7 +577,7 @@ void RBFNetSurface::generateManyOptions(SurfData& surfData)
     buildCandidate(surfData,basesToUse);
     double tmse = this->goodnessOfFit(string("mean_squared"),&surfData);
     // Begin debug code
-    if (xsize == 1) this->getValue(testData);
+    //if (xsize == 1) this->getValue(testData);
     // End debug code
     double bic = surfData.size()*log(tmse) + numToUse*log(2.0*(double)surfData.size());
     if (bic < best) {
@@ -588,15 +588,15 @@ void RBFNetSurface::generateManyOptions(SurfData& surfData)
   }
   cout << "Best: " << best << endl;
   buildCandidate(surfData,bestBases);
-  if (xsize == 1) this->getValue(testData);
+  //if (xsize == 1) this->getValue(testData);
   cout << "sse: " << this->goodnessOfFit("sse",&surfData) << endl;
   cout << "mse: " << this->goodnessOfFit("mse",&surfData) << endl;
   cout << "mrae: " << this->goodnessOfFit("mrae",&surfData) << endl;
   cout << "rsquared: " << this->goodnessOfFit("rsquared",&surfData) << endl;
 
   // Begin debug code
-  SurfData dataCopy(testData);
-  dataCopy.write("candidateFunctions.txt");
+  //SurfData dataCopy(testData);
+  //dataCopy.write("candidateFunctions.txt");
   // End debug code
  
 }
@@ -751,7 +751,7 @@ void RBFNetSurface::computeRBFCenters(
   std::vector< PartitionNode* >& partitions)
 {
   // Debug code begin
-  SurfData testData("linetest.txt");
+  //SurfData testData("linetest.txt");
   vector<BasisFunction*> unibasis(1);
   // End debug code
 
@@ -822,12 +822,12 @@ void RBFNetSurface::computeRBFCenters(
     builtOK = true; dataModified = false;
     unibasis[0] = newbf;
     this->basis_functions = unibasis;
-    if (firstPt.xSize() == 1) this->getValue(testData);
+    //if (firstPt.xSize() == 1) this->getValue(testData);
     // End debug code
   }
     // Begin debug code
-  SurfData dataCopy(testData);
-  dataCopy.write("testResults.txt");
+  //SurfData dataCopy(testData);
+  //dataCopy.write("testResults.txt");
     // End debug code
   partition_nodes = partitions;
     // Begin debug code

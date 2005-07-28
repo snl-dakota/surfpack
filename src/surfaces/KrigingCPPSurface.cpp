@@ -140,7 +140,8 @@ void KrigingCPPSurface::build(SurfData& data)
       if (i == j) {
         R[i][j] = 1.0;
       } else {
-        R[i][j] = correlation_function(correlationVector,data[i].X(),data[j].X());
+        R[i][j] = 
+   	  correlation_function(correlationVector,data[i].X(),data[j].X());
       }
     }
   }
@@ -170,11 +171,10 @@ void KrigingCPPSurface::build(SurfData& data)
   surfpack::vectorShift(y,betaHat);
   matrixVectorMult(this->rhs,R,y);
   double estVariance = surfpack::dot_product(y,rhs);
-  cout << "EstVariance: " << estVariance << endl;
-  cout << "determinantCorrMatrix: " << determinantCorrMatrix << endl;
-  this->likelihood = -0.5*(sd->size()*log(estVariance)+log(abs(determinantCorrMatrix)));
-  
-
+  //cout << "EstVariance: " << estVariance << endl;
+  //cout << "determinantCorrMatrix: " << determinantCorrMatrix << endl;
+  this->likelihood = 
+    -0.5*(sd->size()*log(estVariance)+log(abs(determinantCorrMatrix)));
 }
 
 void KrigingCPPSurface::config(const SurfpackParser::Arg& arg)
@@ -355,6 +355,7 @@ std::vector<double> KrigingCPPSurface::useConminToFindCorrelationParams()
               numdv,numcon,NSIDE,IPRINT,NFDG,NSCAL,LINOBJ,ITMAX,
               ITRM,ICNDIR,IGOTO,NAC,conminInfo,INFOG,ITER);
   } while (IGOTO != 0);
+  return candidateCorrelations;
 }
 
 double KrigingCPPSurface::likelihoodEstimation()

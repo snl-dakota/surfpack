@@ -109,7 +109,6 @@ void ANNSurface::build(SurfData& data)
   annObject = new ANNApprox;
   vector< vector< double > > training_inputs;
   vector< vector< double > > training_outputs;
-  cout << "Points: " << data.size() << " Dimensions: " << data.xSize() << endl;
   reshape_2d(training_inputs, data.size(), data.xSize());
   reshape_2d(training_outputs, data.size(), 1);
   for (unsigned i = 0; i < data.size(); i++) {

@@ -663,7 +663,6 @@ void KrigingSurface::buildModel(SurfData& data)
     // kriging model evaluation phase
     for (unsigned i=0;i<xsize;i++) {
       thetaVector[i] = conminThetaVars[i];
-      cout << "theta[" << i << "]: " << thetaVector[i] << endl;
     }
 
     ////  run_conmin_flag = 0;
