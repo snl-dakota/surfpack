@@ -1,4 +1,4 @@
-#include "config.h"
+#include "surfpack_config.h"
 
 #ifndef POLYNOMIAL_SURFACE_TEST_H
 #define POLYNOMIAL_SURFACE_TEST_H 

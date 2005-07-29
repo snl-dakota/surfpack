@@ -1,4 +1,4 @@
-#include "config.h"
+#include "surfpack_config.h"
 
 #ifndef __KRIGING_CPP_SURFACE_H__
 #define __KRIGING_CPP_SURFACE_H__

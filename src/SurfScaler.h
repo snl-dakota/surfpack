@@ -1,4 +1,4 @@
-#include "config.h"
+#include "surfpack_config.h"
 
 #ifndef SURF_SCALER_H
 #define SURF_SCALER_H

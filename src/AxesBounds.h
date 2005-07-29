@@ -1,4 +1,4 @@
-#include "config.h"
+#include "surfpack_config.h"
 
 #ifndef POINT_DEFINITION_H
 #define POINT_DEFINITION_H

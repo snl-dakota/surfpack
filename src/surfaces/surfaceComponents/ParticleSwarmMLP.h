@@ -1,4 +1,4 @@
-#include "config.h"
+#include "surfpack_config.h"
 
 #ifndef PARTICLESWARMMLP_H 
 #define PARTICLESWARMMLP_H 

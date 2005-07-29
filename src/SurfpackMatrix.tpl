@@ -131,6 +131,24 @@ SurfpackMatrix< T >& SurfpackMatrix< T >::operator=(const SurfpackMatrix<T>& oth
 }
 
 template< typename T >
+SurfpackMatrix<T>& SurfpackMatrix< T >::operator=(const std::vector< std::vector<T> > other)
+{
+  if (other.empty()) {
+    reshape(0,0);
+  } else {
+    reshape(other.size(),other[0].size());
+  } 
+  ///\todo Use assign instead of using this clunky double loop
+  for (unsigned i = 0; i < nRows; i++) {
+    for (unsigned j = 0; j < nCols; j++) {
+      (this->operator[](i))->operator[](j) = other[i][j];
+    }
+  }
+  return *this;
+
+}
+
+template< typename T >
 const std::string SurfpackMatrix< T >::asString()
 {
   std::ostringstream os;

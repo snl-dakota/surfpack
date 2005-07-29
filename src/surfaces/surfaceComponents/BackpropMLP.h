@@ -1,4 +1,4 @@
-#include "config.h"
+#include "surfpack_config.h"
 
 #ifndef BACKPROPMLP_H 
 #define BACKPROPMLP_H 

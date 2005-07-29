@@ -1,4 +1,4 @@
-#include "config.h"
+#include "surfpack_config.h"
 
 #ifndef MULTILAYERPERCEPTRON_H
 #define MULTILAYERPERCEPTRON_H

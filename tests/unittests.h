@@ -1,4 +1,4 @@
-#include "config.h"
+#include "surfpack_config.h"
 
 #ifndef UNITTESTS_H
 #define UNITTESTS_H

@@ -1,4 +1,4 @@
-#include "config.h"
+#include "surfpack_config.h"
 
 //----------------------------------------------------------------------------
 // Project: SURFPACK++

@@ -1,4 +1,4 @@
-#include "config.h"
+#include "surfpack_config.h"
 
 #ifndef SURFSCALERTEST_H
 #define SURFSCALERTEST_H

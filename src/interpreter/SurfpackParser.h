@@ -1,4 +1,4 @@
-#include "config.h"
+#include "surfpack_config.h"
 
 #ifndef MY_PARSING_STRUCTURES_H
 #define MY_PARSING_STRUCTURES_H

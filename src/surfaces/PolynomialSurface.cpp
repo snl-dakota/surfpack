@@ -1,4 +1,4 @@
-#include "config.h"
+#include "surfpack_config.h"
 
 #include <cmath>
 #include <fstream>
@@ -177,7 +177,7 @@ void PolynomialSurface::setEqualityConstraints(unsigned asv,const SurfPoint& sp,
   unsigned numConstraints = 0;
   if (asv & 1) numConstraints += 1; // value at a particular point
   if (asv & 2) numConstraints += xsize; // gradient at a point
-  if (asv & 4) numConstraints += xsize*xsize; // hessian at a point
+  if (asv & 4) numConstraints += (xsize*xsize+xsize)/2; // hessian at a point
   eqConRHS.resize( numConstraints );
   // Must compute number of terms first
   SurfpackMatrix<double> temp(eqConRHS.size(),coefficients.size(),true);
@@ -227,7 +227,7 @@ void PolynomialSurface::setEqualityConstraints(unsigned asv,const SurfPoint& sp,
     vector<unsigned> factorCounts;
     vector<unsigned> differentiationCounts;
     for (unsigned difVar1 = 0; difVar1 < xsize; difVar1++ ) {
-      for (unsigned difVar2 = 0; difVar2 < xsize; difVar2++ ) {
+      for (unsigned difVar2 = difVar1; difVar2 < xsize; difVar2++ ) {
         differentiationCounts = vector<unsigned>(xsize,0);
         differentiationCounts[difVar1]++;
         differentiationCounts[difVar2]++;

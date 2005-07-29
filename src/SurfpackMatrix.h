@@ -102,6 +102,9 @@ public:
 
   /// Assignment operator.  Performs deep copy.
   SurfpackMatrix<T>& operator=(const SurfpackMatrix<T>& other);
+
+  /// Assignment operator.  Performs deep copy.
+  SurfpackMatrix<T>& operator=(const std::vector< std::vector<T> >);
   
   /// Sum of the elements of the matrix.  Data type T should support operator+.
   T sum();

@@ -1,4 +1,4 @@
-#include "config.h"
+#include "surfpack_config.h"
 
 #ifndef __SURF_DATA_H__
 #define __SURF_DATA_H__
