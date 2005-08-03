@@ -549,6 +549,34 @@ void PolynomialSurfaceTest::derivative_2d_2o()
   CPPUNIT_ASSERT(matches(gradient[1],3.0));
 }
 
+void PolynomialSurfaceTest::hessian_2d_2o()
+{
+  vector<double> coefficients(6);
+  coefficients[0] = 3.0;
+  coefficients[1] = -2.0;
+  coefficients[2] = 1.0;
+  coefficients[3] = 0.0;
+  coefficients[4] = 6.0;
+  coefficients[5] = -4.0;
+  PolynomialSurface ps(2,2,coefficients);
+  vector<double> x(2);
+  SurfpackMatrix<double> sm(2,2);
+  x[0] = 0.0;
+  x[1] = 0.0;
+  ps.hessian(x,sm);
+  CPPUNIT_ASSERT(matches(sm[0][0],  0.0));
+  CPPUNIT_ASSERT(matches(sm[0][1],  6.0));
+  CPPUNIT_ASSERT(matches(sm[1][0],  6.0));
+  CPPUNIT_ASSERT(matches(sm[1][1], -8.0));
+  // Change point to anything else; hessian should be constant
+  x[0] = 7.2;
+  x[1] = -1.6;
+  ps.hessian(x,sm);
+  CPPUNIT_ASSERT(matches(sm[0][0],  0.0));
+  CPPUNIT_ASSERT(matches(sm[0][1],  6.0));
+  CPPUNIT_ASSERT(matches(sm[1][0],  6.0));
+  CPPUNIT_ASSERT(matches(sm[1][1], -8.0));
+}
 void PolynomialSurfaceTest::leastSquares()
 {
   // f(x1,x2) = 3 - 2*x1 + x2 + 6*x1*x2 - 4*x2^2
@@ -635,6 +663,209 @@ void PolynomialSurfaceTest::leastSquaresWithConstraints()
   CPPUNIT_ASSERT( matches(ps.getValue(sd[0]),sd.getResponse(0)));
   //CPPUNIT_ASSERT( matches(ps.getValue(sd[1]),sd.getResponse(1)));
   //CPPUNIT_ASSERT( matches(ps.getValue(sd[2]),sd.getResponse(2)));
+}
+
+void PolynomialSurfaceTest::leastSquaresWithHessianConstraints()
+{
+  // f(x1,x2) = 3 - 2*x1 + x2 + 6*x1*x2 - 4*x2^2
+  // df(x1,x2)/dx1 = -2 + 6*x2
+  // df(x1,x2)/dx2 = 1+6*x1 - 8*x2
+  vector<double> coefficients(6);
+  coefficients[0] = 3.0;
+  coefficients[1] = -2.0;
+  coefficients[2] = 1.0;
+  coefficients[3] = 0.0;
+  coefficients[4] = 6.0;
+  coefficients[5] = -4.0;
+  PolynomialSurface ps(2,2,coefficients);
+  vector<double> x(2);
+  vector<double> gradient(2);
+  SurfpackMatrix<double> hessian(2,2);
+  hessian[0][0] = 0.0;
+  hessian[0][1] = hessian[1][0] = 6.0;
+  hessian[1][1] = -8.0;
+  SurfData sd;
+  double f;
+  x[0] =  4.0; x[1] =  5.0; f =  20.0; sd.addPoint(SurfPoint(x,f));
+  x[0] =  0.0; x[1] =  0.0; f =   3.0; sd.addPoint(SurfPoint(x,f));
+  x[0] =  1.0; x[1] =  1.0; f =   4.0; sd.addPoint(SurfPoint(x,f));
+  x[0] = -1.0; x[1] =  1.0; f =  -4.0; sd.addPoint(SurfPoint(x,f));
+  //x[0] = -1.0; x[1] = -1.0; f =   6.0; sd.addPoint(SurfPoint(x,f));
+  //x[0] =  2.0; x[1] =  3.0; f =   2.0; sd.addPoint(SurfPoint(x,f));
+  //x[0] =  1.0; x[1] = -1.0; f = -10.0; sd.addPoint(SurfPoint(x,f));
+  x[0] =  1.0; x[1] = -1.0; f = -10.0; SurfPoint sp(x,f);
+  gradient[0] = -8.0;
+  gradient[1] = 15.0;
+  
+  
+
+  // Now create a surface from the data and see if everything matches
+  PolynomialSurface ps2(&sd,2);
+  ps2.setEqualityConstraints(7,sp,sp.F(),&gradient,&hessian);
+  // Spot check the values in the matrix 
+  CPPUNIT_ASSERT( matches(ps2.eqConLHS[3][3],2.0));
+  CPPUNIT_ASSERT( matches(ps2.eqConLHS[4][4],1.0));
+  CPPUNIT_ASSERT( matches(ps2.eqConLHS[5][5],2.0));
+  CPPUNIT_ASSERT( matches(ps2.eqConLHS[4][3],0.0));
+  CPPUNIT_ASSERT( matches(ps2.eqConLHS[5][4],0.0));
+  CPPUNIT_ASSERT( matches(ps2.eqConLHS[3][5],0.0));
+  CPPUNIT_ASSERT( matches(ps2.eqConRHS[3], 0.0));
+  CPPUNIT_ASSERT( matches(ps2.eqConRHS[4], 6.0));
+  CPPUNIT_ASSERT( matches(ps2.eqConRHS[5],-8.0));
+  ps2.createModel();
+  CPPUNIT_ASSERT( ps2.coefficients.size() == 6 );
+  CPPUNIT_ASSERT( matches(coefficients[0],ps2.coefficients[0]));
+  CPPUNIT_ASSERT( matches(coefficients[1],ps2.coefficients[1]));
+  CPPUNIT_ASSERT( matches(coefficients[2],ps2.coefficients[2]));
+  CPPUNIT_ASSERT( matches(coefficients[3],ps2.coefficients[3]));
+  CPPUNIT_ASSERT( matches(coefficients[4],ps2.coefficients[4]));
+  CPPUNIT_ASSERT( matches(coefficients[5],ps2.coefficients[5]));
+
+  CPPUNIT_ASSERT( matches(ps.getValue(sd[0]),sd.getResponse(0)));
+
+  //CPPUNIT_ASSERT( matches(ps.getValue(sd[1]),sd.getResponse(1)));
+  //CPPUNIT_ASSERT( matches(ps.getValue(sd[2]),sd.getResponse(2)));
+}
+
+void PolynomialSurfaceTest::leastSquares_2d_3o()
+{
+  // f(x1,x2) = 0 - x1 + 2*x2 - 3*x1^2 + 4*x1*x2 - 5*x2^2 + 6*x1^3 
+		//- 7*x1^2*x2 + 8*x1*x2^2 - 9*x2^3 
+  // df(x1,x2)/dx1 = -1 -6*x1 + 4*x2 + 18*x1^2 - 14*x1*x2 + 8*x2^2 
+  // df(x1,x2)/dx2 = 2 + 4*x1 - 10*x2 - 7*x1^2 + 16*x1*x2 - 27*x2^2 
+  // df^2(x1,x2)/dx1^2 = -6 + 36*x1 - 14*x2
+  // df^2(x1,x2)/dx2^2 = -10 + 16*x1 - 54*x2
+  // df^2(x1,x2)/dx1x2 = 4 - 14*x1 + 16*x2
+ 
+  vector<double> coefficients(10);
+  coefficients[0] =  0.0;
+  coefficients[1] = -1.0;
+  coefficients[2] =  2.0;
+  coefficients[3] = -3.0;
+  coefficients[4] =  4.0;
+  coefficients[5] = -5.0;
+  coefficients[6] =  6.0;
+  coefficients[7] = -7.0;
+  coefficients[8] =  8.0;
+  coefficients[9] = -9.0;
+  PolynomialSurface ps(2,3,coefficients);
+  vector<double> x(2);
+  vector<double> gradient(2);
+  SurfpackMatrix<double> hessian(2,2);
+  x[0] = 0.0;
+  x[1] = 0.0;
+
+  // check the value, gradient, and hessian at this point
+  CPPUNIT_ASSERT( matches(ps.getValue(x), 0.0));
+  ps.gradient(x,gradient);
+  CPPUNIT_ASSERT( matches(gradient[0], -1.0));
+  CPPUNIT_ASSERT( matches(gradient[1],  2.0));
+  ps.hessian(x,hessian);
+  CPPUNIT_ASSERT( matches(hessian[0][0], -6.0));
+  CPPUNIT_ASSERT( matches(hessian[0][1],  4.0));
+  CPPUNIT_ASSERT( matches(hessian[1][0],  4.0));
+  CPPUNIT_ASSERT( matches(hessian[1][1], -10.0));
+
+  // now pick another point and do all the same checks
+  x[0] = 10.0;
+  x[1] = -7.5;
+
+  // check the value, gradient, and hessian at this point
+  CPPUNIT_ASSERT( matches(ps.getValue(x), 18640.625));
+  ps.gradient(x,gradient);
+  CPPUNIT_ASSERT( matches(gradient[0], 3209.0));
+  CPPUNIT_ASSERT( matches(gradient[1],  -3301.75));
+  ps.hessian(x,hessian);
+  CPPUNIT_ASSERT( matches(hessian[0][0], 459.0));
+  CPPUNIT_ASSERT( matches(hessian[0][1], -256.0));
+  CPPUNIT_ASSERT( matches(hessian[1][0], -256.0));
+  CPPUNIT_ASSERT( matches(hessian[1][1], 555.0));
+  
+  // Evaluate this surface at 10 points and use those points to
+  // create another surface-- in theory, with the same coefficients
+  SurfData sd;
+  double f;
+  x[0] =  6.0; x[1] = -1.0; f =  ps.getValue(x); sd.addPoint(SurfPoint(x,f));
+  x[0] = 14.0; x[1] = 35.0; f =  ps.getValue(x); sd.addPoint(SurfPoint(x,f));
+  x[0] =  2.0; x[1] =  8.0; f =  ps.getValue(x); sd.addPoint(SurfPoint(x,f));
+  x[0] = 21.0; x[1] = -5.0; f =  ps.getValue(x); sd.addPoint(SurfPoint(x,f));
+  x[0] = 24.0; x[1] = 15.0; f =  ps.getValue(x); sd.addPoint(SurfPoint(x,f));
+  x[0] =  4.0; x[1] = -5.0; f =  ps.getValue(x); sd.addPoint(SurfPoint(x,f));
+  x[0] =  0.0; x[1] = 25.0; f =  ps.getValue(x); sd.addPoint(SurfPoint(x,f));
+  x[0] = -4.0; x[1] =  9.0; f =  ps.getValue(x); sd.addPoint(SurfPoint(x,f));
+  x[0] =  8.0; x[1] =  3.0; f =  ps.getValue(x); sd.addPoint(SurfPoint(x,f));
+  x[0] = -9.0; x[1] = -2.0; f =  ps.getValue(x); sd.addPoint(SurfPoint(x,f));
+  x[0] =  3.0; x[1] =  1.0; f =  ps.getValue(x); sd.addPoint(SurfPoint(x,f));
+  PolynomialSurface ps2(&sd,3);
+  ps2.createModel();
+  CPPUNIT_ASSERT( matches( ps2.coefficients[0],coefficients[0] ));
+  CPPUNIT_ASSERT( matches( ps2.coefficients[1],coefficients[1] ));
+  CPPUNIT_ASSERT( matches( ps2.coefficients[2],coefficients[2] ));
+  CPPUNIT_ASSERT( matches( ps2.coefficients[3],coefficients[3] ));
+  CPPUNIT_ASSERT( matches( ps2.coefficients[4],coefficients[4] ));
+  CPPUNIT_ASSERT( matches( ps2.coefficients[5],coefficients[5] ));
+  CPPUNIT_ASSERT( matches( ps2.coefficients[6],coefficients[6] ));
+  CPPUNIT_ASSERT( matches( ps2.coefficients[7],coefficients[7] ));
+  CPPUNIT_ASSERT( matches( ps2.coefficients[8],coefficients[8] ));
+  CPPUNIT_ASSERT( matches( ps2.coefficients[9],coefficients[9] ));
+  
+  // Okay, now try it using a few points, plus deriv and hessian info
+  SurfData sd2;
+  x[0] =  6.0; x[1] = -1.0; f =  ps.getValue(x); sd2.addPoint(SurfPoint(x,f));
+  x[0] = 14.0; x[1] = 35.0; f =  ps.getValue(x); sd2.addPoint(SurfPoint(x,f));
+  x[0] =  2.0; x[1] =  8.0; f =  ps.getValue(x); sd2.addPoint(SurfPoint(x,f));
+  x[0] = 21.0; x[1] = -5.0; f =  ps.getValue(x); sd2.addPoint(SurfPoint(x,f));
+  //x[0] = 24.0; x[1] = 15.0; f =  ps.getValue(x); sd2.addPoint(SurfPoint(x,f));
+  //x[0] =  4.0; x[1] = -5.0; f =  ps.getValue(x); sd2.addPoint(SurfPoint(x,f));
+  //x[0] =  0.0; x[1] = 25.0; f =  ps.getValue(x); sd2.addPoint(SurfPoint(x,f));
+
+  // Now here is the point the model must fit exactly (resp,grad,hess)
+  x[0] = 3.0; x[1] = 1.0; f =  ps.getValue(x); 
+  CPPUNIT_ASSERT(matches(f,93.0));
+  SurfPoint sp2(x,f);
+  ps.gradient(x,gradient);
+  CPPUNIT_ASSERT(matches(gradient[0],113.0));
+  CPPUNIT_ASSERT(matches(gradient[1],-38.0));
+  ps.hessian(x,hessian);
+  CPPUNIT_ASSERT(matches(hessian[0][0],88.0));
+  CPPUNIT_ASSERT(matches(hessian[0][1],-22.0));
+  CPPUNIT_ASSERT(matches(hessian[1][0],-22.0));
+  CPPUNIT_ASSERT(matches(hessian[1][1],-16.0));
+
+  PolynomialSurface ps3(&sd2,3);
+  ps3.setEqualityConstraints(7,sp2,f,&gradient,&hessian);
+  // Spot check the values in the matrix 
+  CPPUNIT_ASSERT( matches(ps3.eqConLHS[0][3],9.0));
+  CPPUNIT_ASSERT( matches(ps3.eqConLHS[0][6],27.0));
+  CPPUNIT_ASSERT( matches(ps3.eqConLHS[1][6],27.0));
+  CPPUNIT_ASSERT( matches(ps3.eqConLHS[1][7],6.0));
+  CPPUNIT_ASSERT( matches(ps3.eqConLHS[2][4],3.0));
+  CPPUNIT_ASSERT( matches(ps3.eqConLHS[2][9],3.0));
+  CPPUNIT_ASSERT( matches(ps3.eqConLHS[3][5],0.0));
+  CPPUNIT_ASSERT( matches(ps3.eqConLHS[3][6],18.0));
+  CPPUNIT_ASSERT( matches(ps3.eqConLHS[4][3],0.0));
+  CPPUNIT_ASSERT( matches(ps3.eqConLHS[4][7],6.0));
+  CPPUNIT_ASSERT( matches(ps3.eqConLHS[5][8],6.0));
+  CPPUNIT_ASSERT( matches(ps3.eqConLHS[5][9],6.0));
+  // Check right-hand sides of constraints
+  CPPUNIT_ASSERT( matches(ps3.eqConRHS[0],93.0));
+  CPPUNIT_ASSERT( matches(ps3.eqConRHS[1],113.0));
+  CPPUNIT_ASSERT( matches(ps3.eqConRHS[2],-38.0));
+  CPPUNIT_ASSERT( matches(ps3.eqConRHS[3],88.0));
+  CPPUNIT_ASSERT( matches(ps3.eqConRHS[4],-22.0));
+  CPPUNIT_ASSERT( matches(ps3.eqConRHS[5],-16.0));
+  ps3.createModel();
+  CPPUNIT_ASSERT( matches( ps3.coefficients[0],coefficients[0] ));
+  CPPUNIT_ASSERT( matches( ps3.coefficients[1],coefficients[1] ));
+  CPPUNIT_ASSERT( matches( ps3.coefficients[2],coefficients[2] ));
+  CPPUNIT_ASSERT( matches( ps3.coefficients[3],coefficients[3] ));
+  CPPUNIT_ASSERT( matches( ps3.coefficients[4],coefficients[4] ));
+  CPPUNIT_ASSERT( matches( ps3.coefficients[5],coefficients[5] ));
+  CPPUNIT_ASSERT( matches( ps3.coefficients[6],coefficients[6] ));
+  CPPUNIT_ASSERT( matches( ps3.coefficients[7],coefficients[7] ));
+  CPPUNIT_ASSERT( matches( ps3.coefficients[8],coefficients[8] ));
+  CPPUNIT_ASSERT( matches( ps3.coefficients[9],coefficients[9] ));
+  
 }
 
 void PolynomialSurfaceTest::io()

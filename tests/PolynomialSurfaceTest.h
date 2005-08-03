@@ -38,8 +38,11 @@ class PolynomialSurfaceTest : public CppUnit::TestFixture
   CPPUNIT_TEST( derivative_1d_2o );
   CPPUNIT_TEST( derivative_2d_0o );
   CPPUNIT_TEST( derivative_2d_2o );
+  CPPUNIT_TEST( hessian_2d_2o );
   CPPUNIT_TEST( leastSquares );
   CPPUNIT_TEST( leastSquaresWithConstraints );
+  CPPUNIT_TEST( leastSquaresWithHessianConstraints );
+  CPPUNIT_TEST( leastSquares_2d_3o);
   CPPUNIT_TEST( io );
   CPPUNIT_TEST( printTermLabel );
   CPPUNIT_TEST( printTermComponents );
@@ -72,8 +75,11 @@ public:
   void derivative_1d_2o();
   void derivative_2d_0o();
   void derivative_2d_2o();
+  void hessian_2d_2o();
   void leastSquares();
   void leastSquaresWithConstraints();
+  void leastSquaresWithHessianConstraints();
+  void leastSquares_2d_3o();
   void io();
   void printTermLabel();
   void printTermComponents();
