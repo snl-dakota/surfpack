@@ -104,6 +104,9 @@ public:
   void gradient(const std::vector<double> & x, 
     std::vector<double>& gradient_vector);
 
+  void hessian(const std::vector<double> & x, 
+    SurfpackMatrix<double>& hessian);
+
   void setEqualityConstraints(unsigned asv,const SurfPoint& sp, double valuePtr,
     std::vector<double>* gradientPtr, SurfpackMatrix<double>* hessianPtr);
 // ____________________________________________________________________________

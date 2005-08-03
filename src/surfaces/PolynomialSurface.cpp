@@ -171,6 +171,35 @@ void PolynomialSurface::gradient(const std::vector<double> & x, std::vector<doub
   }
 }
 
+void PolynomialSurface::hessian(const std::vector<double> & x, SurfpackMatrix<double>& hessian)
+{ 
+  // Add sanity check on x
+  assert(x.size() == xsize);
+  hessian.reshape(xsize,xsize);
+  vector<unsigned> factorCounts;
+  // Entry difVar tells how many times to differentiate with respect to the ith var
+  // For example d^2f/dx1^2 would have a 2 for the x1 entry, d^2f/dx1,x2 would
+  // have 1s for both the x1 and x2 entries.
+  vector<unsigned> differentiationCounts;
+  // Differentiate with respect to each variable
+  for (unsigned difVar1 = 0; difVar1 < xsize; difVar1++) {
+    for (unsigned difVar2 = difVar1; difVar2 < xsize; difVar2++) {
+      hessian[difVar1][difVar2] = hessian[difVar2][difVar1] = 0.0;
+      resetTermCounter();
+      differentiationCounts = vector<unsigned>(xsize,0);
+      differentiationCounts[difVar1]++;
+      differentiationCounts[difVar2]++;
+      for (unsigned term = 0; term < coefficients.size(); term++) {
+        accumulateLikeFactors(factorCounts);
+        double addition = coefficients[term] * computeDerivTerm(x, factorCounts, differentiationCounts);
+        hessian[difVar1][difVar2] += addition;
+        if (difVar1 != difVar2) hessian[difVar2][difVar1] += addition;
+        nextTerm();
+      }
+    }
+  }
+}
+
 void PolynomialSurface::setEqualityConstraints(unsigned asv,const SurfPoint& sp,  double valuePtr, vector<double>* gradientPtr, SurfpackMatrix<double>* hessianPtr)
 {
   coefficients.resize(minPointsRequired(xsize,order));
@@ -479,7 +508,7 @@ void PolynomialSurface::accumulateLikeFactors(vector<unsigned>& factorCounts)
 {
   factorCounts = vector<unsigned>(xsize,0);
   for (unsigned difVar = 0; difVar < digits.size(); difVar++) {
-    factorCounts[digits[difVar]-1]++;
+    if (digits[difVar]) factorCounts[digits[difVar]-1]++;
   }
 }
 
