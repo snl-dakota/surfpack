@@ -1,18 +1,10 @@
 #include "surfpack_config.h"
-
-#include <vector>
-#include <set>
-#include <map>
-#include <iostream>
-#include <fstream>
-#include <sstream>
-
-#include "SurfPoint.h"
+#include "surfpack_system_headers.h"
+#include "SurfaceTest.h"
 #include "SurfData.h"
 #include "Surface.h"
 #include "unittests.h"
 #include "PolynomialSurface.h"
-#include "SurfaceTest.h"
 #include "SurfScaler.h"
 
 using namespace std;

@@ -1,13 +1,11 @@
-#include "surfpack_config.h"
-
 #ifndef SURFACE_TEST_H
 #define SURFACE_TEST_H 
-
+#include "surfpack_config.h"
 #include <cppunit/extensions/HelperMacros.h>
-#include <string>
+#include "SurfData.h"
 #include "surfpack.h"
-#include "PolynomialSurface.h"
-#include "Surface.h"
+class Surface;
+class PolynomialSurface;
 
 class SurfaceTest : public CppUnit::TestFixture
 {
