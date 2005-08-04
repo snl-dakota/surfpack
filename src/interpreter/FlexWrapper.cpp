@@ -19,7 +19,7 @@ void FlexWrapper::setParseStreams(std::istream& in, std::ostream& out)
 
 int FlexWrapper::nextToken()
 {
-  flexPtr->yylex();
+  return flexPtr->yylex();
 }
 
 const char* FlexWrapper::currentToken()
