@@ -9,7 +9,6 @@
 #include "SurfaceFactory.h"
 
 using namespace std;
-extern ostringstream cmdstream;
 
 SurfpackInterpreter::SurfpackInterpreter() : parser(SurfpackParser::instance())
 {
@@ -24,11 +23,11 @@ SurfpackInterpreter::~SurfpackInterpreter()
 void SurfpackInterpreter::execute(std::istream& is, std::ostream& os, 
     std::ostream& es)
 {
-  if (parser.yyparse(&is, &os) == 0) {
+  if (parser.yyparse(is, os) == 0) {
     commandLoop(os, es);
   } else {
     es << "Parse error.  Command(s) not executed." << endl;
-    es << cmdstream.str() << endl; 
+    es << SurfpackParser::cmdstream.str() << endl; 
   }
 }
 

@@ -114,6 +114,8 @@ libsurfpack_la_SOURCES =$(top_srcdir)/src/SurfPoint.cpp \
 			$(top_srcdir)/src/interpreter/SurfpackParserArgs.h \
 			$(top_srcdir)/src/interpreter/SurfpackInterpreter.cpp \
 			$(top_srcdir)/src/interpreter/SurfpackInterpreter.h \
+			$(top_srcdir)/src/interpreter/FlexWrapper.cpp \
+			$(top_srcdir)/src/interpreter/FlexWrapper.h \
 			$(top_srcdir)/interface/SurfDataGenerator.cpp \
 			$(top_srcdir)/interface/SurfDataGenerator.h \
 			$(top_srcdir)/src/conmin/conmin.f \

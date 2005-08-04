@@ -1,11 +1,11 @@
 #include "surfpack_config.h"
 #include "SurfpackParser.h"
-#include <FlexLexer.h>
 #include "surfparse.h"
+#include "FlexWrapper.h"
 extern int yyparse();
 
-using namespace std;
-extern ostringstream cmdstream;
+
+std::ostringstream SurfpackParser::cmdstream;
 
 SurfpackParser& SurfpackParser::instance()
 {
@@ -13,20 +13,20 @@ SurfpackParser& SurfpackParser::instance()
   return sp;
 }
 
-yyFlexLexer& SurfpackParser::globalLexer()
+FlexWrapper& SurfpackParser::globalLexer()
 {
   return *global_lexer;
 }
 
-int SurfpackParser::yyparse(istream* is, ostream* os)
+int SurfpackParser::yyparse(std::istream& is, std::ostream& os)
 {
-  global_lexer->switch_streams(is,os);
+  global_lexer->setParseStreams(is,os);
   return ::yyparse();
 }
 
 SurfpackParser::SurfpackParser() 
 {
-  global_lexer = new yyFlexLexer;
+  global_lexer = new FlexWrapper;
   currentTuple = new Tuple;
   init();
 }
@@ -51,11 +51,11 @@ void SurfpackParser::storeCommandString()
 {
   if (commands.size() > 0) {
     int loc;
-    string newcommand = cmdstream.str();
+    std::string newcommand = cmdstream.str();
     if (newcommand.find("/*") == 0) {
       newcommand.erase(0,2);
     }
-    if ((loc = newcommand.find("*/")) != string::npos) {
+    if ((loc = newcommand.find("*/")) != std::string::npos) {
       newcommand.erase(loc,2);
     }
     if (newcommand.find("!") == 0) {
@@ -74,15 +74,15 @@ std::vector<ParsedCommand>& SurfpackParser::commandList()
 void SurfpackParser::print()
 {
   //for (unsigned i = 0; i < commands.size(); i++) {
-  //  cout << commands[i].name << endl;
+  //  std::cout << commands[i].name << std::endl;
   //  for (unsigned j = 0; j < commands[i].arglist.size(); j++) {
-  //    cout << "   " << commands[i].arglist[j].name << " ";
+  //    std::cout << "   " << commands[i].arglist[j].name << " ";
   //    if (commands[i].arglist[j].rval.tuple.size() != 0) {
   //      for (unsigned k = 0; k < commands[i].arglist[j].rval.tuple.size(); k++) {
-  //        cout << commands[i].arglist[j].rval.tuple[k] << " ";
+  //        std::cout << commands[i].arglist[j].rval.tuple[k] << " ";
   //      }
   //    } else if (commands[i].arglist[j].rval.triplet.numPts != 0) {
-  //      cout << "{" 
+  //      std::cout << "{" 
   //           <<	commands[i].arglist[j].rval.triplet.min
   //           << ","
   //           <<	commands[i].arglist[j].rval.triplet.max
@@ -90,85 +90,85 @@ void SurfpackParser::print()
   //           <<	commands[i].arglist[j].rval.triplet.numPts
   //           << "}" ;
   //    } 
-  //    cout << endl;
+  //    std::cout << std::endl;
   //  }
   //}
 }
 
 void SurfpackParser::addCommandName()
 {
-  //cout << "Add command name" << endl;
+  //std::cout << "Add command name" << std::endl;
   ParsedCommand pc;
   commands.push_back(pc);
   currentArgList = &(commands[commands.size()-1].arglist);
   currentArgIndex = -1;
-  commands[commands.size()-1].name = string(global_lexer->YYText());
+  commands[commands.size()-1].name = std::string(global_lexer->currentToken());
 }
 
 void SurfpackParser::addArgName()
 {
-  //cout << "Add arg name" << endl;
+  //std::cout << "Add arg name" << std::endl;
   if (currentArgList == 0) {
-    cerr << "currentArgList is NULL; cannot assign name" << endl;
+    std::cerr << "currentArgList is NULL; cannot assign name" << std::endl;
   } else {
     Arg newArg;
     currentArgList->push_back(newArg);
     currentArgIndex++;
-    (*currentArgList)[currentArgIndex].name = string(global_lexer->YYText());
+    (*currentArgList)[currentArgIndex].name = std::string(global_lexer->currentToken());
   }
 }
 
 void SurfpackParser::addArgValIdent()
 {
   if (currentArgIndex == -1) {
-    cerr << "currentArgIndex = -1; cannot assign Identifier" << endl;
+    std::cerr << "currentArgIndex = -1; cannot assign Identifier" << std::endl;
   } else {
     (*currentArgList)[currentArgIndex].setRVal
-      (new RvalIdentifier(string(global_lexer->YYText())));
+      (new RvalIdentifier(std::string(global_lexer->currentToken())));
   }
 }
 
 void SurfpackParser::addArgValInt()
 {
   if (currentArgIndex == -1) {
-    cerr << "currentArgIndex = -1; cannot assign Integer" << endl;
+    std::cerr << "currentArgIndex = -1; cannot assign Integer" << std::endl;
   } else {
     (*currentArgList)
-      [currentArgIndex].setRVal(new RvalInteger(atoi(global_lexer->YYText())));
+      [currentArgIndex].setRVal(new RvalInteger(atoi(global_lexer->currentToken())));
   }
 }
 
 void SurfpackParser::addArgValString()
 {
   if (currentArgIndex == -1) {
-    cerr << "currentArgIndex = -1; cannot assign String" << endl;
+    std::cerr << "currentArgIndex = -1; cannot assign String" << std::endl;
   } else {
-    string currentToken = string(global_lexer->YYText());
+    std::string currentToken = std::string(global_lexer->currentToken());
     // The token contains leading and trailing apostrophes; remove them.
     int pos;
-    while ( (pos = currentToken.find('\'')) != string::npos) {
+    while ( (pos = currentToken.find('\'')) != std::string::npos) {
       currentToken.erase(pos,pos+1);
     }
     (*currentArgList)
       [currentArgIndex].setRVal(new RvalStringLiteral(currentToken));
-    //cout << "Stripped string: " << currentToken << endl;
+    //std::cout << "Stripped std::string: " << currentToken << std::endl;
   }
 }
 
 void SurfpackParser::addArgValReal()
 {
   if (currentArgIndex == -1) {
-    cerr << "currentArgIndex = -1; cannot assign Real" << endl;
+    std::cerr << "currentArgIndex = -1; cannot assign Real" << std::endl;
   } else {
     (*currentArgList)
-      [currentArgIndex].setRVal(new RvalReal(atof(global_lexer->YYText())));
+      [currentArgIndex].setRVal(new RvalReal(atof(global_lexer->currentToken())));
   }
 }
 
 void SurfpackParser::addArgValTuple()
 {
   if (currentArgIndex == -1) {
-    cerr << "currentArgIndex = -1; cannot assign Tuple" << endl;
+    std::cerr << "currentArgIndex = -1; cannot assign Tuple" << std::endl;
   } else {
     currentTupleIndex = -1;
   }
@@ -177,7 +177,7 @@ void SurfpackParser::addArgValTuple()
 void SurfpackParser::addArgValArgList()
 {
   //if (currentArgIndex == -1) {
-  //  cerr << "currentArgIndex = -1; cannot assign ArgList" << endl;
+  //  std::cerr << "currentArgIndex = -1; cannot assign ArgList" << std::endl;
   //} else {
   //  currentArgList = &((*currentArgList)[currentArgIndex].rval.arglist);
   //}
@@ -186,9 +186,9 @@ void SurfpackParser::addArgValArgList()
 void SurfpackParser::addNumberAsTriplet()
 {
   //if (currentArgIndex == -1) {
-  //  cerr << "currentArgIndex = -1; cannot addNumberAsTriplet" << endl;
+  //  std::cerr << "currentArgIndex = -1; cannot addNumberAsTriplet" << std::endl;
   //} else {
-  //  double val = atof(global_lexer->YYText());
+  //  double val = atof(global_lexer->currentToken());
   //  (*currentArgList)[currentArgIndex].rval.triplet.min = val;
   //  (*currentArgList)[currentArgIndex].rval.triplet.max = val;
   //  (*currentArgList)[currentArgIndex].rval.triplet.numPts= 1;
@@ -203,9 +203,9 @@ void SurfpackParser::addTriplet()
 void SurfpackParser::addTripletMin()
 {
   //if (currentArgIndex == -1) {
-  //  cerr << "currentArgIndex = -1; cannot addTripletMin" << endl;
+  //  std::cerr << "currentArgIndex = -1; cannot addTripletMin" << std::endl;
   //} else {
-  //  double val = atof(global_lexer->YYText());
+  //  double val = atof(global_lexer->currentToken());
   //  (*currentArgList)[currentArgIndex].rval.triplet.min = val;
   //}
 }
@@ -213,9 +213,9 @@ void SurfpackParser::addTripletMin()
 void SurfpackParser::addTripletMax()
 {
   //if (currentArgIndex == -1) {
-  //  cerr << "currentArgIndex = -1; cannot addTripletMax" << endl;
+  //  std::cerr << "currentArgIndex = -1; cannot addTripletMax" << std::endl;
   //} else {
-  //  double val = atof(global_lexer->YYText());
+  //  double val = atof(global_lexer->currentToken());
   //  (*currentArgList)[currentArgIndex].rval.triplet.max = val;
   //}
 }
@@ -223,9 +223,9 @@ void SurfpackParser::addTripletMax()
 void SurfpackParser::addTripletNumPts()
 {
   //if (currentArgIndex == -1) {
-  //  cerr << "currentArgIndex = -1; cannot addTripletMax" << endl;
+  //  std::cerr << "currentArgIndex = -1; cannot addTripletMax" << std::endl;
   //} else {
-  //  int val = atoi(global_lexer->YYText());
+  //  int val = atoi(global_lexer->currentToken());
   //  (*currentArgList)[currentArgIndex].rval.triplet.numPts = val;
   //}
 }
@@ -233,9 +233,9 @@ void SurfpackParser::addTripletNumPts()
 void SurfpackParser::addTupleVal()
 {
   if (currentArgIndex == -1) {
-    cerr << "currentArgIndex = -1; cannot addTupleVal" << endl;
+    std::cerr << "currentArgIndex = -1; cannot addTupleVal" << std::endl;
   } else {
-    double val = atof(global_lexer->YYText());
+    double val = atof(global_lexer->currentToken());
     currentTuple->push_back(val);
     //(*currentArgList)[currentArgIndex].getRVal()->getTuple().push_back(val);
   }
@@ -244,7 +244,7 @@ void SurfpackParser::addTupleVal()
 void SurfpackParser::addTuple()
 {
   if (currentArgIndex == -1) {
-    cerr << "currentArgIndex = -1; cannot addTuple" << endl;
+    std::cerr << "currentArgIndex = -1; cannot addTuple" << std::endl;
   } else {
     (*currentArgList)[currentArgIndex].setRVal(new RvalTuple(*currentTuple));
   }
@@ -255,7 +255,7 @@ void SurfpackParser::newTuple()
   currentTuple->clear();
 }
 
-std::string SurfpackParser::parseOutIdentifier(const string& argname,
+std::string SurfpackParser::parseOutIdentifier(const std::string& argname,
   const ArgList& arglist)
 {
   for (unsigned i = 0; i < arglist.size(); i++) {
@@ -263,10 +263,10 @@ std::string SurfpackParser::parseOutIdentifier(const string& argname,
       return arglist[i].getRVal()->getIdentifier();
     }
   }
-  return string("");
+  return std::string("");
 }
 
-std::string SurfpackParser::parseOutStringLiteral(const string& argname,
+std::string SurfpackParser::parseOutStringLiteral(const std::string& argname,
   const ArgList& arglist)
 {
   for (unsigned i = 0; i < arglist.size(); i++) {
@@ -274,10 +274,10 @@ std::string SurfpackParser::parseOutStringLiteral(const string& argname,
       return arglist[i].getRVal()->getStringLiteral();
     }
   }
-  return string("");
+  return std::string("");
 }
 
-int SurfpackParser::parseOutInteger(const string& argname,
+int SurfpackParser::parseOutInteger(const std::string& argname,
   const ArgList& arglist, bool& valid)
 {
   valid = false;
@@ -315,5 +315,10 @@ bool ParsedCommand::isShellCommand() const
 
 int yylex()
 {
-  return SurfpackParser::instance().globalLexer().yylex();
+  return SurfpackParser::instance().globalLexer().nextToken();
+}
+
+void appendToken(const char* token)
+{
+  SurfpackParser::cmdstream << token;
 }

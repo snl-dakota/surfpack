@@ -4,7 +4,7 @@
 #include "surfpack_system_headers.h"
 #include "SurfpackParserArgs.h"
 
-class yyFlexLexer;
+class FlexWrapper;
 
 class ParsedCommand
 { 
@@ -45,8 +45,9 @@ public:
 
 
   static SurfpackParser& instance();
-  yyFlexLexer& globalLexer();
-  int yyparse(std::istream* is = &std::cin, std::ostream* os = &std::cout);
+  static std::ostringstream cmdstream;
+  FlexWrapper& globalLexer();
+  int yyparse(std::istream& is = std::cin, std::ostream& os = std::cout);
   std::vector<ParsedCommand>& commandList();
 
   // commands for use by interpreter to parse out certain argument types
@@ -70,7 +71,7 @@ private:
   ArgList* currentArgList;
   int currentArgIndex;
   int currentTupleIndex;
-  yyFlexLexer* global_lexer;
+  FlexWrapper* global_lexer;
   Tuple* currentTuple;
 };
 
