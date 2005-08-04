@@ -70,6 +70,7 @@ libsurfpack_la_SOURCES =$(top_srcdir)/src/SurfPoint.cpp \
 			$(top_srcdir)/src/AxesBounds.h \
 			$(top_srcdir)/src/SurfpackMatrix.tpl \
 			$(top_srcdir)/src/SurfpackMatrix.h \
+			$(top_srcdir)/src/surfpack_system_headers.h \
 			$(top_srcdir)/src/surfaces/KrigingSurface.cpp \
 			$(top_srcdir)/src/surfaces/KrigingSurface.h \
 			$(top_srcdir)/src/surfaces/KrigingCPPSurface.cpp \
@@ -109,6 +110,8 @@ libsurfpack_la_SOURCES =$(top_srcdir)/src/SurfPoint.cpp \
 			$(top_srcdir)/src/interpreter/surfparse.h \
 			$(top_srcdir)/src/interpreter/SurfpackParser.cpp \
 			$(top_srcdir)/src/interpreter/SurfpackParser.h \
+			$(top_srcdir)/src/interpreter/SurfpackParserArgs.cpp \
+			$(top_srcdir)/src/interpreter/SurfpackParserArgs.h \
 			$(top_srcdir)/src/interpreter/SurfpackInterpreter.cpp \
 			$(top_srcdir)/src/interpreter/SurfpackInterpreter.h \
 			$(top_srcdir)/interface/SurfDataGenerator.cpp \

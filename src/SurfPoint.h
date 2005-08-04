@@ -1,9 +1,8 @@
-#include "surfpack_config.h"
-
 #ifndef __SURF_POINT_H__
 #define __SURF_POINT_H__
 
-#include <stdexcept>
+#include "surfpack_config.h"
+#include "surfpack_system_headers.h"
 
 /// Holds a data point in a space of arbitrary dimension.  A SurfPoint object
 /// contains an n-tuple representing the location of the point in the space, 

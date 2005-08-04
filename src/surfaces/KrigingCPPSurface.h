@@ -1,10 +1,8 @@
-#include "surfpack_config.h"
-
 #ifndef __KRIGING_CPP_SURFACE_H__
 #define __KRIGING_CPP_SURFACE_H__
-
-#include "SurfpackParser.h"
+#include "surfpack_config.h"
 #include "SurfpackMatrix.h"
+#include "Surface.h"
 
 /// Validator class for KrigingSurface
 class KrigingCPPSurface : public Surface
@@ -44,7 +42,7 @@ public:
   void useUniformCorrelationValue(double correlation);
   void usePreComputedCorrelationVector(const std::vector<double>& vals);
   void build(SurfData& data);
-  virtual void config(const SurfpackParser::Arg& arg);
+  virtual void config(const Arg& arg);
   
   /// Create a surface of the same type as 'this.'  This objects data should
   /// be replaced with the dataItr passed in, but all other attributes should

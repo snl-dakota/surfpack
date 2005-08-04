@@ -1,63 +1,31 @@
-#include "surfpack_config.h"
-
-//----------------------------------------------------------------------------
-// Project: SURFPACK++
-//
-// File: 	RBFNetSurface.h
-// Author: 	Mark Richards
-//----------------------------------------------------------------------------
-
 #ifndef __RBF_NET_SURFACE_H__ 
 #define __RBF_NET_SURFACE_H__ 
+#include "surfpack_config.h"
+#include "surfpack_system_headers.h"
+#include "SurfPoint.h"
+#include "Surface.h"
 
-class SurfData;
-class Surface;
-
-#include "SurfpackParser.h"
 typedef float real;
-
-#define DGELS_F77 F77_FUNC(dgels,DGELS)
-#ifdef __cplusplus
-extern "C"  /* prevent C++ name mangling */
-#endif
-void DGELS_F77(char& trans, int& m, int& n, int& nrhs, double* A,
-	       int& lda, double* B, int& ldb, double* work, int& lwork, int& info);
-
-#define DGEMM_F77 F77_FUNC(dgemm,DGEMM)
-#ifdef __cplusplus
-extern "C"  /* prevent C++ name mangling */
-#endif
-void DGEMM_F77(char& transa, char& transb, int& m, int& n, int& k, 
-	       double& alpha, double* A, int& lda, double* B, int& ldb, double& beta, 
-	       double* C, int& ldc);
-
-#define DGEMV_F77 F77_FUNC(dgemv,DGEMV)
-#ifdef __cplusplus
-extern "C"  /* prevent C++ name mangling */
-#endif
-void DGEMV_F77(char& trans, int& m, int& n, double& alpha, 
-	       double* A, int& lda, double* x, int& incx, double& beta, double* y, 
-	       int& incy);
 
 //_____________________________________________________________________________
 // Basis Function Helper Classes 
 //_____________________________________________________________________________
 
- class BasisFunction
- {
-   public:
-     BasisFunction();
-     BasisFunction(unsigned dims);
-     void resize(unsigned dims);
-     double evaluate(const std::vector<double>& x);
-     double weightedEvaluate(const std::vector<double>& x);
-     SurfPoint center;
-     double weight;
-     std::vector<double> radii;
-     void setCenter(std::vector<double>& radii_);
-     void setRadii(std::vector<double>& radii_);
-     void print(std::ostream& os);
- };
+class BasisFunction
+{
+  public:
+    BasisFunction();
+    BasisFunction(unsigned dims);
+    void resize(unsigned dims);
+    double evaluate(const std::vector<double>& x);
+    double weightedEvaluate(const std::vector<double>& x);
+    SurfPoint center;
+    double weight;
+    std::vector<double> radii;
+    void setCenter(std::vector<double>& radii_);
+    void setRadii(std::vector<double>& radii_);
+    void print(std::ostream& os);
+};
      
 
 //_____________________________________________________________________________
@@ -115,7 +83,7 @@ public:
   virtual void generateManyOptions(SurfData& surfData);
   virtual void selectModelBasisFunctions(SurfData& surfData);
   
-  virtual void config(const SurfpackParser::Arg& arg);
+  virtual void config(const Arg& arg);
   /// Create a surface of the same type as 'this.'  This objects data should
   /// be replaced with the dataItr passed in, but all other attributes should
   /// be the same (e.g., a second-order polynomial should return another 

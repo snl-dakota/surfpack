@@ -1,20 +1,6 @@
 #include "surfpack_config.h"
-
-#include <cmath>
-#include <cfloat>
-#include <fstream>
-#include <iostream>
-#include <sstream>
-#include <iomanip>
-#include <vector>
-#include <set>
-#include <string>
-
 #include "surfpack.h"
-#include "SurfPoint.h"
 #include "SurfData.h"
-#include "Surface.h"
-#include "SurfpackParser.h"
 #include "KrigingCPPSurface.h"
 #include "SurfpackMatrix.h"
 
@@ -177,15 +163,15 @@ void KrigingCPPSurface::build(SurfData& data)
     -0.5*(sd->size()*log(estVariance)+log(abs(determinantCorrMatrix)));
 }
 
-void KrigingCPPSurface::config(const SurfpackParser::Arg& arg)
+void KrigingCPPSurface::config(const Arg& arg)
 {
   string argname = arg.name;
   if (argname == "conmin_seed") {
-    setConminThetaVars(arg.rval.tuple); 
+    setConminThetaVars(arg.getRVal()->getTuple()); 
   } else if (argname == "theta_vars") {
-    usePreComputedCorrelationVector(arg.rval.tuple);
+    usePreComputedCorrelationVector(arg.getRVal()->getTuple());
   } else if (argname == "uniform_correlation") {
-    useUniformCorrelationValue(arg.rval.real);
+    useUniformCorrelationValue(arg.getRVal()->getReal());
   } else {
     Surface::config(arg);
   }

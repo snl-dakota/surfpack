@@ -1,12 +1,9 @@
 #include "surfpack_config.h"
-
-#include <iostream>
-#include <map>
-#include <set>
-#include "SurfpackParser.h"
-#include "SurfData.h"
-#include "Surface.h"
 #include "AxesBounds.h"
+class SurfData;
+class Surface;
+class ParsedCommand;
+class SurfpackParser;
 
 
 class SurfpackInterpreter
@@ -19,19 +16,19 @@ public:
   void commandLoop(std::ostream& os = std::cout, std::ostream& es = std::cerr);
 
   // individual surfpack commands
-  void executeLoadData(const SurfpackParser::ParsedCommand& command);
-  void executeLoadSurface(const SurfpackParser::ParsedCommand& command);
-  void executeSaveData(const SurfpackParser::ParsedCommand& command);
-  void executeSaveSurface(const SurfpackParser::ParsedCommand& command);
-  void executeCreateSurface(const SurfpackParser::ParsedCommand& command);
-  void executeConvertData(const SurfpackParser::ParsedCommand& command);
-  void executeConvertSurface(const SurfpackParser::ParsedCommand& command);
-  void executeEvaluate(const SurfpackParser::ParsedCommand& command);
-  void executeFitness(const SurfpackParser::ParsedCommand& command);
-  void executeAxesBounds(const SurfpackParser::ParsedCommand& command);
-  void executeGridPoints(const SurfpackParser::ParsedCommand& command);
-  void executeMonteCarloSample(const SurfpackParser::ParsedCommand& command);
-  void executeShellCommand(const SurfpackParser::ParsedCommand& command);
+  void executeLoadData(const ParsedCommand& command);
+  void executeLoadSurface(const ParsedCommand& command);
+  void executeSaveData(const ParsedCommand& command);
+  void executeSaveSurface(const ParsedCommand& command);
+  void executeCreateSurface(const ParsedCommand& command);
+  void executeConvertData(const ParsedCommand& command);
+  void executeConvertSurface(const ParsedCommand& command);
+  void executeEvaluate(const ParsedCommand& command);
+  void executeFitness(const ParsedCommand& command);
+  void executeAxesBounds(const ParsedCommand& command);
+  void executeGridPoints(const ParsedCommand& command);
+  void executeMonteCarloSample(const ParsedCommand& command);
+  void executeShellCommand(const ParsedCommand& command);
   
   
 protected:
@@ -63,23 +60,7 @@ private:
     SurfDataMap dataVars;
     SurfaceMap surfaceVars;
     AxesBoundsMap pointDefinitionVars;
-    ~SymbolTable() { 
-      for (SurfDataMap::iterator iter = dataVars.begin();
-	    iter != dataVars.end();
-            ++iter) {
-        delete iter->second; 
-      }
-      for (SurfaceMap::iterator siter = surfaceVars.begin();
-	    siter != surfaceVars.end();
-            ++siter) {
-        delete siter->second; 
-      }
-      for (AxesBoundsMap::iterator pditer = pointDefinitionVars.begin();
-	    pditer != pointDefinitionVars.end();
-            ++pditer) {
-        delete pditer->second; 
-      }
-    }
+    ~SymbolTable();  
   };
 
   struct SymbolTable symbol_table;

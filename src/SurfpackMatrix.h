@@ -1,10 +1,8 @@
 #ifndef SURFPACK_MATRIX
 #define SURFPACK_MATRIX
 
-#include <string>
-#include <vector>
-#include <sstream>
-#include <iostream>
+#include "surfpack_config.h"
+#include "surfpack_system_headers.h"
 
 /// Helper class for SurfpackMatrix.  Allows for the double subscripting of
 /// a contiguous chunk of memory.

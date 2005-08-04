@@ -1,14 +1,7 @@
-#include "surfpack_config.h"
-
-//----------------------------------------------------------------------------
-// Project: SURFPACK++
-//
-// File: 	ANNSurface.h
-// Author: 	Mark Richards
-//----------------------------------------------------------------------------
-
 #ifndef __ANN_SURFACE_H__ 
 #define __ANN_SURFACE_H__ 
+#include "surfpack_config.h"
+#include "Surface.h"
 
 class SurfData;
 class Surface;
@@ -47,7 +40,7 @@ public:
 
   virtual void build(SurfData& data);
   
-  virtual void config(const SurfpackParser::Arg& arg);
+  virtual void config(const Arg& arg);
   /// Create a surface of the same type as 'this.'  This objects data should
   /// be replaced with the dataItr passed in, but all other attributes should
   /// be the same (e.g., a second-order polynomial should return another 

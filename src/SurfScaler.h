@@ -1,9 +1,8 @@
-#include "surfpack_config.h"
-
 #ifndef SURF_SCALER_H
 #define SURF_SCALER_H
 
-#include <vector>
+#include "surfpack_config.h"
+#include "surfpack_system_headers.h"
 
 class SurfData;
 #include "SurfPoint.h"

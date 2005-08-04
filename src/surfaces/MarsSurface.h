@@ -1,17 +1,7 @@
-#include "surfpack_config.h"
-
-//----------------------------------------------------------------------------
-// Project: SURFPACK++
-//
-// File: 	MarsSurface.h
-// Author: 	Mark Richards
-//----------------------------------------------------------------------------
-
 #ifndef __MARS_SURFACE_H__
 #define __MARS_SURFACE_H__
-
-class SurfData;
-class Surface;
+#include "surfpack_config.h"
+#include "Surface.h"
 
 typedef float real;
 
@@ -61,7 +51,7 @@ public:
 
   virtual void build(SurfData& data);
   
-  virtual void config(const SurfpackParser::Arg& arg);
+  virtual void config(const Arg& arg);
   /// Create a surface of the same type as 'this.'  This objects data should
   /// be replaced with the dataItr passed in, but all other attributes should
   /// be the same (e.g., a second-order polynomial should return another 

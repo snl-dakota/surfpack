@@ -1,15 +1,6 @@
 #include "surfpack_config.h"
-
-#include <iostream>
-#include <iomanip>
-#include <sstream>
-#include <fstream>
-#include <vector>
-#include <set>
 #include "surfpack.h"
-#include "SurfPoint.h"
 #include "SurfData.h"
-#include "Surface.h"
 #include "MarsSurface.h"
 
 using namespace std;
@@ -197,17 +188,17 @@ void MarsSurface::build(SurfData& data)
   delete [] mm;
 }
 
-void MarsSurface::config(const SurfpackParser::Arg& arg)
+void MarsSurface::config(const Arg& arg)
 {
   string argname = arg.name;
   if (argname == "max_bases") {
-    max_bases = arg.rval.integer;
+    max_bases = arg.getRVal()->getInteger();
   } else if (argname == "max_interactions") {
-    max_interactions = arg.rval.integer;
+    max_interactions = arg.getRVal()->getInteger();
   } else if (argname == "interpolation") {
-    if (arg.rval.literal == "linear") {
+    if (arg.getRVal()->getStringLiteral() == "linear") {
       interpolation = 1;
-    } else if (arg.rval.literal == "cubic") {
+    } else if (arg.getRVal()->getStringLiteral() == "cubic") {
       interpolation = 2;
     } else {
       cerr << "Expected value for interpolation: 'linear' or 'cubic'" << endl;

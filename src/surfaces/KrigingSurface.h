@@ -1,22 +1,7 @@
-#include "surfpack_config.h"
-
-// ----------------------------------------------------------
-// Project: SURFPACK++
-//
-// File:        KrigingSurface.h
-// Author:      Mark Richards	 
-// Created:     June 3, 2003
-// Modified:    
-//
-// Description: 
-// + The KrigingSurface class does Kriging interpolation 
-// (similar to splines) to fit the points
-// ----------------------------------------------------------
-
 #ifndef __KRIGING_SURFACE_H__
 #define __KRIGING_SURFACE_H__
-
-#include "SurfpackParser.h"
+#include "surfpack_config.h"
+#include "Surface.h"
 
 // Prototypes for the DAKOTA-to-CONMIN interface subroutine "callconmin"
 // and for the kriging model evaluation subroutine "krigmodel".
@@ -86,7 +71,7 @@ public:
   void useUniformCorrelationValue(double correlation);
   void usePreComputedCorrelationVector(const std::vector<double>& vals);
   void build(SurfData& data);
-  virtual void config(const SurfpackParser::Arg& arg);
+  virtual void config(const Arg& arg);
   
   /// Create a surface of the same type as 'this.'  This objects data should
   /// be replaced with the dataItr passed in, but all other attributes should

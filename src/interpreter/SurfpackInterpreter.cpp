@@ -1,14 +1,9 @@
 #include "surfpack_config.h"
-  
-#include <iostream>
-#include <map>
-#include <set>
-
 #include "surfpack.h"
 #include "AxesBounds.h"
+#include "SurfpackParserArgs.h"
 #include "SurfpackParser.h"
 #include "SurfpackInterpreter.h"
-#include "SurfPoint.h"
 #include "SurfData.h"
 #include "Surface.h"
 #include "SurfaceFactory.h"
@@ -39,7 +34,7 @@ void SurfpackInterpreter::execute(std::istream& is, std::ostream& os,
 
 void SurfpackInterpreter::commandLoop(std::ostream& os, std::ostream& es)
 {
-  const vector<SurfpackParser::ParsedCommand>& commands = parser.commandList();
+  const vector<ParsedCommand>& commands = parser.commandList();
   for (unsigned i = 0; i < commands.size(); i++) {
     try {
       if (commands[i].isShellCommand()) {
@@ -87,7 +82,7 @@ void SurfpackInterpreter::commandLoop(std::ostream& os, std::ostream& es)
 }
   
 void SurfpackInterpreter::executeLoadData(
-  const SurfpackParser::ParsedCommand& command)
+  const ParsedCommand& command)
 {
   // Extract the variable name for this SurfData object
   string name = SurfpackParser::parseOutIdentifier(string("name"), command.arglist);
@@ -110,7 +105,7 @@ void SurfpackInterpreter::executeLoadData(
 }
 
 void SurfpackInterpreter::executeLoadSurface(
-  const SurfpackParser::ParsedCommand& command)
+  const ParsedCommand& command)
 {
   // Extract the variable name for this Surface object
   string name = SurfpackParser::parseOutIdentifier(string("name"), command.arglist);
@@ -134,7 +129,7 @@ void SurfpackInterpreter::executeLoadSurface(
 }
 
 void SurfpackInterpreter::executeSaveData(
-  const SurfpackParser::ParsedCommand& command)
+  const ParsedCommand& command)
 {
   // Extract the variable name for this SurfData object
   string data = SurfpackParser::parseOutIdentifier(string("data"), command.arglist);
@@ -163,7 +158,7 @@ void SurfpackInterpreter::executeSaveData(
 }
 
 void SurfpackInterpreter::executeConvertData(
-  const SurfpackParser::ParsedCommand& command)
+  const ParsedCommand& command)
 {
   // Extract the variable name for this SurfData object
   string inputfile = SurfpackParser::parseOutStringLiteral(string("input"), command.arglist);
@@ -184,7 +179,7 @@ void SurfpackInterpreter::executeConvertData(
   //cout << "Converted " << inputfile << " to " << outputfile << endl;
 }
 void SurfpackInterpreter::executeConvertSurface(
-  const SurfpackParser::ParsedCommand& command)
+  const ParsedCommand& command)
 {
   // Extract the variable name for this SurfData object
   string inputfile = SurfpackParser::parseOutStringLiteral(string("input"), command.arglist);
@@ -205,7 +200,7 @@ void SurfpackInterpreter::executeConvertSurface(
   //cout << "Converted " << inputfile << " to " << outputfile << endl;
 }
 void SurfpackInterpreter::executeSaveSurface(
-  const SurfpackParser::ParsedCommand& command)
+  const ParsedCommand& command)
 {
   // Extract the variable name for this Surface object
   string surface = SurfpackParser::parseOutIdentifier(string("surface"), command.arglist);
@@ -234,7 +229,7 @@ void SurfpackInterpreter::executeSaveSurface(
   //cout << "Executed Load Surface" << endl;
 }
 
-void SurfpackInterpreter::executeCreateSurface(const SurfpackParser::ParsedCommand& command)
+void SurfpackInterpreter::executeCreateSurface(const ParsedCommand& command)
 {
   // Extract the variable name for this SurfData object
   string name = SurfpackParser::parseOutIdentifier(string("name"), command.arglist);
@@ -266,15 +261,15 @@ void SurfpackInterpreter::executeCreateSurface(const SurfpackParser::ParsedComma
     }
     SurfData* sd = iter->second;
     Surface* surf = SurfaceFactory::createSurface(type, sd);
-    surf->config(SurfpackParser::Arg(string("xsize"),
-      SurfpackParser::Rval(static_cast<int>(sd->xSize()))));
+    surf->config(Arg(string("xsize"),
+      new RvalInteger(static_cast<int>(sd->xSize()))));
     surf->configList(command.arglist);
     surf->createModel();
     symbol_table.surfaceVars.insert(SurfaceSymbol(name,surf));
   }
 }
 
-void SurfpackInterpreter::executeEvaluate(const SurfpackParser::ParsedCommand& command)
+void SurfpackInterpreter::executeEvaluate(const ParsedCommand& command)
 {
   // Extract the variable name for this SurfData object
   Surface* surf = 0;
@@ -331,7 +326,7 @@ void SurfpackInterpreter::executeEvaluate(const SurfpackParser::ParsedCommand& c
   
 }
 
-void SurfpackInterpreter::executeFitness(const SurfpackParser::ParsedCommand& command)
+void SurfpackInterpreter::executeFitness(const ParsedCommand& command)
 {
   // Extract the variable name for this Surface object
   Surface* surf = 0;
@@ -385,7 +380,7 @@ void SurfpackInterpreter::executeFitness(const SurfpackParser::ParsedCommand& co
   
 }
   
-void SurfpackInterpreter::executeAxesBounds(const SurfpackParser::ParsedCommand& command)
+void SurfpackInterpreter::executeAxesBounds(const ParsedCommand& command)
 {
   AxesBounds* sd = 0;
   // Extract the variable name for this AxesBounds object
@@ -417,7 +412,7 @@ void SurfpackInterpreter::executeAxesBounds(const SurfpackParser::ParsedCommand&
   //cout << "Executed AxesBounds" << endl;
 }
 
-void SurfpackInterpreter::executeGridPoints(const SurfpackParser::ParsedCommand& command)
+void SurfpackInterpreter::executeGridPoints(const ParsedCommand& command)
 {
   // Extract the variable name for this SurfData object
   string def = SurfpackParser::parseOutIdentifier(string("def"), command.arglist);
@@ -447,10 +442,10 @@ void SurfpackInterpreter::executeGridPoints(const SurfpackParser::ParsedCommand&
     symbol_table.dataVars.erase(sditer);
   } 
   vector<string> testFunctions;
-  const SurfpackParser::ArgList& args = command.arglist;
+  const ArgList& args = command.arglist;
   for (unsigned i = 0; i < args.size(); i++) {
     if (args[i].name == "test_function") {
-      testFunctions.push_back(args[i].rval.literal);
+      testFunctions.push_back(args[i].getRVal()->getStringLiteral());
     }
   }
   SurfData* gridData = pd->sampleGrid(testFunctions);
@@ -458,7 +453,7 @@ void SurfpackInterpreter::executeGridPoints(const SurfpackParser::ParsedCommand&
   //cout << "Executed GridPoints" << endl;
 }
 
-void SurfpackInterpreter::executeMonteCarloSample(const SurfpackParser::ParsedCommand& command)
+void SurfpackInterpreter::executeMonteCarloSample(const ParsedCommand& command)
 {
   // Extract the variable name for this SurfData object
   string def = SurfpackParser::parseOutIdentifier(string("def"), command.arglist);
@@ -489,12 +484,12 @@ void SurfpackInterpreter::executeMonteCarloSample(const SurfpackParser::ParsedCo
   } 
   vector<string> testFunctions;
   unsigned numSamples = 100; // default value
-  const SurfpackParser::ArgList& args = command.arglist;
+  const ArgList& args = command.arglist;
   for (unsigned i = 0; i < args.size(); i++) {
     if (args[i].name == "test_function") {
-      testFunctions.push_back(args[i].rval.literal);
+      testFunctions.push_back(args[i].getRVal()->getStringLiteral());
     } else if (args[i].name == "size") {
-      numSamples = args[i].rval.integer;
+      numSamples = args[i].getRVal()->getInteger();
     }
   }
   SurfData* gridData = pd->sampleMonteCarlo(numSamples, testFunctions);
@@ -504,7 +499,26 @@ void SurfpackInterpreter::executeMonteCarloSample(const SurfpackParser::ParsedCo
 }
 
 void SurfpackInterpreter::
-  executeShellCommand(const SurfpackParser::ParsedCommand& command)
+  executeShellCommand(const ParsedCommand& command)
 {
   system(command.cmdstring.c_str());
+}
+
+SurfpackInterpreter::SymbolTable::~SymbolTable() 
+{ 
+  for (SurfDataMap::iterator iter = dataVars.begin();
+        iter != dataVars.end();
+        ++iter) {
+    delete iter->second; 
+  }
+  for (SurfaceMap::iterator siter = surfaceVars.begin();
+        siter != surfaceVars.end();
+        ++siter) {
+    delete siter->second; 
+  }
+  for (AxesBoundsMap::iterator pditer = pointDefinitionVars.begin();
+        pditer != pointDefinitionVars.end();
+        ++pditer) {
+    delete pditer->second; 
+  }
 }

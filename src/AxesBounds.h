@@ -1,13 +1,11 @@
-#include "surfpack_config.h"
+#ifndef AXES_BOUNDS_H
+#define AXES_BOUNDS_H
 
-#ifndef POINT_DEFINITION_H
-#define POINT_DEFINITION_H
+#include "surfpack_config.h"
+#include "surfpack_system_headers.h"
 
 class SurfData;
 class SurfPoint;
-
-#include <string>
-#include <vector>
 
 /// Concrete class used in conjunction with Surfpack commands GridPoints and 
 /// MonteCarloSample.  Minimum and maximum values are specified along each

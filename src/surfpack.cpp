@@ -1,15 +1,4 @@
 #include "surfpack_config.h"
-
-#include <cmath>
-#include <fstream>
-#include <iomanip>
-#include <iostream>
-#include <set>
-#include <sstream>
-#include <string>
-#include <vector>
-#include <iterator>
-
 #include "surfpack.h"
 
 using namespace std;

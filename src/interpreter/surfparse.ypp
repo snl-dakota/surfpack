@@ -3,7 +3,7 @@
 %{
 #define YYINITDEPTH 400
 #define YYSTYPE double
-int yylex();
+extern int yylex();
 void yyerror(const char* s);
 
 #include <iostream>
@@ -75,7 +75,3 @@ void yyerror (const char* s) /* Called by yyparse on error */
   cout << s << endl;
 }
 
-int yylex()
-{
-  return parser.globalLexer().yylex();
-}

@@ -1,14 +1,9 @@
-#include "surfpack_config.h"
-
 #ifndef __SURFPACK_H__
 #define __SURFPACK_H__
 
-#include <cassert>
-#include <iostream>
-#include <stdexcept>
-#include <string>
-#include <vector>
-#include <algorithm>
+#include "surfpack_config.h"
+#include "surfpack_system_headers.h"
+
 #include "SurfpackMatrix.h"
 
 //class AbstractSurfDataIterator;
@@ -46,6 +41,15 @@ extern "C"  /* prevent C++ name mangling */
 #endif
 void DGEMV_F77(char& trans, int& m, int& n, double& alpha, 
 	       double* A, int& lda, double* x, int& incx, double& beta, double* y, int& incy);
+
+// Matrix-matrix multiplication
+#define DGEMM_F77 F77_FUNC(dgemm,DGEMM)
+#ifdef __cplusplus
+extern "C"  /* prevent C++ name mangling */
+#endif
+void DGEMM_F77(char& transa, char& transb, int& m, int& n, int& k,
+             double& alpha, double* A, int& lda, double* B, int& ldb, 
+	     double& beta, double* C, int& ldc);
 
 // Vector-vector inner product
 #define DDOT_F77 F77_FUNC(ddot, DDOT)

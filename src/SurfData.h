@@ -1,10 +1,8 @@
-#include "surfpack_config.h"
-
 #ifndef __SURF_DATA_H__
 #define __SURF_DATA_H__
 
-#include <stdexcept>
-#include <list>
+#include "surfpack_config.h"
+#include "surfpack_system_headers.h"
 
 #include "SurfPoint.h"
 

@@ -1,25 +1,14 @@
 #include "surfpack_config.h"
-
-#include <cmath>
-#include <iomanip>
-#include <iostream>
-#include <fstream>
-#include <set>
-#include <sstream>
-#include <string>
-#include <vector>
-
 #include "surfpack.h"
 #include "SurfaceFactory.h"
-#include "SurfData.h"
-#include "Surface.h"
-#include "PolynomialSurface.h"
-#include "MarsSurface.h"
-#include "KrigingSurface.h"
-#include "KrigingCPPSurface.h"
-#include "RBFNetSurface.h"
 #include "ANNSurface.h"
+#include "KrigingCPPSurface.h"
+#include "KrigingSurface.h"
+#include "MarsSurface.h"
+#include "PolynomialSurface.h"
+#include "RBFNetSurface.h"
 
+class SurfData;
 using namespace std;
 
 /// Open up the file specified by parameter filename.  The first item in the 

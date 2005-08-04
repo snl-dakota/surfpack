@@ -1,29 +1,10 @@
 #include "surfpack_config.h"
 
-#include <iostream>
-#include <iomanip>
-#include <sstream>
-#include <fstream>
-#include <vector>
-#include <set>
+#include "surfpack.h"
 #include "vector_enhancements.h"
 #include "ann.h"
-#include "surfpack.h"
-#include "SurfPoint.h"
 #include "SurfData.h"
-#include "Surface.h"
 #include "ANNSurface.h"
-
-extern "C" void dgels_(char& trans, int& m, int& n, int& nrhs, double* A,
-      int& lda, double* B, int& ldb, double* work, int& lwork, int& info);
-
-extern "C" void dgemm_(char& transa, char& transb, int& m, int& n, int& k, 
-  double& alpha, double* A, int& lda, double* B, int& ldb, double& beta, 
-  double* C, int& ldc);
-
-extern "C" void dgemv_(char& trans, int& m, int& n, double& alpha, 
-  double* A, int& lda, double* x, int& incx, double& beta, double* y, 
-  int& incy);
 
 using namespace std;
 //_____________________________________________________________________________
@@ -132,15 +113,15 @@ void ANNSurface::build(SurfData& data)
   //}
 }
 
-void ANNSurface::config(const SurfpackParser::Arg& arg)
+void ANNSurface::config(const Arg& arg)
 {
   string argname = arg.name;
   if (argname == "norm_bound") {
-    norm_bound = arg.rval.real;
+    norm_bound = arg.getRVal()->getReal();
   } else if (argname == "svdfactor") {
-    svdfactor = arg.rval.real;
+    svdfactor = arg.getRVal()->getReal();
   } else if (argname == "fraction_withheld") {
-    percent = arg.rval.real;
+    percent = arg.getRVal()->getReal();
   } else {
     Surface::config(arg);
   }

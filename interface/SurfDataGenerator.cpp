@@ -1,20 +1,6 @@
 #include "surfpack_config.h"
-
-#include <iostream>
-#include <fstream>
-#include <sstream>
-#include <iomanip>
-#include <string>
-#include <vector>
-#include <set>
-#include <cmath>
-#include <string>
-#include <ctime>
-#include <cstdlib>
-
-#include "SurfPoint.h"
-#include "SurfData.h"
 #include "surfpack.h"
+#include "SurfData.h"
 #include "SurfDataGenerator.h"
 
 using namespace std;

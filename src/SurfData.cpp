@@ -1,16 +1,5 @@
 #include "surfpack_config.h"
-
-#include <algorithm>
-#include <cassert>
-#include <fstream>
-#include <iomanip>
-#include <iostream>
-#include <set>
-#include <sstream>
-#include <vector>
-
 #include "surfpack.h"
-#include "SurfPoint.h"
 #include "SurfData.h"
 #include "Surface.h"
 #include "SurfScaler.h"

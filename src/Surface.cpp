@@ -1,17 +1,6 @@
 #include "surfpack_config.h"
 
-#include <cmath>
-#include <cstdlib>
-#include <fstream>
-#include <iomanip>
-#include <iostream>
-#include <set>
-#include <sstream>
-#include <string>
-#include <vector>
-
 #include "surfpack.h"
-#include "SurfPoint.h"
 #include "SurfData.h"
 #include "Surface.h"
 #include "SurfScaler.h"
@@ -170,13 +159,13 @@ void Surface::getValue(SurfData& surfData)
 }
 
 /// Modify one of the configuration options for this surface type 
-void Surface::config(const SurfpackParser::Arg& arg)
+void Surface::config(const Arg& arg)
 {
   // Other arguments are processed by config methods in the child class.
   // If the child class sees an argument it does not recognize, it should
   // call this method.
   if (arg.name == "response_index") {
-    unsigned index = static_cast<unsigned>(arg.rval.integer);
+    unsigned index = static_cast<unsigned>(arg.getRVal()->getInteger());
     if (!sd) {
       throw string("Cannot set response index on NULL data");
     } else {
@@ -184,7 +173,7 @@ void Surface::config(const SurfpackParser::Arg& arg)
       this->responseIndex = index; 
     }
   } else if (arg.name == "scaling") {
-    string scaleOption = arg.rval.literal;
+    string scaleOption = arg.getRVal()->getStringLiteral();
     if (scaleOption == "uniform") {
       scaleUniform();
       cout << "Uniform scaling" << endl;
@@ -194,12 +183,12 @@ void Surface::config(const SurfpackParser::Arg& arg)
       throw string("Unrecognized option for surface parameter 'scaling'");
     }  
   } else if (arg.name == "xsize") {
-    setXSize(arg.rval.integer);
+    setXSize(arg.getRVal()->getInteger());
   }
 }
 
 /// Process a list of configuration options
-void Surface::configList(const SurfpackParser::ArgList& arglist)
+void Surface::configList(const ArgList& arglist)
 {
   for (unsigned i = 0; i < arglist.size(); i++) {
     config(arglist[i]);

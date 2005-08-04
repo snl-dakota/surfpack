@@ -1,19 +1,6 @@
 #include "surfpack_config.h"
-
-#include <cmath>
-#include <fstream>
-#include <iomanip>
-#include <iostream>
-#include <set>
-#include <sstream>
-#include <vector>
-#include <iterator>
-#include <algorithm>
-
 #include "surfpack.h"
-#include "SurfPoint.h"
 #include "SurfData.h"
-#include "Surface.h"
 #include "PolynomialSurface.h"
 
 using namespace std;
@@ -90,11 +77,11 @@ PolynomialSurface::~PolynomialSurface()
 #endif
 }
 
-void PolynomialSurface::config(const SurfpackParser::Arg& arg)
+void PolynomialSurface::config(const Arg& arg)
 {
   string argname = arg.name;
   if (argname == "order") {
-    setOrder(arg.rval.integer);
+    setOrder(arg.getRVal()->getInteger());
   } else {
     Surface::config(arg);
   }

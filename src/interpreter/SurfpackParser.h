@@ -1,74 +1,26 @@
-#include "surfpack_config.h"
-
 #ifndef MY_PARSING_STRUCTURES_H
 #define MY_PARSING_STRUCTURES_H
+#include "surfpack_config.h"
+#include "surfpack_system_headers.h"
+#include "SurfpackParserArgs.h"
 
-#include <string>
-#include <vector>
-#include <FlexLexer.h>
-#include "surfparse.h"
-extern int yyparse();
+class yyFlexLexer;
+
+class ParsedCommand
+{ 
+public:
+  ParsedCommand();
+  ParsedCommand(bool shell_command);
+  bool isShellCommand() const;
+  bool shellCommand;
+  std::string name;
+  ArgList arglist;
+  std::string cmdstring;
+};
 
 class SurfpackParser 
 {
 public:
-  class Arg;
-  typedef std::vector<Arg> ArgList;
-  typedef std::vector<double> Tuple;
-  class Triplet 
-  {
-  public:
-    Triplet() : min(0), max(0), numPts(0) {}
-    double min;
-    double max;
-    unsigned numPts;
-  };
-  class Rval
-  {
-  public:
-    int integer;
-    double real;
-    Tuple tuple;
-    Triplet triplet;
-    std::string identifier;
-    std::string literal;
-    ArgList arglist;
-    Rval() {}
-    Rval(int integer_in) : integer(integer_in) {}
-    Rval(double real_in) : real(real_in) {}
-    Rval(const Tuple& tuple_in) : tuple(tuple_in) {}
-    Rval(const std::string& string_in, const std::string& type) 
-    {
-      if (type == "identifier") {
-        this->identifier = string_in;
-      } else if (type == "literal") {
-        this->literal = string_in;
-      } else {
-        throw std::string("Bad 2nd parameter to Rval ctor");
-      }
-    }
-  };
-  class Arg
-  {
-  public:
-    std::string name;
-    Rval rval;
-    Arg(const std::string& name_in, const Rval& rval_in) 
-      : name(name_in), rval(rval_in) {}
-    Arg() {}
-  }; 
-  class ParsedCommand
-  { 
-  public:
-    ParsedCommand() : shellCommand(false) {}
-    ParsedCommand(bool shell_command) : shellCommand(shell_command) {}
-    bool isShellCommand() const { return shellCommand; }
-    bool shellCommand;
-    std::string name;
-    ArgList arglist;
-    std::string cmdstring;
-  };
-
   // commands for use by the Bison parser
   void addCommandName();
   void addArgName();
@@ -84,6 +36,8 @@ public:
   void addTripletMax();
   void addTripletNumPts();
   void addTupleVal();
+  void addTuple();
+  void newTuple();
   void init();
   void print();
   void storeCommandString();
@@ -107,6 +61,7 @@ protected:
 // protected and not implemented, in order to make sure that only one
 // instance is created
   SurfpackParser();
+  ~SurfpackParser();
   SurfpackParser(const SurfpackParser&);
   const SurfpackParser& operator=(const SurfpackParser&);
 
@@ -115,7 +70,8 @@ private:
   ArgList* currentArgList;
   int currentArgIndex;
   int currentTupleIndex;
-  yyFlexLexer global_lexer;
+  yyFlexLexer* global_lexer;
+  Tuple* currentTuple;
 };
 
 #endif

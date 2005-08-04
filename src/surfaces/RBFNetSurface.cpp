@@ -1,20 +1,7 @@
 #include "surfpack_config.h"
-
-#include <algorithm>
-#include <iostream>
-#include <iomanip>
-#include <sstream>
-#include <stack>
-#include <fstream>
-#include <vector>
-#include <set>
-#include <cmath>
-#include <climits>
 #include "surfpack.h"
-#include "SurfPoint.h"
-#include "SurfData.h"
-#include "Surface.h"
 #include "RBFNetSurface.h"
+#include "SurfData.h"
 
 using namespace std;
 //_____________________________________________________________________________
@@ -601,11 +588,11 @@ void RBFNetSurface::generateManyOptions(SurfData& surfData)
  
 }
 
-void RBFNetSurface::config(const SurfpackParser::Arg& arg)
+void RBFNetSurface::config(const Arg& arg)
 {
   string argname = arg.name;
   if (argname == "radius") {
-    radius = arg.rval.real;
+    radius = arg.getRVal()->getReal();
   } else {
     Surface::config(arg);
   }

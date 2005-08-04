@@ -1,8 +1,5 @@
 #include "surfpack_config.h"
-
-#include <fstream>
-#include <iostream>
-
+#include "surfpack_system_headers.h"
 #include "surfpack.h"
 #include "SurfpackInterpreter.h"
 

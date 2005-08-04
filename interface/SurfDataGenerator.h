@@ -1,9 +1,5 @@
 #include "surfpack_config.h"
-
-#include <iostream>
-#include <string>
-#include <vector>
-
+#include "surfpack_system_headers.h"
 class SurfData;
 
 namespace SurfDataGenerator {

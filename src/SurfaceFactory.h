@@ -1,11 +1,8 @@
-#include "surfpack_config.h"
-
 #ifndef __SURFPACK_FACTORY_H__
 #define __SURFPACK_FACTORY_H__
 
-#include <vector>
-
-#include "SurfpackParser.h"
+#include "surfpack_config.h"
+#include "surfpack_system_headers.h"
 
 class Surface;
 class SurfData;

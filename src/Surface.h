@@ -1,16 +1,13 @@
-#include "surfpack_config.h"
-
 #ifndef __SURFACE_H__
 #define __SURFACE_H__
+
+#include "surfpack_config.h"
+#include "surfpack_system_headers.h"
+#include "SurfpackParserArgs.h"
 
 class SurfPoint;
 class SurfData;
 class SurfScaler;
-
-/// \todo Eliminate the dependency on SurfpackParser.h in Surface.h
-#include "SurfpackParser.h"
-#include "surfpack.h"
-#include <set>
 
 enum MetricType {
   MT_RELATIVE_MAXIMUM,
@@ -208,10 +205,10 @@ public:
   virtual void build(SurfData& data) = 0; 
 
   /// Modify one of the configuration options for this surface type 
-  virtual void config(const SurfpackParser::Arg& arg);
+  virtual void config(const Arg& arg);
 
   /// Process a list of configuration options
-  virtual void configList(const SurfpackParser::ArgList& arglist);
+  virtual void configList(const ArgList& arglist);
 
   /// Sets the number of dimensions in the surface
   void setXSize(unsigned xsize_in);

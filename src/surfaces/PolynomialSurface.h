@@ -1,35 +1,8 @@
-#include "surfpack_config.h"
-
-// ----------------------------------------------------------
-// Project: SURFPACK++
-//
-// File:        PolynomialSurface.h
-// Author:      Mark Richards	 
-// Created:     August 13, 2003
-// Modified:    
-//
-// Description: 
-// + The PolynomialSurface class does a kth order polynomial fit 
-//   on the n-dimensional points
-// ----------------------------------------------------------
-
 #ifndef __POLYNOMIAL_SURFACE_H__
 #define __POLYNOMIAL_SURFACE_H__
-
-#include <iostream>
-#include <vector>
-#include <string>
-#include <stdexcept>
-#include "SurfpackParser.h"
+#include "surfpack_config.h"
 #include "SurfpackMatrix.h"
-
-//extern "C" double ddot_(int&, double*, int&, double*, int&);
-//
-//extern "C" void dgemv_(char&, int&, int&, double&, double*, int&, double*,
-//		int&, double&, double*, int&);
-
-class SurfPoint;
-class Surface;
+#include "Surface.h"
 
 class PolynomialSurface : public Surface
 {
@@ -45,7 +18,7 @@ public:
     std::vector<double> coefficients);
   PolynomialSurface(const std::string filename);
   PolynomialSurface(const PolynomialSurface& other);
-  virtual void config(const SurfpackParser::Arg& arg);
+  virtual void config(const Arg& arg);
   
   /// Create a surface of the same type as 'this.'  This objects data should
   /// be replaced with the dataItr passed in, but all other attributes should

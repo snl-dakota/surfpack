@@ -1,9 +1,6 @@
-#include <iostream>
-#include <fstream>
-#include <sstream>
-#include <iomanip>
-#include <vector>
-#include <surfpack.h>
+#include "surfpack_config.h"
+#include "surfpack_system_headers.h"
+#include "surfpack.h"
 using namespace std;
 int main(int argc, char** argv)
 {

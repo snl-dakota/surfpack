@@ -1,17 +1,8 @@
 #include "surfpack_config.h"
-
-#include <iomanip> 
-#include <iostream>
-#include <sstream>
-#include <vector>
-
 #include "surfpack.h"
 #include "SurfPoint.h"
-#include "SurfScaler.h"
 
 using namespace std;
-using namespace surfpack;
-
 // ____________________________________________________________________________
 // Creation, Destruction, Initialization 
 // ____________________________________________________________________________
@@ -232,7 +223,7 @@ void SurfPoint::writeText(ostream& os) const
   // Save the stream flags.  The output precision may be modified, but it 
   // will be restored to its old value before the method exits. 
   ios::fmtflags old_flags = os.flags();
-  unsigned old_precision = os.precision(output_precision);
+  unsigned old_precision = os.precision(surfpack::output_precision);
   os.setf(ios::scientific);
   for (unsigned i = 0; i < x.size(); i++) {
     os  << setw(surfpack::field_width) << x[i] ;
