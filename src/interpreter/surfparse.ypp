@@ -29,6 +29,8 @@ input:		/* empty */
 ;
 
 shellcommand:	SHELL_COMMAND {parser.shellCommand();}
+;
+
 statement: 	STANDARD_COMMAND {parser.addCommandName();} arglist	{parser.storeCommandString();}
 ;
 
@@ -51,7 +53,7 @@ argval:		IDENTIFIER 					{parser.addArgValIdent();}
 	| 	arglist						{parser.addArgValArgList();}
 ;
 
-tuple:		'(' number {parser.addTupleVal();} dimlisttail ')'
+tuple:		'(' {parser.newTuple();} number {parser.addTupleVal();} dimlisttail ')' {parser.addTuple();}
 ;
 
 number:		INTEGER

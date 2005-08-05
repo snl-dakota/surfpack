@@ -5,37 +5,54 @@ Triplet::Triplet() : min(0), max(0), numPts(0) {}
 
 int Rval::getInteger() const
 {
+  static int dummy = 0;
   noSuchValue();
+  return dummy;
 }
 
 double Rval::getReal() const
 {
+  static double dummy = 0.0;
   noSuchValue();
+  return dummy;
 }
 
 const Tuple& Rval::getTuple() const
 {
+  static Tuple t;
   noSuchValue();
+  return t;
 }
 
 const Triplet& Rval::getTriplet() const
 {
+  static Triplet t;
   noSuchValue();
+  return t;
 }
 
 const std::string& Rval::getIdentifier() const
 {
+  static std::string s;
   noSuchValue();
+  return s;
 }
 
 const std::string& Rval::getStringLiteral() const
 {
+  static std::string s;
   noSuchValue();
+  return s;
 }
 
 void Rval::noSuchValue() const
 {
   throw std::string("This Rval class does not have such a value");
+}
+
+Rval::~Rval()
+{
+
 }
 
 RvalInteger::RvalInteger(int value_in) : value(value_in) 
@@ -127,6 +144,14 @@ const std::string& RvalStringLiteral::getStringLiteral() const
 Rval* RvalStringLiteral::clone() const
 {
   return new RvalStringLiteral(value);
+}
+
+Arg::Arg(const Arg& other)
+  : name(other.name), rval(0)
+{
+  if (other.rval) {
+    this->rval = other.rval->clone();
+  }  
 }
 
 Arg::Arg(const std::string& name_in, Rval* rval_in)

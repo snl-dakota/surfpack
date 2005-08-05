@@ -26,6 +26,7 @@ public:
   virtual const std::string& getStringLiteral() const;
   virtual Rval* clone() const = 0;
   void noSuchValue() const;
+  virtual ~Rval();
 };
 
 class RvalInteger: public Rval
@@ -93,6 +94,7 @@ class Arg
 public:
   std::string name;
   const Rval* getRVal() const;
+  Arg(const Arg& other);
   Arg(const std::string& name_in, Rval* rval_in);
   ~Arg();
   void setName(const std::string& name_in);
