@@ -37,6 +37,27 @@ else
 extra_lapack_routines=
 endif
 
+AM_LFLAGS = -+ -o$(LEX_OUTPUT_ROOT).c
+AM_YFLAGS = -d
+
+if USING_GCC_COMPILER
+BUILT_SOURCES = $(top_srcdir)/src/interpreter/lexer.cpp \
+		$(top_srcdir)/src/interpreter/surfparse.cpp \
+		$(top_srcdir)/src/interpreter/surfparse.h
+
+standalone_only_sources= $(top_srcdir)/src/interpreter/lexer.lpp \
+			$(top_srcdir)/src/interpreter/surfparse.ypp \
+			$(top_srcdir)/src/interpreter/surfparse.h \
+			$(top_srcdir)/src/interpreter/SurfpackParser.cpp \
+			$(top_srcdir)/src/interpreter/SurfpackParser.h \
+			$(top_srcdir)/src/interpreter/FlexWrapper.cpp \
+			$(top_srcdir)/src/interpreter/FlexWrapper.h \
+			$(top_srcdir)/src/interpreter/SurfpackInterpreter.cpp \
+			$(top_srcdir)/src/interpreter/SurfpackInterpreter.h
+else
+standalone_only_sources=
+endif
+
 # lib_LTLIBRARIES is automake's way of saying "libraries that should be created
 # and installed in the lib subdirectory of the top-level install directory. The
 # "LT" in "LTLIBRARIES" means that libtool should be used to figure out whether
@@ -51,15 +72,12 @@ lib_LTLIBRARIES = libsurfpack.la
 # specifying which files need to be compiled in order to build the 
 # libsurfpack.la target.
 
-BUILT_SOURCES = $(top_srcdir)/src/interpreter/lexer.cpp \
-		$(top_srcdir)/src/interpreter/surfparse.cpp \
-		$(top_srcdir)/src/interpreter/surfparse.h
-
-AM_LFLAGS = -+ -o$(LEX_OUTPUT_ROOT).c
-AM_YFLAGS = -d
 
 libsurfpack_la_SOURCES =$(top_srcdir)/src/SurfPoint.cpp \
 			$(top_srcdir)/src/SurfPoint.h \
+			$(standalone_only_sources) \
+			$(top_srcdir)/src/interpreter/SurfpackParserArgs.cpp \
+			$(top_srcdir)/src/interpreter/SurfpackParserArgs.h \
 			$(top_srcdir)/src/SurfData.cpp \
 			$(top_srcdir)/src/SurfData.h \
 			$(top_srcdir)/src/Surface.cpp \
@@ -105,17 +123,6 @@ libsurfpack_la_SOURCES =$(top_srcdir)/src/SurfPoint.cpp \
 			$(top_srcdir)/src/ann/utilities.h \
 			$(top_srcdir)/src/ann/vector_enhancements.cpp \
 			$(top_srcdir)/src/ann/vector_enhancements.h \
-			$(top_srcdir)/src/interpreter/lexer.lpp \
-			$(top_srcdir)/src/interpreter/surfparse.ypp \
-			$(top_srcdir)/src/interpreter/surfparse.h \
-			$(top_srcdir)/src/interpreter/SurfpackParser.cpp \
-			$(top_srcdir)/src/interpreter/SurfpackParser.h \
-			$(top_srcdir)/src/interpreter/SurfpackParserArgs.cpp \
-			$(top_srcdir)/src/interpreter/SurfpackParserArgs.h \
-			$(top_srcdir)/src/interpreter/SurfpackInterpreter.cpp \
-			$(top_srcdir)/src/interpreter/SurfpackInterpreter.h \
-			$(top_srcdir)/src/interpreter/FlexWrapper.cpp \
-			$(top_srcdir)/src/interpreter/FlexWrapper.h \
 			$(top_srcdir)/interface/SurfDataGenerator.cpp \
 			$(top_srcdir)/interface/SurfDataGenerator.h \
 			$(top_srcdir)/src/conmin/conmin.f \
@@ -143,7 +150,10 @@ INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src -I$(top_srcdir)/src/surfaces \
 # .da and .gcov files are extensions of files that may be created by the
 # gcov profiler.  The *.ii and *.s files are temporary fils that may be
 # produce during C/C++ compilation. 
-CLEANFILES = *.bb *.bbg *.da *.gcov *.ii *.s
-bin_PROGRAMS = surfpack 
-surfpack_SOURCES = $(top_srcdir)/interface/main.cpp 
-surfpack_LDADD = $(top_builddir)/src/libsurfpack.la
+CLEANFILES = *.bb *.bbg *.da *.gcov *.ii *.s surfparse.h surfparse.cpp lexer.cpp
+
+if USING_GCC_COMPILER
+  bin_PROGRAMS = surfpack 
+  surfpack_SOURCES = $(top_srcdir)/interface/main.cpp 
+  surfpack_LDADD = $(top_builddir)/src/libsurfpack.la
+endif

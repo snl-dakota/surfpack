@@ -51,6 +51,10 @@ echo "CXX=$CXX"
 echo "CC=$CC"
 AC_PROG_CXX([xlC cxx CC c++ g++])
 
+# If using g++, compile the standalone; otherwise ignore all things flex
+# and bison
+ACX_USING_GCC
+
 # This is a kludgy test.  The goal is to turn on the -fpe3 flag for the
 # OSF fortran compiler, which allows the program to continue if when  there 
 # are floating point errors.  (This behavior is default on many # platforms.)  
