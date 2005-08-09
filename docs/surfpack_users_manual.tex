@@ -14,14 +14,21 @@
 \pagebreak
 
 \section {Overview}\label{sec:overview}
-Surfpack is a collection of surface-fitting methods and metrics to evaluate or predict the quality of the generated surfaces.  The concept of creating a global approximation or ``fit'' from a collection of data samples is utilized in many scientific disciplines, but the nomenclature varies widely from field to field.  The results fromthe application of such methods are commonly called empirical models, response surfaces, surrogate models, function approximations, or neural networks.  Many different algorithms have been developed and used to generalize from a set of data; these algorithms have different strengths and weaknesses.  The goals of Surfpack are
+Surfpack is a collection of surface-fitting methods and metrics to evaluate or predict the quality of the generated surfaces.  The concept of creating a global approximation or ``fit'' from a collection of data samples is utilized in many scientific disciplines, but the nomenclature varies widely from field to field.  The results from the application of such methods are commonly called empirical models, response surfaces, surrogate models, function approximations, or neural networks.  Many different algorithms have been developed and used to generalize from a set of data; these algorithms have different strengths and weaknesses.  The goals of Surfpack are
 
 \begin{itemize}
 \item 1. to give users the option to use any of several methods, depending on the nature of the specific application; and
 \item 2. to put data-fitting methods that are commonly used in various disciplines into a common framework, where their properties can be more easily compared and analyzed.
 \end{itemize}
+Surfpack's API includes a small set of commands, centered on the following general operations:
+\begin{itemize}
+\item {\bf Prepare a data set for use.}  This typically involves reading a specially formatted text file from disk.  Alternatively, the user may specify upper- and lower-bounds along one or more dimensions and generate a set of data points from those boundaries (either a grid or a set of Monte Carlo samples).
+\item {\bf Create an empirical model from a set of data.} The user may choose one of several algorithms to create the surface approximation: Least-squares regression using polynomials, Multivariate Adaptive Regression Splines (MARS), Kriging interpolation, Artificial Neural Networks, or Radial Basis Function Networks.
+\item {\bf Evaluate an empirical model at one or more data points.}  For the non-interpolating algorithms (e.g. polynomial regression), it may be of interest to evaluate the model at the same data sites that were used to generate it, to see how closely the model fits the data.  For any of the algorithms, the user may evaluate the model at other data points where the true function value is not available.
+\item {\bf Obtain measures of the ``goodness of fit'' of the model.}  Surfpack supports metrics such as mean-squared error or maximum absolute error for data sets where the true function values are known.  Cross-validation metrics (e.g. PRESS) are also available for situations where all of the known data points for the function that is being approximated were used in creating the empirical model.
+\item {\bf Save the data and/or empirical models for future use.}  Data can be saved so that, for example, graphics can be generated from a plotting package.  The approximating surfaces themselves may also be saved, so that a user can evaluate the model on a data set at a later time without having to recompute it.
+\end{itemize}
 
-With this end in mind\ldots
 
 \section{Installation}\label{sec:installation}
 \subsection{UNIX-like environments}
@@ -69,6 +76,7 @@ Not yet supported, but hopefully sometime down the road.
 \section{Getting Started}
 \subsection{Data file format}\label{sec:format}
 
+
 \begin{itemize}
 \item First line: number of points
 \item Second line: dimensionality of data set
@@ -111,9 +119,9 @@ Each argument has the following format: \texttt{argument\_name =
   argument\_value}.  An argument name is an identifier--a letter
 followed by a combination of letters, digits, and underscores.  An
 \texttt{argument\_value} may be an identifier, an integer or
-real-valued number, a string literal (enclosed in single quotes ''),
+real-valued number, a string literal (enclosed in single quotes ` '),
 or a tuple (a comma-separated list of numbers enclosed in parenthesis,
-e.g. \texttt{(1.0,3.5,4.0)}.  Arguments may appear in any order.
+e.g. \texttt{(1.0,3.5,4.0)}).  Arguments may appear in any order.
 
 \section{Surfpack Library API}
 Brief explanation for writing custom C++ code and linking against the Surfpack library.
@@ -191,30 +199,22 @@ List of error messages with probable causes and suggestions for resolving them.
     loaded\\
     & & & & in a previous command.\\
     \hline
-    ConvertSurface & input & string & yes & Name of file to be read.
-    Must have .txt or .srf extension.\\
-    \hline
-    & output & string & yes & Name of file to be written to.
-    Must have .txt or .srf extension.\\
-    \hline
-    ConvertData & input & string & yes & Name of file to be read.
-    Must have .txt or .sd extension.\\
-    \hline
-    & output & string & yes & Name of file to be written to.
-    Must have .txt or .sd extension.\\
-    \hline
     Fitness & surface & identifier & yes & Name of surface to be
     evaluated.\\
     \hline
-    & metric & string & yes & Must be one of 'press', 'rsquared',
-    'mean\_squared', 'sum\_squared' or 'max\_relative'.\\
+    & metric & string & yes & Must be one of `press', `rsquared',
+    `mean\_squared', `sum\_squared' or `max\_relative'.\\
     \hline
     & data & identifier & no & The data used to compute the metric.
     If not specified, the default\\
     & & & & is to use the same data that were used to build the
     surface.\\
     \hline
-    PointDefinition & name & identifier & yes & Variable name by which
+    & response\_index & integer & no & Specifies which response
+    variable in the data\\ & & & & set should be used as the ``true'' value when the\\
+    & & & & fitness of the surface is being computed.\\
+    \hline
+    AxesBounds & name & identifier & yes & Variable name by which
     this definition can be referred to in later commands.\\
     \hline
     & file & string & yes & File to be read.\\
@@ -228,8 +228,8 @@ List of error messages with probable causes and suggestions for resolving them.
     \hline
     & test\_function & string & no & Name of a test function to add on
     as a response variable for this data.\\
-    & & & & Must be one of 'rosenbrock', 'rastrigin', 'quasisine',
-    'shpere' or 'sumofall'.\\
+    & & & & Must be one of `rosenbrock', `rastrigin', `quasisine',
+    `shpere' or `sumofall'.\\
     & & & & Multiple test\_function arguments may be included in a
     single command.\\
     \hline
@@ -284,8 +284,8 @@ List of error messages with probable causes and suggestions for resolving them.
     max\_interactions & Mars & integer & no & 2 & Maximum number of
     varaible interactions that will be considered.\\
     \hline
-    interpolation & Mars & string & no & 'cubic' & Must be either
-    'linear' or cubic'.  Determines what kind of splines\\
+    interpolation & Mars & string & no & `cubic' & Must be either
+    `linear' or `cubic'.  Determines what kind of splines\\
     & & & & & are used after surface is built.\\
     \hline
     radius & RBFNet & real & no & 0.1 & Radius of the basis
