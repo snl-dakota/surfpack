@@ -1,7 +1,6 @@
 #ifndef FLEX_WRAPPER_H
 #define FLEX_WRAPPER_H
 
-#include <iostream>
 class yyFlexLexer;
 
 class FlexWrapper
