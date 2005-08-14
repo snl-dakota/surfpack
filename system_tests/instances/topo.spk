@@ -1,0 +1,79 @@
+# Load data from files
+LoadData[name = topo_data, file = '../perm_data/noisysparsetopo.txt']
+
+# Create a test data set
+LoadData[name = topo_test, file = '../perm_data/noisydensetopo.txt']
+
+# Create surfaces using existing data sets
+CreateSurface[name = rbf_topo, data = topo_data, type = 'RBFNet']
+! echo  rbf 
+CreateSurface[name = poly0_topo, data = topo_data, type = 'Polynomial',
+ 	      order = 0]
+! echo  poly0
+CreateSurface[name = poly1_topo, data = topo_data, type = 'Polynomial',
+ 	      order = 1]
+! echo  poly1
+CreateSurface[name = poly2_topo, data = topo_data, type = 'Polynomial',
+ 	      order = 2]
+! echo  poly2
+CreateSurface[name = poly3_topo, data = topo_data, type = 'Polynomial',
+ 	      order = 3]
+! echo  poly3
+CreateSurface[name = krig_topo, data = topo_data, type = 'Kriging', theta_vars = (1.0,1.0)]
+! echo  krig
+CreateSurface[name = mars_topo, data = topo_data, type = 'Mars']
+! echo  mars
+#CreateSurface[name = ann_topo, data = topo_data, type = 'ANN']
+! echo  ann
+
+# Save surfaces to file
+SaveSurface[surface = poly0_topo, file = '../tmp_surf/poly0_topo.txt']
+SaveSurface[surface = poly1_topo, file = '../tmp_surf/poly1_topo.txt']
+SaveSurface[surface = poly2_topo, file = '../tmp_surf/poly2_topo.txt']
+SaveSurface[surface = poly3_topo, file = '../tmp_surf/poly3_topo.txt']
+SaveSurface[surface = krig_topo, file = '../tmp_surf/krig_topo.txt']
+SaveSurface[surface = mars_topo, file = '../tmp_surf/mars_topo.txt']
+#SaveSurface[surface = ann_topo, file = '../tmp_surf/ann_topo.txt']
+#SaveSurface[surface = rbf_topo, file = '../tmp_surf/rbf_topo.txt']
+
+# Evaluate surfaces 
+Evaluate[surface = poly0_topo, input_data = topo_test]
+! echo poly0 eval
+Evaluate[surface = poly1_topo, input_data = topo_test]
+! echo poly1 eval
+Evaluate[surface = poly2_topo, input_data = topo_test]
+! echo poly2 eval
+Evaluate[surface = poly3_topo, input_data = topo_test]
+! echo poly3 eval
+Evaluate[surface = krig_topo, input_data = topo_test]
+! echo krig eval
+Evaluate[surface = mars_topo, input_data = topo_test]
+! echo mars eval
+#Evaluate[surface = ann_topo, input_data = topo_test]
+Evaluate[surface = rbf_topo, input_data = topo_test]
+! echo rbf eval
+
+# Compute surface fitness metrics
+Fitness[surface = poly0_topo, metric = 'mean_squared']
+Fitness[surface = poly1_topo, metric = 'mean_squared']
+Fitness[surface = poly2_topo, metric = 'mean_squared']
+Fitness[surface = poly3_topo, metric = 'mean_squared']
+Fitness[surface = krig_topo, metric = 'mean_squared']
+Fitness[surface = mars_topo, metric = 'mean_squared']
+#Fitness[surface = ann_topo, metric = 'mean_squared']
+Fitness[surface = rbf_topo, metric = 'mean_squared']
+
+# Save data to file
+SaveData[data = topo_test, file = '../tmp_data/topo_test.txt']
+
+
+#/*
+#pushd ../tmp_data
+#rm gnuplot_script 2> /dev/null 2
+#echo "set term png; set output \"topo.png\";" > gnuplot_script
+#echo plot [100:2400] [200:1000] \"./topo_test.txt\" using 1:2 >> gnuplot_script
+#gnuplot gnuplot_script
+#popd
+#*/
+
+

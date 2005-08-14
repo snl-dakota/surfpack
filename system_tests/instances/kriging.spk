@@ -1,0 +1,18 @@
+# Axes
+AxesBounds[name = ax_train, file = '../axes_bounds/generic_2d.axb']
+AxesBounds[name = ax_test, file = '../axes_bounds/generic_dense_2d.axb']
+
+#MonteCarloSample[name = train, def = ax_train, test_function = 'rosenbrock', size = 10]
+MonteCarloSample[name = train, def = ax_train, test_function = 'rosenbrock', size = 10]
+SaveData[data = train, file = '../perm_data/krig_rosen_2d.txt']
+GridPoints[name = test, def = ax_test, test_function = 'rosenbrock']
+
+CreateSurface[name = krig_rosen, data = train, type = 'Kriging']
+#	      theta_vars = (1.0, 1.0)]
+CreateSurface[name = krigcpp_rosen, data = train, type = 'KrigingCPP']
+#	      theta_vars = (1.0, 1.0)]
+
+Fitness[surface = krig_rosen, metric = 'mean_squared']
+Fitness[surface = krigcpp_rosen, metric = 'mean_squared']
+Fitness[surface = krig_rosen, metric = 'mean_squared', data = test]
+Fitness[surface = krigcpp_rosen, metric = 'mean_squared', data = test]

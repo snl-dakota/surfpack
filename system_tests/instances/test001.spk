@@ -1,0 +1,35 @@
+!echo starting
+# Load data from files
+LoadData[name = zonk_1d_47p, file = '../perm_data/zonk_1d_47p.txt']
+LoadData[name = zonk_1d_24p, file = '../perm_data/zonk_1d_24p.txt']
+
+# Load AxesBounds from files 
+#AxesBounds[name = zonk_axb, file = '../axes_bounds/zonk_1d.axb']
+AxesBounds[name = zonk_axb, bounds = '1 | v 100 2400 250']
+
+# Generate data from AxesBounds using test functions
+GridPoints[name = zonk_eval, def = zonk_axb]
+
+# Load surfaces from files
+
+# Create surfaces using existing data sets
+CreateSurface[name = mars_zonk, data = zonk_1d_24p, 
+	      type = 'Mars']
+
+# Evaluate surfaces 
+Evaluate[surface = mars_zonk, input_data = zonk_eval]
+Evaluate[surface = mars_zonk, input_data = zonk_1d_47p]
+
+# Compute surface fitness metrics
+Fitness[surface = mars_zonk, data = zonk_1d_24p, metric = 'mean_abs']
+Fitness[surface = mars_zonk, data = zonk_1d_47p, metric = 'mean_abs']
+
+# Save data to file
+SaveData[data = zonk_eval, file = '../tmp_data/zonk_eval.txt']
+SaveData[data = zonk_1d_47p, file = '../tmp_data/zonk_test_47p.txt']
+
+# Save surfaces to file
+!echo done
+
+
+

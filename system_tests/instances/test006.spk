@@ -1,0 +1,66 @@
+# Load data from files
+LoadData[name = rosen_10d_100p_lhs, file ='../perm_data/rosen_10d_100p_lhs.txt']
+LoadData[name = rosen_10d_1000p_lhs,file='../perm_data/rosen_10d_1000p_lhs.txt']
+
+# Create surfaces using existing data sets
+CreateSurface[name = poly2_rosen_10d_100p_lhs, data = rosen_10d_100p_lhs, 
+	      type = 'Polynomial', response_index = 0]
+CreateSurface[name = poly2_rosen_10d_1000p_lhs, data = rosen_10d_1000p_lhs, 
+	      type = 'Polynomial', response_index = 0]
+CreateSurface[name = poly3_rosen_10d_1000p_lhs, data = rosen_10d_1000p_lhs, 
+	      type = 'Polynomial', order = 3]
+
+# Save surfaces to file
+SaveSurface[surface = poly2_rosen_10d_100p_lhs, 
+	    file = '../tmp_surf/poly2_rosen_10d_100p_lhs.txt']
+SaveSurface[surface = poly2_rosen_10d_1000p_lhs, 
+	    file = '../tmp_surf/poly2_rosen_10d_1000p_lhs.txt']
+
+# Load surfaces from files
+LoadSurface[name = from_file_1000, 
+	    file = '../tmp_surf/poly2_rosen_10d_1000p_lhs.txt']
+
+# Save Surfaces
+SaveSurface[surface = poly2_rosen_10d_100p_lhs, 
+	    file = '../tmp_surf/poly2_rosen_10d_100p_lhs.txt']
+SaveSurface[surface = poly2_rosen_10d_1000p_lhs, 
+	    file = '../tmp_surf/poly2_rosen_10d_1000p_lhs.txt']
+SaveSurface[surface = poly3_rosen_10d_1000p_lhs, 
+	    file = '../tmp_surf/poly3_rosen_10d_1000p_lhs.txt']
+SaveSurface[surface = from_file_1000, 
+	    file = '../tmp_surf/from_file_1000.txt']
+
+# Evaluate fitness of surface read in from file
+# Since press is used, the surface must have the data that was used to create it
+Fitness[surface = poly2_rosen_10d_100p_lhs, metric = 'press']
+Fitness[surface = poly2_rosen_10d_1000p_lhs, metric = 'press']
+Fitness[surface = from_file_1000, metric = 'press']
+
+# Evaluate the surface at the 1000 points
+Evaluate[surface = from_file_1000, input_data = rosen_10d_1000p_lhs]
+
+# Create a new surface from the prediction values at the 1000 points
+CreateSurface[name = from_exist_surf, data = rosen_10d_1000p_lhs,
+	      type = 'Polynomial', order = 2, response_index = 1]
+
+# Compare mean squared error on the 100 data points for all three surfaces:
+# the one created from these 100 points, the one created from 1000 points,
+# and the one created from predicted values at those 1000 points
+Fitness[surface = poly2_rosen_10d_100p_lhs, metric = 'mean_squared',
+	data = rosen_10d_100p_lhs]
+Fitness[surface = poly2_rosen_10d_1000p_lhs, metric = 'mean_squared',
+	data = rosen_10d_100p_lhs]
+Fitness[surface = poly3_rosen_10d_1000p_lhs, metric = 'mean_squared',
+	data = rosen_10d_100p_lhs]
+Fitness[surface = from_exist_surf, metric = 'mean_squared',
+	data = rosen_10d_100p_lhs]
+
+# Save data to file
+SaveData[data = rosen_10d_1000p_lhs, 
+	 file = '../tmp_data/rosen_10d_1000p_lhs_eval.txt']
+
+
+
+
+
+

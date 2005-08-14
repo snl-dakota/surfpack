@@ -1,0 +1,32 @@
+# Load data from files
+LoadData[name = topo_data, file = '../perm_data/noisysparsetopo.txt']
+
+# Create a test data set
+LoadData[name = topo_test, file = '../perm_data/noisydensetopo.txt']
+
+CreateSurface[name = mars_topo, data = topo_data, type = 'Mars']
+! echo  mars
+
+# Save surfaces to file
+SaveSurface[surface = mars_topo, file = '../tmp_surf/mars_topo.txt']
+#SaveSurface[surface = mars_topo, file = '../tmp_surf/mars_topo.txt']
+
+# Evaluate surfaces 
+Evaluate[surface = mars_topo, input_data = topo_test]
+! echo mars eval
+Fitness[surface = mars_topo, metric = 'mean_squared']
+
+# Save data to file
+SaveData[data = topo_test, file = '../tmp_data/topo_test.txt']
+
+
+#/*
+#pushd ../tmp_data
+#rm gnuplot_script 2> /dev/null 2
+#echo "set term png; set output \"topo.png\";" > gnuplot_script
+#echo plot [100:2400] [200:1000] \"./topo_test.txt\" using 1:2 >> gnuplot_script
+#gnuplot gnuplot_script
+#popd
+#*/
+
+

@@ -1,0 +1,72 @@
+
+# Load AxesBounds from files 
+AxesBounds[name = gen2d, file = '../axes_bounds/generic_2d.axb']
+
+# Generate data from AxesBounds using test functions
+MonteCarloSample[test_function = 'sphere', name = mc_multi, def = gen2d, 
+		 test_function = 'quasisine', size = 200, 
+		 test_function = 'sumofall', test_function = 'noise']
+# Save data to file
+SaveData[data = mc_multi, file = '../tmp_data/test018.sd']
+
+# Load data from files
+LoadData[name = seventeen_1d, file = '../perm_data/seventeen_1d.txt']
+LoadData[name = mc_multi, file = '../tmp_data/test018.sd']
+
+# Load surfaces from files
+
+# Create surfaces using existing data sets
+CreateSurface[name = poly0_17, data = seventeen_1d, 
+	      type = 'Polynomial', order = 0]
+CreateSurface[name = poly1_17, data = seventeen_1d, 
+	      type = 'Polynomial', order = 1]
+CreateSurface[name = poly2_17, data = seventeen_1d, 
+	      type = 'Polynomial', order = 2]
+CreateSurface[name = poly3_17, data = seventeen_1d, 
+	      type = 'Polynomial', order = 3]
+CreateSurface[name = mars_17, data = seventeen_1d, 
+	      type = 'Mars']
+CreateSurface[name = rbf_17, data = seventeen_1d, 
+	      type = 'RBFNet']
+CreateSurface[name = kriging_17, data = seventeen_1d, 
+	      type = 'Kriging']
+CreateSurface[name = ann_17, data = seventeen_1d, 
+	      type = 'ANN']
+CreateSurface[name = rbf_17, data = seventeen_1d, 
+	      type = 'RBFNet', radius = .1]
+CreateSurface[name = kriging_17, data = seventeen_1d, 
+	      type = 'Kriging', thetas = (10.0)]
+CreateSurface[name = ann_17, data = seventeen_1d, 
+	      type = 'ANN', fraction_withheld = .2]
+
+CreateSurface[name = poly0_noise, data = mc_multi, response_index = 3, 
+	      type = 'Polynomial', order = 0]
+CreateSurface[name = poly1_noise, data = mc_multi, response_index = 3, 
+	      type = 'Polynomial', order = 1]
+CreateSurface[name = poly2_noise, data = mc_multi, response_index = 3, 
+	      type = 'Polynomial', order = 2]
+CreateSurface[name = poly3_noise, data = mc_multi, response_index = 3, 
+	      type = 'Polynomial', order = 3]
+CreateSurface[name = mars_noise, data = mc_multi, response_index = 3, 
+	      type = 'Mars']
+CreateSurface[name = rbf_noise, data = mc_multi, response_index = 3, 
+	      type = 'RBFNet']
+CreateSurface[name = kriging_noise, data = mc_multi, response_index = 3, 
+	      type = 'Kriging']
+CreateSurface[name = ann_noise, data = mc_multi, response_index = 3, 
+	      type = 'ANN']
+CreateSurface[name = rbf_noise, data = mc_multi, response_index = 3, 
+	      type = 'RBFNet', radius = .1]
+CreateSurface[name = kriging_noise, data = mc_multi, response_index = 3, 
+	      type = 'Kriging', thetas = (10.0)]
+CreateSurface[name = ann_noise, data = mc_multi, response_index = 3, 
+	      type = 'ANN', fraction_withheld = .2]
+# Evaluate surfaces 
+
+# Compute surface fitness metrics
+
+
+# Save surfaces to file
+
+
+
