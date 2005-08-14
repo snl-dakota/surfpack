@@ -168,7 +168,7 @@ void KrigingCPPSurface::config(const Arg& arg)
   string argname = arg.name;
   if (argname == "conmin_seed") {
     setConminThetaVars(arg.getRVal()->getTuple()); 
-  } else if (argname == "theta_vars") {
+  } else if (argname == "correlations") {
     usePreComputedCorrelationVector(arg.getRVal()->getTuple());
   } else if (argname == "uniform_correlation") {
     useUniformCorrelationValue(arg.getRVal()->getReal());
@@ -320,7 +320,7 @@ std::vector<double> KrigingCPPSurface::useConminToFindCorrelationParams()
   
   int numdv = static_cast<int>(xsize);
   vector<double> candidateCorrelations(N1,1.0);
-  vector<double> lower_bounds(N1,0);
+  vector<double> lower_bounds(N1,0.0);
   vector<double> upper_bounds(N1,1.0e3);
   vector<double> constraintVector(N2);
   double OBJ = 0.0;

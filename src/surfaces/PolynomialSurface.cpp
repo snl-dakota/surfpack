@@ -398,7 +398,14 @@ void PolynomialSurface::build(SurfData& data)
   }
   // Solve the system of equations
   if (eqConRHS.empty()) {
+    //cout << "A" << endl;
+    //cout << A.asString() << endl;
+    //cout << "b" << endl;
+    //copy(b.begin(),b.end(),std::ostream_iterator<double>(cout,"\n"));
     surfpack::linearSystemLeastSquares(A,coefficients,b);
+    surfpack::approximateByIntegers(coefficients);
+    //cout << "coefficients" << endl;
+    //copy(coefficients.begin(),coefficients.end(),std::ostream_iterator<double>(cout,"\n"));
   } else {
     surfpack::leastSquaresWithEqualityConstraints
       (A,coefficients,b,eqConLHS,eqConRHS);

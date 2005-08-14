@@ -370,7 +370,7 @@ void RBFNetSurface::buildCandidate(SurfData& surfData,
     cand_bfs[i]->weight = (resultVector[i]);
   }
   this->free_param = resultVector[numcenters-1];
-  cout << "free_param: " << free_param << endl;
+  //cout << "free_param: " << free_param << endl;
   this->basis_functions = cand_bfs;
   //cout << "A Matrix after: " << endl;
   ////writeMatrix(a,pts,numCoeff,cout);
@@ -421,29 +421,29 @@ void RBFNetSurface::selectModelBasisFunctions(SurfData& surfData)
   // parent of the current node is present in the model, try removing it.  
   // Try the model without the parent, but with either or both of the children.
   while (!activeNodes.empty()) {
-    cout << "Active nodes: " << activeNodes.size() << endl;
+    //cout << "Active nodes: " << activeNodes.size() << endl;
     // -1 signifies that no modification tried thus far involving the children 
     // of nodes on the active list improves the metric.
     int bestIndex = -1; 
     baseSet = bestSet;
-    printSet(string("Base Set"),baseSet);
+    //printSet(string("Base Set"),baseSet);
     for (unsigned i = 0; i < activeNodes.size(); i++) {
-      cout << "Considering active node " << i << ":";
-      activeNodes[i]->basis_function->print(cout);
+      //cout << "Considering active node " << i << ":";
+      //activeNodes[i]->basis_function->print(cout);
       PartitionNode& currentNode = *activeNodes[i];
       currentSet = baseSet;
       // add left child
-      cout << "Trying +L" << endl;
+      //cout << "Trying +L" << endl;
       currentSet.push_back(currentNode.left_child->basis_function);
       tryModel(surfData,i,bestIndex,bestMetric,currentSet,bestSet);
   //if (datadim == 1) this->getValue(testData);
       // add right child
-      cout << "Trying +LR" << endl;
+      //cout << "Trying +LR" << endl;
       currentSet.push_back(currentNode.right_child->basis_function);
       tryModel(surfData,i,bestIndex,bestMetric,currentSet,bestSet);
   //if (datadim == 1) this->getValue(testData);
       // remove left child
-      cout << "Trying +R" << endl;
+      //cout << "Trying +R" << endl;
       vector<BasisFunction*>::iterator ritr = find(currentSet.begin(),
         currentSet.end(), currentNode.left_child->basis_function);
       assert(ritr != currentSet.end());
@@ -455,12 +455,12 @@ void RBFNetSurface::selectModelBasisFunctions(SurfData& surfData)
         currentNode.basis_function);
       if (ritr != currentSet.end()) {
         // remove parent
-        cout << "Trying -P +R" << endl;
+        //cout << "Trying -P +R" << endl;
         currentSet.erase(ritr);
       tryModel(surfData,i,bestIndex,bestMetric,currentSet,bestSet);
   //if (datadim == 1) this->getValue(testData);
         // remove right child
-        cout << "Trying -P " << endl;
+        //cout << "Trying -P " << endl;
         ritr = find(currentSet.begin(),currentSet.end(),
           currentNode.right_child->basis_function);
  	assert(ritr != currentSet.end());
@@ -468,12 +468,12 @@ void RBFNetSurface::selectModelBasisFunctions(SurfData& surfData)
       tryModel(surfData,i,bestIndex,bestMetric,currentSet,bestSet);
   //if(datadim == 1) this->getValue(testData);
         // add left child
-        cout << "Trying -P +L" << endl;
+        //cout << "Trying -P +L" << endl;
         currentSet.push_back(currentNode.left_child->basis_function);
       tryModel(surfData,i,bestIndex,bestMetric,currentSet,bestSet);
   //if(datadim == 1) this->getValue(testData);
         // add right child
-        cout << "Trying -P +LR" << endl;
+        //cout << "Trying -P +LR" << endl;
         currentSet.push_back(currentNode.right_child->basis_function);
       tryModel(surfData,i,bestIndex,bestMetric,currentSet,bestSet);
   //if(datadim == 1) this->getValue(testData);
@@ -486,7 +486,7 @@ void RBFNetSurface::selectModelBasisFunctions(SurfData& surfData)
     } 
     assert(activeNodes[bestIndex]->right_child);
     assert(activeNodes[bestIndex]->left_child);
-    cout << "Replacing node " << bestIndex << " with its children." << endl;
+    //cout << "Replacing node " << bestIndex << " with its children." << endl;
     // Only put nodes on the active list if they have children
     if (activeNodes[bestIndex]->left_child->left_child) {
       assert(activeNodes[bestIndex]->left_child->right_child);
@@ -498,13 +498,13 @@ void RBFNetSurface::selectModelBasisFunctions(SurfData& surfData)
     }
     activeNodes.erase(activeNodes.begin());
   }
-  cout << "Best: " << bestMetric << endl;
+  //cout << "Best: " << bestMetric << endl;
   buildCandidate(surfData,bestSet);
   //if (datadim == 1) this->getValue(testData);
-  cout << "sse: " << this->goodnessOfFit("sum_squared",&surfData) << endl;
-  cout << "mse: " << this->goodnessOfFit("mean_squared",&surfData) << endl;
-  cout << "rmae: " << this->goodnessOfFit("max_relative",&surfData) << endl;
-  cout << "rsquared: " << this->goodnessOfFit("rsquared",&surfData) << endl;
+  //cout << "sse: " << this->goodnessOfFit("sum_squared",&surfData) << endl;
+  //cout << "mse: " << this->goodnessOfFit("mean_squared",&surfData) << endl;
+  //cout << "rmae: " << this->goodnessOfFit("max_relative",&surfData) << endl;
+  //cout << "rsquared: " << this->goodnessOfFit("rsquared",&surfData) << endl;
 
     // Begin debug code
   //SurfData dataCopy(testData);
@@ -518,26 +518,26 @@ bool RBFNetSurface::tryModel(SurfData& surfData, int currentIndex, int& bestInde
     std::vector< BasisFunction* >& newBestSet)
 {
   bool updated = false;
-  printSet("Trying set", currentSet);
+  //printSet("Trying set", currentSet);
   buildCandidate(surfData, currentSet);
   double tmse = this->goodnessOfFit(string("mean_squared"),&surfData);
-  cout << "Mean squared error" << tmse << endl;
+  //cout << "Mean squared error" << tmse << endl;
   //double metric = surfData.size()*log(tmse) + 
   //  currentSet.size()*log(2.0*(double)surfData.size());
   double metric = tmse;
-  cout << "Metric: " << metric << endl;
+  //cout << "Metric: " << metric << endl;
   if (metric < bestMetric) {
-    cout << "New best metric: " << bestMetric << " RBFs: " << currentSet.size() <<endl;
+    //cout << "New best metric: " << bestMetric << " RBFs: " << currentSet.size() <<endl;
     bestIndex = currentIndex;
     bestMetric = metric;
     newBestSet = currentSet;
-    cout << "New best set: " << endl;
+    //cout << "New best set: " << endl;
     //for (unsigned k = 0; k < newBestSet.size(); k++) {
     //  newBestSet[k]->print(cout);
     //}
     updated = true;
   }
-  printSet("best set seen so far",newBestSet);
+  //printSet("best set seen so far",newBestSet);
   return updated;
 }
 
@@ -570,16 +570,16 @@ void RBFNetSurface::generateManyOptions(SurfData& surfData)
     if (bic < best) {
       best = bic;
       bestBases = basesToUse;
+      cout << "Best: " << best << " mse: " << tmse << endl;
     }
-    cout << tmse << endl;
+    //cout << tmse << endl;
   }
-  cout << "Best: " << best << endl;
   buildCandidate(surfData,bestBases);
   //if (xsize == 1) this->getValue(testData);
-  cout << "sse: " << this->goodnessOfFit("sse",&surfData) << endl;
-  cout << "mse: " << this->goodnessOfFit("mse",&surfData) << endl;
-  cout << "mrae: " << this->goodnessOfFit("mrae",&surfData) << endl;
-  cout << "rsquared: " << this->goodnessOfFit("rsquared",&surfData) << endl;
+  //cout << "sse: " << this->goodnessOfFit("sse",&surfData) << endl;
+  //cout << "mse: " << this->goodnessOfFit("mse",&surfData) << endl;
+  //cout << "mrae: " << this->goodnessOfFit("mrae",&surfData) << endl;
+  //cout << "rsquared: " << this->goodnessOfFit("rsquared",&surfData) << endl;
 
   // Begin debug code
   //SurfData dataCopy(testData);
@@ -747,11 +747,11 @@ void RBFNetSurface::computeRBFCenters(
   // Iterate over all the sets, creating a new basis function
   // for each one
   for (unsigned i = 0; i < partitions.size(); i++) {
-    cout << "partition: " << i 
-         << " size: " << partitions[i]->set.size()
-         << " left child: " << (partitions[i]->left_child ? partitions[i]->left_child->set.size() : 0)
-         << " right child: " << (partitions[i]->right_child ? partitions[i]->right_child->set.size() : 0)
-         << endl;
+    //cout << "partition: " << i 
+    //     << " size: " << partitions[i]->set.size()
+    //     << " left child: " << (partitions[i]->left_child ? partitions[i]->left_child->set.size() : 0)
+    //     << " right child: " << (partitions[i]->right_child ? partitions[i]->right_child->set.size() : 0)
+    //     << endl;
     // Identify set that will be examined
     vector< const SurfPoint*>& currentSet = partitions[i]->set;
 
@@ -803,7 +803,7 @@ void RBFNetSurface::computeRBFCenters(
     newbf->setRadii(newradius);
     partitions[i]->basis_function = newbf;
     bfs.push_back(newbf);
-    newbf->print(cout);
+    //newbf->print(cout);
 
     // Begin debug code
     builtOK = true; dataModified = false;

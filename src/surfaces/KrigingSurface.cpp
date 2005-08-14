@@ -234,6 +234,9 @@ unsigned KrigingSurface::minPointsRequired() const
 
 double KrigingSurface::evaluate(const std::vector<double>& x)
 { 
+  static int called = 0;
+  ++called;
+  if (called % 100 == 0) cout << "Called: " << called << endl;
   //double* xArray = new double[xsize];
   if (x.size() != xsize) {
     cerr << "Wrong number of dimensions" << endl;
@@ -345,7 +348,7 @@ void KrigingSurface::config(const Arg& arg)
   string argname = arg.name;
   if (argname == "conmin_seed") {
     setConminThetaVars(arg.getRVal()->getTuple()); 
-  } else if (argname == "theta_vars") {
+  } else if (argname == "correlations") {
     usePreComputedCorrelationVector(arg.getRVal()->getTuple());
   } else if (argname == "uniform_correlation") {
     useUniformCorrelationValue(arg.getRVal()->getReal());
