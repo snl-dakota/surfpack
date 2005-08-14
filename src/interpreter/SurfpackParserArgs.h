@@ -24,6 +24,7 @@ public:
   virtual const Triplet& getTriplet() const;
   virtual const std::string& getIdentifier() const;
   virtual const std::string& getStringLiteral() const;
+  virtual const ArgList& getArgList() const;
   virtual Rval* clone() const = 0;
   void noSuchValue() const;
   virtual ~Rval();
@@ -89,12 +90,23 @@ private:
   std::string value;
 };
 
+class RvalArgList : public Rval
+{
+public:
+  RvalArgList(const ArgList& value_in);
+  virtual Rval* clone() const;
+  virtual const ArgList& getArgList() const;
+private:
+  ArgList value;
+};
+
 class Arg
 {
 public:
   std::string name;
   const Rval* getRVal() const;
   Arg(const Arg& other);
+  const Arg& operator=(const Arg& other);
   Arg(const std::string& name_in, Rval* rval_in);
   ~Arg();
   void setName(const std::string& name_in);

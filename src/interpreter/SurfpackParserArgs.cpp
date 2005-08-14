@@ -45,6 +45,13 @@ const std::string& Rval::getStringLiteral() const
   return s;
 }
 
+const ArgList& Rval::getArgList() const
+{
+  static ArgList al;
+  noSuchValue();
+  return al;
+}
+
 void Rval::noSuchValue() const
 {
   throw std::string("This Rval class does not have such a value");
@@ -146,6 +153,21 @@ Rval* RvalStringLiteral::clone() const
   return new RvalStringLiteral(value);
 }
 
+RvalArgList::RvalArgList(const ArgList& value_in) : value(value_in)
+{
+
+}
+
+const ArgList& RvalArgList::getArgList() const
+{
+  return value;
+}
+
+Rval* RvalArgList::clone() const
+{
+  return new RvalArgList(value);
+}
+
 Arg::Arg(const Arg& other)
   : name(other.name), rval(0)
 {
@@ -153,6 +175,15 @@ Arg::Arg(const Arg& other)
     this->rval = other.rval->clone();
   }  
 }
+
+const Arg& Arg::operator=(const Arg& other)
+{
+  this->name = other.name;
+  delete this->rval;
+  if (other.rval) {
+    this->rval = other.rval->clone();
+  }
+} 
 
 Arg::Arg(const std::string& name_in, Rval* rval_in)
   : name(name_in), rval(rval_in)

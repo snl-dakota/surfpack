@@ -31,7 +31,8 @@ input:		/* empty */
 shellcommand:	SHELL_COMMAND {parser.shellCommand();}
 ;
 
-statement: 	STANDARD_COMMAND {parser.addCommandName();} arglist	{parser.storeCommandString();}
+statement: 	STANDARD_COMMAND {parser.addCommandName();} arglist 
+		{parser.addArgListToCommand(), parser.storeCommandString();}
 ;
 
 arglist:	'[' arg arglisttail ']'				
@@ -48,12 +49,12 @@ argval:		IDENTIFIER 					{parser.addArgValIdent();}
 	|	INTEGER						{parser.addArgValInt();}
 	|	STRING						{parser.addArgValString();}
 	|	REAL						{parser.addArgValReal();}
-	|	tuple						
+	|	tuple						{parser.addArgValTuple();}
 	|	triplet						
-	| 	arglist						{parser.addArgValArgList();}
+	| 	{parser.pushNewArgList();} arglist		{parser.addArgValArgList();}
 ;
 
-tuple:		'(' {parser.newTuple();} number {parser.addTupleVal();} dimlisttail ')' {parser.addTuple();}
+tuple:		'(' {parser.newTuple();} number {parser.addTupleVal();} dimlisttail ')' 
 ;
 
 number:		INTEGER
@@ -74,6 +75,6 @@ triplet:	'{' number {parser.addTripletMin();} ','
 
 void yyerror (const char* s) /* Called by yyparse on error */
 {
-  cout << s << endl;
+  std::cout << s << std::endl;
 }
 

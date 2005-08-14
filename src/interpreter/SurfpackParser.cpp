@@ -100,9 +100,8 @@ void SurfpackParser::addCommandName()
   //std::cout << "Add command name" << std::endl;
   ParsedCommand pc;
   commands.push_back(pc);
-  currentArgList = &(commands[commands.size()-1].arglist);
-  currentArgIndex = -1;
   commands[commands.size()-1].name = std::string(global_lexer->currentToken());
+  pushNewArgList();
 }
 
 void SurfpackParser::addArgName()
@@ -113,7 +112,10 @@ void SurfpackParser::addArgName()
   } else {
     Arg newArg;
     currentArgList->push_back(newArg);
+    std::cout << "list: " << currentArgList << " size: " << currentArgList->size() << std::endl;
     currentArgIndex++;
+    std::cout << "index: " << currentArgIndex << std::endl;
+    std::cout << "name: " << global_lexer->currentToken() << std::endl;
     (*currentArgList)[currentArgIndex].name = std::string(global_lexer->currentToken());
   }
 }
@@ -165,22 +167,47 @@ void SurfpackParser::addArgValReal()
   }
 }
 
-void SurfpackParser::addArgValTuple()
+void SurfpackParser::pushNewArgList()
+{
+  arglistStack.push(ArgList());
+  currentArgList = &(arglistStack.top());
+  currentArgIndex = -1;
+}
+void SurfpackParser::addArgValArgList()
 {
   if (currentArgIndex == -1) {
-    std::cerr << "currentArgIndex = -1; cannot assign Tuple" << std::endl;
+    std::cerr << "currentArgIndex = -1; cannot assign ArgList" << std::endl;
   } else {
-    currentTupleIndex = -1;
+    std::cout << "list: " << currentArgList << std::endl;
+    std::cout << "currentArgList->size(): " << currentArgList->size() << std::endl;
+    std::cout << "currentArgIndex: " << currentArgIndex << std::endl;
+    ArgList temp = arglistStack.top();
+    popArgList();
+    (*currentArgList)
+      [currentArgIndex].setRVal(new RvalArgList(temp));
+    std::cout << "After adding arglist to arg: " << std::endl;
+    std::cout << "curlist: " << currentArgList << " size: " << currentArgList->size() << std::endl;
+              
   }
 }
 
-void SurfpackParser::addArgValArgList()
+void SurfpackParser::popArgList()
 {
-  //if (currentArgIndex == -1) {
-  //  std::cerr << "currentArgIndex = -1; cannot assign ArgList" << std::endl;
-  //} else {
-  //  currentArgList = &((*currentArgList)[currentArgIndex].rval.arglist);
-  //}
+  assert(!arglistStack.empty());
+  arglistStack.pop();
+  if (arglistStack.empty()) {
+    currentArgList = 0;
+    currentArgIndex = -1;
+  } else {
+    currentArgIndex = arglistStack.top().size()-1;
+    currentArgList = &(arglistStack.top());
+  }
+}
+
+void SurfpackParser::addArgListToCommand()
+{
+  commands[commands.size()-1].arglist = *currentArgList;
+  popArgList();
 }
 
 void SurfpackParser::addNumberAsTriplet()
@@ -241,7 +268,7 @@ void SurfpackParser::addTupleVal()
   }
 }
 
-void SurfpackParser::addTuple()
+void SurfpackParser::addArgValTuple()
 {
   if (currentArgIndex == -1) {
     std::cerr << "currentArgIndex = -1; cannot addTuple" << std::endl;
@@ -320,5 +347,6 @@ int yylex()
 
 void appendToken(const char* token)
 {
+  std::cout << token << std::endl;
   SurfpackParser::cmdstream << token;
 }

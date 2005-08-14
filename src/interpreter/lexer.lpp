@@ -13,9 +13,8 @@ ConvertSurface |
 MonteCarloSample |
 GridPoints |
 Evaluate |
-SaveData |
-SaveSurface |
-AxesBounds |
+Save |
+CreateAxes |
 Fitness               			{ appendToken(yytext); return STANDARD_COMMAND; }
 [[:alpha:]][[:alnum:]_]*		{ appendToken(yytext); return IDENTIFIER; }
 '[^']*'					{ appendToken(yytext); return STRING; }

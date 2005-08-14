@@ -30,14 +30,16 @@ public:
   void addArgValReal();
   void addArgValTuple();
   void addArgValArgList();
+  void addArgListToCommand();
   void addNumberAsTriplet();
   void addTriplet();
   void addTripletMin();
   void addTripletMax();
   void addTripletNumPts();
   void addTupleVal();
-  void addTuple();
   void newTuple();
+  void pushNewArgList();
+  void popArgList();
   void init();
   void print();
   void storeCommandString();
@@ -73,6 +75,7 @@ private:
   int currentTupleIndex;
   FlexWrapper* global_lexer;
   Tuple* currentTuple;
+  std::stack< ArgList > arglistStack;
 };
 
 #endif

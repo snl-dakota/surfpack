@@ -20,12 +20,13 @@ public:
   void executeLoadSurface(const ParsedCommand& command);
   void executeSaveData(const ParsedCommand& command);
   void executeSaveSurface(const ParsedCommand& command);
+  void executeSave(const ParsedCommand& command);
   void executeCreateSurface(const ParsedCommand& command);
   void executeConvertData(const ParsedCommand& command);
   void executeConvertSurface(const ParsedCommand& command);
   void executeEvaluate(const ParsedCommand& command);
   void executeFitness(const ParsedCommand& command);
-  void executeAxesBounds(const ParsedCommand& command);
+  void executeCreateAxes(const ParsedCommand& command);
   void executeGridPoints(const ParsedCommand& command);
   void executeMonteCarloSample(const ParsedCommand& command);
   void executeShellCommand(const ParsedCommand& command);

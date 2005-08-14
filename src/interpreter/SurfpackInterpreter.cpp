@@ -43,6 +43,8 @@ void SurfpackInterpreter::commandLoop(std::ostream& os, std::ostream& es)
         executeLoadSurface(commands[i]);
       } else if (commands[i].name == "LoadData") {
         executeLoadData(commands[i]);
+      } else if (commands[i].name == "Save") {
+        executeSave(commands[i]);
       } else if (commands[i].name == "SaveSurface") {
         executeSaveSurface(commands[i]);
       } else if (commands[i].name == "SaveData") {
@@ -57,8 +59,8 @@ void SurfpackInterpreter::commandLoop(std::ostream& os, std::ostream& es)
         executeEvaluate(commands[i]);
       } else if (commands[i].name == "Fitness") {
         executeFitness(commands[i]);
-      } else if (commands[i].name == "AxesBounds") {
-        executeAxesBounds(commands[i]);
+      } else if (commands[i].name == "CreateAxes") {
+        executeCreateAxes(commands[i]);
       } else if (commands[i].name == "GridPoints") {
         executeGridPoints(commands[i]);
       } else if (commands[i].name == "MonteCarloSample") {
@@ -198,6 +200,54 @@ void SurfpackInterpreter::executeConvertSurface(
   surf->write(outputfile);
   //cout << "Converted " << inputfile << " to " << outputfile << endl;
 }
+
+void SurfpackInterpreter::executeSave(
+  const ParsedCommand& command)
+{
+  // Extract the name of the file to be written to 
+  string filename = SurfpackParser::parseOutStringLiteral(string("file"), command.arglist);
+  //cout << "Filename: " << filename << endl;
+  if (filename == "") {
+    throw command_error(
+      string("No filename specified."), command.cmdstring);
+  }
+  // Must have either surface or data arg
+  // Extract the variable name for this Surface object
+  string surface = SurfpackParser::parseOutIdentifier(string("surface"), command.arglist);
+  string data = SurfpackParser::parseOutIdentifier(string("data"), command.arglist);
+  if (surface == "") {
+    if (data == "") {
+      throw command_error(
+        string("No surface or data argument specified."), command.cmdstring);
+    } else {
+      // save the data
+      // Look up the data object in the symbol table
+      SurfDataMap::iterator iter = symbol_table.dataVars.find(data);
+      if (iter == symbol_table.dataVars.end()) {
+        throw command_error(
+          string("Data variable not found in symbol table"), command.cmdstring);
+      } else {
+        // Data object found in symbol table, write the object to file
+        SurfData* sd = iter->second;
+        sd->write(filename);
+      }
+    }
+  } else if (data != "") {
+    throw command_error(
+      string("Cannot specify both data and surface."), command.cmdstring);
+  } else {
+    // save the surface
+    SurfaceMap::iterator iter = symbol_table.surfaceVars.find(surface);
+    if (iter == symbol_table.surfaceVars.end()) {
+      ostringstream os;
+      os << "Surface not found in symbol table: " << surface;
+      throw command_error(os.str() , command.cmdstring);
+    } else {
+      Surface* surf = iter->second;
+      surf->write(filename);
+    }
+  }
+}
 void SurfpackInterpreter::executeSaveSurface(
   const ParsedCommand& command)
 {
@@ -239,7 +289,7 @@ void SurfpackInterpreter::executeCreateSurface(const ParsedCommand& command)
   //cout << "Surface Variable name: " << name << endl;
 
   // Extract the type of surface 
-  string type = SurfpackParser::parseOutStringLiteral(string("type"), command.arglist);
+  string type = SurfpackParser::parseOutIdentifier(string("type"), command.arglist);
   if (type == "") {
     throw command_error(
       string("No surface type specified."), command.cmdstring);
@@ -289,25 +339,25 @@ void SurfpackInterpreter::executeEvaluate(const ParsedCommand& command)
   //cout << "Surface Variable name: " << surfaceName << endl;
 
   // Extract the name of the input data set (must be in the symbol table already) 
-  string input_data = SurfpackParser::parseOutIdentifier(string("input_data"), command.arglist);
+  string data = SurfpackParser::parseOutIdentifier(string("data"), command.arglist);
   SurfData* isd = 0;
-  if (input_data == "") {
+  if (data == "") {
     throw command_error(
-      string("No input_data specified."), command.cmdstring);
+      string("No data specified."), command.cmdstring);
   } else {
-    SurfDataMap::iterator iter = symbol_table.dataVars.find(input_data);
+    SurfDataMap::iterator iter = symbol_table.dataVars.find(data);
     if (iter == symbol_table.dataVars.end()) {
       throw command_error(
         string("Data object not found"), command.cmdstring);
     }
     isd = iter->second;
   }
-  //cout << "input_data: " << input_data << endl;
+  //cout << "data: " << data << endl;
 
   // Extract the name of the output data set 
   SurfData* osd = 0;
-  string output_data = SurfpackParser::parseOutIdentifier(string("output_data"), command.arglist);
-  if (output_data == "") {
+  string name = SurfpackParser::parseOutIdentifier(string("name"), command.arglist);
+  if (name == "") {
     osd = isd;
   } else {
     //SurfDataMap::iterator iterForOutput = symbol_table.dataVars.find(dataName);
@@ -315,9 +365,9 @@ void SurfpackInterpreter::executeEvaluate(const ParsedCommand& command)
     //  osd = iterForOutput->second;
     //} else {
       osd = new SurfData(*isd);
-      symbol_table.dataVars.insert(SurfDataSymbol(output_data, osd));
+      symbol_table.dataVars.insert(SurfDataSymbol(name, osd));
     //}
-    //cout << "output_data: " << output_data << endl;
+    //cout << "name: " << name << endl;
   }
 
   // Now actually do the evaluation
@@ -359,7 +409,7 @@ void SurfpackInterpreter::executeFitness(const ParsedCommand& command)
   //cout << "data: " << data << endl;
 
   // Extract the name of the output data set 
-  string metric = SurfpackParser::parseOutStringLiteral(string("metric"), command.arglist);
+  string metric = SurfpackParser::parseOutIdentifier(string("metric"), command.arglist);
   if (metric == "") {
       throw command_error(
         string("No fitness metric specified."), command.cmdstring);
@@ -374,12 +424,13 @@ void SurfpackInterpreter::executeFitness(const ParsedCommand& command)
   }
 
   double fitness = surf->goodnessOfFit(metric, isd);
-  cout << metric << " fitness value for surface " << surfaceName << ": "
-       << fitness << endl;
+  cout << metric << " for " << surfaceName;
+  if (data != "") cout << " on " << data;
+  cout << ": " << fitness << endl;
   
 }
   
-void SurfpackInterpreter::executeAxesBounds(const ParsedCommand& command)
+void SurfpackInterpreter::executeCreateAxes(const ParsedCommand& command)
 {
   AxesBounds* sd = 0;
   // Extract the variable name for this AxesBounds object
@@ -414,17 +465,17 @@ void SurfpackInterpreter::executeAxesBounds(const ParsedCommand& command)
 void SurfpackInterpreter::executeGridPoints(const ParsedCommand& command)
 {
   // Extract the variable name for this SurfData object
-  string def = SurfpackParser::parseOutIdentifier(string("def"), command.arglist);
-  if (def == "") {
+  string axes = SurfpackParser::parseOutIdentifier(string("axes"), command.arglist);
+  if (axes == "") {
     throw command_error(
-      string("No def argument specified."), command.cmdstring);
+      string("No axes argument specified."), command.cmdstring);
   }
-  AxesBoundsMap::iterator iter = symbol_table.pointDefinitionVars.find(def);
+  AxesBoundsMap::iterator iter = symbol_table.pointDefinitionVars.find(axes);
   if (iter == symbol_table.pointDefinitionVars.end()) {
     throw command_error(
       string("Definition not found in symbol table."), command.cmdstring);
   }
-  //cout << "Variable def: " << def << endl;
+  //cout << "Variable axes: " << axes << endl;
   AxesBounds* pd = iter->second;
 
   // Extract the name of the SurfData object (it may already be in the symbol table) 
@@ -444,7 +495,7 @@ void SurfpackInterpreter::executeGridPoints(const ParsedCommand& command)
   const ArgList& args = command.arglist;
   for (unsigned i = 0; i < args.size(); i++) {
     if (args[i].name == "test_function") {
-      testFunctions.push_back(args[i].getRVal()->getStringLiteral());
+      testFunctions.push_back(args[i].getRVal()->getIdentifier());
     }
   }
   SurfData* gridData = pd->sampleGrid(testFunctions);
@@ -455,17 +506,17 @@ void SurfpackInterpreter::executeGridPoints(const ParsedCommand& command)
 void SurfpackInterpreter::executeMonteCarloSample(const ParsedCommand& command)
 {
   // Extract the variable name for this SurfData object
-  string def = SurfpackParser::parseOutIdentifier(string("def"), command.arglist);
-  if (def == "") {
+  string axes = SurfpackParser::parseOutIdentifier(string("axes"), command.arglist);
+  if (axes == "") {
     throw command_error(
-      string("No def argument specified."), command.cmdstring);
+      string("No axes argument specified."), command.cmdstring);
   }
-  AxesBoundsMap::iterator iter = symbol_table.pointDefinitionVars.find(def);
+  AxesBoundsMap::iterator iter = symbol_table.pointDefinitionVars.find(axes);
   if (iter == symbol_table.pointDefinitionVars.end()) {
     throw command_error(
       string("Definition not found in symbol table."), command.cmdstring);
   }
-  //cout << "Variable def: " << def << endl;
+  //cout << "Variable axes: " << axes << endl;
   AxesBounds* pd = iter->second;
 
   // Extract the name of the SurfData object (it may already be in the symbol table) 
@@ -486,7 +537,7 @@ void SurfpackInterpreter::executeMonteCarloSample(const ParsedCommand& command)
   const ArgList& args = command.arglist;
   for (unsigned i = 0; i < args.size(); i++) {
     if (args[i].name == "test_function") {
-      testFunctions.push_back(args[i].getRVal()->getStringLiteral());
+      testFunctions.push_back(args[i].getRVal()->getIdentifier());
     } else if (args[i].name == "size") {
       numSamples = args[i].getRVal()->getInteger();
     }
