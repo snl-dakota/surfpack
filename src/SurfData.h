@@ -147,6 +147,14 @@ public:
   /// Be careful. The data should not be changed.
   const double* getYVector() const;
 
+  /// Retrieve the label for one of the predictor variables
+  const std::string& getXLabel(unsigned index) const;
+
+  /// Retrieve the label for one of the predictor variables
+  const std::string& getFLabel(unsigned index) const;
+
+  
+
 // ____________________________________________________________________________
 // Commands 
 // ____________________________________________________________________________
@@ -170,7 +178,8 @@ public:
 
   /// Add a new response variable to each point. 
   /// Return the index of the new variable.
-  unsigned addResponse(const std::vector<double>& newValues); 
+  unsigned addResponse(const std::vector<double>& newValues, 
+    std::string label = ""); 
   
   /// Specify which points should be skipped.  This can be used when only a 
   /// subset of the SurfPoints should be used for some computation.
@@ -189,9 +198,24 @@ public:
   /// duplication when other points are added in the future
   void buildOrderedPoints();
 
+  /// Iterate through the points, setting the current scaler
+  void enableScaling();
+
+  /// Iterate through the points, clearing the scaler
+  void disableScaling();
+
+  /// Set the labels for the predictor variables
+  void setXLabels(std::vector<std::string>& labels);
+
+  /// Set the labels for the response variables
+  void setFLabels(std::vector<std::string>& labels);
+
 private:
   /// Maps all indices to themselves in the mapping data member
   void defaultMapping();
+
+  /// Set x vars labels to 'x0' 'x1', etc.; resp. vars to 'f0' 'f1', etc.
+  void defaultLabels();
 
   /// Creates a matrix of the domains for all of the points in a contiguous
   /// block of memory, for use in matrix operations
@@ -267,6 +291,12 @@ private:
   /// unless/until getXMatrix() or getYVector() is called. 
   mutable StateConsistency valid;
 
+  /// Labels for the predictor variables
+  std::vector< std::string > xLabels;
+ 
+  /// Labels for the response variables
+  std::vector< std::string > fLabels;
+
 public:
   typedef std::set<SurfPoint*,SurfPoint::SurfPointPtrLessThan> SurfPointSet;
 
@@ -305,6 +335,10 @@ public:
   /// Returns true if file has .sd extension, false if it has .txt extension. 
   /// Otherwise, an exception is thrown.
   bool testFileExtension(const std::string& filename) const;
+
+  /// If the line contains single-quoted string, parse them out as labels
+  /// and return true; otherwise, return false
+  bool readLabelsIfPresent(std::istream& is);
 
 // ____________________________________________________________________________
 // Testing 

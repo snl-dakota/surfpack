@@ -18,10 +18,12 @@
 #include <iterator>
 #include <list>
 #include <map>
+#include <numeric>
 #include <set>
 #include <sstream>
 #include <stack>
 #include <stdexcept>
 #include <string>
+#include <sys/time.h>
 #include <vector>
 #endif

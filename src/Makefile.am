@@ -5,6 +5,10 @@ extra_lapack_routines=	$(top_srcdir)/src/kriging/dgecon.f \
 			$(top_srcdir)/src/kriging/dgels.f \
 			$(top_srcdir)/src/kriging/dgeqr2.f \
 			$(top_srcdir)/src/kriging/dgeqrf.f \
+			$(top_srcdir)/src/kriging/dgerq2.f \
+			$(top_srcdir)/src/kriging/dgerqf.f \
+			$(top_srcdir)/src/kriging/dgglse.f \
+			$(top_srcdir)/src/kriging/dggrqf.f \
 			$(top_srcdir)/src/kriging/dgetf2.f \
 			$(top_srcdir)/src/kriging/dgetrf.f \
 			$(top_srcdir)/src/kriging/dgetri.f \
@@ -26,6 +30,8 @@ extra_lapack_routines=	$(top_srcdir)/src/kriging/dgecon.f \
 			$(top_srcdir)/src/kriging/dorml2.f \
 			$(top_srcdir)/src/kriging/dormlq.f \
 			$(top_srcdir)/src/kriging/dormqr.f \
+			$(top_srcdir)/src/kriging/dormrq.f \
+			$(top_srcdir)/src/kriging/dormr2.f \
 			$(top_srcdir)/src/kriging/drscl.f \
 			$(top_srcdir)/src/kriging/dtrti2.f \
 			$(top_srcdir)/src/kriging/dtrtri.f \
@@ -153,7 +159,13 @@ INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src -I$(top_srcdir)/src/surfaces \
 CLEANFILES = *.bb *.bbg *.da *.gcov *.ii *.s surfparse.h surfparse.cpp lexer.cpp
 
 if USING_GCC_COMPILER
-  bin_PROGRAMS = surfpack 
-  surfpack_SOURCES = $(top_srcdir)/interface/main.cpp 
-  surfpack_LDADD = $(top_builddir)/src/libsurfpack.la
+standalone = surfpack 
+surfpack_SOURCES = $(top_srcdir)/interface/main.cpp 
+surfpack_LDADD = $(top_builddir)/src/libsurfpack.la
 endif
+
+krig_time_test = krig_time
+krig_time_SOURCES = $(top_srcdir)/system_tests/instances/time_krig_builds.cpp
+krig_time_LDADD = $(top_builddir)/src/libsurfpack.la
+
+bin_PROGRAMS = $(standalone) $(krig_time_test)

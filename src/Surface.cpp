@@ -102,9 +102,10 @@ double Surface::getValue(const std::vector<double>& x)
   if (!scaler) {
     return evaluate(x);
   } else {
-    return scaler->descaleResponse(
-      evaluate(scaler->scale(x).X()),responseIndex
-    );
+    SurfPoint sp(x);
+    sp.setScaler(scaler);
+    return scaler->descaleResponse(responseIndex,
+      evaluate(sp.X()));
   }
 }
 

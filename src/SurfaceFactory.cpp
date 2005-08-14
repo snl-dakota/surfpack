@@ -18,15 +18,15 @@ using namespace std;
 Surface* SurfaceFactory::createSurface(const string& filename)
 {
   const string name = surfpack::surfaceName(filename);
-  if (name == "Polynomial") {
+  if (name == "polynomial") {
     return new PolynomialSurface(filename); 
-  } else if (name == "Kriging") {
+  } else if (name == "kriging") {
     return new KrigingSurface(filename);
-  } else if (name == "Mars") {
+  } else if (name == "mars") {
     return new MarsSurface(filename);
-  } else if (name == "RBFNet") {
+  } else if (name == "rbf") {
     return new RBFNetSurface(filename);
-  } else if (name == "ANN") {
+  } else if (name == "ann") {
     return new ANNSurface(filename);
   } else {
     cerr << "Unknown surface type: " << name << endl;
@@ -40,17 +40,17 @@ Surface* SurfaceFactory::createSurface(const string& filename)
 /// is returned.
 Surface* SurfaceFactory::createSurface(const string& type, SurfData* sd)
 {
-  if (type == "Polynomial") {
+  if (type == "polynomial") {
     return new PolynomialSurface(sd);
-  } else if (type == "Kriging") {
+  } else if (type == "kriging") {
     return new KrigingSurface(sd);
-  } else if (type == "KrigingCPP") {
+  } else if (type == "kriging_cpp") {
     return new KrigingCPPSurface(sd);
-  } else if (type == "Mars") {
+  } else if (type == "mars") {
     return new MarsSurface(sd);
-  } else if (type == "RBFNet") {
+  } else if (type == "rbf") {
     return new RBFNetSurface(sd);
-  } else if (type == "ANN") {
+  } else if (type == "ann") {
     return new ANNSurface(sd);
   } else {
     ostringstream os;

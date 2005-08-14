@@ -215,11 +215,7 @@ const SurfPoint& SurfData::operator[](unsigned index) const
 {
   static string header("Indexing error in SurfData::operator[] const.");
   checkRangeNumPoints(header, index);
-  if (!scaler) {
-    return *points[mapping[index]];
-  } else {
-    return scaler->scale(points[mapping[index]]->X());
-  }
+  return *points[mapping[index]];
 }
 
 // ____________________________________________________________________________
@@ -268,11 +264,7 @@ double SurfData::getResponse(unsigned index) const
 {
   static string header("Indexing error in SurfData::getResponse.");
   checkRangeNumPoints(header, index);
-  if (!scaler) {
-    return points[mapping[index]]->F(defaultIndex);
-  } else {
-    return scaler->scaleResponse(points[mapping[index]]->F(defaultIndex),defaultIndex);
-  }
+  return points[mapping[index]]->F(defaultIndex);
 }
 
 /// Get default index
@@ -301,6 +293,18 @@ const double* SurfData::getYVector() const
   return yVector;
 }
   
+/// Retrieve the label for one of the predictor variables
+const std::string& SurfData::getXLabel(unsigned index) const
+{
+  return xLabels[index];
+}
+
+/// Retrieve the label for one of the predictor variables
+const std::string& SurfData::getFLabel(unsigned index) const
+{
+  return fLabels[index];
+}
+
 // ____________________________________________________________________________
 // Commands 
 // ____________________________________________________________________________
@@ -339,6 +343,7 @@ void SurfData::setScaler(SurfScaler* scaler_)
     scaler_->computeScalingParameters(*this);
   }
   this->scaler = scaler_;
+  enableScaling();
 }
     
 /// Add a point to the data set. The parameter point will be copied.
@@ -347,6 +352,7 @@ void SurfData::addPoint(const SurfPoint& sp)
   if (points.empty()) {
     xsize = sp.xSize();
     fsize = sp.fSize();
+    defaultLabels();
   } else {
     if (sp.xSize() != xsize || sp.fSize() != fsize) {
       ostringstream errormsg;
@@ -384,9 +390,10 @@ void SurfData::addPoint(const SurfPoint& sp)
 
 /// Add a new response variable to each point. Return the index of the new 
 /// variable.
-unsigned SurfData::addResponse(const vector<double>& newValues)
+unsigned SurfData::addResponse(const vector<double>& newValues, 
+  std::string label)
 {
-  unsigned newindex;
+  unsigned new_index;
   ostringstream errormsg;
   if (points.empty()) {
     throw bad_surf_data(
@@ -404,14 +411,21 @@ unsigned SurfData::addResponse(const vector<double>& newValues)
              << endl;
     throw bad_surf_data(errormsg.str());
   } else {
-    newindex = points[mapping[0]]->addResponse(newValues[0]);
+    new_index = points[mapping[0]]->addResponse(newValues[0]);
     fsize++;
     for (unsigned i = 1; i < points.size(); i++) {
-      newindex = points[mapping[i]]->addResponse(newValues[i]);
-      assert(newindex == fsize - 1);
+      new_index = points[mapping[i]]->addResponse(newValues[i]);
+      assert(new_index == fsize - 1);
     }
   }
-  return newindex;
+  if (label != "") {
+    fLabels.push_back(label);
+  } else {
+    ostringstream labelos;
+    labelos << "'f" << new_index << "'";
+    fLabels.push_back(labelos.str());
+  }
+  return new_index;
 }
 
 /// Specify which points should be skipped.  This can be used when only a 
@@ -473,6 +487,22 @@ void SurfData::buildOrderedPoints()
   }
 }
 
+/// Iterate through the points, setting the current scaler
+void SurfData::enableScaling()
+{
+  for (unsigned i = 0; i < points.size(); i++) {
+    points[i]->setScaler(scaler);
+  }
+}
+
+/// Iterate through the points, clearing the scaler
+void SurfData::disableScaling()
+{
+  for (unsigned i = 0; i < points.size(); i++) {
+    points[i]->setScaler(0);
+  }
+}
+
 /// Maps all indices to themselves in the mapping data member
 void SurfData::defaultMapping()
 {
@@ -506,6 +536,25 @@ void SurfData::validateYVector() const
     yVector[pt] = getResponse(pt);
   }
   valid.yVector = true;
+}
+
+/// Set the labels for the predictor variables
+void SurfData::setXLabels(std::vector<std::string>& labels)
+{
+  if (labels.size() != xsize) {
+    throw string("Dim mismatch in SurfData::setXLabels");
+  }
+  xLabels = labels;
+}
+
+/// Set the labels for the response variables
+void SurfData::setFLabels(std::vector<std::string>& labels)
+{
+  if (labels.size() != xsize) {
+    throw string("Dim mismatch in SurfData::setFLabels");
+  }
+  fLabels = labels;
+
 }
 
 // ____________________________________________________________________________
@@ -572,6 +621,13 @@ void SurfData::writeText(ostream& os) const
     os << mapping.size() << endl
        << xsize << endl 
        << fsize << endl;
+    for (unsigned i = 0; i < xLabels.size(); i++) {
+      os << setw(surfpack::field_width) << xLabels[i];
+    }
+    for (unsigned i = 0; i < fLabels.size(); i++) {
+      os << setw(surfpack::field_width) << fLabels[i];
+    }
+    os << endl;
     for (unsigned i = 0; i < mapping.size(); i++) {
       points[mapping[i]]->writeText(os);
     }
@@ -623,12 +679,23 @@ void SurfData::readText(istream& is)
     streamline.clear();
     streamline >> fsize;
     points.clear();
-    for (numPointsRead = 0; numPointsRead < size; numPointsRead++) {
+
+    getline(is,sline);
+    streamline.str(sline);
+    streamline.clear();
+    if (!readLabelsIfPresent(streamline)) {
+      defaultLabels();
+      istringstream firstpoint(sline);
+      this->addPoint(SurfPoint(xsize,fsize,firstpoint,false));
+      numPointsRead = 1;
+    }
+    while (numPointsRead < size) {
       // Throw an exception if we hit the end-of-file before we've
       // read the number of points that were supposed to be there.
       surfpack::checkForEOF(is);
       // False for last argument signals a text read
       this->addPoint(SurfPoint(xsize,fsize,is,false));  
+      numPointsRead++;
     }
     defaultMapping();
   } catch(surfpack::io_exception& ioException) {
@@ -681,6 +748,40 @@ void SurfData::notifyListeners(int msg)
   }
 }
 
+/// Set x vars labels to 'x0' 'x1', etc.; resp. vars to 'f0' 'f1', etc.
+void SurfData::defaultLabels()
+{
+  xLabels.resize(xsize);
+  for (unsigned i = 0; i < xsize; i++) {
+    ostringstream os;
+    os << "'x" << i << "'";
+    xLabels[i] = os.str();
+  }
+  fLabels.resize(fsize);
+  for (unsigned i = 0; i < fsize; i++) {
+    ostringstream os;
+    os << "'f" << i << "'";
+    fLabels[i] = os.str();
+  }
+}
+
+bool SurfData::readLabelsIfPresent(std::istream& is)
+{
+  string label;
+  xLabels.resize(xsize);
+  for (unsigned i = 0; i < xsize; i++) {
+    is >> label;
+    if (label.find('\'') == string::npos) {
+      return false;
+    }
+    xLabels[i] = label;
+  }
+  fLabels.resize(fsize);
+  for (unsigned i = 0; i < fsize; i++) {
+    is >> fLabels[i];
+  }
+  return true;
+}
 // ____________________________________________________________________________
 // Testing 
 // ____________________________________________________________________________

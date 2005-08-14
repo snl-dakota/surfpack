@@ -174,6 +174,9 @@ namespace surfpack {
   /// characters in the string, then read the string. 
   const std::string readName(std::istream& is, bool binary);
 
+  /// Round values that are close to integers to integers
+  void approximateByIntegers(std::vector<double>& vals, double epsilon = 1.e-6);
+
 // ____________________________________________________________________________
 // Vector helper methods 
 // ____________________________________________________________________________

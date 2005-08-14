@@ -4,104 +4,197 @@
 #include "SurfScaler.h"
 
 using namespace std;
+
+DimensionScaler::DimensionScaler()
+{
+
+}
+
+DimensionScaler::~DimensionScaler()
+{
+
+}
+
+NonScaler::NonScaler()
+{
+
+}
+
+NonScaler::~NonScaler()
+{
+
+}
+
+double NonScaler::scale(double value)
+{
+  return value;
+}
+
+double NonScaler::descale(double value)
+{
+  return value;
+}
+
+DimensionScaler* NonScaler::clone()
+{
+  return new NonScaler();
+}
+
+std::string NonScaler::asString()
+{
+  return string("Non-scaler");
+}
+NormalizingScaler::NormalizingScaler(const NormalizingScaler& other)
+  : offset(other.offset), divisor(other.divisor)
+{
+
+}
+
+NormalizingScaler::NormalizingScaler(const SurfData& surf_data, 
+  unsigned dim, bool response) : offset(0.0), divisor(1.0)
+{
+  if (surf_data.size() > 0) {
+    double vmin;
+    double vmax;
+    if (!response) {
+      assert(dim < surf_data.xSize());
+      // find the vmax and vmin values along ith dimension over all j data 
+      // points.  sd.scaler should be null until after this method
+      // returns.
+      vmin = surf_data[0][dim];
+      vmax = surf_data[0][dim];
+      for (unsigned j = 1; j < surf_data.size(); j++ ) {
+        if (surf_data[j][dim] > vmax) {
+          vmax = surf_data[j][dim];
+        } else if (surf_data[j][dim] < vmin) {
+          vmin = surf_data[j][dim];
+        }
+      }
+    } else {
+      assert(dim < surf_data.fSize());
+      // find the vmax and vmin values along ith dimension over all j data 
+      // points.  sd.scaler should be null until after this method
+      // returns.
+      vmin = surf_data[0].F(dim);
+      vmax = surf_data[0].F(dim);
+      for (unsigned j = 1; j < surf_data.size(); j++ ) {
+        if (surf_data[j].F(dim) > vmax) {
+          vmax = surf_data[j].F(dim);
+        } else if (surf_data[j].F(dim) < vmin) {
+          vmin = surf_data[j].F(dim);
+        }
+      }
+    }
+    // the offset for this dimension is the minimum value
+    offset = vmin;
+    // the divisor is the range of the values along this dimension
+    divisor = vmax - vmin;
+    //cout << "For design var " << i << " offset: " << designVarParams[i].offset
+    //     << " divisor: " << designVarParams[i].divisor << endl;
+  }
+}
+
+NormalizingScaler::~NormalizingScaler()
+{
+
+}
+
+double NormalizingScaler::scale(double value)
+{
+  return (value - offset) / divisor;
+}
+
+double NormalizingScaler::descale(double value)
+{
+  return (value * divisor) + offset;
+}
+
+DimensionScaler* NormalizingScaler::clone()
+{
+  return new NormalizingScaler(*this);
+}
+
+std::string NormalizingScaler::asString()
+{
+  ostringstream os;
+  os << "offset: " << offset << " divisor: " << divisor;
+  return os.str();
+}
+
 SurfScaler::SurfScaler()
-  : scaledPoint(vector<double>(1)),
-  designVarParams(0), responseVarParams(0)
 {
 
 }
 
 SurfScaler::SurfScaler(const SurfScaler& other)
-  : scaledPoint(other.scaledPoint), 
-  designVarParams(other.designVarParams),
-  responseVarParams(other.responseVarParams)
 {
-
+  scalers.resize(other.scalers.size());
+  responseScalers.resize(other.responseScalers.size());
+  for(unsigned i = 0; i < scalers.size(); i++) {
+    scalers[i] = other.scalers[i]->clone();
+  }
+  for(unsigned i = 0; i < responseScalers.size(); i++) {
+    responseScalers[i] = other.responseScalers[i]->clone();
+  }
 }
 
+/// Delete members of scalers and responseScalers
+SurfScaler::~SurfScaler()
+{
+  for(unsigned i = 0; i < scalers.size(); i++) {
+    delete scalers[i];
+    scalers[i] = 0;
+  }
+  for(unsigned i = 0; i < responseScalers.size(); i++) {
+    delete responseScalers[i];
+    responseScalers[i] = 0;
+  }
+}
+ 
 void SurfScaler::computeScalingParameters(const SurfData& sd)
 {
+  scalers = vector< DimensionScaler* >(sd.xSize(),0);
+  responseScalers = vector< DimensionScaler* >(sd.fSize(),0);
   if (sd.size() > 0) {
-    scaledPoint.resize(sd.xSize());
-    designVarParams.resize(sd.xSize());
-    for (unsigned i = 0; i < designVarParams.size(); i++ ) {
-      // find the max and min values along ith dimension over all j data 
-      // points.  sd.scaler should be null until after this method
-      // returns.
-      double min = sd[0].X()[i];
-      double max = sd[0].X()[i];
-      for (unsigned j = 1; j < sd.size(); j++ ) {
-        if (sd[j].X()[i] > max) {
-          max = sd[j].X()[i];
-        } else if (sd[j].X()[i] < min) {
-          min = sd[j].X()[i];
-        }
-      }
-      // the offset for this dimension is the minimum value
-      designVarParams[i].offset = min;
-      // the divisor is the range of the values along this dimension
-      designVarParams[i].divisor = max - min;
-      //cout << "For design var " << i << " offset: " << designVarParams[i].offset
-      //     << " divisor: " << designVarParams[i].divisor << endl;
+    for(unsigned i = 0; i < scalers.size(); i++) {
+      scalers[i] = new NormalizingScaler(sd,i);
     }
-
-    responseVarParams.resize(sd.fSize());
-    // Repeat the same process for the response variables
-    for (unsigned i = 0; i < responseVarParams.size(); i++ ) {
-      // find the max and min values along ith dimension over all j data 
-      // points.  sd.scaler should be null until after this method
-      // returns.
-      double min = sd[0].F(i);
-      double max = sd[0].F(i);
-      for (unsigned j = 1; j < sd.size(); j++ ) {
-        if (sd[j].F(i) > max) {
-          max = sd[j].F(i);
-        } else if (sd[j].F(i) < min) {
-          min = sd[j].F(i);
-        }
-      }
-      // the offset for this dimension is the minimum value
-      responseVarParams[i].offset = min;
-      // the divisor is the range of the values along this dimension
-      responseVarParams[i].divisor = max - min;
-      //cout << "For response var " << i << " offset: " << responseVarParams[i].offset
-      //     << " divisor: " << responseVarParams[i].divisor << endl;
+    for(unsigned i = 0; i < responseScalers.size(); i++) {
+      responseScalers[i] = new NormalizingScaler(sd,i,true);
     }
   }
 }
 
 /// Return a scaled version of the parameter SurfPoint
-const SurfPoint& SurfScaler::scale(const vector<double>& x) const
+double SurfScaler::scale(unsigned index, double value) const
 {
-  if ((x.size() == designVarParams.size() && 
-       x.size() == scaledPoint.xSize())) {
-    for (unsigned i = 0; i < x.size(); i++) {
-      scaledPoint.setX(i,
-        (x[i] - designVarParams[i].offset) / designVarParams[i].divisor);
-    }
-  }
-  return scaledPoint;
+  assert(index < scalers.size());
+  return scalers[index]->scale(value);
 }
 
 /// Return the scaled value of a response variable
-double SurfScaler::scaleResponse(double value, unsigned index)
+double SurfScaler::scaleResponse(unsigned index, double value)
 {
-  if (index < 0 || index >= responseVarParams.size()) {
-    throw string(
-      "Range error in scaling: index out of range in SurfScaler::scaleResponse"
-    );
-  }
-  return (value - responseVarParams[index].offset) / 
-    responseVarParams[index].divisor;
+  assert(index < responseScalers.size());
+  return responseScalers[index]->scale(value);
 }
 
-double SurfScaler::descaleResponse(double value, unsigned index)
+double SurfScaler::descaleResponse(unsigned index, double value)
 {
-  if (index < 0 || index >= responseVarParams.size()) {
-    throw string(
-      "Range error in descaling: index out of range in descaleResponse"
-    );
+  assert(index < responseScalers.size());
+  return responseScalers[index]->descale(value);
+}
+
+std::string SurfScaler::asString()
+{
+  ostringstream os;
+  os << "predictor variables" << endl;
+  for (unsigned i = 0; i < scalers.size(); i++) {
+    os << i << " " << scalers[i]->asString() << endl;
   }
-  return (value * responseVarParams[index].divisor) + 
-    responseVarParams[index].offset;
+  os << "response variables" << endl;
+  for (unsigned i = 0; i < responseScalers.size(); i++) {
+    os << i << " " << responseScalers[i]->asString() << endl;
+  }
+  return os.str();
 }

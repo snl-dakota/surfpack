@@ -166,6 +166,17 @@ const string surfpack::readName(istream& is, bool binary)
   }
 }
 
+/// Round values that are close to integers to integers
+void surfpack::approximateByIntegers(vector<double>& vals, double epsilon)
+{
+  for(vector<double>::iterator iter = vals.begin(); iter != vals.end();
+    ++iter) {
+    double approx = static_cast<double>(static_cast<int>(*iter));
+    if (abs(*iter-approx) < epsilon) {
+      *iter = approx;
+    }
+  }
+}
 // ____________________________________________________________________________
 // Vector helper methods 
 // ____________________________________________________________________________

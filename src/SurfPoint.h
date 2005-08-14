@@ -3,6 +3,7 @@
 
 #include "surfpack_config.h"
 #include "surfpack_system_headers.h"
+class SurfScaler;
 
 /// Holds a data point in a space of arbitrary dimension.  A SurfPoint object
 /// contains an n-tuple representing the location of the point in the space, 
@@ -117,6 +118,10 @@ public:
  
   /// Change the dimensionality of the point
   void resize(unsigned new_size);
+
+  /// Set (or clear) a scaling object for the data (e.g. to normalize the 
+  /// point with respect to some other points
+  void setScaler(SurfScaler* new_scaler);
 // ____________________________________________________________________________
 // I/O
 // ____________________________________________________________________________
@@ -144,6 +149,9 @@ protected:
 
   /// Zero or more response values at x (i.e., f1(x), f2(x) ... )
   std::vector<double> f;      
+
+  /// If the data have been scaled, scaler does the appropriate transformation
+  SurfScaler* scaler;
 
 // ____________________________________________________________________________
 // Testing 
