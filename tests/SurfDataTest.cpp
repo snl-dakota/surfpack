@@ -469,17 +469,17 @@ void SurfDataTest::testOperatorIndexingScaled()
   SurfData& msd = *sdPtr1;
   msd.setScaler(&s);
   const SurfPoint& sp1 = msd[0];
-  CPPUNIT_ASSERT(matches(sp1.x[0],0));
-  CPPUNIT_ASSERT(matches(sp1.x[1],0));
-  CPPUNIT_ASSERT(matches(sp1.x[2],0));
+  CPPUNIT_ASSERT(matches(sp1[0],0));
+  CPPUNIT_ASSERT(matches(sp1[1],0));
+  CPPUNIT_ASSERT(matches(sp1[2],0));
   const SurfPoint& sp2 = msd[4];
-  CPPUNIT_ASSERT(matches(sp2.x[0],1.0));
-  CPPUNIT_ASSERT(matches(sp2.x[1],1.0));
-  CPPUNIT_ASSERT(matches(sp2.x[2],1.0));
+  CPPUNIT_ASSERT(matches(sp2[0],1.0));
+  CPPUNIT_ASSERT(matches(sp2[1],1.0));
+  CPPUNIT_ASSERT(matches(sp2[2],1.0));
   const SurfPoint& sp3 = msd[2];
-  CPPUNIT_ASSERT(matches(sp3.x[0],0.5));
-  CPPUNIT_ASSERT(matches(sp3.x[1],0.5));
-  CPPUNIT_ASSERT(matches(sp3.x[2],0.5));
+  CPPUNIT_ASSERT(matches(sp3[0],0.5));
+  CPPUNIT_ASSERT(matches(sp3[1],0.5));
+  CPPUNIT_ASSERT(matches(sp3[2],0.5));
 }
 
 void SurfDataTest::testOperatorIndexingBadIndex()
@@ -857,13 +857,13 @@ void SurfDataTest::testSetScalerNotNull()
 {
   SurfScaler s;
   sdPtr1->setScaler(&s);
-  CPPUNIT_ASSERT_EQUAL( (unsigned)3,s.designVarParams.size() );
-  CPPUNIT_ASSERT( matches(0.0,s.designVarParams[0].offset) );
-  CPPUNIT_ASSERT( matches(4.0,s.designVarParams[0].divisor) );
-  CPPUNIT_ASSERT( matches(1.0,s.designVarParams[1].offset) );
-  CPPUNIT_ASSERT( matches(4.0,s.designVarParams[1].divisor) );
-  CPPUNIT_ASSERT( matches(2.0,s.designVarParams[2].offset) );
-  CPPUNIT_ASSERT( matches(4.0,s.designVarParams[2].divisor) );
+  CPPUNIT_ASSERT_EQUAL( (unsigned)3,s.scalers.size() );
+  CPPUNIT_ASSERT( matches(0.0,dynamic_cast<NormalizingScaler*>(s.scalers[0])->offset) );
+  CPPUNIT_ASSERT( matches(4.0,dynamic_cast<NormalizingScaler*>(s.scalers[0])->divisor) );
+  CPPUNIT_ASSERT( matches(1.0,dynamic_cast<NormalizingScaler*>(s.scalers[1])->offset) );
+  CPPUNIT_ASSERT( matches(4.0,dynamic_cast<NormalizingScaler*>(s.scalers[1])->divisor) );
+  CPPUNIT_ASSERT( matches(2.0,dynamic_cast<NormalizingScaler*>(s.scalers[2])->offset) );
+  CPPUNIT_ASSERT( matches(4.0,dynamic_cast<NormalizingScaler*>(s.scalers[2])->divisor) );
 }
 
 void SurfDataTest::testIsScaled()
