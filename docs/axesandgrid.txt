@@ -1,0 +1,2 @@
+CreateAxes[name = test_axis, bounds = '1 | v -3 3 100']
+GridPoints[name = test100, axes = test_axis]

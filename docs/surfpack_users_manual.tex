@@ -1,6 +1,7 @@
 \documentclass{article}
 \usepackage{rotating}
 \usepackage{verbatim}
+\usepackage{graphicx}
 
 \begin{document}
 
@@ -24,96 +25,73 @@ Surfpack's API includes a small set of commands, centered on the following gener
 \begin{itemize}
 \item {\bf Prepare a data set for use.}  This typically involves reading a specially formatted text file from disk.  Alternatively, the user may specify upper- and lower-bounds along one or more dimensions and generate a set of data points from those boundaries (either a grid or a set of Monte Carlo samples).
 \item {\bf Create an empirical model from a set of data.} The user may choose one of several algorithms to create the surface approximation: Least-squares regression using polynomials, Multivariate Adaptive Regression Splines (MARS), Kriging interpolation, Artificial Neural Networks, or Radial Basis Function Networks.
-\item {\bf Evaluate an empirical model at one or more data points.}  For the non-interpolating algorithms (e.g. polynomial regression), it may be of interest to evaluate the model at the same data sites that were used to generate it, to see how closely the model fits the data.  For any of the algorithms, the user may evaluate the model at other data points where the true function value is not available.
+\item {\bf Evaluate an empirical model on a set of data.}  For the non-interpolating algorithms (e.g. polynomial regression), it may be of interest to evaluate the model at the same data sites that were used to generate it, to see how closely the model fits the data.  For any of the algorithms, the user may evaluate the model at other data points where the true function value is not available.
 \item {\bf Obtain measures of the ``goodness of fit'' of the model.}  Surfpack supports metrics such as mean-squared error or maximum absolute error for data sets where the true function values are known.  Cross-validation metrics (e.g. PRESS) are also available for situations where all of the known data points for the function that is being approximated were used in creating the empirical model.
 \item {\bf Save the data and/or empirical models for future use.}  Data can be saved so that, for example, graphics can be generated from a plotting package.  The approximating surfaces themselves may also be saved, so that a user can evaluate the model on a data set at a later time without having to recompute it.
 \end{itemize}
 
 
 \section{Installation}\label{sec:installation}
-\subsection{UNIX-like environments}
-\subsubsection{Requirements}
+Surfpack is being developed primarily under Linux and is targeted to all flavors of UNIX.  Platforms on which Surfpack has been successfully built include Linux, SunOS, IRIX, OSF, and AIX.  Surfpack does not currently build under Windows or Mac OS X; these may be supported in future releases.
+\subsection{Requirements}
 \begin{itemize}
-\item Flex
-\item Bison
-\item BLAS
-\item LAPACK
-\item C
-\item C++ 
-\item Fortran 77
+\item C++.  A majority of the source code for Surfpack is written in C++.  Surfpack makes heavy use of the standard C and C++ libraries, including the standard template libraries.
+\item Fortran 77.  The MARS and Kriging algorithms are implemented in Fortran.  The Kriging algorithm uses the constrained optimizer CONMIN, which is also written in Fortran.  
+\item BLAS.  Many of the data-fitting algorithms rely on the Basic Linear Algebra routines to perform rudimentary linear algebra operations.
+\item LAPACK.  Surfpack makes use of the following LAPACK driver routines: dgetrf, dgetri, dgels, dgglse.  Implementations of LAPACK across different platforms seem to vary in terms of how many of these algorithms they support.  Therefore, source for these functions and there dependences is included in the Surfpack distribution.  However, BLAS and LAPACK routines are usually heavily optimized for each platform; performance is likely to be best if pre-compiled, native versions of these functions are available.
 \end{itemize}
-\subsubsection{Options}
+\subsection{Options}
 \begin{itemize}
-\item CPP Unit
+\item CPP Unit.  A suite of unit tests is available on platforms where CPP Unit has been built.
+\item Flex and Bison. Surfpack may be used as a library or as a stand-alone program.  The stand-alone executable requires Flex and Bison (a lexical analyzer generator and parser generator, respectively), which are freely available on the Internet.
 \end{itemize}
-\subsubsection{Targeted platforms}
+\subsection{Standard build}
+The Surfpack build system uses the GNU autotools: autoconf, automake, and libtool.  The autotools do not need to be installed to build Surfpack, but they should be used by developers who wish to extend Surfpack.  To build Surfpack from source, first obtain the distribution tarball surfpack-0.1.tar.gz.  From the directory containing this file, execute the following commands:
 \begin{itemize}
-\item Linux
-\item SunOS
-\item TFlops 
-\item IRIX
-\item OSF
-\item AIX 
+\item gunzip surfpack-0.1.tar.gz
+\item tar xf surfpack-0.1.tar
+\item cd surfpack-0.1
+\item ./configure
+\item make
+\item make install
 \end{itemize}
-\subsubsection{Standard build}
-configure
+By default, the Surfpack library is installed in /usr/local/lib.  If appropriate Flex and Bison distributions are available, the stand-alone executable will be be installed in /usr/local/bin.  Adding files to these directories generally requires super-user privileges.  To install Surfpack in another location, use the --prefix option to configure.  For example, the command
 
-make
+\texttt{./configure --prefix=/home/userid}
 
-make install
+would lead to the installation of the Surfpack library and executable in /home/userid/lib and /home/userid/bin respectively.
+\subsection{Advanced options}
+Most deviations from the standard build process involve special arguments to configure.
+\subsubsection{Specifying your compiler}
+By default, configure will use the first available C++ compiler from the following list: xlC, CC, cxx, c++, g++.  To override this selection process, use the CXX option.  The command
 
-\subsubsection{Advanced options}
-\begin{itemize}
-\item Specifying your compiler 
-\item Specifying non-standard locations for libraries
-\item Building with Dakota 
-\end{itemize}
+\texttt{./configure CXX=g++}
 
-\subsubsection{Troubleshooting}
-\subsection{Windows and Macintosh}
-Not yet supported, but hopefully sometime down the road.
+will cause g++ to be used, regardless of the presence of any other C++ compilers.  Likewise, the default search order for a Fortran 77 compiler is xlf, f77, g77.  To override the default, use configure's F77 option.
+
+\subsubsection{Specifying non-standard locations for libraries}
+Surfpack requires the presence of libraries for BLAS and LAPACK, as well as the standard C, C++, and Fortran 77 libraries.  Most compilers search for libraries based on the contents of certain shell environment variables (e.g. LIB\_PATH, LD\_LIBRARY\_PATH).  Some libraries may be present on a particular system, but if the appropriate environment variables are not set correctly, they will not be found during the Surfpack build process.  If the names of the library path environment variables are known, the directories containing the libraries on which Surfpack depends should be added to the library search path.  Otherwise, additional directories may be added to the linker's search path by using configure's LD\_FLAGS argument.  Directories in the search path should be prepended by "-L" and separated by spaces.  The entire list should be enclosed in quotation marks `` '', e.g.,
+\texttt{./configure LD\_FLAGS="-L/home/userid/lib -L/usr/pub/lib"}
+
+\subsubsection{Building with Dakota}
+To build Dakota with Surfpack, install the Surfpack source in the \$DAKOTA/VendorPackages directory.  Rename the root Surfpack directory (e.g., surfpack-0.1) to "Surfpack."  See the Dakota documentation for details.
+
+\subsection{Troubleshooting}
 
 \section{Getting Started}
-\subsection{Data file format}\label{sec:format}
+This chapter outlines the basic commands in the Surfpack API.  These commands may be executed interactively from the Surfpack command prompt (by executing the 'surfpack' command with no arguments) or, more commonly, from a Surfpack script file.  To execute a script file, execute the 'surfpack' command with the name of the script file as a command-line argument, e.g.
+\texttt{./surfpack scriptfile.spk}.  General conventions are presented in section xx.  The various Surfpack commands are discussed sections xx-xx.  The chapter concludes with a series of detailed examples that show how the commands can be combined in an application.
 
-
-\begin{itemize}
-\item First line: number of points
-\item Second line: dimensionality of data set
-\item Third line: number of response values
-\end{itemize}
-
-The rest of the lines contain the points themselves, one point per
-line.  For the first three lines, Surfpack ignores everything after
-the first value, so it is permissible to add some explanation about
-the variables.
-
-\verbatiminput{example.txt}
-
-\subsection{\textup{Examples}}\label{sec:example}
-
-
-\subsubsection{Example: Timing Data}
-\subsubsection{Example: Topology }
-\subsubsection{Example: Rosenbrock}
-
-\subsection{Modes of Use}
-\begin{itemize}
-\item As an interactive command-line program
-\item As a standalone program through shell scripts
-\item Through Dakota
-\item As a library
-\end{itemize}
-
-\section{Catalog of Surfpack Commands}\label{sec:commands}
 \subsection{Conventions}
-
 Surfpack commands consist of a (capitalized command name followed by a
 comma-delimited list of arguments in square brackets \texttt{[]}.
-Whitespace is ignored.
+Whitespace is ignored.  Comments begin with a '\#' symbol and continue until the end of the line.  Lines beginning with '!' are passed along to the underlying shell.  (The leading '!' is first removed.)  This allows the user to, for example, echo information to the terminal or do pre- or post-processing on the data files.  Multiline shell commands may be delimited by /* and */.
 
+The Surfpack interpreter internally maintains three types of variables: axes, data sets, and surfaces.  Axes variables are created using the CreateAxes command.  Data sets may be created by the LoadData, GridPoints, MonteCarloSample, or Evaluate commands.  Surfaces are created with the LoadSurface or CreateSurface commands.  Any command that creates an axes, data, or surface variable must have a \texttt{name} argument, which gives the variable a name by which it can be referred to in future commands.  When an existing variable is used in a subsequent command, it is designated by an argument which names its type (axes, data, or surface).  
 
-\subsection{Command Arguments}\label{sec:arguments}
+\verbatiminput{conventions.txt}
+
+\subsubsection{Command Arguments}\label{sec:arguments}
 
 Each argument has the following format: \texttt{argument\_name =
   argument\_value}.  An argument name is an identifier--a letter
@@ -123,19 +101,124 @@ real-valued number, a string literal (enclosed in single quotes ` '),
 or a tuple (a comma-separated list of numbers enclosed in parenthesis,
 e.g. \texttt{(1.0,3.5,4.0)}).  Arguments may appear in any order.
 
-\section{Surfpack Library API}
-Brief explanation for writing custom C++ code and linking against the Surfpack library.
+\subsection{Preparing data for use}\label{sec:format}
+The first step in a Surfpack application is usually to prepare a data set for future computation.  The user has typically generated a relatively small set of points (commonly called "training data") using another program and wishes to create a model that can be used to generalize from these data.  Surfpack expects data files in a very specific format.
 
-\section{Using Surfpack with Dakota}
-Brief explanation of how Surfpack fits in with Dakota.  Pointer to Dakota manuals for detailed information about accessing the various options.
+The first line of a data file should specify the number of points in the file.  The second line should give the dimensionality of the data set (i.e., the number of predictor or independent variables).  The third line tells how many response or dependent variables areincluded for each point.  For these first three lines, Surfpack ignores everything after the first (integer) token.  This allows for some annotation of the data, as shown below. 
+The rest of the lines in the data file contain the points themselves, one point per
+line.   
 
-\section{Extending Surfpack}
-\subsection{Adding a new surface method}
-\subsection{Adding a goodness-of-fit metric}
-\subsection{Adding a new command-line option}
+\verbatiminput{crime.txt}
 
-\section{Troubleshooting}
-List of error messages with probable causes and suggestions for resolving them.
+The simplest way to prepare data for use by Surfpack is to read it in from an existing file.  The LoadData command requires two arguments: a name by which the data set can be referenced in future commands and name of the file (full or relative path) from which the data are to be read.  Consider the following data stored in a file named simple7.txt.
+\verbatiminput{simple7.txt}
+This file can be loaded into Surfpack using the following command:
+\verbatiminput{loaddata.txt}
+A common use of empirical models is to predict a response at a set of data points for which the true response is not available.  This data set contains seven sample points along the real-number line on the interval [-3,3].  After we compute a model to generalize from these seven points, suppose that we want to evaluate our model at 100 evenly spaced points on the same interval.  We can prepare this 100-point data set using the CreateAxes and GridPoints commands.
+\verbatiminput{axesandgrid.txt}
+The CreateAxes command specifies the lower-bound, upper-bound, and number of raster points along one or more dimensions.  These values can be read from a file or can specified as a singly-quoted string literal.  See sextion xxx for more information about the syntax.
+
+The GridPoints command creates a new named data set of evenly spaced points, based on the values in an axes variable.  The GridPoints command requires two arguments: the name of the resulting data set, and the name of the axes variable used to compute the data set.
+An excerpt from the data set created by these commands is shown in figure xx.
+\verbatiminput{griddata.txt}
+
+Alternatively, an axes variable can be used to create a set of Monte Carlo points.  The MonteCarloSample command takes the same arguments as GridPoints, plus an additional 'size' argument that specifies how many points should be generated.  Each point is created by randomly selecting a value along each dimension, observing the boundaries given by the axes variable.  By default the computer's internal timer is used to seed the random number generator. An optional 'seed' argument ensures the reproducibility of the results.
+\verbatiminput{montecarlo.txt}
+An excerpt from the data set created by this command is shown in figure xx.
+\verbatiminput{mcdata.txt}
+
+\subsection{Creating a model from existing data}\label{sec:create_surface}
+An set of data samples can be used to create an empirical model, a global function approximation.  The CreateSurface command takes at least three arguments: a name for the surface, the data from which the model is to be created, and the name of a data-fitting algorithm.  Additional arguments may specify algorithm-specific parameters.  Consider the following command:
+\verbatiminput{createsurface.txt}
+Surfpack employs least-squares regression, using up to cubic-polynomial terms, to fit the simple7 data, which must have been created or loaded in a previous commands.  Future commands may refer to this model as cubic\_poly.
+
+By default, the CreateSurface command uses the first response variable in the supplied defense.  The optional 'response\_index' argument can be used to specify another response.  Indexing of the responses is zero-based.  To create a quadratic fit to the second response in the simple7 data set, use the following command.
+\verbatiminput{createsurface2.txt}
+\subsection{Evaluating an existing model on a set of data}\label{sec:evaluate}
+Suppose we wish to now use our model to predict the response at 100 evenly spaced points on that interval.  Assume that these 100 test points have been loaded into Surfpack as a variable named test100.  The following command will evaluate our model at these 100 points and append the predictions as a new response variable in the test100 data set.  
+\verbatiminput{evaluate.txt}
+Instead of appending our predictions to an existing data set, Surfpack can create an entirely new data set and store the predictions as the sole response.  This is accomplished by adding a name argument to the evaluate command.
+\verbatiminput{evaluate2.txt}
+\subsection{Analyzing the quality of a model}\label{sec:fitness}
+The quality of an approximation can vary widely, depending on the properties of the function being approximated and on the data samples and algorithm used to create the model.  Surfpack provides several metrics to help quantify the quality of an approximation.  These are accessible via the Fitness command, which takes at least two parameters: one to specify the surface to be analyzed and another to specify the metric to be used.
+\verbatiminput{fitness.txt}
+In this example, the mean-squared-error for the cubic\_poly model is printed to the terminal.  Since we used a least-squares regression to fit our seven sample data points, our model is not guaranteed to match these seven points exactly (i.e., the model's prediction at those points may not match the true values).  The difference between the true response value (the value given in the data set used to create the model) and the predicted response value at a certain point is often referred to as the residual.  The mean-squared-error is the arithmetic mean of all the squared residuals.  The mean-squared-error is always non-negative; values close to zero indicate a close fit of the model to the training data.  
+
+By default, the Fitness command computes the value of a goodness-of-fit metric using the same data that was provided when the model was created.  In some cases, it is desirable to use a different set of data.  A common example is to retain a ``holdout set'' when creating the model, i.e., to use only a subset of the available data to generate the approximation and then use the remaining data to assess the quality of the fit.  In this case, an additional argument is supplied to the Fitness command to specify which data should be used to produce the goodness-of-fit metric.  See section xxx to learn more about which goodness-of-fit metrics Surfpack supports.
+\verbatiminput{fitness2.txt}
+Holdout set:
+\verbatiminput{holdout.txt}
+
+When the data used to compute a goodness-of-fit metric is different than the data used to generate the model, a 'response\_index' argument should be used to specify that a response other than the first should be used.  Indexing of responses is zero-based.
+\verbatiminput{fitness3.txt}
+
+\subsection{Saving the results of Surfpack computations}
+The Save command make it possible to store the results of Surfpack computations to files for inspection and future use.  The commands requires two arguments: the name of an existing surface or data variable and the name of the file to be written.
+\verbatiminput{save.txt}
+The files resulting from Save commands can be read into future Surfpack scripts, using the LoadData and LoadSurface commands.
+\verbatiminput{reuse.spk}
+
+\subsection{Putting it all together}
+So far in our example, we have created cubic-polynomial fits to two different responses for a small set of data and have computed the mean-squared-error for the models.  How would our goodness-of-fit metric be affected if we used a quadratic instead?  Figure xx shows the full listing of a Surfpack script that includes all of the commands discussed so far, plus the additional commands needed to answer this question. The output is shown in figure xx.
+\verbatiminput{alltogether.spk}
+
+\subsection{Example: Timing Data}
+Many scientific computations involve expensive linear algebra operations, such as matrix inversion.  Although modern processors can perform billions of operations per second, the computational complexity of popular matrix inversion algorithms means that many interesting problems are simply intractable (i.e., would require several lifetimes worth of supercomputing power).  And while the numerical algorithms involved in matrix inversion are well-understood, the complexities of memory hierarchies, scheduling algorithms, and hardware architectures can make it difficult to predict wall-clock performance for various sizes of matrices.  Perhaps the best way to evaluate the limits of problem size on a particular computer is through the analysis of empirical data.
+
+Suppose we want to characterize the speed of inversion for matrices of various sizes on a particular machine.  What size of matrices can be handled in one second, one minute, one hour, etc?  Figure xxx shows data for such-and-such machine.  The Kriging algorithm used in Surfpack--wherein the running time is dominated by a matrix inversion operation--was run using 50--3000 data points, with tests at invtervals of 50 points.  If the algorithm is run using $n$ points, the inversion of an $n$-by-$n$ matrix is required.  For each matrix size, the median time for five runs of the algorithm is reported.  (The experiments were run when the machine was not heavily loaded, but there is still some variation in running times.)
+
+We will use Surfpack to generate an empirical model from these data, which we can then use to predict running times on problem sizes for which we have not gathered actual data.
+
+Parts of the data file are shown in figure xx.
+\verbatiminput{sampledata.txt} 
+
+This data includes problems using up to 3000 points (which requires the inversion of a 3000 by 3000 matrix).  After we create a model to fit these data, we will evaluate the model to predict running times for problems with up to 5000 points.
+
+The first step is to load the data from the file.
+
+\texttt{LoadData[name = timing\_data, file = 'krigtimes\_50to3000.txt']}
+
+From the plot of the data, we can see that the trend in the data is definitely not linear.  We will attempt to fit the data using a quadratic polynomial.
+
+\texttt{CreateSurface[name = poly2, data = timing\_data, type = polynomial, order =2 ]}
+
+We can use Surfpack to generate the set of test data points and then evaluate the model on those data. 
+
+\verbatiminput{testdata.txt}
+
+Figure xxx (on todo list) shows the plot of the observed values 50--3000, as well as the predicted values 50-5000 from our approximation.  Something appears to be amiss; the model does not seem to match the data at all.  Certainly, this could not be the least-squares fit to the data.  The computation of the coefficients for the quadratic polynomial approximation requires the solution of the system of linear equations.  If the matrix involved is ill-conditioned, the algorithm can fail to find the least-squares fit.  That appears to be the case here.  This problem is often caused by scale of the data points.  In this case, the sizes of the matrix are expressed on a scale of 50 to 3000, while the running times range from a fraction of a second up to just under 100 seconds.  
+
+\begin{figure}[htbp]
+\includegraphics[width=5cm]{kriging_times_50to3000.png}
+\end{figure}
+
+%\subsection{Example: Topology }
+%\subsection{Example: Rosenbrock}
+%
+%\section{Data-fitting algorithms}
+%\subsection{Least-squares Polynomial Regression}
+%\subsection{Multivariate Adaptive Regression Splines (MARS)}
+%\subsection{Kriging Interpolation}
+%\subsection{Radial Basis Functions}
+%\subsection{Artificial Neural Network}
+%
+%\section{Fitness metrics}
+%
+%\section{Test Functions}
+%
+%\section{Surfpack Library API}
+%Brief explanation for writing custom C++ code and linking against the Surfpack library.
+%
+%\section{Extending Surfpack}
+%\subsection{Adding a new surface method}
+%\subsection{Adding a goodness-of-fit metric}
+%\subsection{Adding a new command-line option}
+%
+%\section{Using Surfpack with Dakota}
+%Brief explanation of how Surfpack fits in with Dakota.  Pointer to Dakota manuals for detailed information about accessing the various options.
+%
+%\section{Troubleshooting}
+%List of error messages with probable causes and suggestions for resolving them.
 
 \appendix
 
@@ -146,42 +229,22 @@ List of error messages with probable causes and suggestions for resolving them.
     \textbf{Command} & \textbf{Argument} & \textbf{Type} &
     \textbf{Req.} & \textbf{Meaning}\\
     \hline
-    LoadSurface & name & identifier & yes & Variable name by which
-    this surface can be referred to in later commands.\\
+    CreateAxes & name & identifier & yes & Variable name by which
+    this definition can be referred to in later commands.\\
     \hline
-    & file & string & yes & Name of file to be read.  Must have .txt
-    or .srf extension.\\
-    \hline
-    SaveSurface & surface & identifier & yes & Variable name of
-    surface to be saved.  Must have been defined in a previous
-    command.\\
-    \hline
-    & file & string & yes & Name of file to be written to.  Must have .txt
-    or .srf extension.\\
-    \hline
-    LoadData & name & identifier & yes & Variable name by which this
-    data can be referred to in later commands.\\
-    \hline
-    & file & string & yes & Name of file to be read.\\
-    & & & & Must have .txt or .sd extension.\\
-    \hline
-    SaveData & data & identifier & yes & Variable name of data to be
-    saved.  Must have been defined in a previous command.\\
-    \hline
-    & file & string & yes & Name of file to be written to.  Must have
-    .txt or .sd extension.\\
+    & file & string & yes & File to be read.\\
     \hline
     CreateSurface & name & identifier & yes & Variable name by which
     this surface can be referred to in later commands.\\
     \hline
-    & type & string & yes & Must be one of 'Polynomial', 'Kriging',
-    'Mars', 'ANN' or 'RBFNet'.\\
+    & type & identifier & yes & Must be one of ann, mars, kriging, polynomial,
+    or rbf.\\
     \hline
-    & data & identifier & yes & Variable name of the data set used to
+    & data & identifier & yes & Name of the data set used to
     build surface.\\
     \hline
     & response\_index & integer & no & Specifies which response
-    variable in the data set should be used to create this surface.\\
+    should be used to create this surface.\\
     & & & & The default value is 0 (i.e., the first response value
     listed).\\
     \hline
@@ -189,12 +252,13 @@ List of error messages with probable causes and suggestions for resolving them.
     be evaluated.\\
     & & & & Must have been created or loaded in a previous command.\\
     \hline
-    & input\_data & identifier & yes & Data set that the surface is to
-    be evaluated on.\\
-    & & & & Must have been created  or loaded in a previous command.\\
+    & data & identifier & yes & Data set that the surface is to
+    be evaluated on.  Must have been created  \\
+    & & & & or loaded in a previous command.  In absensce of 'name' argument,\\
+    & & & & results are appended to this data as a new response variable. \\
     \hline
-    & output\_data & identifier & no & Data set to which the
-    evaluations of the surface should be appended.\\
+    & name & identifier & no & Name of a new data set, to which the results\\
+    & & & & will be appended as the first response variable. \\
     & & & & It must NOT be the name of a data set that was created or
     loaded\\
     & & & & in a previous command.\\
@@ -202,8 +266,10 @@ List of error messages with probable causes and suggestions for resolving them.
     Fitness & surface & identifier & yes & Name of surface to be
     evaluated.\\
     \hline
-    & metric & string & yes & Must be one of `press', `rsquared',
-    `mean\_squared', `sum\_squared' or `max\_relative'.\\
+    & metric & identifier & yes & Must be one of press, rsquared,
+    mean\_squared, sum\_squared, max\_squared, \\ 
+    & & & & mean\_scaled, sum\_scaled, max\_scaled, mean\_abs, sum\_abs, \\
+    & & & & max\_abs, mean\_relative, max\_relative, root\_mean\_squared.\\
     \hline
     & data & identifier & no & The data used to compute the metric.
     If not specified, the default\\
@@ -214,37 +280,50 @@ List of error messages with probable causes and suggestions for resolving them.
     variable in the data\\ & & & & set should be used as the ``true'' value when the\\
     & & & & fitness of the surface is being computed.\\
     \hline
-    AxesBounds & name & identifier & yes & Variable name by which
-    this definition can be referred to in later commands.\\
+    GridPoints & name & identifier & yes & Variable name by which the
+    resulting data set can be referred to in later commands.\\
     \hline
-    & file & string & yes & File to be read.\\
+    & axes & identifier & yes & Axes variable that specifies the
+    boundaries\\
+    & & & & and number of points along each dimension.\\
     \hline
-    MonteCarloSample & name & identifier & yes & Variable name by
-    which the resulting data set can be referred to in later commands.\\
-    \hline
-    & def & identifier & yes & PointDefinition that specifies the
-    boundaries along each dimension.\\
-    & & & & Must have been created in a previous command.\\
-    \hline
-    & test\_function & string & no & Name of a test function to add on
+    & test\_function & identifier & no & Name of a test function to add on
     as a response variable for this data.\\
     & & & & Must be one of `rosenbrock', `rastrigin', `quasisine',
     `shpere' or `sumofall'.\\
     & & & & Multiple test\_function arguments may be included in a
     single command.\\
     \hline
+    LoadData & name & identifier & yes & Variable name by which this
+    data can be referred to in later commands.\\
+    \hline
+    & file & string & yes & Name of file to be read.\\
+    & & & & Must have .txt extension.\\
+    \hline
+    LoadSurface & name & identifier & yes & Name by which
+    this surface variable can be referred to in later commands.\\
+    \hline
+    & file & string & yes & Name of file to be read.  Must have .txt
+    extension.\\
+    \hline
+    MonteCarloSample & name & identifier & yes & Name by
+    which the resulting data set can be referred to in later commands.\\
+    \hline
+    & axes & identifier & yes & Axes variable that specifies the
+    boundaries along each dimension.\\
+    & & & & Must have been created in a previous command.\\
+    \hline
+    & test\_function & identifier & no & Same as for the
+    GirdPoints command.\\
+    \hline
     & size & integer & no & Number of random samples.  Default is
     100.\\
     \hline
-    GridPoints & name & identifier & yes & Variable name by which the
-    resulting data set can be referred to in later commands.\\
+    Save & surface/data & identifier & yes & Name of data or
+    surface to be saved.  Must have been previously defined.\\
     \hline
-    & def & identifier & yes & PointDefinition that specifies the
-    boundaries\\
-    & & & & and number of points along each dimension.\\
-    \hline
-    & test\_function & identifier & no & Same as for the
-    MonteCarloSample command.\\
+    & file & string & yes & Name of file to be written to.  Must have .txt
+    extension.\\
     \hline
   \end{tabular}
   \caption{\textbf{Surfpack Command Summary}}
@@ -257,38 +336,38 @@ List of error messages with probable causes and suggestions for resolving them.
     \textbf{Argument} & \textbf{For} & \textbf{Type} & \textbf{Req.} &
     \textbf{Default} & \textbf{Meaning}\\
     \hline
-    order & Polynomial & integer & no & 2 & Maximum order of
+    order & polynomial & integer & no & 2 & Maximum order of
     polynomial regression.\\
     \hline
-    norm\_bound & ANN & real & no & 0.8 & ?\\
+    norm\_bound & ann & real & no & 0.8 & ?\\
     \hline
-    svdfactor & ANN & real & no & 0.9 & Range 0-1.\\
+    svdfactor & ann & real & no & 0.9 & Range 0-1.\\
     \hline
-    fraction\_withheld & ANN & real & no & 0.0 & Fraction of data set
+    fraction\_withheld & ann & real & no & 0.0 & Fraction of data set
     used for validation.\\
     \hline
-    conmin\_seed & Kriging & tuple & no & (1.0,\ldots,1.0) & Initial
+    conmin\_seed & kriging & tuple & no & (1.0,\ldots,1.0) & Initial
     values of correlation parameters passed to conmin optimizer.\\
     & & & & & The tuple (vector must have the same dimensionality as
     the data set.\\
     \hline
-    theta\_vars & Kriging & tuple & no & conmin & Exact correlation
+    theta\_vars & kriging & tuple & no & conmin & Exact correlation
     parameters to be used.  If theta\_vars are specified,\\
     & & & & & conmin is bypassed altogether.  The tuple (vector)
     must have the\\
     & & & & & same dimensionality as the data set.\\
     \hline
-    max\_bases & Mars & integer & no & 25 & Maximum number of basis
+    max\_bases & mars & integer & no & 25 & Maximum number of basis
     functions.\\
     \hline
-    max\_interactions & Mars & integer & no & 2 & Maximum number of
+    max\_interactions & mars & integer & no & 2 & Maximum number of
     varaible interactions that will be considered.\\
     \hline
-    interpolation & Mars & string & no & `cubic' & Must be either
+    interpolation & mars & string & no & `cubic' & Must be either
     `linear' or `cubic'.  Determines what kind of splines\\
     & & & & & are used after surface is built.\\
     \hline
-    radius & RBFNet & real & no & 0.1 & Radius of the basis
+    radius & rbf & real & no & 0.1 & Radius of the basis
     functions.\\
     \hline
   \end{tabular}

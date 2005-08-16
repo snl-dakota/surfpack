@@ -1,0 +1,5 @@
+CreateAxes[name = test_axes, bounds = '1 | v 50 5000 100]
+CreateGrid[name = test_data, axes = test_axes]
+Evaluate[surface = poly2, data = test_data]
+Save[surface = poly2, file = 'quad_poly_timing.txt']
+Save[data = test_data, file = 'timing_test_data.txt']

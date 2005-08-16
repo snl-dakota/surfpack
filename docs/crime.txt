@@ -1,0 +1,8 @@
+100 Crime data for US cities
+2 pop. density, persons / sq. mi; median household income in thousands of $
+1 crime rate (reported crimes per 10,000 people per yr)
+250	58	27
+700	35	45
+96	41	4
+400	78	42
+...

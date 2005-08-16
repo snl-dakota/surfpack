@@ -1,0 +1,2 @@
+Save[data = test100, file = 'test100.txt']
+Save[surface = cubic_poly_1st, file = 'cubic_poly_1st.txt']

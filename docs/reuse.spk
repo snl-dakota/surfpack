@@ -1,0 +1,11 @@
+# Load data and surface from previous script
+LoadData[name = random100, file = 'random100.txt']
+LoadSurface[name = quad_poly_2nd, file = 'quad_poly_2nd.txt']
+
+# Evaluate model on the random data
+Evaluate[surface = cubic_poly_2nd, data = random100]
+
+# Save results
+Save[data = random100, file = 'random100_test.txt']
+
+

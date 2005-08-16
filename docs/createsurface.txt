@@ -1,0 +1,2 @@
+CreateSurface[name = cubic_poly_1st, data = simple7, 
+              type = polynomial, order = 3] 
