@@ -165,7 +165,11 @@ So far in our example, we have created cubic-polynomial fits to two different re
 \subsection{Example: Timing Data}
 Many scientific computations involve expensive linear algebra operations, such as matrix inversion.  Although modern processors can perform billions of operations per second, the computational complexity of popular matrix inversion algorithms means that many interesting problems are simply intractable (i.e., would require several lifetimes worth of supercomputing power).  And while the numerical algorithms involved in matrix inversion are well-understood, the complexities of memory hierarchies, scheduling algorithms, and hardware architectures can make it difficult to predict wall-clock performance for various sizes of matrices.  Perhaps the best way to evaluate the limits of problem size on a particular computer is through the analysis of empirical data.
 
-Suppose we want to characterize the speed of inversion for matrices of various sizes on a particular machine.  What size of matrices can be handled in one second, one minute, one hour, etc?  Figure xxx shows data for such-and-such machine.  The Kriging algorithm used in Surfpack--wherein the running time is dominated by a matrix inversion operation--was run using 50--3000 data points, with tests at invtervals of 50 points.  If the algorithm is run using $n$ points, the inversion of an $n$-by-$n$ matrix is required.  For each matrix size, the median time for five runs of the algorithm is reported.  (The experiments were run when the machine was not heavily loaded, but there is still some variation in running times.)
+Suppose we want to characterize the speed of inversion for matrices of various sizes on a particular machine.  What size of matrices can be handled in one second, one minute, one hour, etc?  Figure xxx shows data for such-and-such machine.  The Kriging algorithm used in Surfpack--wherein the running time is dominated by a matrix inversion operation--was run using 50--3000 data points, with tests at invtervals of 50 points.  If the algorithm is run using $n$ points, the inversion of an $n$-by-$n$ matrix is required.  For each matrix size, the median time for five runs of the algorithm is reported.  (The experiments were run when the machine was not heavily loaded with other processes, but there is still some variation in running times.)
+
+\begin{figure}[htbp]
+\includegraphics[width=12cm]{kriging_times_50to3000.png}
+\end{figure}
 
 We will use Surfpack to generate an empirical model from these data, which we can then use to predict running times on problem sizes for which we have not gathered actual data.
 
@@ -183,15 +187,69 @@ From the plot of the data, we can see that the trend in the data is definitely n
 \texttt{CreateSurface[name = poly2, data = timing\_data, type = polynomial, order =2 ]}
 
 We can use Surfpack to generate the set of test data points and then evaluate the model on those data. 
+\verbatiminput{timingdataevalandsave.spk}
 
-\verbatiminput{testdata.txt}
+Figure xxx shows a portion of the output file test\_timing\_data.txt, which lists the predictions of the model for problem sizes of 50 to 5000, at 50 point intervals.
 
-Figure xxx (on todo list) shows the plot of the observed values 50--3000, as well as the predicted values 50-5000 from our approximation.  Something appears to be amiss; the model does not seem to match the data at all.  Certainly, this could not be the least-squares fit to the data.  The computation of the coefficients for the quadratic polynomial approximation requires the solution of the system of linear equations.  If the matrix involved is ill-conditioned, the algorithm can fail to find the least-squares fit.  That appears to be the case here.  This problem is often caused by scale of the data points.  In this case, the sizes of the matrix are expressed on a scale of 50 to 3000, while the running times range from a fraction of a second up to just under 100 seconds.  
+\verbatiminput{testtimingdatasnippet.txt}
+
+A plot of the observed data and model predictions is shown in figure xxx.
 
 \begin{figure}[htbp]
-\includegraphics[width=5cm]{kriging_times_50to3000.png}
+\includegraphics[width=12cm]{quad_poly.png}
 \end{figure}
 
+Figure xxx shows an excerpt from quad\_poly\_snippet.txt, which shows the formula for the quadratic approximation.
+
+\verbatiminput{quadpolysnippet.txt}
+
+\[ time = \hat{f}(numpts) \approx 1.62x^2 - 0.02x + 5.14 \]
+
+The predictions appear to follow the general trend of the data fairly well.  The model does curve away from the observed values at the lower-valued data points, but we are more likely to be concerned about the predictions for larger-sized problems.
+
+We can use Surfpack's Fitness command to quantify the error between the model and the data.  We will use the mean\_abs metric as an example, which computes the absolute value of the difference between each data point used to create the model and the prediction of the model at that point.  The reported value is the mean of those residuals.
+
+\texttt{mean\_abs for poly2: 1.48252}
+
+The value of 1.48 means that, on average, the predicted running time differs from the reported running time by 1.48 seconds.  The shape of the data and/or knowledge of the underlying matrix inversion algorithm may suggest to us that a cubic polynomial would provide a better fit here.
+
+Two other common goodness-of-fit metrics are PRESS and R-Squared.
+
+\verbatiminput{pressandrsquaredresults.txt}
+PRESS gives an average for what the error would be at each data point, if that point were not included in building the model.  Values close to zero are more desirable.  The R-Squared metric measures the fraction of variance in the model that can be attributed to the variance in the data.  Values close to 1 are more desirable.
+
+The plots of the data and/or knowledge of the underlying matrix inversion algorithm may motivate us to try to fit a cubic polynomial to the data.
+
+\verbatiminput{cubicpoly.spk}
+
+All of the metrics are worse; this raises some red flags.  In particular, it is not possible for the R-Squared value to be lower for a least-squares fit to a cubic polynomial than for a quadratic.
+
+The file cubicpolytiming.txt shows the coefficients for the model.
+
+\verbatiminput{cubicpolytiming.txt}
+
+
+\[ time = \hat{f}(numpts) \approx - 0.0007x + 0.1095 \]
+
+The cause of the problem is matrix ill-conditioning.  The range of the problem sizes is 50--3000, while the running times range from a fraction of a second up to about 100 seconds.  To address this problem, we scale the data so that data fall in the range from 0--1.
+
+\verbatiminput{scaledcubic.spk}
+
+(Include plot)
+
+Now all the metrics are improvements over the quadratic fit, which suggests that the cubic-polynomial more accurately reflects the trends in the data.  In the absence of any additional information, we would likely use the cubic-polynomial model to make predictions about running times. 
+
+Suppose there were computational resources available to generate a few more data points.  Running times for problem sizes of 3050--5000 points are given in the file test\_times.txt.  Now we can evaluate our quadratic and cubic models on these new data and get a better comparison of their predictive capabilities.
+
+\verbatiminput{timing3050.txt}
+
+\begin{centering}
+\begin{figure}[htbp]
+\includegraphics[width=12cm]{quad_poly_0to5000_with_pred.png}
+\end{figure}
+\end{centering}
+
+The predictions for the cubic-polynomial are truly impressive.  For a problem sizeof 5000, the true running time was 437 seconds and the prediction was 439 seconds.
 %\subsection{Example: Topology }
 %\subsection{Example: Rosenbrock}
 %

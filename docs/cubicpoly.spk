@@ -1,0 +1,13 @@
+CreateSurface[name = poly3, data = timing_data, type = polynomial,
+              order = 3]
+Evaluate[surface = poly3, data = test_timing_data]
+Fitness[surface = poly3, metric = mean_abs]
+Fitness[surface = poly3, metric = press]
+Fitness[surface = poly3, metric = rsquared]
+Save[surface = poly3, file = 'cubic_poly_timing.txt']
+Save[data = test_timing_data, file = 'test_timing_data.txt']
+ 
+mean_abs for poly3: 26.095
+press for poly3: 38.8014
+rsquared for poly3: 0
+

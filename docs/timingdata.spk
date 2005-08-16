@@ -1,0 +1,11 @@
+LoadData[name = timing_data, file = 'kriging_times_50to3000.txt']
+CreateSurface[name = poly2, data = timing_data, type = polynomial,
+	      order = 2]
+CreateAxes[name = test_axes, bounds = '1 | v 50 5000 100']
+GridPoints[name = test_timing_data, axes = test_axes]
+Evaluate[surface = poly2, data = test_timing_data]
+Save[surface = poly2, file = 'quad_poly_timing.txt']
+Save[data = test_timing_data, file = 'test_timing_data.txt']
+Fitness[surface = poly2, metric = mean_abs]
+
+#CreateSurface[name = poly3, data = timing_data, type =
