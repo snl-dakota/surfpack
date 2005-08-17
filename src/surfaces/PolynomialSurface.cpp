@@ -259,8 +259,6 @@ void PolynomialSurface::setEqualityConstraints(unsigned asv,const SurfPoint& sp,
       } // difVar2
     } // difVar1
   } // if hessian needed
-  cout << "\n" << eqConLHS.asString() << endl;
-  copy(eqConRHS.begin(),eqConRHS.end(),ostream_iterator<double>(cout,"\n"));
 }
 
 //double PolynomialSurface::errorMetric(string metricName)

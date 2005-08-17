@@ -771,7 +771,12 @@ bool SurfData::readLabelsIfPresent(std::istream& is)
   xLabels.resize(xsize);
   for (unsigned i = 0; i < xsize; i++) {
     is >> label;
-    if (label.find('\'') == string::npos) {
+    int first = label.find('\'');
+#ifdef HAVE_STD
+    if (first == string::npos) {
+#else
+    if (first <= label.size() || first > 0) {
+#endif
       return false;
     }
     xLabels[i] = label;
