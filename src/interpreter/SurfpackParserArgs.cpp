@@ -183,6 +183,7 @@ const Arg& Arg::operator=(const Arg& other)
   if (other.rval) {
     this->rval = other.rval->clone();
   }
+  return *this;
 } 
 
 Arg::Arg(const std::string& name_in, Rval* rval_in)

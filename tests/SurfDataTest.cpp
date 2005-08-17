@@ -58,7 +58,7 @@ void SurfDataTest::testConstructorVectorPoints()
   }
   CPPUNIT_ASSERT_EQUAL(sd.xsize, dimPoints);
   CPPUNIT_ASSERT_EQUAL(sd.fsize, dimPoints);
-  CPPUNIT_ASSERT_EQUAL(sd.mapping.size(), numPoints);
+  CPPUNIT_ASSERT(sd.mapping.size()==numPoints);
   for (unsigned i = 0; i < numPoints; i++) {
     CPPUNIT_ASSERT_EQUAL(sd.mapping[i], i);
   }
@@ -80,7 +80,7 @@ void SurfDataTest::testConstructorVectorPointsEmpty()
   }
   CPPUNIT_ASSERT_EQUAL(sd.xsize, unsignedZero);
   CPPUNIT_ASSERT_EQUAL(sd.fsize, unsignedZero);
-  CPPUNIT_ASSERT_EQUAL(sd.mapping.size(), unsignedZero);
+  CPPUNIT_ASSERT(sd.mapping.size()==unsignedZero);
   CPPUNIT_ASSERT(sd.excludedPoints.empty());
   CPPUNIT_ASSERT_EQUAL(sd.defaultIndex, unsignedZero);
   CPPUNIT_ASSERT_EQUAL(sd.xMatrix, static_cast<double*>(0));
@@ -122,10 +122,10 @@ void SurfDataTest::testConstructorFilenameText()
   unsigned pointsInFile = 100;
   const string filename = fullPath("rast100.txt");
   SurfData sd(filename);
-  CPPUNIT_ASSERT_EQUAL(sd.points.size(), pointsInFile);
+  CPPUNIT_ASSERT(sd.points.size()==pointsInFile);
   CPPUNIT_ASSERT_EQUAL(sd.xsize, static_cast<unsigned>(2));
   CPPUNIT_ASSERT_EQUAL(sd.fsize, static_cast<unsigned>(1));
-  CPPUNIT_ASSERT_EQUAL(sd.mapping.size(), pointsInFile);
+  CPPUNIT_ASSERT(sd.mapping.size()==pointsInFile);
   for (unsigned i = 0; i < pointsInFile; i++) {
     CPPUNIT_ASSERT_EQUAL(sd.mapping[i], i);
   }
@@ -142,10 +142,10 @@ void SurfDataTest::testConstructorFilenameBinary()
   unsigned pointsInFile = 100;
   const string filename = fullPath("rast100.sd");
   SurfData sd(filename);
-  CPPUNIT_ASSERT_EQUAL(sd.points.size(), pointsInFile);
+  CPPUNIT_ASSERT(sd.points.size()==pointsInFile);
   CPPUNIT_ASSERT_EQUAL(sd.xsize, static_cast<unsigned>(2));
   CPPUNIT_ASSERT_EQUAL(sd.fsize, static_cast<unsigned>(1));
-  CPPUNIT_ASSERT_EQUAL(sd.mapping.size(), pointsInFile);
+  CPPUNIT_ASSERT(sd.mapping.size()==pointsInFile);
   for (unsigned i = 0; i < pointsInFile; i++) {
     CPPUNIT_ASSERT_EQUAL(sd.mapping[i], i);
   }
@@ -164,10 +164,10 @@ void SurfDataTest::testConstructorIStreamText()
   ifstream infile(filename.c_str(), ios::in);
   SurfData sd(infile, false);
   infile.close();
-  CPPUNIT_ASSERT_EQUAL(sd.points.size(), pointsInFile);
+  CPPUNIT_ASSERT(sd.points.size()==pointsInFile);
   CPPUNIT_ASSERT_EQUAL(sd.xsize, static_cast<unsigned>(2));
   CPPUNIT_ASSERT_EQUAL(sd.fsize, static_cast<unsigned>(1));
-  CPPUNIT_ASSERT_EQUAL(sd.mapping.size(), pointsInFile);
+  CPPUNIT_ASSERT(sd.mapping.size()==pointsInFile);
   for (unsigned i = 0; i < pointsInFile; i++) {
     CPPUNIT_ASSERT_EQUAL(sd.mapping[i], i);
   }
@@ -195,10 +195,10 @@ void SurfDataTest::testConstructorIStreamBinary()
   infileText.close();
   sdText.write(fullPath("fromtext.txt"));
 
-  CPPUNIT_ASSERT_EQUAL(sd.points.size(), pointsInFile);
+  CPPUNIT_ASSERT(sd.points.size()==pointsInFile);
   CPPUNIT_ASSERT_EQUAL(sd.xsize, static_cast<unsigned>(2));
   CPPUNIT_ASSERT_EQUAL(sd.fsize, static_cast<unsigned>(1));
-  CPPUNIT_ASSERT_EQUAL(sd.mapping.size(), pointsInFile);
+  CPPUNIT_ASSERT(sd.mapping.size()==pointsInFile);
   for (unsigned i = 0; i < pointsInFile; i++) {
     CPPUNIT_ASSERT_EQUAL(sd.mapping[i], i);
   }
@@ -224,10 +224,10 @@ void SurfDataTest::testCopyConstructorSimple()
 
   SurfData sd(sd2);
   
-  CPPUNIT_ASSERT_EQUAL(sd.points.size(), pointsInFile);
+  CPPUNIT_ASSERT(sd.points.size()==pointsInFile);
   CPPUNIT_ASSERT_EQUAL(sd.xsize, static_cast<unsigned>(2));
   CPPUNIT_ASSERT_EQUAL(sd.fsize, static_cast<unsigned>(1));
-  CPPUNIT_ASSERT_EQUAL(sd.mapping.size(), pointsInFile);
+  CPPUNIT_ASSERT(sd.mapping.size()==pointsInFile);
   for (unsigned i = 0; i < pointsInFile; i++) {
     CPPUNIT_ASSERT_EQUAL(sd.mapping[i], i);
   }
@@ -276,16 +276,15 @@ void SurfDataTest::testCopyConstructorComplex()
 
   
   
-  CPPUNIT_ASSERT_EQUAL(sd.points.size(), pointsInFile);
-  CPPUNIT_ASSERT_EQUAL(sd.mapping.size(), pointsInFile - numSkippedPoints);
+  CPPUNIT_ASSERT(sd.points.size()==pointsInFile);
+  CPPUNIT_ASSERT(sd.mapping.size()==(pointsInFile - numSkippedPoints));
   CPPUNIT_ASSERT_EQUAL(sd.size(), pointsInFile - numSkippedPoints);
   CPPUNIT_ASSERT_EQUAL(sd.xsize, static_cast<unsigned>(2));
   CPPUNIT_ASSERT_EQUAL(sd.fsize, static_cast<unsigned>(1));
   for (unsigned i = 0; i < sd.size(); i++) {
     CPPUNIT_ASSERT_EQUAL(sd.mapping[i], sd2.mapping[i]);
   }
-  CPPUNIT_ASSERT_EQUAL(sd.excludedPoints.size(), 
-    static_cast<unsigned>(numSkippedPoints));
+  CPPUNIT_ASSERT(sd.excludedPoints.size()==numSkippedPoints);
   CPPUNIT_ASSERT_EQUAL(sd.defaultIndex, unsignedZero);
   CPPUNIT_ASSERT(sd.xMatrix != static_cast<double*>(0));
   CPPUNIT_ASSERT(sd.yVector != static_cast<double*>(0));
@@ -309,12 +308,12 @@ void SurfDataTest::testCopyActive()
   sdPtr1->setDefaultIndex(2);
 
   SurfData sd = sdPtr1->copyActive();
-  CPPUNIT_ASSERT_EQUAL(sd.points.size(), numPoints - numSkippedPoints);
-  CPPUNIT_ASSERT_EQUAL(sd.mapping.size(), numPoints - numSkippedPoints);
+  CPPUNIT_ASSERT(sd.points.size()==(numPoints - numSkippedPoints));
+  CPPUNIT_ASSERT(sd.mapping.size()==(numPoints - numSkippedPoints));
   CPPUNIT_ASSERT_EQUAL(sd.size(), numPoints - numSkippedPoints);
   CPPUNIT_ASSERT_EQUAL(sd.xsize, static_cast<unsigned>(3));
   CPPUNIT_ASSERT_EQUAL(sd.fsize, static_cast<unsigned>(3));
-  CPPUNIT_ASSERT_EQUAL(sd.excludedPoints.size(), unsignedZero);
+  CPPUNIT_ASSERT(sd.excludedPoints.size()==unsignedZero);
   CPPUNIT_ASSERT_EQUAL(sd.defaultIndex, static_cast<unsigned>(2));
   CPPUNIT_ASSERT(!sd.xMatrix );
   CPPUNIT_ASSERT(!sd.yVector );
@@ -334,12 +333,12 @@ void SurfDataTest::testCopyActiveEmpty()
   sdPtr1->setExcludedPoints(skipAllPoints);
 
   SurfData sd = sdPtr1->copyActive();
-  CPPUNIT_ASSERT_EQUAL(sd.points.size(), numPoints - numSkippedPoints);
-  CPPUNIT_ASSERT_EQUAL(sd.mapping.size(), numPoints - numSkippedPoints);
+  CPPUNIT_ASSERT(sd.points.size()==(numPoints - numSkippedPoints));
+  CPPUNIT_ASSERT(sd.mapping.size()==(numPoints - numSkippedPoints));
   CPPUNIT_ASSERT_EQUAL(sd.size(), numPoints - numSkippedPoints);
   CPPUNIT_ASSERT_EQUAL(sd.xsize, static_cast<unsigned>(0));
   CPPUNIT_ASSERT_EQUAL(sd.fsize, static_cast<unsigned>(0));
-  CPPUNIT_ASSERT_EQUAL(sd.excludedPoints.size(), unsignedZero);
+  CPPUNIT_ASSERT(sd.excludedPoints.size()==unsignedZero);
   CPPUNIT_ASSERT_EQUAL(sd.defaultIndex, static_cast<unsigned>(0));
   CPPUNIT_ASSERT(!sd.xMatrix );
   CPPUNIT_ASSERT(!sd.yVector );
@@ -365,7 +364,7 @@ void SurfDataTest::testAssignment()
   // Call assignment operator
   sdMain = sdBinary;
   
-  CPPUNIT_ASSERT_EQUAL(sdMain.points.size(), sdBinary.size());
+  CPPUNIT_ASSERT(sdMain.points.size()==sdBinary.size());
   CPPUNIT_ASSERT_EQUAL(sdMain.xsize, sdBinary.xSize());
   CPPUNIT_ASSERT_EQUAL(sdMain.fsize, sdBinary.fSize());
   CPPUNIT_ASSERT_EQUAL(sdMain.mapping.size(), sdBinary.mapping.size());
@@ -407,10 +406,10 @@ void SurfDataTest::testAssignmentToSelf()
   SurfData& sdRef = sdMain;
   sdMain = sdRef;
   
-  CPPUNIT_ASSERT_EQUAL(sdMain.points.size(), pointsInFile);
+  CPPUNIT_ASSERT(sdMain.points.size()==pointsInFile);
   CPPUNIT_ASSERT_EQUAL(sdMain.xsize, static_cast<unsigned>(2));
   CPPUNIT_ASSERT_EQUAL(sdMain.fsize, static_cast<unsigned>(1));
-  CPPUNIT_ASSERT_EQUAL(sdMain.mapping.size(), pointsInFile);
+  CPPUNIT_ASSERT(sdMain.mapping.size()==pointsInFile);
   for (unsigned i = 0; i < pointsInFile; i++) {
     CPPUNIT_ASSERT_EQUAL(sdMain.mapping[i], i);
   }
@@ -857,7 +856,7 @@ void SurfDataTest::testSetScalerNotNull()
 {
   SurfScaler s;
   sdPtr1->setScaler(&s);
-  CPPUNIT_ASSERT_EQUAL( (unsigned)3,s.scalers.size() );
+  CPPUNIT_ASSERT( 3==s.scalers.size() );
   CPPUNIT_ASSERT( matches(0.0,dynamic_cast<NormalizingScaler*>(s.scalers[0])->offset) );
   CPPUNIT_ASSERT( matches(4.0,dynamic_cast<NormalizingScaler*>(s.scalers[0])->divisor) );
   CPPUNIT_ASSERT( matches(1.0,dynamic_cast<NormalizingScaler*>(s.scalers[1])->offset) );

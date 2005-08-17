@@ -18,7 +18,11 @@
 //#include "data_types.h"
 #include "system_defs.h"
 #include "utilities.h"
+#ifdef HAVE_STD
 #include <cmath>
+#else
+#include <math.h>
+#endif
 using namespace std;
 /*
  * Function: my_atanh

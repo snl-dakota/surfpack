@@ -35,7 +35,11 @@
 #include "system_defs.h"
 #include "allocate.h"
 #include "dsvd2.h"
+#ifdef HAVE_STD
 #include <cmath>
+#else
+#include <math.h>
+#endif
 
 using namespace std;
 

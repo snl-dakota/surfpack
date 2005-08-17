@@ -18,7 +18,11 @@
 #include "system_defs.h"
 #include <vector>
 #include <sstream>
+#ifdef HAVE_STD
 #include <cmath>
+#else
+#include <math.h>
+#endif
 #include "vector_enhancements.h"
 
 // ANN includes

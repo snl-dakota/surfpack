@@ -63,7 +63,7 @@ void SurfPointTest::testConstructorXSpecified()
   CPPUNIT_ASSERT_EQUAL(sp.x[0], 3.0);
   CPPUNIT_ASSERT_EQUAL(sp.x[1], -3.0);
   CPPUNIT_ASSERT_EQUAL(sp.x[2], 0.0);
-  CPPUNIT_ASSERT_EQUAL(sp.x.size(), static_cast<unsigned>(3));
+  CPPUNIT_ASSERT(sp.x.size()==3);
   
 
 }
@@ -72,8 +72,8 @@ void SurfPointTest::testConstructorXSpecifiedPlusOneF()
   SurfPoint sp(x2, 2.0);
   CPPUNIT_ASSERT_EQUAL(sp.x[0], 0.0);
   CPPUNIT_ASSERT_EQUAL(sp.f[0], 2.0);
-  CPPUNIT_ASSERT_EQUAL(sp.x.size(), static_cast<unsigned>(1));
-  CPPUNIT_ASSERT_EQUAL(sp.f.size(), static_cast<unsigned>(1));
+  CPPUNIT_ASSERT(sp.x.size()==1);
+  CPPUNIT_ASSERT(sp.f.size()==1);
 }
 
 void SurfPointTest::testConstructorXSpecifiedFVector()
@@ -82,8 +82,8 @@ void SurfPointTest::testConstructorXSpecifiedFVector()
   CPPUNIT_ASSERT_EQUAL(sp.x[0], 0.0);
   CPPUNIT_ASSERT_EQUAL(sp.f[0], 1.0);
   CPPUNIT_ASSERT_EQUAL(sp.f[1], -2.0);
-  CPPUNIT_ASSERT_EQUAL(sp.x.size(), static_cast<unsigned>(1));
-  CPPUNIT_ASSERT_EQUAL(sp.f.size(), static_cast<unsigned>(2));
+  CPPUNIT_ASSERT(sp.x.size()==1);
+  CPPUNIT_ASSERT(sp.f.size()==2);
 
 }
 
@@ -109,8 +109,8 @@ void SurfPointTest::testConstructorFromIStreamBinary()
   CPPUNIT_ASSERT_EQUAL(sp.x[1], 2.0);
   CPPUNIT_ASSERT_EQUAL(sp.f[0], 3.0);
   CPPUNIT_ASSERT_EQUAL(sp.f[1], 4.0);
-  CPPUNIT_ASSERT_EQUAL(sp.x.size(), static_cast<unsigned>(2));
-  CPPUNIT_ASSERT_EQUAL(sp.f.size(), static_cast<unsigned>(2));
+  CPPUNIT_ASSERT(sp.x.size()==2);
+  CPPUNIT_ASSERT(sp.f.size()==2);
 }
 
 void SurfPointTest::testConstructorFromIStreamText()
@@ -123,8 +123,8 @@ void SurfPointTest::testConstructorFromIStreamText()
   CPPUNIT_ASSERT_EQUAL(sp.x[1], 2.0);
   CPPUNIT_ASSERT_EQUAL(sp.f[0], 3.0);
   CPPUNIT_ASSERT_EQUAL(sp.f[1], 4.0);
-  CPPUNIT_ASSERT_EQUAL(sp.x.size(), static_cast<unsigned>(2));
-  CPPUNIT_ASSERT_EQUAL(sp.f.size(), static_cast<unsigned>(2));
+  CPPUNIT_ASSERT(sp.x.size()==2);
+  CPPUNIT_ASSERT(sp.f.size()==2);
 }
 
 void SurfPointTest::testCopyConstructor()
@@ -134,8 +134,8 @@ void SurfPointTest::testCopyConstructor()
   CPPUNIT_ASSERT_EQUAL(sp.x[0], 0.0);
   CPPUNIT_ASSERT_EQUAL(sp.f[0], 1.0);
   CPPUNIT_ASSERT_EQUAL(sp.f[1], -2.0);
-  CPPUNIT_ASSERT_EQUAL(sp.x.size(), static_cast<unsigned>(1));
-  CPPUNIT_ASSERT_EQUAL(sp.f.size(), static_cast<unsigned>(2));
+  CPPUNIT_ASSERT(sp.x.size()==1);
+  CPPUNIT_ASSERT(sp.f.size()==2);
 }
 
 void SurfPointTest::testConstructorBadXSize()
@@ -153,8 +153,8 @@ void SurfPointTest::testOperatorAssignment()
   CPPUNIT_ASSERT_EQUAL(sp.x[0], 0.0);
   CPPUNIT_ASSERT_EQUAL(sp.f[0], 1.0);
   CPPUNIT_ASSERT_EQUAL(sp.f[1], -2.0);
-  CPPUNIT_ASSERT_EQUAL(sp.x.size(), static_cast<unsigned>(1));
-  CPPUNIT_ASSERT_EQUAL(sp.f.size(), static_cast<unsigned>(2));
+  CPPUNIT_ASSERT(sp.x.size()==1);
+  CPPUNIT_ASSERT(sp.f.size()==2);
 }
 
 void SurfPointTest::testOperatorAssignmentToSelf()
@@ -164,8 +164,8 @@ void SurfPointTest::testOperatorAssignmentToSelf()
   CPPUNIT_ASSERT_EQUAL(sp.x[0], 0.0);
   CPPUNIT_ASSERT_EQUAL(sp.f[0], 1.0);
   CPPUNIT_ASSERT_EQUAL(sp.f[1], -2.0);
-  CPPUNIT_ASSERT_EQUAL(sp.x.size(), static_cast<unsigned>(1));
-  CPPUNIT_ASSERT_EQUAL(sp.f.size(), static_cast<unsigned>(2));
+  CPPUNIT_ASSERT(sp.x.size()==1);
+  CPPUNIT_ASSERT(sp.f.size()==2);
 }
 
 void SurfPointTest::testOperatorEquality()
@@ -249,7 +249,7 @@ void SurfPointTest::testResize()
 {
   SurfPoint x(vector<double>(1));
   x.resize(2);
-  CPPUNIT_ASSERT_EQUAL(static_cast<unsigned>(2),x.x.size());
+  CPPUNIT_ASSERT(2==x.x.size());
   CPPUNIT_ASSERT_EQUAL(static_cast<unsigned>(2),x.xSize());
 }
 
@@ -261,7 +261,7 @@ void SurfPointTest::testSetX()
   // Expand beyond current limits
   x4.setX(3,1);
   CPPUNIT_ASSERT_EQUAL(static_cast<unsigned>(4),x4.xSize());
-  CPPUNIT_ASSERT_EQUAL(static_cast<unsigned>(4),x4.x.size());
+  CPPUNIT_ASSERT(4==x4.x.size());
 }
 // I/O
 void SurfPointTest::testWriteBinary()

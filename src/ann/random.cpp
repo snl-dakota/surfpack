@@ -21,7 +21,11 @@
 #include "random.h" 
 //#include "data_types.h"
 #include "system_defs.h"
+#ifdef HAVE_STD
 #include <cstdlib>
+#else
+#include <stdlib.h>
+#endif
 
 extern "C" void srand48(long int);
 

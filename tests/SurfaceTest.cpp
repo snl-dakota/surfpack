@@ -147,7 +147,7 @@ void SurfaceTest::scaleUniform()
 {
   polysurf->scaleUniform();
   polysurf->createModel();
-  CPPUNIT_ASSERT_EQUAL( (unsigned)1, polysurf->scaler->scalers.size());
+  CPPUNIT_ASSERT( 1==polysurf->scaler->scalers.size());
   CPPUNIT_ASSERT( matches(-3.0, dynamic_cast<NormalizingScaler*>(polysurf->scaler->scalers[0])->offset));
   CPPUNIT_ASSERT( matches(6.0, dynamic_cast<NormalizingScaler*>(polysurf->scaler->scalers[0])->divisor));
 }

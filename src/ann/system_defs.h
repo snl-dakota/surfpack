@@ -28,7 +28,7 @@
 
 /* C headers */
 
-//#if defined(ANSI_HEADERS) && defined(__cplusplus)
+#ifdef HAVE_STD
 /* C++ compiler using new C headers */
 #include <cstdlib>
 #include <cstdio>
@@ -41,20 +41,20 @@
 #include <csignal>
 #include <cerrno>
 #include <ctime>
-//#else
+#else
 /* C compiler (old style headers are used to avoid std namespace)
    or a C++ compiler which uses old C headers (SGI, TFLOP) */
-//#include <stdlib.h>
-//#include <stdio.h>
-//#include <string.h>
-//#include <ctype.h>
-//#include <float.h>
-//#include <limits.h>
-//#include <math.h>
-//#include <assert.h>
-//#include <signal.h>
-//#include <errno.h>
-//#include <time.h>
-//#endif /* ANSI_HEADERS && __cplusplus */
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+#include <float.h>
+#include <limits.h>
+#include <math.h>
+#include <assert.h>
+#include <signal.h>
+#include <errno.h>
+#include <time.h>
+#endif /* HAVE_STD */
 
 #endif /* SYSTEM_DEFS_H */

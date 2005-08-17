@@ -26,8 +26,8 @@ void SurfScalerTest::tearDown()
 void SurfScalerTest::testConstructor()
 {
   SurfScaler ss;
-  CPPUNIT_ASSERT_EQUAL((unsigned)0,ss.scalers.size());
-  CPPUNIT_ASSERT_EQUAL((unsigned)0,ss.responseScalers.size());
+  CPPUNIT_ASSERT(0==ss.scalers.size());
+  CPPUNIT_ASSERT(0==ss.responseScalers.size());
 }
 
 //void SurfScalerTest::testConstructorXSpecified()
@@ -77,7 +77,7 @@ void SurfScalerTest::testComputeScalingParameters()
   SurfData sd(spts);
   SurfScaler ss;
   ss.computeScalingParameters(sd);
-  CPPUNIT_ASSERT_EQUAL((unsigned)1,ss.scalers.size());
+  CPPUNIT_ASSERT(1==ss.scalers.size());
   CPPUNIT_ASSERT(matches(dynamic_cast<NormalizingScaler*>(ss.scalers[0])->offset,1.0));
   CPPUNIT_ASSERT(matches(dynamic_cast<NormalizingScaler*>(ss.scalers[0])->divisor,9.0));
 }
@@ -94,7 +94,7 @@ void SurfScalerTest::testComputeScalingParametersFour1DPts()
   SurfData sd(spts);
   SurfScaler ss;
   ss.computeScalingParameters(spts);
-  CPPUNIT_ASSERT_EQUAL((unsigned)1,ss.scalers.size());
+  CPPUNIT_ASSERT(1==ss.scalers.size());
   CPPUNIT_ASSERT(matches(dynamic_cast<NormalizingScaler*>(ss.scalers[0])->offset,-6.0));
   CPPUNIT_ASSERT(matches(dynamic_cast<NormalizingScaler*>(ss.scalers[0])->divisor,12.0));
 }
@@ -111,7 +111,7 @@ void SurfScalerTest::testComputeScalingParametersFour2DPts()
   SurfData sd(spts);
   SurfScaler ss;
   ss.computeScalingParameters(spts);
-  CPPUNIT_ASSERT_EQUAL((unsigned)2,ss.scalers.size());
+  CPPUNIT_ASSERT(2==ss.scalers.size());
   CPPUNIT_ASSERT(matches(dynamic_cast<NormalizingScaler*>(ss.scalers[0])->offset,-6.0));
   CPPUNIT_ASSERT(matches(dynamic_cast<NormalizingScaler*>(ss.scalers[0])->divisor,12.0));
   CPPUNIT_ASSERT(matches(dynamic_cast<NormalizingScaler*>(ss.scalers[1])->offset,1.0));
