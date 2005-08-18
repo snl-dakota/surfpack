@@ -345,11 +345,12 @@ void KrigingSurface::build(SurfData& data)
 
 void KrigingSurface::config(const Arg& arg)
 {
+  vector<double> temp;
   string argname = arg.name;
   if (argname == "conmin_seed") {
-    setConminThetaVars(arg.getRVal()->getTuple()); 
+    setConminThetaVars(RvalTuple::asVectorDouble(temp,arg.getRVal()->getTuple())); 
   } else if (argname == "correlations") {
-    usePreComputedCorrelationVector(arg.getRVal()->getTuple());
+    usePreComputedCorrelationVector(RvalTuple::asVectorDouble(temp,arg.getRVal()->getTuple()));
   } else if (argname == "uniform_correlation") {
     useUniformCorrelationValue(arg.getRVal()->getReal());
   } else {

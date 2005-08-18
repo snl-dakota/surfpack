@@ -178,6 +178,9 @@ public:
   /// Causes data not to be scaled at all before building
   virtual void noScale();
 
+  /// Ensures scaler and sd are non-null and forwards Arg on
+  void scalingArg(const Arg& arg);
+
   /// Set the state of the SurfData object to use the same defaultIndex and 
   /// set of excludedPoints that were used when the Surface approximation was
   /// built

@@ -10,9 +10,18 @@
 
 using namespace std;
 
+const std::string& dataRoot(const std::string* newroot)
+{
+  static string s("/tmp/SurfpackData");
+  if (newroot) {
+    s = *newroot;
+  }
+  return s;
+}
+
 const string fullPath(const string filename)
 {
-  return "/tmp/SurfpackData/" + filename;
+  return dataRoot() + "/" + filename;
 }
 
 void writePoint1Files()
@@ -285,11 +294,12 @@ void initialize()
   if (!initialized) {
     ostringstream heredoc;
     heredoc << "sh <<MKDIREOF" << endl
- 	    << "if test -d /tmp/SurfpackData" << endl
+ 	    << "if test -d " << dataRoot()  << endl
  	    << "then" << endl
+ 	    << "  chmod 777 " << dataRoot() << endl
 	    << "  echo Directory already exists " << endl
 	    << "else" << endl
-	    << "  mkdir /tmp/SurfpackData" << endl
+	    << "  mkdir -m 777 " << dataRoot() << endl
 	    << "fi " << endl
  	    << "MKDIREOF" << endl;
     system(heredoc.str().c_str()); 
@@ -310,7 +320,7 @@ void cleanup()
   cout << "Cleaning up test files...." << endl;
   ostringstream heredoc;
   heredoc << "sh <<RMDIREOF" << endl
-          << "rm -rf /tmp/SurfpackData" << endl
+          << "rm -rf " << dataRoot() << endl
           << "RMDIREOF" << endl;
   system(heredoc.str().c_str()); 
 }

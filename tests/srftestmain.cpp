@@ -5,9 +5,14 @@
 #include <cppunit/extensions/TestFactoryRegistry.h>
 #include <cppunit/ui/text/TestRunner.h>
 #include "unittests.h"
+#include <string>
 
 int main(int argc, char* argv[])
 {
+  if (argc == 2) {
+    std::string dataroot = std::string(argv[1]);
+    dataRoot(&dataroot);
+  }
   // Get the top level suite from the registry
   CppUnit::Test *suite = CppUnit::TestFactoryRegistry::getRegistry().makeTest();
 

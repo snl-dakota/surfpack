@@ -466,6 +466,7 @@ void SurfDataTest::testOperatorIndexingScaled()
 {
   SurfScaler s;
   SurfData& msd = *sdPtr1;
+  s.normalizeAll(msd);
   msd.setScaler(&s);
   const SurfPoint& sp1 = msd[0];
   CPPUNIT_ASSERT(matches(sp1[0],0));
@@ -855,6 +856,7 @@ void SurfDataTest::testSetScalerNull()
 void SurfDataTest::testSetScalerNotNull()
 {
   SurfScaler s;
+  s.normalizeAll(*sdPtr1);
   sdPtr1->setScaler(&s);
   CPPUNIT_ASSERT( 3==s.scalers.size() );
   CPPUNIT_ASSERT( matches(0.0,dynamic_cast<NormalizingScaler*>(s.scalers[0])->offset) );
@@ -870,6 +872,7 @@ void SurfDataTest::testIsScaled()
   CPPUNIT_ASSERT( sdPtr1->scaler == 0 );
   CPPUNIT_ASSERT( !sdPtr1->isScaled() );
   SurfScaler s;
+  s.normalizeAll(*sdPtr1);
   sdPtr1->setScaler(&s);
   CPPUNIT_ASSERT( sdPtr1->isScaled() );
 }

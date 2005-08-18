@@ -28,10 +28,13 @@ Surface::Surface(SurfData* sd_)
 // setData(...) will call delete on the old value of sd, which will be
 // garbage if it's not initialized to NULL.
 Surface::Surface(const Surface& other) 
-  : sd(0), scaler(other.scaler), xsize(other.xsize), 
+  : sd(0),  scaler(0), xsize(other.xsize), 
   builtOK(other.builtOK), dataModified(other.dataModified), 
   responseIndex(other.responseIndex)
 {
+  if (other.scaler) {
+    scaler = new SurfScaler(*other.scaler);
+  }
   setData(other.sd);
 }
 
@@ -177,12 +180,15 @@ void Surface::config(const Arg& arg)
     string scaleOption = arg.getRVal()->getStringLiteral();
     if (scaleOption == "uniform") {
       scaleUniform();
-      cout << "Uniform scaling" << endl;
+    } else if (scaleOption == "auto") {
+      //autoScale();
     } else if (scaleOption == "none") {
       noScale();
     } else {
       throw string("Unrecognized option for surface parameter 'scaling'");
     }  
+  } else if (arg.name == "norm_scale" || arg.name == "log_scale") {
+    scalingArg(arg);
   } else if (arg.name == "xsize") {
     setXSize(arg.getRVal()->getInteger());
   }
@@ -441,7 +447,10 @@ void Surface::setData(SurfData* sd_)
 /// (max_val - min_val).
 void Surface::scaleUniform()
 {
+  assert(sd);
+  delete scaler;
   this->scaler = new SurfScaler();
+  scaler->normalizeAll(*sd);
 }
 
 /// Causes data not to be scaled at all before building
@@ -449,6 +458,15 @@ void Surface::noScale()
 {
   delete scaler;
   scaler = 0;
+}
+
+void Surface::scalingArg(const Arg& arg) 
+{
+  assert(sd);
+  if (!scaler) {
+    scaler = new SurfScaler;
+  }
+  scaler->config(*sd,arg);    
 }
 
 /// Set the state of the SurfData object to use the same defaultIndex and 
@@ -519,6 +537,7 @@ void Surface::createModel(SurfData* surfData)
   // before building the surface
   if (scaler) {
     sd->setScaler(scaler);
+    //cout << scaler->asString() << endl;
   }
   SurfData& sdRef = *sd;
   build(sdRef);

@@ -5,7 +5,7 @@
 
 #include <string>
 
-
+const std::string& dataRoot(const std::string* newroot = 0);
 const std::string fullPath(const std::string filename);
 const unsigned unsignedZero = 0;
 const double doubleZero = 0.0;

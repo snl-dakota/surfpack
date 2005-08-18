@@ -557,7 +557,7 @@ void PolynomialSurface::writeText(ostream& os)
 {
   prepareData();
   resetTermCounter();
-  os << xsize << " dimensions" << endl;
+  os << xsize << " dimension(s)" << endl;
   os << order << " order" << endl;
   os.setf(ios::left);
   for (unsigned difVar = 0; difVar < coefficients.size(); difVar++) {

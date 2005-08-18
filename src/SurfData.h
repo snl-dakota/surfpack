@@ -5,6 +5,7 @@
 #include "surfpack_system_headers.h"
 
 #include "SurfPoint.h"
+#include "SurfpackParser.h"
 
 class Surface;
 class SurfScaler;
@@ -153,6 +154,10 @@ public:
   /// Retrieve the label for one of the predictor variables
   const std::string& getFLabel(unsigned index) const;
 
+  /// Retrieve the index and variable type (predictor/response) for a given
+  /// name.  Return false if not found
+  bool varIndex(const std::string& name, unsigned& index, bool& isResponse) const;
+
   
 
 // ____________________________________________________________________________
@@ -171,7 +176,7 @@ public:
   void setResponse(unsigned index, double value);
 
   /// Calculates parameters so that the data can be viewed as scaled
-  void setScaler(SurfScaler* scaler_);
+  void setScaler(SurfScaler* scaler_in);
   
   /// Add a point to the data set. The parameter point will be copied.
   void addPoint(const SurfPoint& sp);

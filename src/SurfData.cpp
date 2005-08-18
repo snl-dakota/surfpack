@@ -32,6 +32,7 @@ SurfData::SurfData(const vector<SurfPoint>& points_)
   } else {
     this->xsize = points_[0].xSize();
     this->fsize = points_[0].fSize();
+    defaultLabels();
     for (unsigned i = 0; i < points_.size(); i++) {
       this->addPoint(points_[i]);
     }
@@ -65,7 +66,8 @@ SurfData::SurfData(std::istream& is, bool binary)
 /// Makes a deep copy of the object 
 SurfData::SurfData(const SurfData& other) 
   : xsize(other.xsize), fsize(other.fsize),scaler(other.scaler), 
-  excludedPoints(other.excludedPoints), defaultIndex(other.defaultIndex)
+  excludedPoints(other.excludedPoints), defaultIndex(other.defaultIndex),
+  xLabels(other.xLabels), fLabels(other.fLabels)
 {
   for (unsigned i = 0; i < other.points.size(); i++) {
     this->addPoint(*other.points[i]);
@@ -95,6 +97,8 @@ SurfData::~SurfData()
 /// Data member initialization that is common to all constructors
 void SurfData::init()
 {
+  xLabels.clear();
+  fLabels.clear();
   defaultIndex = 0;
   defaultMapping();
   xMatrix = 0;
@@ -171,6 +175,8 @@ void SurfData::cleanup()
 SurfData& SurfData::operator=(const SurfData& other)
 {
   if (*this != other) {
+    xLabels = other.xLabels;
+    fLabels = other.fLabels;
     cleanup();
     this->xsize = other.xsize;
     this->fsize = other.fsize;
@@ -305,6 +311,34 @@ const std::string& SurfData::getFLabel(unsigned index) const
   return fLabels[index];
 }
 
+/// Retrieve the index and variable type (predictor/response) for a given
+/// name.  Return false if not found
+bool SurfData::varIndex(const std::string& name, unsigned& index, 
+  bool& isResponse) const
+{
+  vector< string>::const_iterator iter = 
+    find(xLabels.begin(),xLabels.end(),name);
+  if (iter != xLabels.end()) {
+    index = iter - xLabels.begin();
+    isResponse = false;
+    return true;
+  } else {
+    iter = find(fLabels.begin(),fLabels.end(),name);
+    if (iter != fLabels.end()) {
+      index = iter - fLabels.begin();
+      isResponse = true;
+      return true;
+    } else {
+      cout << "Name sought: " << name << endl;
+      cout << "Predictors: " << endl;
+      copy(xLabels.begin(),xLabels.end(),ostream_iterator<string>(cout,"\n"));
+      cout << "Responses: " << endl;
+      copy(fLabels.begin(),fLabels.end(),ostream_iterator<string>(cout,"\n"));
+      return false;
+    }
+  }
+}
+
 // ____________________________________________________________________________
 // Commands 
 // ____________________________________________________________________________
@@ -333,17 +367,16 @@ void SurfData::setResponse(unsigned index, double value)
 }
   
 /// Calculates parameters so that the data can be viewed as scaled
-void SurfData::setScaler(SurfScaler* scaler_)
+void SurfData::setScaler(SurfScaler* scaler_in)
 {
-  // Make sure the scaler isn't null before you go calling methods on it.
-  if (scaler_) {
-    // Call the scaling operation BEFORE making the assignment, because
-    // computeScalingParameters will call operator[] on this, and we want to make sure
-    // it calls the unscaled version during the scaling
-    scaler_->computeScalingParameters(*this);
+  this->scaler = scaler_in;
+  if (scaler) {
+    assert(scaler->xSize() == xsize);
+    assert(scaler->fSize() == fsize);
+    enableScaling();
+  } else {
+    disableScaling();
   }
-  this->scaler = scaler_;
-  enableScaling();
 }
     
 /// Add a point to the data set. The parameter point will be copied.
@@ -352,7 +385,9 @@ void SurfData::addPoint(const SurfPoint& sp)
   if (points.empty()) {
     xsize = sp.xSize();
     fsize = sp.fSize();
-    defaultLabels();
+    if (xLabels.empty()) {
+      defaultLabels();
+    }
   } else {
     if (sp.xSize() != xsize || sp.fSize() != fsize) {
       ostringstream errormsg;
@@ -685,9 +720,11 @@ void SurfData::readText(istream& is)
     streamline.clear();
     if (!readLabelsIfPresent(streamline)) {
       defaultLabels();
-      istringstream firstpoint(sline);
-      this->addPoint(SurfPoint(xsize,fsize,firstpoint,false));
-      numPointsRead = 1;
+      if (sline != "" && sline != "\n") {
+        istringstream firstpoint(sline);
+        this->addPoint(SurfPoint(xsize,fsize,firstpoint,false));
+        numPointsRead = 1;
+      }
     }
     while (numPointsRead < size) {
       // Throw an exception if we hit the end-of-file before we've
