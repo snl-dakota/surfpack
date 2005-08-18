@@ -5,7 +5,7 @@
 
 class Arg;
 typedef std::vector<Arg> ArgList;
-typedef std::vector<double> Tuple;
+typedef std::vector< std::string > Tuple;
 class Triplet 
 {
 public:
@@ -18,6 +18,7 @@ public:
 class Rval
 {
 public:
+  virtual const std::string& argType() const;
   virtual int getInteger() const;
   virtual double getReal() const;
   virtual const Tuple& getTuple() const;
@@ -56,6 +57,9 @@ public:
   RvalTuple(const Tuple& value_in); 
   virtual Rval* clone() const;
   virtual const Tuple& getTuple() const;
+  static const std::vector< double >& 
+    asVectorDouble(std::vector<double>& result, const Tuple& tuple);
+  virtual const std::string& argType() const;
 private:
   Tuple value;
 };
@@ -96,6 +100,7 @@ public:
   RvalArgList(const ArgList& value_in);
   virtual Rval* clone() const;
   virtual const ArgList& getArgList() const;
+  virtual const std::string& argType() const;
 private:
   ArgList value;
 };

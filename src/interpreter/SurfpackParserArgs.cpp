@@ -3,6 +3,12 @@
 
 Triplet::Triplet() : min(0), max(0), numPts(0) {}
 
+const std::string& Rval::argType() const
+{
+  const static std::string s("none");
+  return s;
+}
+
 int Rval::getInteger() const
 {
   static int dummy = 0;
@@ -107,6 +113,22 @@ Rval* RvalTuple::clone() const
   return new RvalTuple(value);
 }
 
+const std::string& RvalTuple::argType() const
+{
+  const static std::string s("tuple");
+  return s;
+}
+
+const std::vector< double >& 
+RvalTuple::asVectorDouble(std::vector< double >& result, const Tuple& tuple)
+{
+  result.resize(tuple.size());
+  for (unsigned i = 0; i < tuple.size(); i++) {
+    result[i] = atof(tuple[i].c_str());
+  }
+  return result;
+}
+
 RvalTriplet::RvalTriplet(const Triplet& value_in) : value(value_in) 
 {
 
@@ -166,6 +188,12 @@ const ArgList& RvalArgList::getArgList() const
 Rval* RvalArgList::clone() const
 {
   return new RvalArgList(value);
+}
+
+const std::string& RvalArgList::argType() const
+{
+  const static std::string s("arglist");
+  return s;
 }
 
 Arg::Arg(const Arg& other)

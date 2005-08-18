@@ -54,19 +54,21 @@ argval:		IDENTIFIER 					{parser.addArgValIdent();}
 	| 	{parser.pushNewArgList();} arglist		{parser.addArgValArgList();}
 ;
 
-tuple:		'(' {parser.newTuple();} number {parser.addTupleVal();} dimlisttail ')' 
+tuple:		'(' {parser.newTuple();} tupleelement {parser.addTupleVal();} dimlisttail ')' 
 ;
 
-number:		INTEGER
+tupleelement:	INTEGER
 	|	REAL
+	|	STRING
+	|	IDENTIFIER
 ;
 
 dimlisttail:	/* empty */	
-	|	',' number {parser.addTupleVal();} dimlisttail
+	|	',' tupleelement {parser.addTupleVal();} dimlisttail
 ;
 
-triplet:	'{' number {parser.addTripletMin();} ',' 
-		number {parser.addTripletMax();} ',' 
+triplet:	'{' tupleelement {parser.addTripletMin();} ',' 
+		tupleelement {parser.addTripletMax();} ',' 
 		INTEGER {parser.addTripletNumPts();} '}'
 ;
 

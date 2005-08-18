@@ -112,10 +112,7 @@ void SurfpackParser::addArgName()
   } else {
     Arg newArg;
     currentArgList->push_back(newArg);
-    std::cout << "list: " << currentArgList << " size: " << currentArgList->size() << std::endl;
     currentArgIndex++;
-    std::cout << "index: " << currentArgIndex << std::endl;
-    std::cout << "name: " << global_lexer->currentToken() << std::endl;
     (*currentArgList)[currentArgIndex].name = std::string(global_lexer->currentToken());
   }
 }
@@ -178,15 +175,10 @@ void SurfpackParser::addArgValArgList()
   if (currentArgIndex == -1) {
     std::cerr << "currentArgIndex = -1; cannot assign ArgList" << std::endl;
   } else {
-    std::cout << "list: " << currentArgList << std::endl;
-    std::cout << "currentArgList->size(): " << currentArgList->size() << std::endl;
-    std::cout << "currentArgIndex: " << currentArgIndex << std::endl;
     ArgList temp = arglistStack.top();
     popArgList();
     (*currentArgList)
       [currentArgIndex].setRVal(new RvalArgList(temp));
-    std::cout << "After adding arglist to arg: " << std::endl;
-    std::cout << "curlist: " << currentArgList << " size: " << currentArgList->size() << std::endl;
               
   }
 }
@@ -262,7 +254,8 @@ void SurfpackParser::addTupleVal()
   if (currentArgIndex == -1) {
     std::cerr << "currentArgIndex = -1; cannot addTupleVal" << std::endl;
   } else {
-    double val = atof(global_lexer->currentToken());
+    //double val = atof(global_lexer->currentToken());
+    std::string val = std::string(global_lexer->currentToken());
     currentTuple->push_back(val);
     //(*currentArgList)[currentArgIndex].getRVal()->getTuple().push_back(val);
   }
@@ -347,6 +340,6 @@ int yylex()
 
 void appendToken(const char* token)
 {
-  std::cout << token << std::endl;
+  //std::cout << token << std::endl;
   SurfpackParser::cmdstream << token;
 }
