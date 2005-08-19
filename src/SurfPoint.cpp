@@ -83,10 +83,26 @@ SurfPoint& SurfPoint::operator=(const SurfPoint& other)
   return (*this);
 }
 
+bool doubles_match(double x, double y)
+{
+    if (abs(x) < 1e-10) {
+      if (abs(y > 1e-10)) return false;
+    } else {
+      if (abs(x-y)/abs(x) > 1e-10) return false;
+    }
+    return true;
+}
 /// Tests for deep equality
 bool SurfPoint::operator==(const SurfPoint& other) const
 {
-  return x == other.x && f == other.f;
+  //return x == other.x && f == other.f;
+  for (unsigned i = 0; i < x.size(); i++) {
+    if (!doubles_match(x[i],other.x[i])) return false;
+  }
+  for (unsigned i = 0; i < f.size(); i++) {
+    if (!doubles_match(f[i],other.f[i])) return false;
+  }
+  return true;
 }
 
 /// Tests for deep inequality

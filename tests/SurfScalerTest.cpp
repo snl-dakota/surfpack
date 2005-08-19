@@ -78,8 +78,10 @@ void SurfScalerTest::testComputeScalingParameters()
   SurfScaler ss;
   ss.normalizeAll(sd);
   CPPUNIT_ASSERT(1==ss.scalers.size());
-  CPPUNIT_ASSERT(matches(dynamic_cast<NormalizingScaler*>(ss.scalers[0])->offset,1.0));
-  CPPUNIT_ASSERT(matches(dynamic_cast<NormalizingScaler*>(ss.scalers[0])->divisor,9.0));
+  int loc = ss.scalers[0]->asString().find("offset: 1");
+  CPPUNIT_ASSERT(loc >= 0 && loc < ss.scalers[0]->asString().size());
+  loc = ss.scalers[0]->asString().find("divisor: 9");
+  CPPUNIT_ASSERT(loc >= 0 && loc < ss.scalers[0]->asString().size());
 }
 
 void SurfScalerTest::testComputeScalingParametersFour1DPts()
@@ -95,8 +97,10 @@ void SurfScalerTest::testComputeScalingParametersFour1DPts()
   SurfScaler ss;
   ss.normalizeAll(spts);
   CPPUNIT_ASSERT(1==ss.scalers.size());
-  CPPUNIT_ASSERT(matches(dynamic_cast<NormalizingScaler*>(ss.scalers[0])->offset,-6.0));
-  CPPUNIT_ASSERT(matches(dynamic_cast<NormalizingScaler*>(ss.scalers[0])->divisor,12.0));
+  int loc = ss.scalers[0]->asString().find("offset: -6");
+  CPPUNIT_ASSERT(loc >= 0 && loc < ss.scalers[0]->asString().size());
+  loc = ss.scalers[0]->asString().find("divisor: 12");
+  CPPUNIT_ASSERT(loc >= 0 && loc < ss.scalers[0]->asString().size());
 }
 
 void SurfScalerTest::testComputeScalingParametersFour2DPts()
@@ -112,10 +116,14 @@ void SurfScalerTest::testComputeScalingParametersFour2DPts()
   SurfScaler ss;
   ss.normalizeAll(spts);
   CPPUNIT_ASSERT(2==ss.scalers.size());
-  CPPUNIT_ASSERT(matches(dynamic_cast<NormalizingScaler*>(ss.scalers[0])->offset,-6.0));
-  CPPUNIT_ASSERT(matches(dynamic_cast<NormalizingScaler*>(ss.scalers[0])->divisor,12.0));
-  CPPUNIT_ASSERT(matches(dynamic_cast<NormalizingScaler*>(ss.scalers[1])->offset,1.0));
-  CPPUNIT_ASSERT(matches(dynamic_cast<NormalizingScaler*>(ss.scalers[1])->divisor,3.0));
+  int loc = ss.scalers[0]->asString().find("offset: -6");
+  CPPUNIT_ASSERT(loc >= 0 && loc < ss.scalers[0]->asString().size());
+  loc = ss.scalers[0]->asString().find("divisor: 12");
+  CPPUNIT_ASSERT(loc >= 0 && loc < ss.scalers[0]->asString().size());
+  loc = ss.scalers[1]->asString().find("offset: 1");
+  CPPUNIT_ASSERT(loc >= 0 && loc < ss.scalers[1]->asString().size());
+  loc = ss.scalers[1]->asString().find("divisor: 3");
+  CPPUNIT_ASSERT(loc >= 0 && loc < ss.scalers[1]->asString().size());
 }
 
 void SurfScalerTest::testScale()

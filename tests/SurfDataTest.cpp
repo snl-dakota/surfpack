@@ -855,16 +855,22 @@ void SurfDataTest::testSetScalerNull()
 
 void SurfDataTest::testSetScalerNotNull()
 {
-  SurfScaler s;
-  s.normalizeAll(*sdPtr1);
-  sdPtr1->setScaler(&s);
-  CPPUNIT_ASSERT( 3==s.scalers.size() );
-  CPPUNIT_ASSERT( matches(0.0,dynamic_cast<NormalizingScaler*>(s.scalers[0])->offset) );
-  CPPUNIT_ASSERT( matches(4.0,dynamic_cast<NormalizingScaler*>(s.scalers[0])->divisor) );
-  CPPUNIT_ASSERT( matches(1.0,dynamic_cast<NormalizingScaler*>(s.scalers[1])->offset) );
-  CPPUNIT_ASSERT( matches(4.0,dynamic_cast<NormalizingScaler*>(s.scalers[1])->divisor) );
-  CPPUNIT_ASSERT( matches(2.0,dynamic_cast<NormalizingScaler*>(s.scalers[2])->offset) );
-  CPPUNIT_ASSERT( matches(4.0,dynamic_cast<NormalizingScaler*>(s.scalers[2])->divisor) );
+  SurfScaler ss;
+  ss.normalizeAll(*sdPtr1);
+  sdPtr1->setScaler(&ss);
+  CPPUNIT_ASSERT( 3==ss.scalers.size() );
+  int loc = ss.scalers[0]->asString().find("offset: 0");
+  CPPUNIT_ASSERT(loc >= 0 && loc < ss.scalers[0]->asString().size());
+  loc = ss.scalers[0]->asString().find("divisor: 4");
+  CPPUNIT_ASSERT(loc >= 0 && loc < ss.scalers[0]->asString().size());
+  loc = ss.scalers[1]->asString().find("offset: 1");
+  CPPUNIT_ASSERT(loc >= 0 && loc < ss.scalers[1]->asString().size());
+  loc = ss.scalers[1]->asString().find("divisor: 4");
+  CPPUNIT_ASSERT(loc >= 0 && loc < ss.scalers[1]->asString().size());
+  loc = ss.scalers[2]->asString().find("offset: 2");
+  CPPUNIT_ASSERT(loc >= 0 && loc < ss.scalers[2]->asString().size());
+  loc = ss.scalers[2]->asString().find("divisor: 4");
+  CPPUNIT_ASSERT(loc >= 0 && loc < ss.scalers[2]->asString().size());
 }
 
 void SurfDataTest::testIsScaled()
