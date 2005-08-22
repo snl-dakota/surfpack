@@ -1,44 +1,44 @@
 if NEEDS_EXTRA_LAPACK_ROUTINES
-extra_lapack_routines=$(top_srcdir)/src/kriging/dgecon.f \
-		      $(top_srcdir)/src/kriging/dgelq2.f \
-		      $(top_srcdir)/src/kriging/dgelqf.f \
-		      $(top_srcdir)/src/kriging/dgels.f \
-		      $(top_srcdir)/src/kriging/dgeqr2.f \
-		      $(top_srcdir)/src/kriging/dgeqrf.f \
-		      $(top_srcdir)/src/kriging/dgerq2.f \
-		      $(top_srcdir)/src/kriging/dgerqf.f \
-		      $(top_srcdir)/src/kriging/dgglse.f \
-		      $(top_srcdir)/src/kriging/dggrqf.f \
-		      $(top_srcdir)/src/kriging/dgetf2.f \
-		      $(top_srcdir)/src/kriging/dgetrf.f \
-		      $(top_srcdir)/src/kriging/dgetri.f \
-		      $(top_srcdir)/src/kriging/dlabad.f \
-		      $(top_srcdir)/src/kriging/dlacon.f \
-		      $(top_srcdir)/src/kriging/dlamch.f \
-		      $(top_srcdir)/src/kriging/dlange.f \
-		      $(top_srcdir)/src/kriging/dlapy2.f \
-		      $(top_srcdir)/src/kriging/dlarfb.f \
-		      $(top_srcdir)/src/kriging/dlarf.f \
-		      $(top_srcdir)/src/kriging/dlarfg.f \
-		      $(top_srcdir)/src/kriging/dlarft.f \
-		      $(top_srcdir)/src/kriging/dlascl.f \
-		      $(top_srcdir)/src/kriging/dlaset.f \
-		      $(top_srcdir)/src/kriging/dlassq.f \
-		      $(top_srcdir)/src/kriging/dlaswp.f \
-		      $(top_srcdir)/src/kriging/dlatrs.f \
-		      $(top_srcdir)/src/kriging/dorm2r.f \
-		      $(top_srcdir)/src/kriging/dorml2.f \
-		      $(top_srcdir)/src/kriging/dormlq.f \
-		      $(top_srcdir)/src/kriging/dormqr.f \
-		      $(top_srcdir)/src/kriging/dormrq.f \
-		      $(top_srcdir)/src/kriging/dormr2.f \
-		      $(top_srcdir)/src/kriging/drscl.f \
-		      $(top_srcdir)/src/kriging/dtrti2.f \
-		      $(top_srcdir)/src/kriging/dtrtri.f \
-		      $(top_srcdir)/src/kriging/ieeeck.f \
-		      $(top_srcdir)/src/kriging/ilaenv.f \
-		      $(top_srcdir)/src/kriging/lsame.f \
-		      $(top_srcdir)/src/kriging/xerbla.f
+extra_lapack_routines=$(top_srcdir)/src/lapack/dgecon.f \
+		      $(top_srcdir)/src/lapack/dgelq2.f \
+		      $(top_srcdir)/src/lapack/dgelqf.f \
+		      $(top_srcdir)/src/lapack/dgels.f \
+		      $(top_srcdir)/src/lapack/dgeqr2.f \
+		      $(top_srcdir)/src/lapack/dgeqrf.f \
+		      $(top_srcdir)/src/lapack/dgerq2.f \
+		      $(top_srcdir)/src/lapack/dgerqf.f \
+		      $(top_srcdir)/src/lapack/dgglse.f \
+		      $(top_srcdir)/src/lapack/dggrqf.f \
+		      $(top_srcdir)/src/lapack/dgetf2.f \
+		      $(top_srcdir)/src/lapack/dgetrf.f \
+		      $(top_srcdir)/src/lapack/dgetri.f \
+		      $(top_srcdir)/src/lapack/dlabad.f \
+		      $(top_srcdir)/src/lapack/dlacon.f \
+		      $(top_srcdir)/src/lapack/dlamch.f \
+		      $(top_srcdir)/src/lapack/dlange.f \
+		      $(top_srcdir)/src/lapack/dlapy2.f \
+		      $(top_srcdir)/src/lapack/dlarfb.f \
+		      $(top_srcdir)/src/lapack/dlarf.f \
+		      $(top_srcdir)/src/lapack/dlarfg.f \
+		      $(top_srcdir)/src/lapack/dlarft.f \
+		      $(top_srcdir)/src/lapack/dlascl.f \
+		      $(top_srcdir)/src/lapack/dlaset.f \
+		      $(top_srcdir)/src/lapack/dlassq.f \
+		      $(top_srcdir)/src/lapack/dlaswp.f \
+		      $(top_srcdir)/src/lapack/dlatrs.f \
+		      $(top_srcdir)/src/lapack/dorm2r.f \
+		      $(top_srcdir)/src/lapack/dorml2.f \
+		      $(top_srcdir)/src/lapack/dormlq.f \
+		      $(top_srcdir)/src/lapack/dormqr.f \
+		      $(top_srcdir)/src/lapack/dormrq.f \
+		      $(top_srcdir)/src/lapack/dormr2.f \
+		      $(top_srcdir)/src/lapack/drscl.f \
+		      $(top_srcdir)/src/lapack/dtrti2.f \
+		      $(top_srcdir)/src/lapack/dtrtri.f \
+		      $(top_srcdir)/src/lapack/ieeeck.f \
+		      $(top_srcdir)/src/lapack/ilaenv.f \
+		      $(top_srcdir)/src/lapack/lsame.f \
+		      $(top_srcdir)/src/lapack/xerbla.f
 else
 extra_lapack_routines=
 endif
