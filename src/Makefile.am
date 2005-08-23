@@ -172,3 +172,4 @@ if BUILD_STANDALONE
   surfpack_LDADD = $(top_builddir)/src/libsurfpack.la
   CLEANFILES += lexer.cpp surfparse.h surfparse.cpp $(BUILT_SOURCES)
 endif
+
