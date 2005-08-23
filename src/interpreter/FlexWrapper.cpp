@@ -1,37 +1,49 @@
-#include <FlexLexer.h>
-#include <iostream>
-#include <iostream.h>
-
 #include "FlexWrapper.h"
-//#define FLEX_USES_STD
+
+// Symbols and functions that will be implemented through flex
+
+/// The Current token
+extern char* yytext;
+
+/// The input stream for the lexer
+extern FILE* yyin;
+
+/// The output stream for the lexer
+extern FILE* yyout;
+
+/// The "next token" method-- gets called by bison-generated code
+extern "C" int yylex();
 
 FlexWrapper::FlexWrapper()
+  : infile(0), outfile(0)
 {
-  flexPtr = new yyFlexLexer;
 }
 
 FlexWrapper::~FlexWrapper()
 {
-  delete flexPtr;
+  if (infile) fclose(infile);
+  if (outfile) fclose(outfile);
 }
 
-void FlexWrapper::setParseStreams(std::istream& in, std::ostream& out)
+void FlexWrapper::setParseStreams(const std::string* input_string, 
+  const std::string* output_string)
 {
-#ifdef FLEX_USES_STD
-  flexPtr->switch_streams(&in,&out);
-#else
-  flexPtr->switch_streams(
-    reinterpret_cast< ::istream* >(&in),reinterpret_cast< ::ostream* >(&out)
-  );
-#endif
+  if (input_string) {
+    infile = fopen(input_string->c_str(),"r");
+  }
+  if (output_string) {
+    outfile = fopen(output_string->c_str(),"w");
+  }
+  yyin = infile;
+  yyout = outfile;
 }
 
 int FlexWrapper::nextToken()
 {
-  return flexPtr->yylex();
+  return yylex();
 }
 
 const char* FlexWrapper::currentToken()
 {
-  return flexPtr->YYText();
+  return yytext;
 }

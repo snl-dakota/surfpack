@@ -20,14 +20,14 @@ SurfpackInterpreter::~SurfpackInterpreter()
 
 }
 
-void SurfpackInterpreter::execute(std::istream& is, std::ostream& os, 
-    std::ostream& es)
+void SurfpackInterpreter::execute(const std::string* input_string, 
+  const std::string* output_string)
 {
-  if (parser.yyparse(is, os) == 0) {
-    commandLoop(os, es);
+  if (parser.yyparse(input_string, output_string) == 0) {
+    commandLoop(cout , cerr);
   } else {
-    es << "Parse error.  Command(s) not executed." << endl;
-    es << SurfpackParser::cmdstream.str() << endl; 
+    cerr << "Command(s) not executed." << endl;
+    cerr << SurfpackParser::cmdstream.str() << endl; 
   }
 }
 

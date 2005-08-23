@@ -43,15 +43,15 @@ else
 extra_lapack_routines=
 endif
 
-AM_LFLAGS = -+ -o$(LEX_OUTPUT_ROOT).c
+AM_LFLAGS = -o$(LEX_OUTPUT_ROOT).c
 AM_YFLAGS = -d
 
-if USING_GCC_COMPILER
-BUILT_SOURCES = $(top_srcdir)/src/interpreter/lexer.cpp \
+if BUILD_STANDALONE 
+BUILT_SOURCES = $(top_srcdir)/src/interpreter/lexer.c \
 		$(top_srcdir)/src/interpreter/surfparse.cpp \
 		$(top_srcdir)/src/interpreter/surfparse.h
 
-standalone_only_sources=$(top_srcdir)/src/interpreter/lexer.lpp \
+standalone_only_sources=$(top_srcdir)/src/interpreter/lexer.l \
 			$(top_srcdir)/src/interpreter/surfparse.ypp \
 			$(top_srcdir)/src/interpreter/surfparse.h \
 			$(top_srcdir)/src/interpreter/SurfpackParser.cpp \
@@ -142,7 +142,7 @@ libsurfpack_la_SOURCES=$(top_srcdir)/src/SurfPoint.cpp \
 ## top_builddir variable gets set by automake. LAPACK_LIBS, BLAS_LIBS,
 ## LIBS, and FLIBS are all set by the configure script.
 libsurfpack_la_LIBADD = $(LAPACK_LIBS) $(BLAS_LIBS) $(LIBS) $(FLIBS)
-if USING_GCC_COMPILER
+if BUILD_STANDALONE 
   libsurfpack_la_LIBADD += $(LEXLIB)
 endif
 
@@ -166,7 +166,7 @@ krig_time_LDADD = $(top_builddir)/src/libsurfpack.la
 
 bin_PROGRAMS = $(krig_time_test)
 
-if USING_GCC_COMPILER
+if BUILD_STANDALONE 
   bin_PROGRAMS += surfpack 
   surfpack_SOURCES = $(top_srcdir)/interface/main.cpp 
   surfpack_LDADD = $(top_builddir)/src/libsurfpack.la

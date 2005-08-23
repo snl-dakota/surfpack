@@ -11,8 +11,7 @@ class SurfpackInterpreter
 public:
   SurfpackInterpreter();
   ~SurfpackInterpreter();
-  void execute(std::istream& is = std::cin, std::ostream& os = std::cout, 
-    std::ostream& es = std::cerr);
+  void execute(const std::string* input_string = 0, const std::string* output_string = 0);
   void commandLoop(std::ostream& os = std::cout, std::ostream& es = std::cerr);
 
   // individual surfpack commands

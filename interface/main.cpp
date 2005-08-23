@@ -11,9 +11,9 @@ int main(int argc, char** argv)
   // The default is to just use standard input
   SurfpackInterpreter si;
   if (argc == 2) {
-    ifstream infile(argv[1], ios::in);
-    si.execute(infile);
-    infile.close();
+    std::string infile(argv[1]);
+    si.execute(&infile);
+    //infile.close();
   } else {
     si.execute();
   }

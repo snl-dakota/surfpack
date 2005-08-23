@@ -18,6 +18,8 @@ public:
   std::string cmdstring;
 };
 
+/// Singleton class.  Works in conjunction with flex and bison
+/// to parse out Surfpack commands from an input file
 class SurfpackParser 
 {
 public:
@@ -31,25 +33,18 @@ public:
   void addArgValTuple();
   void addArgValArgList();
   void addArgListToCommand();
-  void addNumberAsTriplet();
-  void addTriplet();
-  void addTripletMin();
-  void addTripletMax();
-  void addTripletNumPts();
   void addTupleVal();
   void newTuple();
   void pushNewArgList();
   void popArgList();
   void init();
-  void print();
   void storeCommandString();
   void shellCommand();
-
-
+  /// returns the only instance of this class
   static SurfpackParser& instance();
   static std::ostringstream cmdstream;
   FlexWrapper& globalLexer();
-  int yyparse(std::istream& is = std::cin, std::ostream& os = std::cout);
+  int yyparse(const std::string* input_string,const std::string* output_string);
   std::vector<ParsedCommand>& commandList();
 
   // commands for use by interpreter to parse out certain argument types
@@ -77,9 +72,4 @@ private:
   Tuple* currentTuple;
   std::stack< ArgList > arglistStack;
 };
-
 #endif
-
-
-
-

@@ -3,14 +3,12 @@
 %{
 #define YYINITDEPTH 400
 #define YYSTYPE double
-extern int yylex();
+extern "C" int yylex();
 void yyerror(const char* s);
 
-#include <iostream>
 #include "SurfpackParser.h"
 #include "surfpack_config.h"
 #define parser SurfpackParser::instance()
-using namespace std;
 
 %}
 
@@ -45,16 +43,16 @@ arglisttail: 	/* empty */
 arg:		IDENTIFIER {parser.addArgName();} '=' argval
 ;
 
-argval:		IDENTIFIER 					{parser.addArgValIdent();}
-	|	INTEGER						{parser.addArgValInt();}
-	|	STRING						{parser.addArgValString();}
-	|	REAL						{parser.addArgValReal();}
-	|	tuple						{parser.addArgValTuple();}
-	|	triplet						
-	| 	{parser.pushNewArgList();} arglist		{parser.addArgValArgList();}
+argval:		IDENTIFIER 			{parser.addArgValIdent();}
+	|	INTEGER				{parser.addArgValInt();}
+	|	STRING				{parser.addArgValString();}
+	|	REAL				{parser.addArgValReal();}
+	|	tuple				{parser.addArgValTuple();}
+	| 	{parser.pushNewArgList();} arglist {parser.addArgValArgList();}
 ;
 
-tuple:		'(' {parser.newTuple();} tupleelement {parser.addTupleVal();} dimlisttail ')' 
+tuple:		'(' {parser.newTuple();} tupleelement 
+		{parser.addTupleVal();} dimlisttail ')' 
 ;
 
 tupleelement:	INTEGER
@@ -66,17 +64,8 @@ tupleelement:	INTEGER
 dimlisttail:	/* empty */	
 	|	',' tupleelement {parser.addTupleVal();} dimlisttail
 ;
-
-triplet:	'{' tupleelement {parser.addTripletMin();} ',' 
-		tupleelement {parser.addTripletMax();} ',' 
-		INTEGER {parser.addTripletNumPts();} '}'
-;
-
-	
 %%
-
 void yyerror (const char* s) /* Called by yyparse on error */
 {
-  std::cout << s << std::endl;
+  printf("%s\n",s);
 }
-
