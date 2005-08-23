@@ -56,9 +56,6 @@ echo "CXX=$CXX"
 echo "CC=$CC"
 AC_PROG_CXX([xlC cxx CC c++ g++])
 
-# If some kind of lex and yacc are found, build the standalone executable 
-ACX_BUILD_STANDALONE
-
 # This is a kludgy test.  The goal is to turn on the -fpe3 flag for
 # the OSF fortran compiler, which allows the program to continue if
 # when there are floating point errors.  (This behavior is default on
@@ -111,6 +108,9 @@ fi
 # bison.
 AC_PROG_LEX
 AC_PROG_YACC
+
+# If some kind of lex and yacc are found, build the standalone executable 
+ACX_BUILD_STANDALONE
 
 # Checks for C++ STL implementation (and ISO standard compliance).
 AC_CXX_HAVE_STL
