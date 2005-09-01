@@ -2,6 +2,10 @@
 # how this axes variable will be referred to in future commands
 CreateAxes[name = boundaries_2d, file = '2d.axb']
 
+# Load a data file from disk.  This data will be used later in
+# an evaluate command.
+LoadData[name = test_rosen, file = 'dense_rosenbrock_2d.txt']
+
 # Use the axes and the Rosenbrock test function to create a new data set.
 # Since a variable is being created-- a data set in this case-- the 'name' 
 # argument must be present.  The axes variable created in the previous
@@ -17,14 +21,7 @@ CreateSurface[name = krig_rosen, data = rosenbrock_2d, type = kriging]
 
 # Evaluate the surface on a different set of points.  The 'data' argument
 # refers to a data set variable that must have been created in a previous
-# command (not shown). Here, the surface will be evaluated at each point
-# in the data set, and the results will be appended as a new response variable
-# for that data set.
+# command (See LoadData command above). Here, the surface will be evaluated
+# at each point in the data set, and the results will be appended as a new 
+# response variable for that data set.
 Evaluate[surface = krig_rosen, data = test_rosen]
-
-# Evaluate the surface on an existing set of points.  Instead of appending
-# the results to the existing data set, create an entirely new data set variable
-# to store the results.
-Evaluate[name = krig_rosen_data, surface = krig_rosen, data = test_rosen]
-
-

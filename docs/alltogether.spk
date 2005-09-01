@@ -23,11 +23,6 @@ CreateSurface[name = cubic_poly_2nd, data = simple7,
 # test data
 Evaluate[surface = cubic_poly_1st, data = test100]
 
-# Evaluate the same model on the same data, but instead
-# of appending the results as a new response to the existing
-# data, create a completely new data variable
-Evaluate[name = new100, surface = cubic_poly_1st, data = test100]
-
 # Calculate the mean-squared-error for the models
 # on the data that was used to create the approximations 
 Fitness[surface = cubic_poly_1st, metric = mean_squared]
