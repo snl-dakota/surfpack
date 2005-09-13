@@ -1,18 +1,17 @@
-bin_PROGRAMS = surfpack tpack
-#polybench datawriter driv
-surfpack_SOURCES = main.cpp \
-		   SurfDataGenerator.cpp \
-		   SurfDataGenerator.h
-surfpack_LDADD = $(top_builddir)/src/libsurfpack.la 
-tpack_SOURCES = tmain.cpp 
-tpack_LDADD = $(top_builddir)/src/libsurfpack.la
+## Process this file with automake to produce Makefile.in
 
-#polybench_SOURCES = polybench.cpp $(top_srcdir)/tests/unittests.h $(top_srcdir)/tests/unittests.cpp
-#datawriter_SOURCES = datawriter.cpp SurfDataGenerator.cpp SurfDataGenerator.h
-#driv_SOURCES = drivmain.cpp 
-#polybench_LDADD = $(top_builddir)/src/libsurfpack.la
-#datawriter_LDADD = $(top_builddir)/src/libsurfpack.la 
-#driv_LDADD = $(top_builddir)/src/libsurfpack.la 
+## Build the Surfpack binary iff BUILD_STANDALONE has been set 
+if BUILD_STANDALONE
+  bin_PROGRAMS = surfpack
+  surfpack_SOURCES = main.cpp \
+		     SurfDataGenerator.cpp \
+		     SurfDataGenerator.h
+  surfpack_LDADD = $(top_builddir)/src/libsurfpack.la
+endif
 
-INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src -I$(top_srcdir)/src/surfaces -I$(top_srcdir)/tests -I$(top_srcdir)/src/interpreter
+INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src \
+	   -I$(top_srcdir)/src/ann \
+	   -I$(top_srcdir)/src/interpreter
+
 CLEANFILES = *.bb *.bbg *.da *.gcov *.ii *.s
+MAINTAINERCLEANFILES = Makefile.in

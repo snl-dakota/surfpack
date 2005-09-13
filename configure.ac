@@ -7,7 +7,7 @@ AC_PREREQ([2.58])
 # This is Surfpack, version 0.1.  User will be invited to send email
 # to the address specified in the third argument when something goes
 # wrong.
-AC_INIT([Surfpack], [0.1], [mricha@sandia.gov])
+AC_INIT([Surfpack],[0.1],[mricha@sandia.gov])
 
 # The macros with the AM prefix are instructions to automake.
 # Automake will base some of its behavior on things it sees in this
@@ -31,7 +31,7 @@ AC_INIT([Surfpack], [0.1], [mricha@sandia.gov])
 # using the autoheader utility.  Autoheader scans configure.ac to see
 # which symbols it may #define.
 AM_CONFIG_HEADER([surfpack_config.h])
-AM_INIT_AUTOMAKE
+AM_INIT_AUTOMAKE([1.9 foreign subdir-objects])
 
 # Check to make sure this file exists as a safety check.  This is
 # merely a sanity check to make sure you're not running autoconf
@@ -55,6 +55,9 @@ AC_PROG_F77([xlf f77 g77])
 echo "CXX=$CXX"
 echo "CC=$CC"
 AC_PROG_CXX([xlC cxx CC c++ g++])
+
+# Check required when 'subdir-objects' automake flag is set.
+AM_PROG_CC_C_O
 
 # This is a kludgy test.  The goal is to turn on the -fpe3 flag for
 # the OSF fortran compiler, which allows the program to continue if
@@ -112,8 +115,7 @@ AC_PROG_YACC
 # If some kind of lex and yacc are found, build the standalone executable 
 ACX_BUILD_STANDALONE
 
-# Checks for C++ STL implementation (and ISO standard compliance).
-AC_CXX_HAVE_STL
+# Checks for C++ ISO standard compliance.
 AC_CXX_HAVE_STD
 
 # The AC_DEFINE macro causes its first argument to always be #defined
@@ -146,7 +148,19 @@ fi
 # suffixes are not listed explicitly here, but that's what happens.
 # Autoconf creates the Makefile.in files, and then configure creates
 # the Makefiles from the Makefile.in files.
-AC_CONFIG_FILES([Makefile src/Makefile tests/Makefile])
+AC_CONFIG_FILES([Makefile
+		 src/Makefile
+		 src/ann/Makefile
+		 src/conmin/Makefile
+		 src/interpreter/Makefile
+		 src/kriging/Makefile
+		 src/lapack/Makefile
+		 src/mars/Makefile
+		 src/surfaces/Makefile
+		 interface/Makefile
+		 system_tests/Makefile
+		 system_tests/instances/Makefile
+		 tests/Makefile])
 
 # Set up conditional make check target using CppUnit.
 AM_PATH_CPPUNIT([1.9.4], [

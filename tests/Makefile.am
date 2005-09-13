@@ -1,3 +1,5 @@
+## Process this file with automake to produce Makefile.in
+
 ## Specifies a list of executables that should be built and run when
 ## the user types "make check."  If TESTS is not defined and the names
 ## of the executables are listed directly under check_PROGRAMS.  Those
@@ -48,3 +50,4 @@ INCLUDES = -I$(top_srcdir)/src -I$(top_srcdir)/src/surfaces \
 ## gcov profiler.  The *.ii and *.s files are temporary files that may be
 ## produced during C/C++ compilation.
 CLEANFILES = *.bb *.bbg *.da *.gcov *.ii *.s
+MAINTAINERCLEANFILES = Makefile.in

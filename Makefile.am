@@ -1,9 +1,11 @@
+## Process this file with automake to produce Makefile.in
+
 ## Add all the necessary m4 directories to aclocal's search path.
 ACLOCAL_AMFLAGS = -I m4 -I /usr/netpub/cppunit/share/aclocal
 
 ## Specifies that make should also descend into these subdirectories
 ## during the build process.
-SUBDIRS = src tests
+SUBDIRS = src interface system_tests tests
 
 ## Specifies that the files in the examples subdirectory should be
 ## included in the distribution tarball, even though they are not
@@ -18,3 +20,10 @@ EXTRA_DIST = $(top_srcdir)/examples/* $(top_srcdir)/docs/DoxygenConfig
 ## that may be created by the gcov profiler.  The *.ii and *.s files
 ## are temporary files that may be produced during C/C++ compilation.
 CLEANFILES = *.bb *.bbg *.da *.gcov *.ii *.s
+
+## MAINTAINERCLEANFILES serves a similar purpose to CLEANFILES, but
+## is only used for the maintainer-clean target.
+MAINTAINERCLEANFILES = Makefile.in src/Makefile.in tests/Makefile.in \
+		       aclocal.m4 compile config.guess config.sub \
+		       configure depcomp install-sh ltmain.sh missing \
+		       surfpack_config.h.in tests/badscale.txt
