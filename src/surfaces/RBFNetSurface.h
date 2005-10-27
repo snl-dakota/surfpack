@@ -98,7 +98,7 @@ public:
   virtual double computeMetric(std::vector<double>& left, 
     std::vector<double>& right);
 
-  virtual void partition(SurfData& sd);
+  virtual void partition(SurfData& sd, unsigned min_partition_size);
 
   virtual void computeRBFCenters(
     std::vector< PartitionNode* >& partitions);
@@ -129,6 +129,7 @@ protected:
   double free_param;
   std::vector<BasisFunction*> basis_functions;
   std::vector<PartitionNode*> partition_nodes;
+  unsigned minPartitionSize;
 
 //_____________________________________________________________________________
 // Testing 

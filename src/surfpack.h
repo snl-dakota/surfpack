@@ -196,6 +196,9 @@ namespace surfpack {
   /// Return the sum of squared deviations from the mean
   double sum_squared_deviations(std::vector<double>& vals);
 
+  /// Return the sum of absolute deviations from the mean
+  double sum_absolute_deviations(std::vector<double>& vals);
+
   /// Return absolute, squared, or relative differences of second and third
   /// parameters through the first parameter
   void differences(std::vector<double>& results, std::vector<double>& observed,

@@ -97,8 +97,6 @@ SurfData::~SurfData()
 /// Data member initialization that is common to all constructors
 void SurfData::init()
 {
-  xLabels.clear();
-  fLabels.clear();
   defaultIndex = 0;
   defaultMapping();
   xMatrix = 0;

@@ -84,7 +84,7 @@ bool Surface::acceptableData() const
     unsigned pointsRequired = minPointsRequired();
     if (pointsAvailable < pointsRequired) {
       ostringstream errormsg;
-      errormsg << "ERROR: data unacceptable.  This surface requires "
+      errormsg << "Data unacceptable: this surface requires "
 	   << pointsRequired << ", but only " << pointsAvailable
 	   << " were given." << endl;
       throw SurfData::bad_surf_data(errormsg.str());

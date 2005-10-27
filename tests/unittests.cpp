@@ -312,6 +312,9 @@ void initialize()
     writeOneDimQuadratic();
     writeOneDQpoly2Files();
     writeUnknownSurfaceFile();
+    ostringstream permiss;
+    permiss << "cd " << dataRoot() << "; chmod 666 ./*; cd -" << endl;
+    system(permiss.str().c_str());
   }
 }
 

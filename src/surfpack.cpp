@@ -221,6 +221,16 @@ double surfpack::sum_squared_deviations(std::vector<double>& vals)
   return sse;
 }
   
+/// Return the sum of absolute deviations from the mean
+double surfpack::sum_absolute_deviations(std::vector<double>& vals)
+{
+  double sae = 0;
+  double avg = surfpack::mean(vals);
+  for (unsigned i = 0; i < vals.size(); i++) {
+    sae += (vals[i]-avg);
+  }
+  return sae;
+}
 /// Return absolute, squared, or relative differences of second and third
 /// parameters through the first parameter
 void surfpack::differences(std::vector<double>& results, 

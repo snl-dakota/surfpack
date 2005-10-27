@@ -236,7 +236,6 @@ double KrigingSurface::evaluate(const std::vector<double>& x)
 { 
   static int called = 0;
   ++called;
-  if (called % 100 == 0) cout << "Called: " << called << endl;
   //double* xArray = new double[xsize];
   if (x.size() != xsize) {
     cerr << "Wrong number of dimensions" << endl;

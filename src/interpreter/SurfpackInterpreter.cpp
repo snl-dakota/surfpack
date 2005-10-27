@@ -102,7 +102,6 @@ void SurfpackInterpreter::executeLoadData(
   // Read the file into a SurfData object and add it to the symbol table
   SurfData* sd = new SurfData(filename);
   symbol_table.dataVars.insert(SurfDataSymbol(name,sd));
-  //cout << "Executed LoadData" << endl;
 }
 
 void SurfpackInterpreter::executeLoadSurface(
@@ -125,8 +124,6 @@ void SurfpackInterpreter::executeLoadSurface(
   // Read the file into a Surface object and add it to the symbol table
   Surface* surf = SurfaceFactory::createSurface(filename);
   symbol_table.surfaceVars.insert(SurfaceSymbol(name,surf));
-  
-  //cout << "Executed LoadSurface" << endl;
 }
 
 void SurfpackInterpreter::executeSaveData(
@@ -275,7 +272,6 @@ void SurfpackInterpreter::executeSaveSurface(
     Surface* surf = iter->second;
     surf->write(filename);
   }
-  //cout << "Executed Load Surface" << endl;
 }
 
 void SurfpackInterpreter::executeCreateSurface(const ParsedCommand& command)
@@ -301,12 +297,12 @@ void SurfpackInterpreter::executeCreateSurface(const ParsedCommand& command)
   //cout << "Data name: " << dataName << endl;
   if (dataName == "") {
     throw command_error(
-      string("No data object specified."), command.cmdstring);
+      string("No data argument specified."), command.cmdstring);
   } else {
     SurfDataMap::iterator iter = symbol_table.dataVars.find(dataName);
     if (iter == symbol_table.dataVars.end()) {
       throw command_error(
-        string("Data object not found"), command.cmdstring);
+        string("Data variable not found in symbol table"), command.cmdstring);
     }
     SurfData* sd = iter->second;
     Surface* surf = SurfaceFactory::createSurface(type, sd);
@@ -330,7 +326,7 @@ void SurfpackInterpreter::executeEvaluate(const ParsedCommand& command)
     SurfaceMap::iterator iter = symbol_table.surfaceVars.find(surfaceName);
     if (iter == symbol_table.surfaceVars.end()) {
       throw command_error(
-        string("Surface name not found."), command.cmdstring);
+        string("Surface variable not found in symbol table."), command.cmdstring);
     } else {
       surf = iter->second;
     }
@@ -343,12 +339,12 @@ void SurfpackInterpreter::executeEvaluate(const ParsedCommand& command)
   SurfData* isd = 0;
   if (data == "") {
     throw command_error(
-      string("No data specified."), command.cmdstring);
+      string("No data argument specified."), command.cmdstring);
   } else {
     SurfDataMap::iterator iter = symbol_table.dataVars.find(data);
     if (iter == symbol_table.dataVars.end()) {
       throw command_error(
-        string("Data object not found"), command.cmdstring);
+        string("Data variable not found in symbol table"), command.cmdstring);
     }
     isd = iter->second;
   }
@@ -382,12 +378,12 @@ void SurfpackInterpreter::executeFitness(const ParsedCommand& command)
   string surfaceName = SurfpackParser::parseOutIdentifier(string("surface"), command.arglist);
   if (surfaceName == "") {
     throw command_error(
-      string("No existing surface specified."), command.cmdstring);
+      string("No surface argument specified."), command.cmdstring);
   } else {
     SurfaceMap::iterator iter = symbol_table.surfaceVars.find(surfaceName);
     if (iter == symbol_table.surfaceVars.end()) {
       throw command_error(
-        string("Surface name not found."), command.cmdstring);
+        string("Surface variable not found in symbol table."), command.cmdstring);
     } else {
       surf = iter->second;
     }
@@ -402,7 +398,7 @@ void SurfpackInterpreter::executeFitness(const ParsedCommand& command)
     SurfDataMap::iterator iter = symbol_table.dataVars.find(data);
     if (iter == symbol_table.dataVars.end()) {
       throw command_error(
-        string("Data object not found"), command.cmdstring);
+        string("Data variable not found in symbol table"), command.cmdstring);
     }
     isd = iter->second;
   }
@@ -459,7 +455,6 @@ void SurfpackInterpreter::executeCreateAxes(const ParsedCommand& command)
   }
   // Read the file into a SurfData object and add it to the symbol table
   symbol_table.pointDefinitionVars.insert(AxesBoundsSymbol(name,sd));
-  //cout << "Executed AxesBounds" << endl;
 }
 
 void SurfpackInterpreter::executeGridPoints(const ParsedCommand& command)
@@ -473,7 +468,7 @@ void SurfpackInterpreter::executeGridPoints(const ParsedCommand& command)
   AxesBoundsMap::iterator iter = symbol_table.pointDefinitionVars.find(axes);
   if (iter == symbol_table.pointDefinitionVars.end()) {
     throw command_error(
-      string("Definition not found in symbol table."), command.cmdstring);
+      string("Axes variable not found in symbol table."), command.cmdstring);
   }
   //cout << "Variable axes: " << axes << endl;
   AxesBounds* pd = iter->second;
@@ -483,7 +478,7 @@ void SurfpackInterpreter::executeGridPoints(const ParsedCommand& command)
   //cout << "Data name: " << dataName << endl;
   if (dataName == "") {
     throw command_error(
-      string("No data object specified."), command.cmdstring);
+      string("No data argument specified."), command.cmdstring);
   } 
   SurfDataMap::iterator sditer = symbol_table.dataVars.find(dataName);
   if (sditer != symbol_table.dataVars.end()) {
@@ -500,7 +495,6 @@ void SurfpackInterpreter::executeGridPoints(const ParsedCommand& command)
   }
   SurfData* gridData = pd->sampleGrid(testFunctions);
   symbol_table.dataVars.insert(SurfDataSymbol(dataName, gridData));
-  //cout << "Executed GridPoints" << endl;
 }
 
 void SurfpackInterpreter::executeMonteCarloSample(const ParsedCommand& command)
@@ -514,7 +508,7 @@ void SurfpackInterpreter::executeMonteCarloSample(const ParsedCommand& command)
   AxesBoundsMap::iterator iter = symbol_table.pointDefinitionVars.find(axes);
   if (iter == symbol_table.pointDefinitionVars.end()) {
     throw command_error(
-      string("Definition not found in symbol table."), command.cmdstring);
+      string("Axes variable not found in symbol table."), command.cmdstring);
   }
   //cout << "Variable axes: " << axes << endl;
   AxesBounds* pd = iter->second;
@@ -544,7 +538,6 @@ void SurfpackInterpreter::executeMonteCarloSample(const ParsedCommand& command)
   }
   SurfData* gridData = pd->sampleMonteCarlo(numSamples, testFunctions);
   symbol_table.dataVars.insert(SurfDataSymbol(name, gridData));
-  //cout << "Executed MonteCarloSample" << endl;
 
 }
 

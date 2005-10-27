@@ -34,7 +34,7 @@ void BasisFunction::resize(unsigned dims)
 
 double BasisFunction::evaluate(const std::vector<double>& x)
 {
-  if (x.size() != center.xSize()) throw "Dimension mismatch in BasisFunc:eval";
+  assert(x.size() == center.xSize());
   double accumulator = 0.0;
   for (unsigned i = 0; i < center.xSize(); i++) {
     double temp = center[i] - x[i];
@@ -59,7 +59,7 @@ void BasisFunction::setCenter(vector<double>& center_)
 
 void BasisFunction::setRadii(vector<double>& radii_)
 {
-  if (radii_.size() != center.xSize()) throw "Dim mismatch in setRadii";
+  assert(radii_.size() == center.xSize());
   radii = radii_;
 }
 
@@ -110,6 +110,7 @@ void RBFNetSurface::init()
   // is needed 
   radius = 0.1;
   free_param = 0.0;
+  minPartitionSize = 2;
 }
 
 //_____________________________________________________________________________
@@ -174,7 +175,7 @@ double RBFNetSurface::evaluate(const std::vector<double>& x)
 
 void RBFNetSurface::build(SurfData& surfData)
 {
-  partition(surfData);
+  partition(surfData, minPartitionSize);
   //generateManyOptions(surfData);
   selectModelBasisFunctions(surfData);
   return;
@@ -593,6 +594,8 @@ void RBFNetSurface::config(const Arg& arg)
   string argname = arg.name;
   if (argname == "radius") {
     radius = arg.getRVal()->getReal();
+  } else if (argname == "min_partition") {
+    minPartitionSize = arg.getRVal()->getInteger();    
   } else {
     Surface::config(arg);
   }
@@ -614,12 +617,20 @@ RBFNetSurface* RBFNetSurface::makeSimilarWithNewData(SurfData* surf_data)
 double RBFNetSurface::computeMetric(std::vector<double>& left, 
   std::vector<double>& right)
 {
-  return surfpack::sum_squared_deviations(left) + 
-	 surfpack::sum_squared_deviations(right);
+  double leftsse = surfpack::sum_squared_deviations(left);
+  double rightsse = surfpack::sum_squared_deviations(right);
+  double sum = leftsse + rightsse;
+  cout << " Left: " << setw(15) << leftsse
+       << " Right: " << setw(15) << rightsse
+       << " Sum: " << setw(15) << sum;
+  return sum;
+//  return surfpack::sum_squared_deviations(left) + 
+//	 surfpack::sum_squared_deviations(right);
 }
 
-void RBFNetSurface::partition(SurfData& surf_data)
+void RBFNetSurface::partition(SurfData& surf_data, unsigned min_partition_size)
 {
+  cout << "Partition: " << min_partition_size << endl;
   // We will only look at the values for one response variable in the data
   unsigned response = surf_data.getDefaultIndex();
   // The first set to look at is the set of all points in the given data set
@@ -635,13 +646,12 @@ void RBFNetSurface::partition(SurfData& surf_data)
   stack< PartitionNode* > sets;
   sets.push(new PartitionNode(allpts,0));
   while (!sets.empty()) {
-    int setSize = sets.size();
     vector<const SurfPoint* >& currentSet = sets.top()->set;
     int currentSetSize = currentSet.size();
     //cout << "Points in current set: " << currentSet.size() << endl;
     // bestMetricValue: the best sum-of-squared-deviations value for
     // any of the split points for this set that have been considered so far
-    double bestMetricValue = 1e100;
+    double bestMetricValue = 1e200;
     // The dimension for splitting that leads to the bestMetricValue
     unsigned bestSplitDim = 0;
     // The value along the bestSplitDim that leads to the bestMetricValue 
@@ -654,9 +664,11 @@ void RBFNetSurface::partition(SurfData& surf_data)
       for (unsigned thresholdPoint = 0; thresholdPoint < currentSet.size();
 	   thresholdPoint++) {
         double currentSplitValue = currentSet[thresholdPoint]->X()[dim];
-	// left: collection of response values for points where the value along 	// current dimension is less than or equal tothe currentSplitValue
+	// left: collection of response values for points where the value along 
+	// current dimension is less than or equal tothe currentSplitValue
         vector<double> left;
-	// left: collection of response values for points where the value along 	// current dimension (dim) is more than the currentSplitValue
+	// right: collection of response values for points where the value along
+	// current dimension (dim) is greater than the currentSplitValue
         vector<double> right;
 	// Iterate over all the points in the set; put the response values
 	// of the points in the 'left' or 'right' collections
@@ -671,7 +683,9 @@ void RBFNetSurface::partition(SurfData& surf_data)
 	// Compute the mean and standard deviation for values in the 'left'
 	// collection; then do the same for the one on the right.  The metric
 	// value is the sum of the standard deviations for the left and right. 
+        cout << "ThreshInd: " << setw(5) << thresholdPoint << " Thresh: " << currentSplitValue;
         double metric = computeMetric(left,right);
+        cout << endl;
         //cout << "left: " << left.size()
 	//     << " right: " << right.size()
 	//     << " Metric for dim " << dim 
@@ -713,12 +727,14 @@ void RBFNetSurface::partition(SurfData& surf_data)
     PartitionNode* newLeftNode = new PartitionNode(newLeft,currentNode);
     currentNode->right_child = newRightNode;
     currentNode->left_child = newLeftNode;
-    if (newRight.size() > 2) {
+    if (newRight.size() > min_partition_size) {
+      cout << "New set (right): " << newRight.size() << endl;
       sets.push(newRightNode);
     } else {
       stash.push_back(newRightNode);
     }
-    if (newLeft.size() > 2) {
+    if (newLeft.size() > min_partition_size) {
+      cout << "New set (left): " << newLeft.size() << endl;
       sets.push(newLeftNode);
     } else {
       stash.push_back(newLeftNode);
@@ -731,6 +747,7 @@ void RBFNetSurface::partition(SurfData& surf_data)
     //  cout << *current[j] << endl;
     //}
   //}
+  exit(0);
   computeRBFCenters(stash);
 }
 
