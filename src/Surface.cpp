@@ -194,6 +194,18 @@ void Surface::config(const Arg& arg)
   }
 }
 
+void Surface::gradient(const std::vector<double> & x, 
+std::vector<double>& gradient_vector)
+{
+  throw string("This surface type does not support hessians");
+}
+
+void Surface::hessian(const std::vector<double> & x, 
+SurfpackMatrix<double>& hessian)
+{
+  throw string("This surface type does not support hessians");
+}
+
 /// Process a list of configuration options
 void Surface::configList(const ArgList& arglist)
 {

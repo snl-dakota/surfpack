@@ -112,6 +112,12 @@ public:
   /// the data set.
   virtual void getValue(SurfData& surfData);
 
+  virtual void gradient(const std::vector<double> & x, 
+    std::vector<double>& gradient_vector);
+
+  virtual void hessian(const std::vector<double> & x, 
+    SurfpackMatrix<double>& hessian);
+
   /// Evaluate the approximation surface at each point in the parameter
   /// SurfData object.  In the ErrorStruct list, store the expected value (as
   /// returned by sd.getResponse()) and the estimated value.
