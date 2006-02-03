@@ -1,5 +1,8 @@
 #ifndef FLEX_WRAPPER_H
 #define FLEX_WRAPPER_H
+#ifdef HAVE_CONFIG_H
+#include "surfpack_config.h"
+#endif
 #include "surfpack_system_headers.h"
 class FlexWrapper
 {
