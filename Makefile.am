@@ -1,7 +1,7 @@
 ## Process this file with automake to produce Makefile.in
 
 ## Add all the necessary m4 directories to aclocal's search path.
-ACLOCAL_AMFLAGS = -I m4 -I /usr/netpub/cppunit/share/aclocal
+ACLOCAL_AMFLAGS = -I m4
 
 ## Specifies that make should also descend into these subdirectories
 ## during the build process.
