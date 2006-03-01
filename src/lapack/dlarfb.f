@@ -1,3 +1,10 @@
+c      _______________________________________________________________________
+c     
+c      Surfpack: A Software Library of Multidimensional Surface Fitting Methods
+c      Copyright (c) 2006, Sandia National Laboratories.
+c      This software is distributed under the GNU General Public License.
+c      For more information, see the README file in the top Surfpack directory.
+c      _______________________________________________________________________ 
       SUBROUTINE DLARFB( SIDE, TRANS, DIRECT, STOREV, M, N, K, V, LDV,
      $                   T, LDT, C, LDC, WORK, LDWORK )
 *

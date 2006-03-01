@@ -1,3 +1,10 @@
+c      _______________________________________________________________________
+c     
+c      Surfpack: A Software Library of Multidimensional Surface Fitting Methods
+c      Copyright (c) 2006, Sandia National Laboratories.
+c      This software is distributed under the GNU General Public License.
+c      For more information, see the README file in the top Surfpack directory.
+c      _______________________________________________________________________ 
       subroutine conmin (X,VLB,VUB,G,SCAL,DF,A,S,G1,G2,B,C,ISC,IC,MS1,
      . N1,N2,N3,N4,N5,
      . DELFUN,DABFUN,FDCH,FDCHM,CT,CTMIN,CTL,CTLMIN,ALPHAX,

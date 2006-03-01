@@ -1,3 +1,10 @@
+/*  _______________________________________________________________________
+ 
+    Surfpack: A Software Library of Multidimensional Surface Fitting Methods
+    Copyright (c) 2006, Sandia National Laboratories.
+    This software is distributed under the GNU General Public License.
+    For more information, see the README file in the top Surfpack directory.
+    _______________________________________________________________________ */
 #ifndef SURFPACK_PARSER_ARGS_H
 #define SURFPACK_PARSER_ARGS_H
 #include "surfpack_config.h"
