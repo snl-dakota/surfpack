@@ -1,0 +1,11 @@
+
+To create a PDF file of the Surfpack User's Manual, use the 
+following command:
+
+pdflatex surfpack_users_manual.tex
+
+Note, if you just use 'latex' instead of 'pdflatex', the
+graphics files will not get incorporated into the PDF file.
+
+
+
