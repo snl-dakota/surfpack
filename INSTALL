@@ -11,13 +11,19 @@ This document has been modified from the default INSTALL document for the GNU au
 Basic Installation
 =====================
 
+Note: In order for step 0 below to work, you will need version 1.9 
+of automake (or later version) on your system.
+
 0. If source is checked out from CVS, first run 'autoreconf --install'.  
    Otherwise, go to step 1.
 1. In the top-level Surfpack directory, type ./configure
 2. Type make
-3. Type make install (May require superuser privileges.  To install without superuser privileges, see Item 1. under "Installation Details.")
+3. Type make install (May require superuser privileges.  To install without 
+   superuser privileges, see Item 1. under "Installation Details.")
+   (quick hint: use ./configure --prefix=`pwd` rather than ./configure in step 1)
 
-Under the installation directory (/usr/local by default), the Surfpack library is be lib/libsurfpack.a and the executable is bin/surfpack.
+Under the installation directory (/usr/local by default), the Surfpack library 
+is lib/libsurfpack.a and the executable is bin/surfpack.
 
 Installation Details
 ==================

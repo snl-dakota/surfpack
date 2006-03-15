@@ -5,11 +5,45 @@
 
 \begin{document}
 
-\title{Surfpack Version 1.0 (beta) User's Manual}
+\title{Surfpack Version 1.0 User's Manual}
 
-\author{Anthony A. Giunta, Mark D. Richards, Eric C. Cyr \\Laura P. Swiler, Shane L. Brown, Michael S. Eldred}
+\author{Anthony A. Giunta$^1$, Mark D. Richards$^2$, Eric C. Cyr$^2$ \\Laura P. Swiler$^1$, Shane L. Brown$^1$, Michael S. Eldred$^1$}
+
 
 \maketitle
+
+
+\begin{center}
+$^1$Sandia National Laboratories*\\P.O. Box 5800, Mail Stop 0828\\Albuquerque, NM 87185-0828 USA \\
+Email: surfpack@scico.sandia.gov \\ Web: http://endo.sandia.gov/Surfpack
+\end{center}
+
+\bigbreak
+
+\begin{center}
+$^2$University of Illinois at Urbana-Champaign\\Dept. of Computer Science\\201 North Goodwin Ave.\\Urbana, IL 61801-2302 USA\\
+Web: http://cs.engr.uiuc.edu
+\end{center}
+
+\bigbreak
+
+\begin{center}
+Copyright 2006, Sandia National Laboratories
+\end{center}
+
+\bigbreak
+
+\begin{center}
+*Sandia is a multiprogram laboratory operated by Sandia Corporation, a Lockheed Martin Company, 
+for the United States Department of Energy's National Nuclear Security Administration under 
+contract DE-AC04-94AL85000.
+\end{center}
+
+
+
+
+
+
 
 \pagebreak
 
@@ -50,12 +84,12 @@ The Surfpack build system uses the GNU autotools: autoconf, automake, and libtoo
 \item gunzip surfpack-0.1.tar.gz
 \item tar xf surfpack-0.1.tar
 \item cd surfpack-0.1
-\item ./configure
+\item ./configure  (or ./configure --prefix=`pwd`, see text below)
 \item make
 \item make install
 \end{enumerate}
 
-Users with access to Surfpack's CVS respository may checkout the source directly instead of downloading the gzipped distribution tar-file.  In this case, the user must manually run the GNU autotools to create the configure script and Makefile.in files.  The appropriate sequence of commands would be
+Users with access to Surfpack's CVS repository may checkout the source directly instead of downloading the gzipped distribution tar-file.  In this case, the user must manually run the GNU autotools to create the configure script and Makefile.in files.  The appropriate sequence of commands would be
 \begin{enumerate}
 \item cvs checkout Surfpack
 \item cd Surfpack
@@ -70,7 +104,7 @@ would lead to the installation of the Surfpack library and executable as /home/u
 \subsection{Advanced options}
 Most deviations from the standard build process involve special arguments to configure.
 \subsection{Testing the installation}
-Surfpack is distributed with its test suite.  The unit testing suite utilizes the CPP Unit libraries, available at <URL>, which must be installed in the users's machine if the tests are to be executed.  If the CPP Unit libraries are installed in a location that is not automatically searched by the compiler, the full path of the libraries should be specified as an argument to configure:
+Surfpack is distributed with its test suite.  The unit testing suite utilizes the CPP Unit libraries, available at http://cppunit.sourceforge.net/cppunit-wiki, which must be installed in the user's machine if the tests are to be executed.  If the CPP Unit libraries are installed in a location that is not automatically searched by the compiler, the full path of the libraries should be specified as an argument to configure:
 \texttt{./configure --with-cppunit-prefix=/home/userid/cppunit}
 To run the test suite, type \texttt{make check} at the command line, after the successful execution of \texttt{make} or \texttt{make install}.  CPP Unit summarize the results of the tests.
 
@@ -88,11 +122,13 @@ Surfpack requires the presence of libraries for BLAS and LAPACK, as well as the 
 \texttt{./configure LD\_FLAGS="-L/home/userid/lib -L/usr/pub/lib"}
 
 \subsubsection{Building with Dakota}
-To build Dakota with Surfpack, install the Surfpack source in the \$DAKOTA/VendorPackages directory.  Rename the root Surfpack directory (e.g., surfpack-0.1) to "Surfpack."  Then, from the root Dakota directory, run pass an argument to configure to specify that Surfpack should be built:
+Surfpack has its origins in the DAKOTA software toolkit, and Surfpack can be built so that it serves as a library in DAKOTA. See the DAKOTA web page (http://endo.sandia.gov/DAKOTA), and the INSTALL notes that come with the DAKOTA source code for details on how to link Surfpack and DAKOTA.
 
-\texttt{./configure --with-surfpack}
-
-When the Dakota configure script enters the Surfpack directory, it will automatically execute Surfpack's configure script.  Note that if Surfpack has been check out from CVS, it will be necessary to run autoreconf from the root Surfpack directory \em{before} running Dakota's configure script.  This is to ensure that Surfpack's configure script gets created.  Once the configuration process has completed, type make from the root Dakota directory.  The Surfpack library should get linked into the Dakota executable, which gets written to the bin/ subdirectory under the root Dakota directory.  See the Dakota documentation for details.
+%Then, from the root Dakota directory, run pass an argument to configure to specify that Surfpack should be built:
+%
+%\texttt{./configure --with-surfpack}
+%
+%When the Dakota configure script enters the Surfpack directory, it will automatically execute Surfpack's configure script.  Note that if Surfpack has been check out from CVS, it will be necessary to run autoreconf from the root Surfpack directory before running Dakota's configure script.  This is to ensure that Surfpack's configure script gets created.  Once the configuration process has completed, type make from the root Dakota directory.  The Surfpack library should get linked into the Dakota executable, which gets written to the bin/ subdirectory under the root Dakota directory.  See the Dakota documentation for details.
 
 \subsection{Troubleshooting}
 This section enumerates possible causes and solutions for build failures.
@@ -139,7 +175,7 @@ This file can be loaded into Surfpack using the following command:
 \verbatiminput{loaddata.txt}
 A common use of empirical models is to predict a response at a set of data points for which the true response is not available.  This data set contains seven sample points along the real-number line on the interval [-3,3].  After we compute a model to generalize from these seven points, suppose that we want to evaluate our model at 100 evenly spaced points on the same interval.  We can prepare this 100-point data set using the CreateAxes and GridPoints commands.
 \verbatiminput{axesandgrid.txt}
-The CreateAxes command specifies the lower-bound, upper-bound, and number of raster points along one or more dimensions.  These values can be read from a file or can specified as a singly-quoted string literal.  See sextion xxx for more information about the syntax.
+The CreateAxes command specifies the lower-bound, upper-bound, and number of raster points along one or more dimensions.  These values can be read from a file or can specified as a singly-quoted string literal.  See section xxx for more information about the syntax.
 
 The GridPoints command creates a new named data set of evenly spaced points, based on the values in an axes variable.  The GridPoints command requires two arguments: the name of the resulting data set, and the name of the axes variable used to compute the data set.
 An excerpt from the data set created by these commands is shown in figure xx.
@@ -189,7 +225,7 @@ So far in our example, we have created cubic-polynomial fits to two different re
 \subsection{Timing Data}
 Many scientific computations involve expensive linear algebra operations, such as matrix inversion.  Although modern processors can perform billions of operations per second, the computational complexity of popular matrix inversion algorithms means that many interesting problems are simply intractable (i.e., would require several lifetimes worth of supercomputing power).  And while the numerical algorithms involved in matrix inversion are well-understood, the complexities of memory hierarchies, scheduling algorithms, and hardware architectures can make it difficult to predict wall-clock performance for various sizes of matrices.  Perhaps the best way to evaluate the limits of problem size on a particular computer is through the analysis of empirical data.
 
-Suppose we want to characterize the speed of inversion for matrices of various sizes on a particular machine.  What size of matrices can be handled in one second, one minute, one hour, etc?  Figure xxx shows data for such-and-such machine.  The Kriging algorithm used in Surfpack--wherein the running time is dominated by a matrix inversion operation--was run using 50--3000 data points, with tests at invtervals of 50 points.  If the algorithm is run using $n$ points, the inversion of an $n$-by-$n$ matrix is required.  For each matrix size, the median time for five runs of the algorithm is reported.  (The experiments were run when the machine was not heavily loaded with other processes, but there is still some variation in running times.)
+Suppose we want to characterize the speed of inversion for matrices of various sizes on a particular machine.  What size of matrices can be handled in one second, one minute, one hour, etc?  Figure xxx shows data for such-and-such machine.  The Kriging algorithm used in Surfpack--wherein the running time is dominated by a matrix inversion operation--was run using 50--3000 data points, with tests at intervals of 50 points.  If the algorithm is run using $n$ points, the inversion of an $n$-by-$n$ matrix is required.  For each matrix size, the median time for five runs of the algorithm is reported.  (The experiments were run when the machine was not heavily loaded with other processes, but there is still some variation in running times.)
 
 \begin{figure}[htbp]
 \includegraphics[width=12cm]{kriging_times_50to3000.png}
@@ -339,7 +375,7 @@ An attempt was made to create a Surface object without specifying any data.  Pas
 The variable name given for the axes argument in a GridPoints or MonteCarloSample command was not found in the symbol table.  Make sure that the axes object of that name was previously loaded from a file or created using a CreateAxes command.  Check for misspellings.
 
 \subsubsection{Dimensionality of data needed to determine number of required samples.}
-This error occurs when a request is made to know the minimum number of required sample for some surfaces before the dimensionality of the data is determined.  In many cases the required number of points is a function of the arity of the data.
+This error occurs when a request is made to know the minimum number of required samples for some surfaces before the dimensionality of the data is determined.  In many cases the required number of points is a function of the dimension of the data.
 
 \subsubsection{Dimension mismatch: conmin seed and data dimensionality.}
 By default the correlation parameters for Kriging are computed using doing a maximum likelihood estimation.  If a seed for the optimization is specified, it should be a tuple with the same dimensionality as the data set.
@@ -379,13 +415,13 @@ A data point was requested from a SurfData object, but the index given is equal 
 
 \subsubsection{Exception caught and rethrown in SurfPoint::readText}
 \subsubsection{Exception rethrown in SurfPoint::readBinary}
-An unknown error occured while reading a file.  Check the integrity of your data.
+An unknown error occurred while reading a file.  Check the integrity of your data.
 
 \subsubsection{Expected: \ldots found: \ldots} 
 The name found in a surface file is inconsistent with the type of Surface object that is being create from the file.  Check the file contents and object constructor.
 
 \subsubsection{Expected `f' or `v' on line}
-The first line of an axes object should be the number of dimensions desired in theresulting data set.  Each line after the first should either give a minimum, maximum, and number of raster points for one dimension, or it should give a fixed valuefor a dimension, which all points in the set will share.  Lines with fixed values should begin with the flag `f'; all others should begin with `v' (for `variable').
+The first line of an axes object should be the number of dimensions desired in the resulting data set.  Each line after the first should either give a minimum, maximum, and number of raster points for one dimension, or it should give a fixed value for a dimension, which all points in the set will share.  Lines with fixed values should begin with the flag `f'; all others should begin with `v' (for `variable').
 \subsubsection{Index \ldots specified, but there are zero\ldots}
 Either a request has been made for a data point in a data set where there are no active points, or a request has been made for a non-existent response variable.  Remember the if there are $n$ response variables, they are indexed from $0$ to $n-1$.  When requesting data points from a SurfData object, remember that some points may be inactive (excluded), which would reduce the maximum valid index.
 
@@ -395,7 +431,7 @@ Data for a surface may be specified in the constructor of a Surface object, or u
 \subsubsection{Integer overflow: number of terms exceeds maximum integer}
 There are too many terms in the regression model.  Use a lower-order polynomial to fit the data or project the data into a lower-dimensional space.
 
-\subsubsection{Must know data arity to use uniform correlation value.}
+\subsubsection{Must know data dimension to use uniform correlation value.}
 Kriging allows for the specification that the same correlation parameter should be used for each dimension, but the number of dimensions must be known in advance.  Specify the data for the KrigingSurface object before invoking this method.
 
 \subsubsection{Expected on this line\ldots}
@@ -434,7 +470,7 @@ If a Surface object is created using the minimum number of required samples, the
 The $i$th dimension was requested, but the data has $i$ or fewer dimensions.  Remember that if the data has $n$ dimensions, they are indexed from 0 to $n-1$.
 
 \subsubsection{Size of set of excluded points exceeds size of SurfPoint set}
-Some of the indices passed in to setExcludedPoints must either be out of the range of acceptable indices for the data set, or duplicatations of other excluded points.
+Some of the indices passed in to setExcludedPoints must either be out of the range of acceptable indices for the data set, or duplications of other excluded points.
 
 % Surface name not found.
 \subsubsection{Surface variable not found in symbol table}
@@ -484,7 +520,7 @@ Surfpack uses file extensions to determine the formatting of information that is
     \hline
     & data & identifier & yes & Data set that the surface is to
     be evaluated on.  Must have been created  \\
-    & & & & or loaded in a previous command.  In absensce of 'name' argument,\\
+    & & & & or loaded in a previous command.  In absence of 'name' argument,\\
     & & & & results are appended to this data as a new response variable. \\
     \hline
     & name & identifier & no & Name of a new data set, to which the results\\
@@ -520,7 +556,7 @@ Surfpack uses file extensions to determine the formatting of information that is
     & test\_function & identifier & no & Name of a test function to add on
     as a response variable for this data.\\
     & & & & Must be one of `rosenbrock', `rastrigin', `quasisine',
-    `shpere' or `sumofall'.\\
+    `sphere' or `sumofall'.\\
     & & & & Multiple test\_function arguments may be included in a
     single command.\\
     \hline
@@ -544,7 +580,7 @@ Surfpack uses file extensions to determine the formatting of information that is
     & & & & Must have been created in a previous command.\\
     \hline
     & test\_function & identifier & no & Same as for the
-    GirdPoints command.\\
+    GridPoints command.\\
     \hline
     & size & integer & no & Number of random samples.  Default is
     100.\\
@@ -591,7 +627,7 @@ Surfpack uses file extensions to determine the formatting of information that is
     functions.\\
     \hline
     max\_interactions & mars & integer & no & 2 & Maximum number of
-    varaible interactions that will be considered.\\
+    variable interactions that will be considered.\\
     \hline
     interpolation & mars & string & no & `cubic' & Must be either
     `linear' or `cubic'.  Determines what kind of splines\\
