@@ -6,13 +6,58 @@ Foundation, Inc.
    This file is free documentation; the Free Software Foundation gives
 unlimited permission to copy, distribute and modify it.
 
-This document has been modified from the default INSTALL document for the GNU autotools.
+This document has been modified from the default INSTALL document for 
+the GNU autotools.
+
+
+
+
+
+-------------------------------------------------------------------------
+-------------------------------------------------------------------------
+READ THIS FIRST
+                  READ THIS FIRST
+                                    READ THIS FIRST
+                                                      READ THIS FIRST
+-------------------------------------------------------------------------
+-------------------------------------------------------------------------
+
+
+NOTE:
+1. If you just want to use the pre-compiled version of Surfpack, you
+   don't perform any of the installation steps listed below.
+
+2. If you do want to install Surfpack (i.e., compile the Surfpack source
+   code into an executable file), then keep reading.
+
+
+
+-------------------------------------------------------------------------
+-------------------------------------------------------------------------
+
+
+
+
+
+
 
 Basic Installation
 =====================
 
-Note: In order for step 0 below to work, you will need version 1.9 
-of automake (or later version) on your system.
+
+Pre-Installation Steps:
+
+In order to perform the installation steps, you will need the following
+GNU software tools and version numbers (or newer version numbers) 
+installed on your computer:
+
+A. GNU autoconf version 2.59
+B. GNU automake version 1.9.6
+C. GNU libtool version 1.5.22
+C. GNU m4 version 1.4
+
+
+Installation Steps:
 
 0. If source is checked out from CVS, first run 'autoreconf --install'.  
    Otherwise, go to step 1.
