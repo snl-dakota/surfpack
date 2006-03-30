@@ -132,17 +132,17 @@ void surfpack::checkForEOF(istream& is)
 
 /// Open the file specified by filename and return the type of Surface that 
 /// is written there.  Throw an exception if the file cannot be opened, or if
-/// the file extension is anything other than .txt or .srf. 
+/// the file extension is anything other than .sps or .bsps. 
 const string surfpack::surfaceName(const string filename)
 {
   bool binary;
-  if (surfpack::hasExtension(filename,".srf")) {
+  if (surfpack::hasExtension(filename,".bsps")) {
     binary = true;;
-  } else if (surfpack::hasExtension(filename,".txt")) {
+  } else if (surfpack::hasExtension(filename,".sps")) {
     binary = false;
   } else {
     throw surfpack::io_exception(
-      "Unrecognized filename extension.  Use .srf or .txt"
+      "Unrecognized filename extension.  Use .sps or .bsps"
     );
   }
   ifstream infile(filename.c_str(), (binary ? ios::in|ios::binary : ios::in));
@@ -201,7 +201,19 @@ double surfpack::sum_vector(std::vector<double>& vals)
 /// Return the arithmetic mean (average) of the values in vector vals
 double surfpack::mean(std::vector<double>& vals)
 {
-  return sum_vector(vals) / vals.size();
+  //return sum_vector(vals) / vals.size();
+  // Check for 'inf' and ignore those values
+  unsigned excludedInfs = 0;
+  double sum = 0;
+  for (unsigned i = 0; i < vals.size(); i++) {
+    // false when vals[i] == inf or nan
+    if ( vals[i] != numeric_limits<double>::infinity()) { 
+      sum += vals[i];
+    } else {
+      excludedInfs++;
+    }
+  }
+  return sum / (vals.size() - excludedInfs);
 }
 
 /// Return the sample variance of the values in vals

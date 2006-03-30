@@ -55,13 +55,29 @@ public:
   std::vector<ParsedCommand>& commandList();
 
   // commands for use by interpreter to parse out certain argument types
-  static std::string parseOutIdentifier(const std::string& argname,
-    const ArgList& arglist);
-  static std::string parseOutStringLiteral(const std::string& argname,
-    const ArgList& arglist);
-  static int parseOutInteger(const std::string& argname,
-    const ArgList& arglist, bool& valid);
+  static std::string parseIdentifier(const std::string& argname,
+    const ArgList& arglist, bool throwExIfAbsent = true);
+  static std::string parseStringLiteral(const std::string& argname,
+    const ArgList& arglist, bool throwExIfAbsent = true);
+  static int parseInteger(const std::string& argname,
+    const ArgList& arglist, bool& valid, bool throwExIfAbsent = true);
+  static std::vector<std::string> parseMultiString(const std::string& argname,
+    const ArgList& arglist, bool throwExIfAbsent = true);
 protected:
+  
+  class missing_argument 
+  {
+  public:
+    missing_argument(const std::string& name_in = "", 
+      const std::string& cmdstring_in = "") 
+      : name(name_in), cmdstring(cmdstring_in) {}
+    void print() { std::cerr << "Error in " << cmdstring << ":  " 
+			     << ".  Required parameter \"" << name
+			     << " is not specified." << std::endl; }
+  protected:
+    std::string name;
+    std::string cmdstring;
+  };
 // Default constructor, copy constructor and assignment operator declared 
 // protected and not implemented, in order to make sure that only one
 // instance is created

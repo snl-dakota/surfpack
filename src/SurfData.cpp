@@ -611,7 +611,7 @@ void SurfData::write(const std::string& filename) const
 	     << "  No active data points." << endl;
     throw bad_surf_data(errormsg.str());
   }
-  bool binary = testFileExtension(filename);
+  bool binary = hasBinaryFileExtension(filename);
   ofstream outfile(filename.c_str(), 
     (binary ? ios::out|ios::binary : ios::out));
   if (!outfile) {
@@ -627,8 +627,8 @@ void SurfData::write(const std::string& filename) const
 /// Read a set of SurfPoints from a file.  Opens file and calls other version.
 void SurfData::read(const string& filename)
 {
-  // Open file in binary or text mode based on filename extension (.sd or .txt)
-  bool binary = testFileExtension(filename);
+  // Open file in binary or text mode based on filename extension (.bspd or .spd)
+  bool binary = hasBinaryFileExtension(filename);
   ifstream infile(filename.c_str(), (binary ? ios::in|ios::binary : ios::in));
   if (!infile) {
     throw surfpack::file_open_failure(filename);
@@ -759,17 +759,17 @@ ostream& operator<<(ostream& os, const SurfData& sd)
 // Helper methods 
 // ____________________________________________________________________________
 
-/// Returns true if file has .sd extension, false if it has .txt extension. 
+/// Returns true if file has .bspd extension, false if it has .spd extension. 
 /// Otherwise, an exception is thrown.
-bool SurfData::testFileExtension(const std::string& filename) const
+bool SurfData::hasBinaryFileExtension(const std::string& filename) const
 {
-  if (surfpack::hasExtension(filename,".sd")) {
+  if (surfpack::hasExtension(filename,".bspd")) {
     return true;
-  } else if (surfpack::hasExtension(filename,".txt")) {
+  } else if (surfpack::hasExtension(filename,".spd")) {
     return false;
   } else {
     throw surfpack::io_exception(
-      "Unrecognized filename extension.  Use .sd or .txt"
+      "Unrecognized filename extension.  Use .bspd or .spd"
     );
   }
 }

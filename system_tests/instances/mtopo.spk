@@ -1,23 +1,23 @@
 # Load data from files
-LoadData[name = topo_data, file = '../perm_data/noisysparsetopo.txt']
+Load[name = topo_data, file = '../perm_data/noisysparsetopo.spd']
 
 # Create a test data set
-LoadData[name = topo_test, file = '../perm_data/noisydensetopo.txt']
+Load[name = topo_test, file = '../perm_data/noisydensetopo.spd']
 
-CreateSurface[name = mars_topo, data = topo_data, type = 'Mars']
+CreateSurface[name = mars_topo, data = topo_data, type = mars]
 ! echo  mars
 
 # Save surfaces to file
-SaveSurface[surface = mars_topo, file = '../tmp_surf/mars_topo.txt']
-#SaveSurface[surface = mars_topo, file = '../tmp_surf/mars_topo.txt']
+Save[surface = mars_topo, file = '../tmp_surf/mars_topo.sps']
+#Save[surface = mars_topo, file = '../tmp_surf/mars_topo.sps']
 
 # Evaluate surfaces 
-Evaluate[surface = mars_topo, input_data = topo_test]
+Evaluate[surface = mars_topo, data = topo_test]
 ! echo mars eval
-Fitness[surface = mars_topo, metric = 'mean_squared']
+Fitness[surface = mars_topo, metric = mean_squared]
 
 # Save data to file
-SaveData[data = topo_test, file = '../tmp_data/topo_test.txt']
+Save[data = topo_test, file = '../tmp_data/topo_test.spd']
 
 
 #/*

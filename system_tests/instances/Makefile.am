@@ -1,6 +1,6 @@
 ## Process this file with automake to produce Makefile.in
 krig_time_test = krig_time
-krig_time_SOURCES = time_krig_builds.cpp
+krig_time_SOURCES = time_krig_new.cpp
 krig_time_LDADD = $(top_builddir)/src/libsurfpack.la
 
 bin_PROGRAMS = $(krig_time_test)

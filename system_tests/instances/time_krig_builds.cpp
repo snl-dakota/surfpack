@@ -67,7 +67,7 @@ int main(int argc, char** argv)
     cout << " avg: " << setw(15) 
          << avgtime << endl;
   }
-  krigtimes.write(string("one_trial_3050to5000.txt"));
+  krigtimes.write(string("one_trial_3050to5000.spd"));
   PolynomialSurface ps(&krigtimes,3);
   //SurfData trainingtimes("trainingtimes.txt");
   //PolynomialSurface ps(&trainingtimes,3);

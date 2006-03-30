@@ -344,9 +344,9 @@ public:
   /// data set
   void notifyListeners(int msg); 
 
-  /// Returns true if file has .sd extension, false if it has .txt extension. 
+  /// Returns true if file has .bspd extension, false if it has .spd extension. 
   /// Otherwise, an exception is thrown.
-  bool testFileExtension(const std::string& filename) const;
+  bool hasBinaryFileExtension(const std::string& filename) const;
 
   /// If the line contains single-quoted string, parse them out as labels
   /// and return true; otherwise, return false

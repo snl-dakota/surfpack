@@ -12,6 +12,27 @@ class Surface;
 class ParsedCommand;
 class SurfpackParser;
 
+namespace SurfpackInterface
+{
+  void Load(SurfData*& data, const std::string filename);
+  void Load(Surface*& surface, const std::string filename);
+  //void Load(const std::string filename);
+  void Save(SurfData* data, const std::string filename);
+  void Save(Surface* surface, const std::string filename);
+  // void Save(Surface* surface);
+  // void Save(SurfData* surface);
+  void CreateSurface(Surface*& surface, SurfData* data, const std::string type, 
+    int response_index = 0);
+  void Evaluate(Surface* surface, SurfData* data);
+  double Fitness(Surface* surface, const std::string metric, 
+         SurfData* data = 0, int response_index = 0);
+  void CreateAxes(AxesBounds*&, const std::string infostring,
+         AxesBounds::ParamType pt);
+  void GridSample(SurfData*& data, AxesBounds* axes, 
+                   std::vector< std::string > test_functions);
+  void MonteCarloSample(SurfData*& data, AxesBounds* axes, unsigned num_samples, 		std::vector< std::string > test_functions);
+  
+};
 
 class SurfpackInterpreter
 {
@@ -22,6 +43,7 @@ public:
   void commandLoop(std::ostream& os = std::cout, std::ostream& es = std::cerr);
 
   // individual surfpack commands
+  void executeLoad(const ParsedCommand& command);
   void executeLoadData(const ParsedCommand& command);
   void executeLoadSurface(const ParsedCommand& command);
   void executeSaveData(const ParsedCommand& command);
@@ -33,21 +55,20 @@ public:
   void executeEvaluate(const ParsedCommand& command);
   void executeFitness(const ParsedCommand& command);
   void executeCreateAxes(const ParsedCommand& command);
-  void executeGridPoints(const ParsedCommand& command);
+  void executeGridSample(const ParsedCommand& command);
   void executeMonteCarloSample(const ParsedCommand& command);
   void executeShellCommand(const ParsedCommand& command);
-  
   
 protected:
   class command_error 
   {
   public:
-    command_error(const std::string& msg_ = "", 
-      const std::string& cmdstring_ = "") 
-      : msg(msg_), cmdstring(cmdstring_) {}
+    command_error(const std::string& msg_in = "", 
+      const std::string& cmdstring_in = "") 
+      : msg(msg_in), cmdstring(cmdstring_in) {}
     void print() { std::cerr << "Error in " << cmdstring << ":  " 
 			     << msg << std::endl; }
-  private:
+  protected:
     std::string msg;
     std::string cmdstring;
   };
@@ -66,11 +87,14 @@ private:
   {
     SurfDataMap dataVars;
     SurfaceMap surfaceVars;
-    AxesBoundsMap pointDefinitionVars;
+    AxesBoundsMap axesVars;
     ~SymbolTable();  
+    Surface* lookupSurface(const std::string);
+    SurfData* lookupData(const std::string);
+    AxesBounds* lookupAxes(const std::string);
   };
 
-  struct SymbolTable symbol_table;
+  struct SymbolTable symbolTable;
   SurfpackParser& parser;
 };
     

@@ -1,37 +1,37 @@
 
-# Load AxesBounds from files 
-AxesBounds[name = ax_d3, file = '../axes_bounds/test004_03d.axb']
+# Load CreateAxes from files 
+CreateAxes[name = ax_d3, file = '../axes/test004_03d.axb']
 
-# Generate data from AxesBounds using test functions
-MonteCarloSample[name = data3, def = ax_d3, test_function = 'rastrigin',
+# Generate data from CreateAxes using test functions
+MonteCarloSample[name = data3, axes = ax_d3, test_function = rastrigin,
   		 size = 143]
 # Save data to file
-SaveData[data = data3, file = '../tmp_data/data004_03d.sd']
+Save[data = data3, file = '../tmp_data/data004_03d.bspd']
 
 # Load data from files
-LoadData[name = data3_from_file, file = '../tmp_data/data004_03d.sd']
+Load[name = data3_from_file, file = '../tmp_data/data004_03d.bspd']
 
 # Save data back to file, so we can check if they're the same
-SaveData[data = data3_from_file, file = '../tmp_data/data004_03d.txt']
+Save[data = data3_from_file, file = '../tmp_data/data004_03d.spd']
 
 # Create surfaces using existing data sets
-CreateSurface[name = krig_data3, data = data3, type = 'Kriging', 
+CreateSurface[name = krig_data3, data = data3, type = kriging, 
 	      thetas = (1.0,2.0,10.0)]
 CreateSurface[name = krig_data3_from_file, data = data3_from_file,
-	      type = 'Kriging', thetas = (1.0,2.0,10.0)]
-CreateSurface[name = ann_data3, data = data3, type = 'ANN', scaling = 'uniform', 
+	      type = kriging, thetas = (1.0,2.0,10.0)]
+CreateSurface[name = ann_data3, data = data3, type = 'ANN', scaling = uniform, 
 	      norm_bound = 0.9, svdfactor = 0.99, fraction_withheld = 0.2]
 CreateSurface[name = ann_data3_from_file, data = data3_from_file, type = 'ANN',
-		scaling = 'uniform',
+		scaling = uniform,
 	      norm_bound = 0.9, svdfactor = 0.99, fraction_withheld = 0.2]
 
 # Save surfaces to file
-SaveSurface[name = krig_data3, file = '../tmp_surf/test004_krig_data3.srf']
-SaveSurface[name = krig_data3_from_file, 
-  	    file = '../tmp_surf/test004_krig_data3.srf']
-SaveSurface[name = ann_data3, file = '../tmp_surf/test004_krig_data3.srf']
-SaveSurface[name = ann_data3_from_file, 
-  	    file = '../tmp_surf/test004_krig_data3.srf']
+Save[surface = krig_data3, file = '../tmp_surf/test004_krig_data3.bsps']
+Save[surface = krig_data3_from_file, 
+  	    file = '../tmp_surf/test004_krig_data3.bsps']
+Save[surface = ann_data3, file = '../tmp_surf/test004_krig_data3.bsps']
+Save[surface = ann_data3_from_file, 
+  	    file = '../tmp_surf/test004_krig_data3.bsps']
 
 
 

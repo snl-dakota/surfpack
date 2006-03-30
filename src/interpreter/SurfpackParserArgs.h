@@ -124,6 +124,8 @@ public:
   void setName(const std::string& name_in);
   void setRVal(Rval* rval_in);
   Arg(); 
+
+  static Arg makeArg(const std::string name, int rval);
 private:
   Rval* rval;
 }; 

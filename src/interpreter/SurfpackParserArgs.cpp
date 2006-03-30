@@ -217,6 +217,8 @@ const Arg& Arg::operator=(const Arg& other)
   delete this->rval;
   if (other.rval) {
     this->rval = other.rval->clone();
+  } else {
+    this->rval = 0;
   }
   return *this;
 } 
@@ -224,7 +226,6 @@ const Arg& Arg::operator=(const Arg& other)
 Arg::Arg(const std::string& name_in, Rval* rval_in)
   : name(name_in), rval(rval_in)
 {
-
 }
 
 Arg::Arg()
@@ -255,3 +256,7 @@ Arg::~Arg()
   rval = 0;
 }
 
+Arg Arg::makeArg(const std::string name, int rval)
+{
+  return Arg(name, new RvalInteger(rval));
+}

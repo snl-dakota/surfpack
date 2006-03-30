@@ -233,12 +233,12 @@ public:
 // I/O 
 // ____________________________________________________________________________
 public:
-  /// Write the surface out to a file.  Files with extension .txt are written
-  /// out in text mode; .srf files are written in binary format (unformatted). 
+  /// Write the surface out to a file.  Files with extension .sps are written
+  /// out in text mode; .bsps files are written in binary format (unformatted). 
   virtual void write(const std::string filename);
 
-  /// Read the surface from a file.  Files with extension .txt are read in text 
-  /// mode; others are read in binary format (unformatted).
+  /// Read the surface from a file.  Files with extension .sps are read in text 
+  /// mode; .bsps are read in binary format (unformatted).
   virtual void read(const std::string filename);
 
   /// Write the surface in binary format
@@ -253,9 +253,9 @@ public:
   /// Read the surface in text format
   virtual void readText(std::istream& is) = 0; 
 
-  /// Return true if filename has .srf extension, false if filename has .txt
+  /// Return true if filename has .bsps extension, false if filename has .sps
   /// extension.  If neither, throw surfpack::io_exception.
-  bool testFileExtension(const std::string& filename) const;
+  bool Surface::hasBinaryFileExtension(const std::string& filename) const;
 
 
 // ____________________________________________________________________________

@@ -184,7 +184,7 @@ void Surface::config(const Arg& arg)
       this->responseIndex = index; 
     }
   } else if (arg.name == "scaling") {
-    string scaleOption = arg.getRVal()->getStringLiteral();
+    string scaleOption = arg.getRVal()->getIdentifier();
     if (scaleOption == "uniform") {
       scaleUniform();
     } else if (scaleOption == "auto") {
@@ -572,13 +572,13 @@ void Surface::createModel(SurfData* surfData)
 // I/O 
 // ____________________________________________________________________________
 
-/// Write the surface out to a file.  Files with extension .txt are written
-/// out in text mode; .srf files are written in binary format (unformatted). 
+/// Write the surface out to a file.  Files with extension .sps are written
+/// out in text mode; .bsps files are written in binary format (unformatted). 
 void Surface::write(const string filename)
 {
   const string nameOfSurface = surfaceName();
-  // testFileExtension returns true for .srf, false for .txt
-  bool binary = testFileExtension(filename); 
+  // hasBinaryFileExtension returns true for .bsps, false for .sps
+  bool binary = hasBinaryFileExtension(filename); 
   ofstream outfile(filename.c_str(), 
     (binary ? ios::out|ios::binary : ios::out));
   if (!outfile) {
@@ -625,13 +625,13 @@ void Surface::write(const string filename)
   outfile.close();
 }
 
-/// Read the surface from a file.  Files with extension .txt are read in text 
-/// mode; others are read in binary format (unformatted).
+/// Read the surface from a file.  Files with extension .sps are read in text 
+/// mode; .bsps are read in binary format (unformatted).
 void Surface::read(const string filename)
 {
   // First, open the file
-  // testFileExtension returns true for .srf, false for .txt
-  bool binary = testFileExtension(filename);
+  // hasBinaryFileExtension returns true for .bsps, false for .sps
+  bool binary = hasBinaryFileExtension(filename);
   ifstream infile(filename.c_str(), (binary ? ios::in|ios::binary : ios::in));
   int index;
   if (!infile) {
@@ -668,17 +668,17 @@ void Surface::read(const string filename)
   dataModified = false;
 }
 
-/// Return true if filename has .srf extension, false if filename has .txt
+/// Return true if filename has .bsps extension, false if filename has .sps
 /// extension.  If neither, throw surfpack::io_exception.
-bool Surface::testFileExtension(const std::string& filename) const
+bool Surface::hasBinaryFileExtension(const std::string& filename) const
 {
-  if (surfpack::hasExtension(filename,".srf")) {
+  if (surfpack::hasExtension(filename,".bsps")) {
     return true;
-  } else if (surfpack::hasExtension(filename,".txt")) {
+  } else if (surfpack::hasExtension(filename,".sps")) {
     return false;
   } else {
     throw surfpack::io_exception(
-      "Unrecognized filename extension.  Use .srf or .txt"
+      "Unrecognized filename extension.  Use .sps or .bsps"
     );
   }
 }

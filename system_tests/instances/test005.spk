@@ -1,22 +1,22 @@
-# Load AxesBounds from files 
-AxesBounds[name = ax1p, file = '../axes_bounds/test005_1d_1p.axb']
-AxesBounds[name = ax0p, file = '../axes_bounds/test005_1d_0p.axb']
+# Load CreateAxes from files 
+CreateAxes[name = ax1p, file = '../axes/test005_1d_1p.axb']
+CreateAxes[name = ax0p, file = '../axes/test005_1d_0p.axb']
 
-# Generate data from AxesBounds using test functions
-GridPoints[name = d1p, def = ax1p, test_function = 'rastrigin',
-	test_function = 'sphere']
-GridPoints[name = d0p, def = ax0p, test_function = 'sumofall',
-	test_function = 'sphere']
+# Generate data from CreateAxes using test functions
+GridSample[name = d1p, axes = ax1p, test_function = rastrigin,
+	test_function = sphere]
+GridSample[name = d0p, axes = ax0p, test_function = sumofall,
+	test_function = sphere]
 
 # Create surfaces using existing data sets
-CreateSurface[name = rbf_1p, data = d1p, type = 'RBFNet',
+CreateSurface[name = rbf_1p, data = d1p, type = rbf,
 		response_index = 1]
-CreateSurface[name = rbf_0p, data = d0p, type = 'RBFNet',
+CreateSurface[name = rbf_0p, data = d0p, type = rbf,
 		response_index = 1]
 
 # Compute surface fitness metrics
-Fitness[surface = rbf_1p, metric = 'max_abs']
-Fitness[surface = rbf_0p, metric = 'max_abs']
+Fitness[surface = rbf_1p, metric = max_abs]
+Fitness[surface = rbf_0p, metric = max_abs]
 
 
 

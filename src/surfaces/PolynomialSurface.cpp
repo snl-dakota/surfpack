@@ -12,7 +12,7 @@
 
 using namespace std;
 
-const string PolynomialSurface::name = "Polynomial";
+const string PolynomialSurface::name = "polynomial";
 
 // ____________________________________________________________________________
 // Creation, Destruction, Initialization 
@@ -407,11 +407,13 @@ void PolynomialSurface::build(SurfData& data)
     //cout << A.asString() << endl;
     //cout << "b" << endl;
     //copy(b.begin(),b.end(),std::ostream_iterator<double>(cout,"\n"));
+    //cout << "leastSquares without any equality constraints" << endl;
     surfpack::linearSystemLeastSquares(A,coefficients,b);
-    surfpack::approximateByIntegers(coefficients);
+    //surfpack::approximateByIntegers(coefficients);
     //cout << "coefficients" << endl;
     //copy(coefficients.begin(),coefficients.end(),std::ostream_iterator<double>(cout,"\n"));
   } else {
+    //cout << "leastSquares with " << eqConRHS.size() << " equality constraints" << endl;
     surfpack::leastSquaresWithEqualityConstraints
       (A,coefficients,b,eqConLHS,eqConRHS);
   }

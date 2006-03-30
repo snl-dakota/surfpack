@@ -214,30 +214,37 @@ void SurfpackParser::newTuple()
   currentTuple->clear();
 }
 
-std::string SurfpackParser::parseOutIdentifier(const std::string& argname,
-  const ArgList& arglist)
+std::string SurfpackParser::parseIdentifier(const std::string& argname,
+  const ArgList& arglist, bool throwExIfAbsent)
 {
   for (unsigned i = 0; i < arglist.size(); i++) {
     if (arglist[i].name == argname) {
       return arglist[i].getRVal()->getIdentifier();
     }
   }
+  if (throwExIfAbsent) {
+    std::ostringstream os;
+    os << "Required parameter " << argname << " is not specified." 
+	<< std::endl;
+    throw os.str();
+  }
   return std::string("");
 }
 
-std::string SurfpackParser::parseOutStringLiteral(const std::string& argname,
-  const ArgList& arglist)
+std::string SurfpackParser::parseStringLiteral(const std::string& argname,
+  const ArgList& arglist, bool throwExIfAbsent)
 {
   for (unsigned i = 0; i < arglist.size(); i++) {
     if (arglist[i].name == argname) {
       return arglist[i].getRVal()->getStringLiteral();
     }
   }
+  if (throwExIfAbsent) throw std::string("parseStringLiteral");
   return std::string("");
 }
 
-int SurfpackParser::parseOutInteger(const std::string& argname,
-  const ArgList& arglist, bool& valid)
+int SurfpackParser::parseInteger(const std::string& argname,
+  const ArgList& arglist, bool& valid, bool throwExIfAbsent)
 {
   valid = false;
   for (unsigned i = 0; i < arglist.size(); i++) {
@@ -246,7 +253,23 @@ int SurfpackParser::parseOutInteger(const std::string& argname,
       return arglist[i].getRVal()->getInteger();
     }
   }
+  if (throwExIfAbsent) throw std::string("parseInteger");
   return -1;
+}
+
+std::vector<std::string> SurfpackParser::parseMultiString(
+  const std::string& argname, const ArgList& arglist, bool throwExIfAbsent)
+{
+  std::vector<std::string> result;
+  for (unsigned i = 0; i < arglist.size(); i++) {
+    if (arglist[i].name == "test_function") {
+      result.push_back(arglist[i].getRVal()->getIdentifier());
+    }
+  }
+  if (throwExIfAbsent && result.empty()) {
+    throw std::string("parseMultiString");
+  }
+  return result;
 }
 
 void SurfpackParser::shellCommand()

@@ -12,13 +12,12 @@
 	extern void appendToken(const char*);
 %}
 %%
-LoadSurface |
-LoadData |
+Load |
 CreateSurface |
 ConvertData |
 ConvertSurface |
 MonteCarloSample |
-GridPoints |
+GridSample |
 Evaluate |
 Save |
 CreateAxes |
