@@ -62,6 +62,7 @@ class RvalTuple : public Rval
 {
 public:
   RvalTuple(const Tuple& value_in); 
+  RvalTuple(const std::vector<double>& value_in); 
   virtual Rval* clone() const;
   virtual const Tuple& getTuple() const;
   static const std::vector< double >& 

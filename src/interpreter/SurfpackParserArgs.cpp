@@ -7,6 +7,7 @@
     _______________________________________________________________________ */
 #include "surfpack_config.h"
 #include "SurfpackParserArgs.h"
+#include <sstream>
 
 Triplet::Triplet() : min(0), max(0), numPts(0) {}
 
@@ -108,6 +109,16 @@ Rval* RvalReal::clone() const
 RvalTuple::RvalTuple(const Tuple& value_in) : value(value_in) 
 {
 
+}
+
+RvalTuple::RvalTuple(const std::vector<double>& value_in)
+{
+  value.resize(value_in.size());
+  for (unsigned i = 0; i < value_in.size(); i++) {
+    std::ostringstream os;
+    os << value_in[i];
+    value[i] = os.str();
+  }
 }
 
 const Tuple& RvalTuple::getTuple() const
