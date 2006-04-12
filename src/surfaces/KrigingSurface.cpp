@@ -54,7 +54,7 @@ void KrigingSurface::initialize()
   }
   // CONMIN parameters and array allocation
   NFDG   = 0;       // default finite difference flag
-  IPRINT = 0;       // default flag to control amount of output info
+  IPRINT = 1;       // default flag to control amount of output info
   ITMAX  = 100;     // default max number of iterations
   FDCH   =  1.0e-5; // default relative finite difference step size
   FDCHM  =  1.0e-5; // default absolute finite difference step size
@@ -225,7 +225,7 @@ const string KrigingSurface::surfaceName() const
 
 unsigned KrigingSurface::minPointsRequired(unsigned hypothetical_xsize) 
 { 
-  return hypothetical_xsize * hypothetical_xsize;
+  return hypothetical_xsize + 1;
 }
 
 unsigned KrigingSurface::minPointsRequired() const
@@ -603,6 +603,8 @@ void KrigingSurface::printConminVariables(ostream& os)
 
 void KrigingSurface::buildModel(SurfData& data)
 {
+  assert(xsize);
+  int xsize_as_int = static_cast<int>(xsize);
   numsamp = static_cast<int>(data.size());
   for (unsigned i = 0; i < data.size(); i++) {
     for (unsigned j = 0; j < xsize; j++) {
@@ -634,7 +636,6 @@ void KrigingSurface::buildModel(SurfData& data)
     printConminVariables(before);
     before.close();
 #endif
-    int xsize_as_int = static_cast<int>(xsize);
     CALLCONMIN_F77(conminThetaVars[0], conminThetaLowerBnds[0],
 		   conminThetaUpperBnds[0],
 		   constraintVector[0],SCAL[0],DF[0],A[0],S[0],G1[0],G2[0],
@@ -672,7 +673,6 @@ void KrigingSurface::buildModel(SurfData& data)
     os << "Before call to krigmodel in buildModel" << endl;
     printKrigModelVariables(os);
 #endif
-    int xsize_as_int = static_cast<int>(xsize);
     KRIGMODEL_F77(xsize_as_int,numsamp,numNewPts,
 		  iFlag,thetaVector[0],xMatrix[0],yValueVector[0],xNewVector[0],
 		  yNewVector[0],betaHat,rhsTermsVector[0],maxLikelihoodEst,
@@ -680,6 +680,8 @@ void KrigingSurface::buildModel(SurfData& data)
 		  fValueVector[0],fRinvVector[0],yfbVector[0],yfbRinvVector[0],
 		  rXhatVector[0],workVector[0],workVectorQuad[0],iworkVector[0],
 		  numSampQuad);
+
+
 #ifdef PRINT_DEBUG
     os << "After call to krigmodel in buildModel" << endl;
     printKrigModelVariables(os);
