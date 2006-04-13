@@ -8,6 +8,7 @@
 #ifndef SURFPACK_SYSTEM_HEADERS_H
 #define SURFPACK_SYSTEM_HEADERS_H
 #include <algorithm>
+#include <limits>
 #ifdef HAVE_STD
 #include <cassert>
 #include <cctype>
