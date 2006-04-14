@@ -47,7 +47,7 @@ void PolynomialSurfaceTest::tearDown()
 //  PolynomialSurface ps(&sd, 1);
 //  ps.createModel();
 //  cout << "Writing to file" << endl;
-//  ps.write("manydim.txt");
+//  ps.write("manydim.sps");
 //  CPPUNIT_ASSERT(1 == 1);
 //}
 
@@ -70,17 +70,17 @@ void PolynomialSurfaceTest::tearDown()
 //  PolynomialSurface ps(&sd, dim);
 //  ps.createModel();
 //  cout << "Writing to file" << endl;
-//  ps.write("manydim.txt");
+//  ps.write("manydim.sps");
 //  CPPUNIT_ASSERT(1 == 1);
 //
 //} 
 
 //void PolynomialSurfaceTest::constructor()
 //{
-//  SurfData sd(fullPath("oneDimQuadratic.txt"));
+//  SurfData sd(fullPath("oneDimQuadratic.spd"));
 //  PolynomialSurface ps(&sd, 2);
 //  ps.createModel();
-//  ps.write("oneDQpoly2.txt");
+//  ps.write("oneDQpoly2.sps");
 //  CPPUNIT_ASSERT(ps.coefficients.size() == 3);
 //  CPPUNIT_ASSERT(matches(ps.coefficients[0],0.0));
 //  CPPUNIT_ASSERT(matches(ps.coefficients[1],0.0));
@@ -89,7 +89,7 @@ void PolynomialSurfaceTest::tearDown()
 
 void PolynomialSurfaceTest::constructor()
 {
-  SurfData sd(fullPath("oneDimQuadratic.txt"));
+  SurfData sd(fullPath("oneDimQuadratic.spd"));
   PolynomialSurface ps(&sd, 2);
   CPPUNIT_ASSERT(ps.scaler == 0);
   CPPUNIT_ASSERT(ps.xsize == 1);
@@ -99,7 +99,7 @@ void PolynomialSurfaceTest::constructor()
   CPPUNIT_ASSERT(ps.excludedPoints.size() == 0);
   CPPUNIT_ASSERT(sd == *(ps.sd));
   CPPUNIT_ASSERT(ps.responseIndex == 0);
-  CPPUNIT_ASSERT(ps.name == string("Polynomial"));
+  CPPUNIT_ASSERT(ps.name == string("polynomial"));
   CPPUNIT_ASSERT(ps.order == 2);
   CPPUNIT_ASSERT(ps.coefficients.size() == 0);
   CPPUNIT_ASSERT(ps.digits.size() == 2);
@@ -117,7 +117,7 @@ void PolynomialSurfaceTest::constructorNullData()
   CPPUNIT_ASSERT(ps.excludedPoints.size() == 0);
   CPPUNIT_ASSERT(ps.sd == 0);
   CPPUNIT_ASSERT(ps.responseIndex == 0);
-  CPPUNIT_ASSERT(ps.name == string("Polynomial"));
+  CPPUNIT_ASSERT(ps.name == string("polynomial"));
   CPPUNIT_ASSERT(ps.order == 3);
   CPPUNIT_ASSERT(ps.coefficients.size() == 0);
   CPPUNIT_ASSERT(ps.digits.size() == 3);
@@ -126,7 +126,7 @@ void PolynomialSurfaceTest::constructorNullData()
 
 void PolynomialSurfaceTest::constructorZeroOrder()
 {
-  SurfData sd(fullPath("oneDimQuadratic.txt"));
+  SurfData sd(fullPath("oneDimQuadratic.spd"));
   PolynomialSurface ps(&sd, 0);
   CPPUNIT_ASSERT(ps.scaler == 0);
   CPPUNIT_ASSERT(ps.xsize == 1);
@@ -136,7 +136,7 @@ void PolynomialSurfaceTest::constructorZeroOrder()
   CPPUNIT_ASSERT(ps.excludedPoints.size() == 0);
   CPPUNIT_ASSERT(sd == *(ps.sd));
   CPPUNIT_ASSERT(ps.responseIndex == 0);
-  CPPUNIT_ASSERT(ps.name == string("Polynomial"));
+  CPPUNIT_ASSERT(ps.name == string("polynomial"));
   CPPUNIT_ASSERT(ps.order == 0);
   CPPUNIT_ASSERT(ps.coefficients.size() == 0);
   CPPUNIT_ASSERT(ps.digits.size() == 0);
@@ -145,8 +145,8 @@ void PolynomialSurfaceTest::constructorZeroOrder()
 
 void PolynomialSurfaceTest::constructorFromTextFile()
 {
-  SurfData sd(fullPath("oneDimQuadratic.txt"));
-  PolynomialSurface ps(fullPath("oneDQpoly2.txt"));
+  SurfData sd(fullPath("oneDimQuadratic.spd"));
+  PolynomialSurface ps(fullPath("oneDQpoly2.sps"));
   CPPUNIT_ASSERT(ps.scaler == 0);
   CPPUNIT_ASSERT(ps.xsize == 1);
   CPPUNIT_ASSERT(ps.builtOK);
@@ -155,7 +155,7 @@ void PolynomialSurfaceTest::constructorFromTextFile()
   CPPUNIT_ASSERT(ps.excludedPoints.size() == 0);
   CPPUNIT_ASSERT(sd == *(ps.sd));
   CPPUNIT_ASSERT(ps.responseIndex == 0);
-  CPPUNIT_ASSERT(ps.name == string("Polynomial"));
+  CPPUNIT_ASSERT(ps.name == string("polynomial"));
   CPPUNIT_ASSERT(ps.order == 2);
   CPPUNIT_ASSERT(ps.coefficients.size() == 3);
   CPPUNIT_ASSERT(ps.digits.size() == 2);
@@ -163,8 +163,8 @@ void PolynomialSurfaceTest::constructorFromTextFile()
 
 void PolynomialSurfaceTest::constructorFromBinaryFile()
 {
-  SurfData sd(fullPath("oneDimQuadratic.txt"));
-  PolynomialSurface ps(fullPath("oneDQpoly2.srf"));
+  SurfData sd(fullPath("oneDimQuadratic.spd"));
+  PolynomialSurface ps(fullPath("oneDQpoly2.bsps"));
   CPPUNIT_ASSERT(ps.scaler == 0);
   CPPUNIT_ASSERT(ps.xsize == 1);
   CPPUNIT_ASSERT(ps.builtOK);
@@ -173,7 +173,7 @@ void PolynomialSurfaceTest::constructorFromBinaryFile()
   CPPUNIT_ASSERT(ps.excludedPoints.size() == 0);
   CPPUNIT_ASSERT(sd == *(ps.sd));
   CPPUNIT_ASSERT(ps.responseIndex == 0);
-  CPPUNIT_ASSERT(ps.name == string("Polynomial"));
+  CPPUNIT_ASSERT(ps.name == string("polynomial"));
   CPPUNIT_ASSERT(ps.order == 2);
   CPPUNIT_ASSERT(ps.coefficients.size() == 3);
   CPPUNIT_ASSERT(ps.digits.size() == 2);
@@ -194,7 +194,7 @@ void PolynomialSurfaceTest::constructorExplicit()
   CPPUNIT_ASSERT(ps.excludedPoints.size() == 0);
   CPPUNIT_ASSERT(ps.sd == 0);
   CPPUNIT_ASSERT(ps.responseIndex == 0);
-  CPPUNIT_ASSERT(ps.name == string("Polynomial"));
+  CPPUNIT_ASSERT(ps.name == string("polynomial"));
   CPPUNIT_ASSERT(ps.order == 2);
   CPPUNIT_ASSERT(ps.coefficients.size() == 3);
   // While it is not normal to use the == operator on doubles, these values should
@@ -221,7 +221,7 @@ void PolynomialSurfaceTest::constructorCopy()
   CPPUNIT_ASSERT(ps.excludedPoints.size() == 0);
   CPPUNIT_ASSERT(ps.sd == 0);
   CPPUNIT_ASSERT(ps.responseIndex == 0);
-  CPPUNIT_ASSERT(ps.name == string("Polynomial"));
+  CPPUNIT_ASSERT(ps.name == string("polynomial"));
   CPPUNIT_ASSERT(ps.order == 2);
   CPPUNIT_ASSERT(ps.coefficients.size() == 3);
   // While it is not normal to use the == operator on doubles, these values should
@@ -234,7 +234,7 @@ void PolynomialSurfaceTest::constructorCopy()
 
 void PolynomialSurfaceTest::makeSimilarWithNewData()
 {
-  SurfData sd(fullPath("oneDimQuadratic.txt"));
+  SurfData sd(fullPath("oneDimQuadratic.spd"));
   vector<double> coefficients(3);
   coefficients[0] = 0.0;
   coefficients[1] = 0.0;
@@ -248,7 +248,7 @@ void PolynomialSurfaceTest::makeSimilarWithNewData()
   CPPUNIT_ASSERT(ps->excludedPoints.size() == 0);
   CPPUNIT_ASSERT(*(ps->sd) == sd);
   CPPUNIT_ASSERT(ps->responseIndex == 0);
-  CPPUNIT_ASSERT(ps->name == string("Polynomial"));
+  CPPUNIT_ASSERT(ps->name == string("polynomial"));
   CPPUNIT_ASSERT(ps->order == 2);
   CPPUNIT_ASSERT(ps->coefficients.size() == 3);
   // While it is not normal to use the == operator on doubles, these values should
@@ -268,7 +268,7 @@ void PolynomialSurfaceTest::surfaceName()
   coefficients[1] = 0.0;
   coefficients[2] = 1.0;
   PolynomialSurface ps2(1,2,coefficients);
-  CPPUNIT_ASSERT(ps2.surfaceName() == string("Polynomial"));
+  CPPUNIT_ASSERT(ps2.surfaceName() == string("polynomial"));
 }
 
 //void PolynomialSurfaceTest::minPointsRequiredStatic()
@@ -353,10 +353,10 @@ void PolynomialSurfaceTest::evaluate()
 
 void PolynomialSurfaceTest::build()
 {
-  SurfData sd(fullPath("oneDimQuadratic.txt"));
+  SurfData sd(fullPath("oneDimQuadratic.spd"));
   PolynomialSurface ps(&sd, 2);
   ps.createModel();
-  ps.write(fullPath("oneDQpoly2.txt"));
+  ps.write(fullPath("oneDQpoly2.sps"));
   CPPUNIT_ASSERT(ps.coefficients.size() == 3);
   CPPUNIT_ASSERT(matches(ps.coefficients[0],0.0));
   CPPUNIT_ASSERT(matches(ps.coefficients[1],0.0));
@@ -365,7 +365,7 @@ void PolynomialSurfaceTest::build()
 
 void PolynomialSurfaceTest::computeTerm()
 {
-  SurfData sd(fullPath("oneDimQuadratic.txt"));
+  SurfData sd(fullPath("oneDimQuadratic.spd"));
   PolynomialSurface ps(&sd, 2);
   ps.createModel();
   ps.resetTermCounter();
@@ -381,7 +381,7 @@ void PolynomialSurfaceTest::computeTerm()
 
 void PolynomialSurfaceTest::computeTermException()
 {
-  SurfData sd(fullPath("oneDimQuadratic.txt"));
+  SurfData sd(fullPath("oneDimQuadratic.spd"));
   PolynomialSurface ps(&sd, 2);
   ps.createModel();
   ps.resetTermCounter();
@@ -869,8 +869,8 @@ void PolynomialSurfaceTest::leastSquares_2d_3o()
 
 void PolynomialSurfaceTest::io()
 {
-  SurfData sd(fullPath("oneDimQuadratic.txt"));
-  PolynomialSurface ps(fullPath("oneDQpoly2.txt"));
+  SurfData sd(fullPath("oneDimQuadratic.spd"));
+  PolynomialSurface ps(fullPath("oneDQpoly2.sps"));
   CPPUNIT_ASSERT(ps.xsize == 1);
   CPPUNIT_ASSERT(ps.builtOK);
   CPPUNIT_ASSERT(!ps.dataModified);
@@ -878,14 +878,14 @@ void PolynomialSurfaceTest::io()
   CPPUNIT_ASSERT(ps.excludedPoints.size() == 0);
   CPPUNIT_ASSERT(sd == *(ps.sd));
   CPPUNIT_ASSERT(ps.responseIndex == 0);
-  CPPUNIT_ASSERT(ps.name == string("Polynomial"));
+  CPPUNIT_ASSERT(ps.name == string("polynomial"));
   CPPUNIT_ASSERT(ps.order == 2);
   CPPUNIT_ASSERT(ps.coefficients.size() == 3);
   CPPUNIT_ASSERT(ps.digits.size() == 2);
-  ps.write(fullPath("oneDQpoly2copy.txt"));
-  PolynomialSurface ps2(fullPath("oneDQpoly2copy.txt"));
-  ps2.write(fullPath("oneDQpoly2copy.srf"));
-  PolynomialSurface ps3(fullPath("oneDQpoly2copy.srf"));
+  ps.write(fullPath("oneDQpoly2copy.sps"));
+  PolynomialSurface ps2(fullPath("oneDQpoly2copy.sps"));
+  ps2.write(fullPath("oneDQpoly2copy.bsps"));
+  PolynomialSurface ps3(fullPath("oneDQpoly2copy.bsps"));
   CPPUNIT_ASSERT(ps3.xsize == 1);
   CPPUNIT_ASSERT(ps3.builtOK);
   CPPUNIT_ASSERT(!ps3.dataModified);
@@ -893,7 +893,7 @@ void PolynomialSurfaceTest::io()
   CPPUNIT_ASSERT(ps3.excludedPoints.size() == 0);
   CPPUNIT_ASSERT(sd == *(ps3.sd));
   CPPUNIT_ASSERT(ps3.responseIndex == 0);
-  CPPUNIT_ASSERT(ps3.name == string("Polynomial"));
+  CPPUNIT_ASSERT(ps3.name == string("polynomial"));
   CPPUNIT_ASSERT(ps3.order == 2);
   CPPUNIT_ASSERT(ps3.coefficients.size() == 3);
   CPPUNIT_ASSERT(ps3.digits.size() == 2);

@@ -177,12 +177,14 @@ unsigned SurfPoint::fSize() const
 /// Return point in the domain 
 const vector<double>& SurfPoint::X() const
 { 
-  static vector<double> scaledX(x.size());
+  static vector<double> scaledX;
+  scaledX.resize(x.size());
   if (!scaler) {
     return x; 
   } 
   for (unsigned i = 0; i < x.size(); i++) {
     scaledX[i] = scaler->scale(i,x[i]);
+
   }
   return scaledX;
 }

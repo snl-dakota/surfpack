@@ -19,7 +19,7 @@ using namespace std;
 
 const std::string& dataRoot(const std::string* newroot)
 {
-  static string s("/tmp/SurfpackData");
+  static string s("/tmp/mricha/SurfpackData");
   if (newroot) {
     s = *newroot;
   }
@@ -67,14 +67,14 @@ void writeRastriginAndClaimsTooManyFiles()
   intvals[0] = 100;
   intvals[1] = 2;
   intvals[2] = 1;
-  ofstream rastriginText(fullPath("rast100.txt").c_str(),ios::out);
+  ofstream rastriginText(fullPath("rast100.spd").c_str(),ios::out);
   setOstreamFlags(rastriginText);
-  ofstream rastriginBinary(fullPath("rast100.sd").c_str(),
+  ofstream rastriginBinary(fullPath("rast100.bspd").c_str(),
     ios::out | ios::binary);
-  ofstream claimsTooManyText(fullPath("claimsTooMany.txt").c_str(),
+  ofstream claimsTooManyText(fullPath("claimsTooMany.spd").c_str(),
     ios::out);
   setOstreamFlags(claimsTooManyText);
-  ofstream claimsTooManyBinary(fullPath("claimsTooMany.sd").c_str(),
+  ofstream claimsTooManyBinary(fullPath("claimsTooMany.bspd").c_str(),
 
     ios::out);
   
@@ -131,9 +131,9 @@ void writeManyPtsFiles()
   intvals[0] = 10000;
   intvals[1] = 5;
   intvals[2] = 1;
-  ofstream manyptsText(fullPath("manypts.txt").c_str(),ios::out);
+  ofstream manyptsText(fullPath("manypts.spd").c_str(),ios::out);
   setOstreamFlags(manyptsText);
-  ofstream manyptsBinary(fullPath("manypts.sd").c_str(),
+  ofstream manyptsBinary(fullPath("manypts.bspd").c_str(),
     ios::out | ios::binary);
   
   // write SurfData headers
@@ -185,7 +185,7 @@ void writeManyPtsFiles()
 
 void writeOneDimQuadratic()
 {
-  ofstream outfile(fullPath("oneDimQuadratic.txt").c_str(),ios::out);
+  ofstream outfile(fullPath("oneDimQuadratic.spd").c_str(),ios::out);
   outfile << "7\n1\n1" << endl;
   outfile << "0.0 0.0" << endl;
   outfile << "1.0 1.0" << endl;
@@ -199,8 +199,8 @@ void writeOneDimQuadratic()
 
 void writeOneDQpoly2Files()
 {
-  ofstream outfile(fullPath("oneDQpoly2.txt").c_str(),ios::out);
-  outfile << "Polynomial" << endl;
+  ofstream outfile(fullPath("oneDQpoly2.sps").c_str(),ios::out);
+  outfile << "polynomial" << endl;
   outfile << "1 dimensions" << endl;
   outfile << "2 order" << endl;
   outfile << "0                          +" << endl;
@@ -220,9 +220,9 @@ void writeOneDQpoly2Files()
   outfile.close();
   
   // write the same surface out in binary
-  ofstream binoutfile(fullPath("oneDQpoly2.srf").c_str(),ios::out|ios::binary);
+  ofstream binoutfile(fullPath("oneDQpoly2.bsps").c_str(),ios::out|ios::binary);
   // write out the name
-  string name = "Polynomial";
+  string name = "polynomial";
   unsigned nameSize = name.length();
   binoutfile.write(reinterpret_cast<char*>(&nameSize),sizeof(nameSize));
   binoutfile.write(name.c_str(),nameSize);
@@ -267,7 +267,7 @@ void writeOneDQpoly2Files()
 
 void writeUnknownSurfaceFile()
 {
-  ofstream outfile(fullPath("unknown.txt").c_str(),ios::out);
+  ofstream outfile(fullPath("unknown.sps").c_str(),ios::out);
   outfile << "Unknown" << endl;
   outfile << "1 dimensions" << endl;
   outfile << "2 order" << endl;

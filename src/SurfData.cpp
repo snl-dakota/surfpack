@@ -79,9 +79,9 @@ SurfData::SurfData(const SurfData& other)
   for (unsigned i = 0; i < other.points.size(); i++) {
     this->addPoint(*other.points[i]);
   }
+  mapping = other.mapping;
   copyBlockData(other);
   valid = other.valid;
-  mapping = other.mapping;
   buildOrderedPoints();
 }
 
