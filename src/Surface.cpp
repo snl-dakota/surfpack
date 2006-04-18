@@ -25,8 +25,8 @@ using namespace std;
 Surface::Surface(SurfData* sd_) 
   : sd(0), scaler(0)
 { 
-  setData(sd_);
   init();
+  setData(sd_);
 }
 
 /// Deep copies are made of most data members.  For the sd member, the new
