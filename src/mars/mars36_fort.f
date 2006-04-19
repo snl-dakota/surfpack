@@ -523,7 +523,8 @@ c
 c 
 c
       subroutine mars (n,p,x,y,w,nk,mi,lx,fm,im,sp,dp,mm)                   1
-      integer p,lx(*),im(*),mm(*)                                           2
+c     integer p,lx(*),im(*),mm(*)                                           2
+      integer n,p,lx(*),im(*),mm(*)                                     SLB06
       real x(*),y(*),w(*),fm(*),sp(*)                                       3
       double precision dp(*)                                                4
       im(3)=n                                                               5
@@ -1304,6 +1305,9 @@ c     if(it.gt.0) write(it,'('' sliced mars model = constant.'')')        633
       double precision yb,yv,sw,s,t,u,v,we,sy,a,b,xb,xx,xd,ssq,alr        768
       double precision dx,wn,se,tt,txt,xt,st,su,yc,eps,rsq,dy,dv,asq0     769
       character*28 hol                                                    770
+      integer jas                                                       SLB06
+      save jas                                                          SLB06
+      data jas /0/                                                      SLB06
       data ix,alr,eps,big,fln,nmin,alf,vcst  /0,1.d-7,1.d-4,9.9e30,-1.0,  771
      15,.05,1.0,.666667,.333333/                                          772
 c     if(it.gt.0) write(it,97)                                            773

@@ -128,13 +128,13 @@ double MarsSurface::evaluate(const std::vector<double>& x)
   //delete [] sp;
   //delete [] mm;
   int nval = 1;
-  real* xVector = new real[x.size()];
-  for (unsigned i = 0; i < x.size(); i++) {
+  real* xVector = new real[static_cast<int>(x.size())];
+  for (int i = 0; i < static_cast<int>(x.size()); i++) {
     xVector[i] = static_cast<real>(x[i]);
   }
   real* sp = new real[2];
   real* f = new real[1];
-  FMODM_F77(interpolation,nval,xVector[0],fm[0],im[0],f[0],sp[0]);
+  FMODM_F77(interpolation,nval,xVector,fm,im,f,sp);
   delete [] sp;
   delete [] xVector;
   real result = *f;
@@ -161,19 +161,22 @@ void MarsSurface::build(SurfData& data)
   real* y = new real[n];
   real* w = new real[n];
   int* lx = new int[np];
-  fm = new real[ 3+max_bases*(5*max_interactions+nmcv+6)+2*np+ntcv];
-  im = new int[ 21+max_bases*(3*max_interactions+8) ];
-  real* sp = new real[2*(n*(max(max_bases+1,2)+3) + max(3*n+5*max_bases+np, max(2*np, 4*n))) 
-    + 2*np + 4*max_bases];
-  double* dp = new double[2*(max(n*max_bases,(max_bases+1)*(max_bases+1)) + max((max_bases+2)*(nmcv+3),4*max_bases))];
+  fm = new real[3+max_bases*(5*max_interactions+nmcv+6)+2*np+ntcv];
+  im = new int[21+max_bases*(3*max_interactions+8)];
+  real* sp = new real[2*(n*(max(max_bases+1,2)+3)+
+			 max(3*n+5*max_bases+np,max(2*np,4*n)))+
+		      2*np+4*max_bases];
+  double* dp = new double[2*(max(n*max_bases,(max_bases+1)*(max_bases+1))+
+			     max((max_bases+2)*(nmcv+3),4*max_bases))];
   int* mm = new int[2*(n*np+2*max(max_interactions,nmcv))];
 
-  unsigned pts = data.size();
-  for (unsigned i = 0; i < data.size(); i++) {
+  //unsigned pts = data.size();
+  //for (unsigned i = 0; i < pts; i++) {
+  for (int i = 0; i < n; i++) {
     //cout << current->getF(responseIndex) << endl;
     //const vector<double> domain = current.X();
     for (int j = 0; j < np; j++) {
-      xMatrix[j*pts+i] = static_cast<real>(data[i].X()[j]); 
+      xMatrix[j*n+i] = static_cast<real>(data[i].X()[j]); 
     }
     y[i] = static_cast<real>(data.getResponse(i));
     w[i] = 1.0f;
@@ -186,7 +189,7 @@ void MarsSurface::build(SurfData& data)
   //printMatrix(w,n,1,cout);
   //printMatrix(y,n,1,cout);
   //printIntMatrix(lx,np,1,cout);
-  MARS_F77(n,np,xMatrix[0],y[0],w[0],max_bases,max_interactions,lx[0],fm[0],im[0],sp[0],dp[0],mm[0]);
+  MARS_F77(n,np,xMatrix,y,w,max_bases,max_interactions,lx,fm,im,sp,dp,mm);
   delete [] y;
   delete [] w;
   delete [] lx;

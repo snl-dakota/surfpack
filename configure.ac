@@ -48,13 +48,15 @@ AC_CONFIG_MACRO_DIR([m4])
 # invoking xlf.  If the command succeeds, that means xlf exists and
 # will be used as the Fortran 77 compiler.  If the command had failed,
 # autoconf would have tried f77.
-AC_PROG_F77([xlf f77 g77])
+#AC_PROG_F77([xlf f77 g77])
+AC_PROG_F77
 
 # Checks for a C++ compiler.  Preference is given to the options
 # listed first, as in the Fortran example above.
 echo "CXX=$CXX"
 echo "CC=$CC"
-AC_PROG_CXX([xlC cxx CC c++ g++])
+#AC_PROG_CXX([xlC cxx CC c++ g++])
+AC_PROG_CXX
 
 # Check required when 'subdir-objects' automake flag is set.
 AM_PROG_CC_C_O
@@ -136,12 +138,15 @@ CPPFLAGS=""
 #CXXFLAGS="-fprofile-arcs -ftest-coverage -g -save-temps"
 
 # The cxx compiler on OSF needs the __USE_STD_IOSTREAM flag since the
-# sstream classes are used.
-if test "$CXX" = "cxx"
-then
-  echo "Compiling with cxx"
-  AC_DEFINE([__USE_STD_IOSTREAM],[],[Define if sstream is used with cxx])
-fi
+# sstream classes are used.  We also need local template instantiation.
+AC_CXX_CPPFLAGS_STD_LANG([CXXFLAGS])
+case "$ac_cv_cxx_compiler_vendor" in
+    compaq)
+	AX_CXXFLAGS_OSF_OPTION([-tlocal])
+    ;;
+    *)
+    ;;
+esac
 
 # Autoconf creates a configure script.  When that configure script is
 # run, the appropriate Makefile.in files are created.  The .in

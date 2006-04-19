@@ -16,14 +16,14 @@ typedef float real;
 #ifdef __cplusplus
 extern "C" /* prevent C++ name mangling */
 #endif
-void MARS_F77(int&, int&, real&, real&, real&, int&, int&, int&,
-	      real&, int&, real&, double&, int&);
+void MARS_F77(int&, int&, real*, real*, real*, int&, int&, int*,
+	      real*, int*, real*, double*, int*);
 
 #define FMODM_F77 F77_FUNC(fmodm,FMODM)
 #ifdef __cplusplus
 extern "C" /* prevent C++ name mangling */
 #endif
-void FMODM_F77(int&, int&, real&, real&, int&, real&, real&);
+void FMODM_F77(int&, int&, real*, real*, int*, real*, real*);
 
 class MarsSurface : public Surface
 {

@@ -25,5 +25,6 @@ endif
 
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src
 
-CLEANFILES = *.bb *.bbg *.da *.gcov *.ii *.s
 MAINTAINERCLEANFILES = Makefile.in
+
+CLEANFILES = $(BUILT_SOURCES) *.bb *.bbg *.da *.gcov *.ii *.s
