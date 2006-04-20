@@ -7,6 +7,11 @@ if BUILD_STANDALONE
 		     SurfDataGenerator.cpp \
 		     SurfDataGenerator.h
   surfpack_LDADD = $(top_builddir)/src/libsurfpack.la
+if NEEDS_EXTRA_LAPACK_ROUTINES
+  surfpack_LDADD += $(BLAS_LIBS) $(LIBS) $(FLIBS) $(LEXLIB)
+else
+  surfpack_LDADD += $(LAPACK_LIBS) $(BLAS_LIBS) $(LIBS) $(FLIBS) $(LEXLIB)
+endif
 endif
 
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src \
@@ -14,4 +19,5 @@ INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src \
 	   -I$(top_srcdir)/src/interpreter
 
 CLEANFILES = *.bb *.bbg *.da *.gcov *.ii *.s
+
 MAINTAINERCLEANFILES = Makefile.in

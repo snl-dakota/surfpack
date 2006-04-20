@@ -53,28 +53,11 @@ AC_PROG_F77
 
 # Checks for a C++ compiler.  Preference is given to the options
 # listed first, as in the Fortran example above.
-echo "CXX=$CXX"
-echo "CC=$CC"
 #AC_PROG_CXX([xlC cxx CC c++ g++])
 AC_PROG_CXX
 
 # Check required when 'subdir-objects' automake flag is set.
 AM_PROG_CC_C_O
-
-# This is a kludgy test.  The goal is to turn on the -fpe3 flag for
-# the OSF fortran compiler, which allows the program to continue if
-# when there are floating point errors.  (This behavior is default on
-# many # platforms.)  A better idea would be to write a macro that
-# invokes the chosen fortran compiler with this flag and sets FFLAGS
-# to use -fpe3 if the file compiles with out any problems.
-if test "$F77" = "f77"
-then
-  if test "$CXX" = "cxx"
-  then
-    echo "Compiling fortran 77 with f77"
-    FFLAGS="-g -O2 -fpe3"
-  fi 
-fi
 
 # Macro invocation to determine whether references to FORTRAN 77
 # subroutines and functions from C/C++ code require underscores.
@@ -91,22 +74,7 @@ AC_DISABLE_SHARED
 # http://www.gnu.org/software/ac-archive (current as of August 2004).
 # It is included here in the m4 directory.
 ACX_LAPACK
-
-# On some of the compilers I was using, it seemed that even if a
-# directory was included in the LD_LIBRARY_PATH, libraries in that
-# directory could not be linked against just by doing a -llib on the
-# link line.  It was necessary to also have a -Ldirectory_path
-# argument.  This code expands the LD_LIBRARY_PATH into a list of
-# -LDIR1 -LDIR2 linker directives.  I think I'm just not aware of how
-# it should really be done.  At any rate, this code would be more
-# appropriately placed as a macro in acinclude.m4, and merely invoked
-# here in configure.ac.
-if test -n $LD_LIBRARY_PATH
-then 
-  WHOLE_LIB_PATH=`echo $LD_LIBRARY_PATH | sed -e 's/^/-L/;s/:/ -L/g'`
-else
-  WHOLE_LIB_PATH=
-fi
+AM_CONDITIONAL([NEEDS_EXTRA_LAPACK_ROUTINES],[test "x$acx_lapack_ok" != xyes])
 
 # Checks for the flex version and associated library (may not be -lfl)
 # that the parser/scanner code needs to link against.  Also check for
@@ -128,15 +96,6 @@ AC_DEFINE([__TESTING_MODE__],[1],
 # Tells autoconf that libtool will be used.
 AC_PROG_LIBTOOL
 
-# Sets the flags for the C/C++ preprocessor.
-CPPFLAGS=""
-
-# Sets the compile line flags for the C++ compiler.  Some of these are
-# gcc specific.  Profile-arcs and test-coverage must be activated if
-# you want to run the gcov profiler to test code coverage.  The
-# save-temps flag tells the compiler to keep the preprocessed source.
-#CXXFLAGS="-fprofile-arcs -ftest-coverage -g -save-temps"
-
 # The cxx compiler on OSF needs the __USE_STD_IOSTREAM flag since the
 # sstream classes are used.  We also need local template instantiation.
 AC_CXX_CPPFLAGS_STD_LANG([CXXFLAGS])
@@ -147,6 +106,23 @@ case "$ac_cv_cxx_compiler_vendor" in
     *)
     ;;
 esac
+
+# Set up conditional make check target using CppUnit.
+AM_PATH_CPPUNIT([1.9.4], [
+  AC_MSG_RESULT(
+
+*** Found CppUnit
+*** Setting up make check to run tests...)
+found_cppunit=yes
+],
+  AC_MSG_RESULT([
+
+*** Unable to find a recent enough CppUnit
+*** Will not run unit testing!!
+***
+*** To get CppUnit see http://cppunit.sourceforge.net
+]))
+AM_CONDITIONAL(HAVE_CPPUNIT, test "$found_cppunit" = "yes")
 
 # Autoconf creates a configure script.  When that configure script is
 # run, the appropriate Makefile.in files are created.  The .in
@@ -166,28 +142,6 @@ AC_CONFIG_FILES([Makefile
 		 system_tests/Makefile
 		 system_tests/instances/Makefile
 		 tests/Makefile])
-
-# Set up conditional make check target using CppUnit.
-AM_PATH_CPPUNIT([1.9.4], [
-  AC_MSG_RESULT(
-
-*** Found CppUnit
-*** Setting up make check to run tests...)
-found_cppunit=yes
-],
-  AC_MSG_RESULT([
-
-*** Unable to find a recent enough CppUnit
-*** Will not run unit testing!!
-***
-*** To get CppUnit see http://cppunit.sourceforge.net
-]))
-AM_CONDITIONAL(HAVE_CPPUNIT, test "$found_cppunit" = "yes")
-
-# For good measure, print out the $LIBS variable at the end.  Any
-# library listed in LIBS is automatically linked against for every
-# executable that is created.
-echo 'LIBS:' $LIBS
 
 # Mandatory last line.  It tells autoconf to actually generate the
 # appropriate files.

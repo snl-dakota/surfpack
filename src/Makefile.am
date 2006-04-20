@@ -47,13 +47,8 @@ libsurfpack_la_SOURCES = SurfPoint.cpp \
 
 ## _LIBADD is automake's way of saying that these libraries must also
 ## be linked in whenever libsurfpack.la is linked against.  The
-## top_builddir variable gets set by automake. LAPACK_LIBS, BLAS_LIBS,
-## LIBS, and FLIBS are all set by the configure script.
+## top_builddir variable gets set by automake.
 libsurfpack_la_LIBADD = $(SUBLIBS)
-libsurfpack_la_LIBADD += $(LAPACK_LIBS) $(BLAS_LIBS) $(LIBS) $(FLIBS)
-if BUILD_STANDALONE 
-  libsurfpack_la_LIBADD += $(LEXLIB)
-endif
 
 ## Specifies additional places for the compiler to look for files that
 ## are requested via #include.
