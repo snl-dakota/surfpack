@@ -4,7 +4,6 @@ noinst_LTLIBRARIES = libinterpreter.la
 libinterpreter_la_SOURCES = SurfpackParserArgs.cpp \
 			    SurfpackParserArgs.h
 
-AM_LFLAGS = -o$(LEX_OUTPUT_ROOT).c
 AM_YFLAGS = -d
 
 if BUILD_STANDALONE

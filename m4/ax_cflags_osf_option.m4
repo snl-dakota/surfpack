@@ -80,7 +80,7 @@ VAR,[VAR="no, unknown"
  AC_LANG_CPLUSPLUS
  ac_save_[]FLAGS="$[]FLAGS"
 for ac_arg dnl
-in "-qlanglvl=ansi -qsrcmsg % m4_ifval($2,$2,-option)"     dnl OSF
+in "-verbose -w0 -std1 % m4_ifval($2,$2,-option)"     dnl OSF
    #
 do FLAGS="$ac_save_[]FLAGS "`echo $ac_arg | sed -e 's,%%.*,,' -e 's,%,,'`
    AC_TRY_COMPILE([],[return 0;],
@@ -114,7 +114,7 @@ VAR,[VAR="no, unknown"
  AC_LANG_C
  ac_save_[]FLAGS="$[]FLAGS"
 for ac_arg dnl
-in "-qlanglvl=ansi -qsrcmsg % m4_ifval($1,$1,-option)"     dnl OSF
+in "-verbose -w0 -std1 % m4_ifval($1,$1,-option)"     dnl OSF
    #
 do FLAGS="$ac_save_[]FLAGS "`echo $ac_arg | sed -e 's,%%.*,,' -e 's,%,,'`
    AC_TRY_COMPILE([],[return 0;],
@@ -148,7 +148,7 @@ VAR,[VAR="no, unknown"
  AC_LANG_CPLUSPLUS
  ac_save_[]FLAGS="$[]FLAGS"
 for ac_arg dnl
-in "-qlanglvl=ansi -qsrcmsg % m4_ifval($1,$1,-option)"     dnl OSF
+in "-verbose -w0 -std1 % m4_ifval($1,$1,-option)"     dnl OSF
    #
 do FLAGS="$ac_save_[]FLAGS "`echo $ac_arg | sed -e 's,%%.*,,' -e 's,%,,'`
    AC_TRY_COMPILE([],[return 0;],
