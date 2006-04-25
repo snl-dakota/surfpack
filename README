@@ -23,13 +23,13 @@ Web: http://endo.sandia.gov/Surfpack
 ------------------------------------------------------------------------------
 License:
 
-Surfpack is distributed under the GNU General Public License.  It is free 
-software; you can redistribute it and/or modify it under the terms of the GNU 
+Surfpack is currently distributed as part of the DAKOTA framework, 
+under the DAKOTA GNU General Public License. It is free software; 
+you can redistribute it and/or modify it under the terms of the GNU 
 General Public License as published by the Free Software Foundation; either 
 version 2 of the License, or (at your option) any later version.  A copy of 
-this license is included in the GNU_LICENSE_INFO file, and is also available online 
-from http://www.gnu.org/copyleft/gpl.html.  Also refer to the COPYRIGHT file 
-for important U.S. Government legal notices.
+this license is included in the GNU_LICENSE_INFO file, and is also 
+available online from http://www.gnu.org/copyleft/gpl.html.  
 
 ------------------------------------------------------------------------------
 Overview:
