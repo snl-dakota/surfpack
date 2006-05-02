@@ -830,7 +830,8 @@ c     write(it,'('' categorical - ordinal interaction:'')')               294
       k=kv(2,k2+i-1)                                                      298
       ncx=int(cm(2*j+1)+.1)-int(cm(2*j)+.1)+1                             299
       do 5 l=1,ncx                                                        300
-      mm(l)=cm(k+l)+.1                                                    301
+c     mm(l)=cm(k+l)+.1                                                    301
+      mm(l)=int(cm(k+l)+.1)                                             SLB06
       if(jj.lt.0) mm(l)=mod(mm(l)+1,2)                                    302
     5 continue                                                            303
 c     write(it,'('' x('',i3,'') ='',70i1/80i1)') j,(mm(l),l=1,ncx)        304
@@ -930,7 +931,8 @@ c     if(it.gt.0) write(it,39) nc,jv,fx                                   349
    27 if(icx .le. 0) go to 29                                             398
       call cvxhul(n,x(1,mm(1)),x(1,mm(2)),big,nh,sp)                      399
       if(it .le. 0 .or. 3*nh .lt. iz) go to 28                            400
-      nxs=sqrt(float(3*nh)*0.5)+1.1                                       401
+c     nxs=sqrt(float(3*nh)*0.5)+1.1                                       401
+      nxs=int(sqrt(float(3*nh)*0.5)+1.1)                                SLB06
 c     write(it,38) nxs                                                    402
    28 call hulset(ngsq,sp(iz+1),big,nh,sp,srf(1,1,ns))                    403
    29 do 31 j=1,ngs                                                       404
@@ -1000,7 +1002,8 @@ c     write(it,'('' (piecewise-cubic fit):'')')                           450
 c     write(it,'(/,'' f( x('',i3,'') ) : scale ='',g12.4)') j,rxp         466
       if(rxp.le.0.0) go to 8                                              467
       do 4 i=1,nl                                                         468
-      js(i+nv)=(sc(i)-xm)/rxp+.5                                          469
+c     js(i+nv)=(sc(i)-xm)/rxp+.5                                          469
+      js(i+nv)=int((sc(i)-xm)/rxp+.5)                                   SLB06
     4 continue                                                            470
       if(nl .gt. 26) go to 5                                              471
 c     write(it,28) (i,i=1,nl)                                             472
@@ -1083,7 +1086,8 @@ c     write(it,36) (mod(i,10),i=1,na)                                     543
       k=j+n2*(i-1)                                                        547
       go to 22                                                            548
    21 k=i+n2*(j-1)                                                        549
-   22 js(i+2*nv)=(sc(k)-xm)/rxp+.5                                        550
+c  22 js(i+2*nv)=(sc(k)-xm)/rxp+.5                                        550
+   22 js(i+2*nv)=int((sc(k)-xm)/rxp+.5)                                 SLB06
    23 continue                                                            551
       if(na .gt. 25) go to 24                                             552
 c     write(it,31) j,(js(i+2*nv),i=1,na)                                  553
@@ -1203,7 +1207,8 @@ c     if(it.gt.0) write(it,'('' sliced mars model = constant.'')')        633
       if(ifg .ne. 0) go to 4                                              666
       ic=icat(x(i,j),j,cm)                                                667
       go to 5                                                             668
-    4 ic=x(i,j)+.1                                                        669
+c   4 ic=x(i,j)+.1                                                        669
+    4 ic=int(x(i,j)+.1)                                                 SLB06
     5 if(ic .ne. 0) go to 6                                               670
       sc(i,1)=0.0                                                         671
       go to 7                                                             672
@@ -1263,12 +1268,14 @@ c     if(it.gt.0) write(it,'('' sliced mars model = constant.'')')        633
       ip=m                                                                726
     1 if(ip.le.0) go to 11                                                727
       t=tb(2,ip)                                                          728
-      j=abs(t)+.1                                                         729
+c     j=abs(t)+.1                                                         729
+      j=int(abs(t)+.1)                                                  SLB06
       if(cm(2*j) .le. 0.0) go to 8                                        730
       if(ifg .ne. 0) go to 2                                              731
       k=icat(x(i,j),j,cm)                                                 732
       go to 3                                                             733
-    2 k=x(i,j)+.1                                                         734
+c   2 k=x(i,j)+.1                                                         734
+    2 k=int(x(i,j)+.1)                                                  SLB06
     3 if(k .ne. 0) go to 4                                                735
       u=0.0                                                               736
       go to 5                                                             737
@@ -1284,7 +1291,8 @@ c     if(it.gt.0) write(it,'('' sliced mars model = constant.'')')        633
       phi=0.0                                                             747
       go to 11                                                            748
    10 phi=phi*u                                                           749
-      ip=tb(4,ip)+.1                                                      750
+c     ip=tb(4,ip)+.1                                                      750
+      ip=int(tb(4,ip)+.1)                                               SLB06
       go to 1                                                             751
    11 s=s+tb(1,m)*phi                                                     752
    12 continue                                                            753
@@ -1352,7 +1360,8 @@ c     if(it.gt.0) write(it,'('' no predictor variables.'')')              786
       go to 6                                                             812
     5 i=i+(2)                                                             813
     6 if((2)*((i)-(2*p)).gt.0) go to 7                                    814
-      if(cm(i).gt.0.0) kcp0=cm(i+1)+.1                                    815
+c     if(cm(i).gt.0.0) kcp0=cm(i+1)+.1                                    815
+      if(cm(i).gt.0.0) kcp0=int(cm(i+1)+.1)                             SLB06
       go to 5                                                             816
     7 m=0                                                                 817
       mtot=m                                                              818
@@ -1592,7 +1601,8 @@ c     if(it.gt.0) write(it,98) m,txm,0.0,1.0                              823
    52 continue                                                           1052
       call updpar(jq,asq0-tx1)                                           1053
       go to 9                                                            1054
-   53 jp=tx(2)+.1                                                        1055
+c  53 jp=tx(2)+.1                                                        1055
+   53 jp=int(tx(2)+.1)                                                  SLB06
       call selpar(int(tx(4)+.1))                                         1056
       if(cm(2*jp) .le. 0.) go to 54                                      1057
       nc=int(cm(2*jp+1)+.1)-int(cm(2*jp)+.1)+1                           1058
@@ -1661,7 +1671,8 @@ c     if(m.eq.mtot+2) write(it,99) m,mp,gcv,fkr,tcst,fjn,hol,tb(4,m)     1093
    66 tcst=nopt*df1+kr+1.0                                               1121
       if(it .le. 0) go to 68                                             1122
       mp=m-1                                                             1123
-      jp=abs(tx(2))+.1                                                   1124
+c     jp=abs(tx(2))+.1                                                   1124
+      jp=int(abs(tx(2))+.1)                                             SLB06
       fkr=kr                                                             1125
       gcv=(rsq/sw)/(1.d0-tcst/wn)**2                                     1126
       if(cm(2*jp) .le. 0.0) go to 67                                     1127
@@ -1827,7 +1838,8 @@ c     write(it,96) asm,tcsts                                             1234
       n(1)=itr                                                           1287
       jp(1,1)=n(1)                                                       1288
       jp(2,1)=jp(1,1)                                                    1289
-      ktr=0.5*(mpr-1)+.1                                                 1290
+c     ktr=0.5*(mpr-1)+.1                                                 1290
+      ktr=int(0.5*(mpr-1)+.1)                                           SLB06
       return                                                             1291
     1 if(que(1,lq).ge.-0.5) go to 2                                      1292
       lq=lq-1                                                            1293
@@ -1903,7 +1915,8 @@ c     write(6,'('' '',i10,''  or larger, and recompile mars.'')') lq     1314
       beta=arg                                                           1363
       return                                                             1364
       entry setfrq(arg)                                                  1365
-      mtr=1.0/amax1(arg,0.01)+.1                                         1366
+c     mtr=1.0/amax1(arg,0.01)+.1                                         1366
+      mtr=int(1.0/amax1(arg,0.01)+.1)                                   SLB06
       return                                                             1367
       end                                                                1368
       subroutine speed(is)                                               1369
@@ -2010,7 +2023,8 @@ c     write(6,'('' '',i10,''  or larger, and recompile mars.'')') lq     1314
       subroutine orgpl (xm,xs,nk,tb,cm)                                  1470
       real xm(*),xs(*),tb(5,nk),cm(*)                                    1471
       do 1 m=1,nk                                                        1472
-      j=abs(tb(2,m))+.1                                                  1473
+c     j=abs(tb(2,m))+.1                                                  1473
+      j=int(abs(tb(2,m))+.1)                                            SLB06
       if(cm(2*j).gt.0.0) go to 1                                         1474
       tb(3,m)=xm(j)+xs(j)*tb(3,m)                                        1475
     1 continue                                                           1476
@@ -2019,9 +2033,11 @@ c     write(6,'('' '',i10,''  or larger, and recompile mars.'')') lq     1314
       scl=1.0                                                            1479
       ip=m                                                               1480
     2 if(ip.le.0) go to 3                                                1481
-      j=abs(tb(2,ip))+.1                                                 1482
+c     j=abs(tb(2,ip))+.1                                                 1482
+      j=int(abs(tb(2,ip))+.1)                                           SLB06
       if(cm(2*j).eq.0.0) scl=scl*xs(j)                                   1483
-      ip=tb(4,ip)+.1                                                     1484
+c     ip=tb(4,ip)+.1                                                     1484
+      ip=int(tb(4,ip)+.1)                                               SLB06
       go to 2                                                            1485
     3 tb(1,m)=tb(1,m)/scl                                                1486
     4 continue                                                           1487
@@ -2114,7 +2130,8 @@ c     write(it,25) m,s,u,lp(3,m),efm,(lv(i),i=k2,i2)                     1568
       ll=k2-1                                                            1574
       np=ni                                                              1575
       do 19 im=1,ni                                                      1576
-      i=t(im,1)+.1                                                       1577
+c     i=t(im,1)+.1                                                       1577
+      i=int(t(im,1)+.1)                                                 SLB06
       if(nord(i,tb) .eq. l) go to 15                                     1578
       t(im,2)=0.0                                                        1579
       go to 19                                                           1580
@@ -2259,15 +2276,18 @@ c     write(it,13) m,u,lp(3,m),efm,(lv(i),i=k2,i2)                       1681
       ip=m                                                               1718
     3 if(ip.le.0) go to 6                                                1719
       u=tb(2,ip)                                                         1720
-      j=abs(u)+.1                                                        1721
+c     j=abs(u)+.1                                                        1721
+      j=int(abs(u)+.1)                                                  SLB06
       if(cm(2*j) .eq. 0.0) go to 4                                       1722
-      ip=tb(4,ip)+.1                                                     1723
+c     ip=tb(4,ip)+.1                                                     1723
+      ip=int(tb(4,ip)+.1)                                               SLB06
       go to 3                                                            1724
     4 do 5 k=1,l                                                         1725
       if(j.eq.jv(k)) j=k                                                 1726
     5 continue                                                           1727
       phi=phi*amax1(0.0,sign(1.0,u)*(x(i,j)-tb(3,ip)))                   1728
-      ip=tb(4,ip)+.1                                                     1729
+c     ip=tb(4,ip)+.1                                                     1729
+      ip=int(tb(4,ip)+.1)                                               SLB06
       go to 3                                                            1730
     6 s=s+tb(1,m)*phi                                                    1731
     7 continue                                                           1732
@@ -2336,7 +2356,8 @@ c     if(it.gt.0) write(it,34) ni,u                                      1765
       kk=kv(2,k)                                                         1795
       do 10 i=1,n                                                        1796
       if(sc(i).eq.0.0) go to 10                                          1797
-      ic=x(i,j)+.1                                                       1798
+c     ic=x(i,j)+.1                                                       1798
+      ic=int(x(i,j)+.1)                                                 SLB06
       sc(i)=cm(ic+kk)                                                    1799
       if(jj .ge. 0) go to 10                                             1800
       if(sc(i) .ne. 0.0) go to 9                                         1801
@@ -2559,7 +2580,8 @@ c     if(it.gt.0) write(it,34) lt,u                                      1898
       kk=kv(2,k)                                                         2017
       do 7 i=1,n                                                         2018
       if(ss(i).eq.0.0) go to 7                                           2019
-      ic=x(i,j)+.1                                                       2020
+c     ic=x(i,j)+.1                                                       2020
+      ic=int(x(i,j)+.1)                                                 SLB06
       ss(i)=cm(ic+kk)                                                    2021
       if(jj .ge. 0) go to 7                                              2022
       if(ss(i) .ne. 0.0) go to 6                                         2023
@@ -2938,8 +2960,10 @@ c     write(it,'('' '',6g12.4)') (a(i),i=i1,i2)                          2269
       if(nnord(l,tb).gt.0) return                                        2396
     2 ip=l                                                               2397
     3 if(ip.le.0) go to 4                                                2398
-      jl=abs(tb(2,ip))+.1                                                2399
-      ip=tb(4,ip)+.1                                                     2400
+c     jl=abs(tb(2,ip))+.1                                                2399
+      jl=int(abs(tb(2,ip))+.1)                                          SLB06
+c     ip=tb(4,ip)+.1                                                     2400
+      ip=int(tb(4,ip)+.1)                                               SLB06
       go to 3                                                            2401
     4 k=iabs(lx(jl))                                                     2402
       call isnstr(jl,jb)                                                 2403
@@ -2952,10 +2976,12 @@ c     write(it,'('' '',6g12.4)') (a(i),i=i1,i2)                          2269
       if(lx(jv).gt.0.and.nordc(1,l,tb,cm).ge.2) return                   2410
     6 ip=l                                                               2411
     7 if(ip.le.0) go to 8                                                2412
-      jl=abs(tb(2,ip))+.1                                                2413
+c     jl=abs(tb(2,ip))+.1                                                2413
+      jl=int(abs(tb(2,ip))+.1)                                          SLB06
       call intalw(jv,jl,k)                                               2414
       if(k.eq.0) return                                                  2415
-      ip=tb(4,ip)+.1                                                     2416
+c     ip=tb(4,ip)+.1                                                     2416
+      ip=int(tb(4,ip)+.1)                                               SLB06
       go to 7                                                            2417
     8 elg=.true.                                                         2418
       return                                                             2419
@@ -2969,7 +2995,8 @@ c     write(it,'('' '',6g12.4)') (a(i),i=i1,i2)                          2269
       ip=m                                                               2427
     1 if(ip.le.0) go to 7                                                2428
       t=tb(2,ip)                                                         2429
-      j=abs(t)+.1                                                        2430
+c     j=abs(t)+.1                                                        2430
+      j=int(abs(t)+.1)                                                  SLB06
       if(cm(2*j) .le. 0.0) go to 4                                       2431
       u=cm(int(x(i,j)+.1)+int(tb(3,ip)+.1))                              2432
       if(t .ge. 0.0) go to 5                                             2433
@@ -2983,7 +3010,8 @@ c     write(it,'('' '',6g12.4)') (a(i),i=i1,i2)                          2269
       phi=0.0                                                            2441
       return                                                             2442
     6 phi=phi*u                                                          2443
-      ip=tb(4,ip)+.1                                                     2444
+c     ip=tb(4,ip)+.1                                                     2444
+      ip=int(tb(4,ip)+.1)                                               SLB06
       go to 1                                                            2445
     7 return                                                             2446
       end                                                                2447
@@ -2993,7 +3021,8 @@ c     write(it,'('' '',6g12.4)') (a(i),i=i1,i2)                          2269
       nord=0                                                             2451
     1 if(ip.le.0) go to 2                                                2452
       nord=nord+1                                                        2453
-      ip=tb(4,ip)+.1                                                     2454
+c     ip=tb(4,ip)+.1                                                     2454
+      ip=int(tb(4,ip)+.1)                                               SLB06
       go to 1                                                            2455
     2 return                                                             2456
       end                                                                2457
@@ -3002,9 +3031,11 @@ c     write(it,'('' '',6g12.4)') (a(i),i=i1,i2)                          2269
       ip=m                                                               2460
       jf=0                                                               2461
     1 if(ip.le.0) go to 2                                                2462
-      jp=abs(tb(2,ip))+.1                                                2463
+c     jp=abs(tb(2,ip))+.1                                                2463
+      jp=int(abs(tb(2,ip))+.1)                                          SLB06
       if(jp.eq.j) jf=1                                                   2464
-      ip=tb(4,ip)+.1                                                     2465
+c     ip=tb(4,ip)+.1                                                     2465
+      ip=int(tb(4,ip)+.1)                                               SLB06
       go to 1                                                            2466
     2 return                                                             2467
       end                                                                2468
@@ -3096,8 +3127,10 @@ c     write(it,'('' '',6g12.4)') (a(i),i=i1,i2)                          2269
       j=0                                                                2554
     1 if(ip.le.0) go to 2                                                2555
       j=j+1                                                              2556
-      jv(j)=abs(tb(2,ip))+.1                                             2557
-      ip=tb(4,ip)+.1                                                     2558
+c     jv(j)=abs(tb(2,ip))+.1                                             2557
+      jv(j)=int(abs(tb(2,ip))+.1)                                       SLB06
+c     ip=tb(4,ip)+.1                                                     2558
+      ip=int(tb(4,ip)+.1)                                               SLB06
       go to 1                                                            2559
     2 if(j.eq.1) return                                                  2560
       j=j-1                                                              2561
@@ -3206,7 +3239,8 @@ c     write(it,'('' '',6g12.4)') (a(i),i=i1,i2)                          2269
       kp=kr+1                                                            2664
       b=0.d0                                                             2665
       t=tb(2,m)                                                          2666
-      j=abs(t)+.1                                                        2667
+c     j=abs(t)+.1                                                        2667
+      j=int(abs(t)+.1)                                                  SLB06
       if(il .ne. 1) go to 3                                              2668
       tk=tb(3,m)                                                         2669
       do 2 i=1,n                                                         2670
@@ -3219,7 +3253,8 @@ c     write(it,'('' '',6g12.4)') (a(i),i=i1,i2)                          2269
     2 continue                                                           2677
       go to 17                                                           2678
     3 if(cm(2*j) .le. 0.0) go to 12                                      2679
-      k=tb(3,m)+.1                                                       2680
+c     k=tb(3,m)+.1                                                       2680
+      k=int(tb(3,m)+.1)                                                 SLB06
       nw=0                                                               2681
       n0=nw                                                              2682
       do 11 i=1,n                                                        2683
@@ -3430,9 +3465,11 @@ c     write(it,'('' coef:'',6g12.4)') (a(i),i=1,l2)                      2875
     1 s=1.0                                                              2887
       ip=m                                                               2888
     2 if(ip.le.0) go to 3                                                2889
-      j=abs(tb(2,ip))+.1                                                 2890
+c     j=abs(tb(2,ip))+.1                                                 2890
+      j=int(abs(tb(2,ip))+.1)                                           SLB06
       if(cm(2*j).eq.0.0) s=s*xs(j)                                       2891
-      ip=tb(4,ip)+.1                                                     2892
+c     ip=tb(4,ip)+.1                                                     2892
+      ip=int(tb(4,ip)+.1)                                               SLB06
       go to 2                                                            2893
     3 a(k)=tb(1,m)/s                                                     2894
     4 continue                                                           2895
@@ -3571,9 +3608,11 @@ c     write(it,'('' coef:'',6g12.4)') (a(i),i=1,l2)                      2875
       l1=l1+1                                                            3028
     3 if(ip.le.0) go to 7                                                3029
       t=tb(2,ip)                                                         3030
-      j=abs(t)+.1                                                        3031
+c     j=abs(t)+.1                                                        3031
+      j=int(abs(t)+.1)                                                  SLB06
       if(cm(2*j) .eq. 0.0) go to 4                                       3032
-      ip=tb(4,ip)+.1                                                     3033
+c     ip=tb(4,ip)+.1                                                     3033
+      ip=int(tb(4,ip)+.1)                                               SLB06
       go to 3                                                            3034
     4 k=1                                                                3035
     5 if(jv(k).eq.j) go to 6                                             3036
@@ -3581,7 +3620,8 @@ c     write(it,'('' coef:'',6g12.4)') (a(i),i=1,l2)                      2875
       go to 5                                                            3038
     6 x(l1,k)=tb(3,ip)                                                   3039
       x(l1,l+k)=sign(1.0,t)                                              3040
-      ip=tb(4,ip)+.1                                                     3041
+c     ip=tb(4,ip)+.1                                                     3041
+      ip=int(tb(4,ip)+.1)                                               SLB06
       go to 3                                                            3042
     7 continue                                                           3043
       return                                                             3044
@@ -3590,7 +3630,8 @@ c     write(it,'('' coef:'',6g12.4)') (a(i),i=1,l2)                      2875
       integer p                                                          3047
       real x(n,p),xm(p),xs(p),cm(*),z(n,p)                               3048
       do 4 j=1,p                                                         3049
-      j1=cm(2*j)+.1                                                      3050
+c     j1=cm(2*j)+.1                                                      3050
+      j1=int(cm(2*j)+.1)                                                SLB06
       if(j1 .ne. 0) go to 2                                              3051
       if(xs(j).le.0.0) go to 4                                           3052
       do 1 i=1,n                                                         3053
@@ -3599,7 +3640,8 @@ c     write(it,'('' coef:'',6g12.4)') (a(i),i=1,l2)                      2875
       go to 4                                                            3056
     2 j1=j1-1                                                            3057
       do 3 i=1,n                                                         3058
-      l=x(i,j)+.1                                                        3059
+c     l=x(i,j)+.1                                                        3059
+      l=int(x(i,j)+.1)                                                  SLB06
       z(i,j)=cm(l+j1)                                                    3060
     3 continue                                                           3061
     4 continue                                                           3062
@@ -3705,7 +3747,8 @@ c     write(it,'('' coef:'',6g12.4)') (a(i),i=1,l2)                      2875
       ip=m                                                               3162
     3 if(ip.le.0) go to 10                                               3163
       t=tb(2,ip)                                                         3164
-      j=abs(t)+.1                                                        3165
+c     j=abs(t)+.1                                                        3165
+      j=int(abs(t)+.1)                                                  SLB06
       i=1                                                                3166
       go to 5                                                            3167
     4 i=i+1                                                              3168
@@ -3721,7 +3764,8 @@ c     write(it,'('' coef:'',6g12.4)') (a(i),i=1,l2)                      2875
     8 if(u .ne. 0.0) go to 9                                             3178
       phi=0.0                                                            3179
       go to 10                                                           3180
-    9 ip=tb(4,ip)+.1                                                     3181
+c   9 ip=tb(4,ip)+.1                                                     3181
+    9 ip=int(tb(4,ip)+.1)                                               SLB06
       go to 3                                                            3182
    10 if(phi.gt.0.0) cvll=cvll+tb(1,m)                                   3183
    11 continue                                                           3184
@@ -3751,7 +3795,8 @@ c     write(it,'('' coef:'',6g12.4)') (a(i),i=1,l2)                      2875
     6 kt=1                                                               3208
       do 9 j=1,jl                                                        3209
       k=kp(2,ll)+j-1                                                     3210
-      jt=cm(lv(j)+kv(2,k))+.1                                            3211
+c     jt=cm(lv(j)+kv(2,k))+.1                                            3211
+      jt=int(cm(lv(j)+kv(2,k))+.1)                                      SLB06
       if(kv(1,k) .ge. 0) go to 8                                         3212
       if(jt .ne. 0) go to 7                                              3213
       jt=1                                                               3214
@@ -3858,12 +3903,14 @@ c     write(it,'('' coef:'',6g12.4)') (a(i),i=1,l2)                      2875
       ip=m                                                               3315
       nordc=0                                                            3316
     1 if(ip.le.0) go to 4                                                3317
-      j=abs(tb(2,ip))+.1                                                 3318
+c     j=abs(tb(2,ip))+.1                                                 3318
+      j=int(abs(tb(2,ip))+.1)                                           SLB06
       if(l .ne. 1) go to 2                                               3319
       if(cm(2*j).eq.0.0) nordc=nordc+1                                   3320
       go to 3                                                            3321
     2 if(cm(2*j).gt.0.0) nordc=nordc+1                                   3322
-    3 ip=tb(4,ip)+.1                                                     3323
+c   3 ip=tb(4,ip)+.1                                                     3323
+    3 ip=int(tb(4,ip)+.1)                                               SLB06
       go to 1                                                            3324
     4 return                                                             3325
       end                                                                3326
@@ -3873,19 +3920,24 @@ c     write(it,'('' coef:'',6g12.4)') (a(i),i=1,l2)                      2875
       ip=m                                                               3330
       nv=0                                                               3331
     1 if(ip.le.0) go to 5                                                3332
-      j=abs(tb(2,ip))+.1                                                 3333
+c     j=abs(tb(2,ip))+.1                                                 3333
+      j=int(abs(tb(2,ip))+.1)                                           SLB06
       if(l .ne. 1) go to 3                                               3334
       if(cm(2*j) .le. 0.0) go to 4                                       3335
-      ip=tb(4,ip)+.1                                                     3336
+c     ip=tb(4,ip)+.1                                                     3336
+      ip=int(tb(4,ip)+.1)                                               SLB06
       go to 1                                                            3337
     3 if(cm(2*j) .ne. 0.0) go to 4                                       3338
-      ip=tb(4,ip)+.1                                                     3339
+c     ip=tb(4,ip)+.1                                                     3339
+      ip=int(tb(4,ip)+.1)                                               SLB06
       go to 1                                                            3340
     4 nv=nv+1                                                            3341
       jv(nv)=j                                                           3342
       if(l.ne.1.and.tb(2,ip).lt.0.0) jv(nv)=-j                           3343
-      if(l.ne.1) jp(nv)=tb(3,ip)+.1                                      3344
-      ip=tb(4,ip)+.1                                                     3345
+c     if(l.ne.1) jp(nv)=tb(3,ip)+.1                                      3344
+      if(l.ne.1) jp(nv)=int(tb(3,ip)+.1)                                SLB06
+c     ip=tb(4,ip)+.1                                                     3345
+      ip=int(tb(4,ip)+.1)                                               SLB06
       go to 1                                                            3346
     5 if(nv.le.1) return                                                 3347
       j=nv-1                                                             3348
@@ -4044,9 +4096,11 @@ c     write(6,7)                                                         3390
       end                                                                3501
       function icat (x,j,cm)                                             3502
       real cm(*)                                                         3503
-      j0=cm(2*j)+.1                                                      3504
+c     j0=cm(2*j)+.1                                                      3504
+      j0=int(cm(2*j)+.1)                                                SLB06
       j1=j0                                                              3505
-      j2=cm(2*j+1)+.1                                                    3506
+c     j2=cm(2*j+1)+.1                                                    3506
+      j2=int(cm(2*j+1)+.1)                                              SLB06
     1 if(j2.eq.j1+1) go to 5                                             3507
       k=(j1+j2)/2                                                        3508
       if(cm(k) .ne. x) go to 2                                           3509
@@ -4091,7 +4145,8 @@ c     write(6,7)                                                         3390
       h=sc(i)                                                            3548
       if(h.le.0.0.or.w(i).le.0.0) go to 7                                3549
       wh=w(i)*h                                                          3550
-      k=x(i,jp)+.1                                                       3551
+c     k=x(i,jp)+.1                                                       3551
+      k=int(x(i,jp)+.1)                                                 SLB06
       mm(k,2)=mm(k,2)+1                                                  3552
       sp(mkp2,k)=sp(mkp2,k)+wh                                           3553
       sp(mkp1,k)=sp(mkp1,k)+wh*(y(i)-yb)                                 3554
@@ -4186,7 +4241,8 @@ c     write(6,7)                                                         3390
       wm(1)=0.0                                                          3643
       wm(2)=wm(1)                                                        3644
       do 1 i=1,n                                                         3645
-      k=y(i)+1.1                                                         3646
+c     k=y(i)+1.1                                                         3646
+      k=int(y(i)+1.1)                                                   SLB06
       wm(k)=wm(k)+w(i)                                                   3647
     1 continue                                                           3648
       wt=wm(1)+wm(2)                                                     3649
@@ -4234,7 +4290,8 @@ c    1(m(n2,j),j),x(m(n3,j),j),x(m(n,j),j)                               3685
       integer p,mm(*)                                                    3690
       real x(n,p),cm(*)                                                  3691
       if(it.le.0) return                                                 3692
-      nct=cm(1)+.1                                                       3693
+c     nct=cm(1)+.1                                                       3693
+      nct=int(cm(1)+.1)                                                 SLB06
       if(nct.eq.0) return                                                3694
       n2=2*p+1                                                           3695
       np=0                                                               3696
@@ -4245,15 +4302,18 @@ c    1'')') nct                                                          3698
     1 i=i+(2)                                                            3701
     2 if((2)*((i)-(n2)).gt.0) go to 6                                    3702
       np=np+1                                                            3703
-      j1=cm(i)+.1                                                        3704
+c     j1=cm(i)+.1                                                        3704
+      j1=int(cm(i)+.1)                                                  SLB06
       if(j1.eq.0) go to 1                                                3705
-      j2=cm(i+1)+.1                                                      3706
+c     j2=cm(i+1)+.1                                                      3706
+      j2=int(cm(i+1)+.1)                                                SLB06
       nv=j2-j1+1                                                         3707
       do 3 j=1,nv                                                        3708
       mm(j)=0                                                            3709
     3 continue                                                           3710
       do 4 j=1,n                                                         3711
-      ic=x(j,np)+.1                                                      3712
+c     ic=x(j,np)+.1                                                      3712
+      ic=int(x(j,np)+.1)                                                SLB06
       mm(ic)=mm(ic)+1                                                    3713
     4 continue                                                           3714
 c     write(it,'(/,'' categorical variable'',i3,'' has'',i3,'' values.'' 3715
@@ -4270,8 +4330,10 @@ c     write(it,'(f6.0,i13,i15)') cm(j),k,mm(k)                           3721
       subroutine holl (jp,cm,t,h)                                        3726
       real cm(*)                                                         3727
       character*28 h                                                     3728
-      j1=cm(2*jp)+.1                                                     3729
-      j2=cm(2*jp+1)+.1                                                   3730
+c     j1=cm(2*jp)+.1                                                     3729
+      j1=int(cm(2*jp)+.1)                                               SLB06
+c     j2=cm(2*jp+1)+.1                                                   3730
+      j2=int(cm(2*jp+1)+.1)                                             SLB06
       j2=j2-j1+1                                                         3731
       if(j2 .le. 28) go to 1                                             3732
       h='   cat. factor > 28 values  '                                   3733
@@ -4279,7 +4341,8 @@ c     write(it,'(f6.0,i13,i15)') cm(j),k,mm(k)                           3721
     1 h='                            '                                   3735
       j1=(28-j2)/2                                                       3736
       j2=j1+j2-1                                                         3737
-      k=t+.1                                                             3738
+c     k=t+.1                                                             3738
+      k=int(t+.1)                                                       SLB06
       do 3 j=j1,j2                                                       3739
       if(cm(k+j-j1+1) .le. 0.0) go to 2                                  3740
       h(j:j)='1'                                                         3741
@@ -4387,7 +4450,8 @@ c     write(it,5) m,lp(3,m),(lv(i),i=k2,i2)                              3760
       do 13 j=1,nv                                                       3843
       t=te(1,j)                                                          3844
       u=te(2,j)                                                          3845
-      jp=abs(t)+.1                                                       3846
+c     jp=abs(t)+.1                                                       3846
+      jp=int(abs(t)+.1)                                                 SLB06
       jp2=2*jp                                                           3847
       jp21=jp2+1                                                         3848
       jpp=jp                                                             3849
@@ -4396,25 +4460,32 @@ c     write(it,5) m,lp(3,m),(lv(i),i=k2,i2)                              3760
       ip=m                                                               3852
     1 if(ip.le.0) go to 12                                               3853
       t=tb(2,ip)                                                         3854
-      jq=abs(t)+.1                                                       3855
+c     jq=abs(t)+.1                                                       3855
+      jq=int(abs(t)+.1)                                                 SLB06
       jqq=jq                                                             3856
       if(t.lt.0.0) jqq=-jqq                                              3857
       if(jp .eq. jq) go to 2                                             3858
-      ip=tb(4,ip)+.1                                                     3859
+c     ip=tb(4,ip)+.1                                                     3859
+      ip=int(tb(4,ip)+.1)                                               SLB06
       go to 1                                                            3860
     2 if(cm(jp2) .ne. 0.0) go to 4                                       3861
       if(jpp .ne. jqq .or. ieq(tb(3,ip),u,r(jp)) .ne. 1) go to 3         3862
       ig=1                                                               3863
       go to 12                                                           3864
-    3 ip=tb(4,ip)+.1                                                     3865
+c   3 ip=tb(4,ip)+.1                                                     3865
+    3 ip=int(tb(4,ip)+.1)                                               SLB06
       go to 1                                                            3866
     4 nc=int(cm(jp21)+.1)-int(cm(jp2)+.1)+1                              3867
-      i1=u+.1                                                            3868
-      i2=tb(3,ip)+.1                                                     3869
+c     i1=u+.1                                                            3868
+      i1=int(u+.1)                                                      SLB06
+c     i2=tb(3,ip)+.1                                                     3869
+      i2=int(tb(3,ip)+.1)                                               SLB06
       kg=0                                                               3870
       do 9 i=1,nc                                                        3871
-      j1=cm(i1+i)                                                        3872
-      j2=cm(i2+i)                                                        3873
+c     j1=cm(i1+i)                                                        3872
+      j1=int(cm(i1+i))                                                  SLB06
+c     j2=cm(i2+i)                                                        3873
+      j2=int(cm(i2+i))                                                  SLB06
       if(jpp .ge. 0) go to 6                                             3874
       if(j1 .ne. 0) go to 5                                              3875
       j1=1                                                               3876
@@ -4432,7 +4503,8 @@ c     write(it,5) m,lp(3,m),(lv(i),i=k2,i2)                              3760
    10 if(kg .ne. 0) go to 11                                             3888
       ig=1                                                               3889
       go to 12                                                           3890
-   11 ip=tb(4,ip)+.1                                                     3891
+c  11 ip=tb(4,ip)+.1                                                     3891
+   11 ip=int(tb(4,ip)+.1)                                               SLB06
       go to 1                                                            3892
    12 if(ig .ne. 0) go to 13                                             3893
       jg=1                                                               3894
@@ -4460,7 +4532,8 @@ c     write(6,20)j,(tb(i,j),i=1,4)                                       3909
       ip=m                                                               3916
     1 if(ip.le.0) go to 4                                                3917
       t=tb(2,ip)                                                         3918
-      j=abs(t)+.1                                                        3919
+c     j=abs(t)+.1                                                        3919
+      j=int(abs(t)+.1)                                                  SLB06
       jj=j                                                               3920
       if(t.lt.0.0) jj=-jj                                                3921
       u=tb(3,ip)                                                         3922
@@ -4468,7 +4541,8 @@ c     write(6,20)j,(tb(i,j),i=1,4)                                       3909
       ig=0                                                               3924
       do 2 i=1,l                                                         3925
       t=te(1,i)                                                          3926
-      jp=abs(t)+.1                                                       3927
+c     jp=abs(t)+.1                                                       3927
+      jp=int(abs(t)+.1)                                                 SLB06
       if(x(jp).ne.flg) k=k+1                                             3928
       if(t.lt.0.0) jp=-jp                                                3929
       if(jj .ne. jp .or. ieq(te(2,i),u,r(j)) .ne. 1) go to 2             3930
@@ -4476,7 +4550,8 @@ c     write(6,20)j,(tb(i,j),i=1,4)                                       3909
       go to 3                                                            3932
     2 continue                                                           3933
     3 if(ig.eq.1.and.x(j).ne.flg) td(2,ip)=fc(k)                         3934
-      ip=tb(4,ip)+.1                                                     3935
+c     ip=tb(4,ip)+.1                                                     3935
+      ip=int(tb(4,ip)+.1)                                               SLB06
       go to 1                                                            3936
     4 return                                                             3937
       end                                                                3938
@@ -4491,7 +4566,8 @@ c     write(6,20)j,(tb(i,j),i=1,4)                                       3909
       bzn=bz                                                             3947
       do 9 m=1,nk                                                        3948
       t=tb(2,m)                                                          3949
-      j=abs(t)+.1                                                        3950
+c     j=abs(t)+.1                                                        3950
+      j=int(abs(t)+.1)                                                  SLB06
       if(x(j).eq.flg) go to 9                                            3951
       if(cm(2*j) .le. 0.0) go to 7                                       3952
       k=icat(x(j),j,cm)                                                  3953
@@ -4513,19 +4589,23 @@ c     write(6,20)j,(tb(i,j),i=1,4)                                       3909
       go to 11                                                           3969
    10 m=m+(-1)                                                           3970
    11 if((-1)*((m)-(1)).gt.0) go to 21                                   3971
-      ip=tbn(4,m)+.1                                                     3972
+c     ip=tbn(4,m)+.1                                                     3972
+      ip=int(tbn(4,m)+.1)                                               SLB06
       t=tbn(2,m)                                                         3973
-      j=abs(t)+.1                                                        3974
+c     j=abs(t)+.1                                                        3974
+      j=int(abs(t)+.1)                                                  SLB06
       if(x(j) .ne. flg) go to 15                                         3975
       if(tbn(1,m) .eq. 0.0) go to 10                                     3976
       iq=ip                                                              3977
    12 if(iq.le.0) go to 10                                               3978
       t=tbn(2,iq)                                                        3979
-      j=abs(t)+.1                                                        3980
+c     j=abs(t)+.1                                                        3980
+      j=int(abs(t)+.1)                                                  SLB06
       if(x(j) .eq. flg) go to 13                                         3981
       tbn(1,m)=tbn(1,m)*sc(iq)                                           3982
       td(1,m)=td(1,m)*td(2,iq)                                           3983
-   13 iq=tbn(4,iq)+.1                                                    3984
+c  13 iq=tbn(4,iq)+.1                                                    3984
+   13 iq=int(tbn(4,iq)+.1)                                              SLB06
       go to 12                                                           3985
    15 k=m+1                                                              3986
       go to 17                                                           3987
@@ -4547,7 +4627,8 @@ c     write(6,20)j,(tb(i,j),i=1,4)                                       3909
    22 m=m+(-1)                                                           4003
    23 if((-1)*((m)-(1)).gt.0) go to 31                                   4004
       t=tb(2,m)                                                          4005
-      j=abs(t)+.1                                                        4006
+c     j=abs(t)+.1                                                        4006
+      j=int(abs(t)+.1)                                                  SLB06
       if(x(j).eq.flg) go to 22                                           4007
       k=m+1                                                              4008
       go to 25                                                           4009
@@ -4582,7 +4663,8 @@ c     write(6,20)j,(tb(i,j),i=1,4)                                       3909
       nv=nv+1                                                            4038
       sc(2*nv-1)=tbn(2,ip)                                               4039
       sc(2*nv)=tbn(3,ip)                                                 4040
-      ip=tbn(4,ip)+.1                                                    4041
+c     ip=tbn(4,ip)+.1                                                    4041
+      ip=int(tbn(4,ip)+.1)                                              SLB06
       go to 37                                                           4042
    38 k=match(nv,sc,m-1,tbn,cm,r,1)                                      4043
       if(k.eq.0) go to 35                                                4044
@@ -4675,10 +4757,12 @@ c     write(6,20)j,(tb(i,j),i=1,4)                                       3909
       real tb(5,nk),cm(*)                                                4131
       ix=0                                                               4132
       do 1 m=1,nk                                                        4133
-      j=abs(tb(2,m))+.1                                                  4134
+c     j=abs(tb(2,m))+.1                                                  4134
+      j=int(abs(tb(2,m))+.1)                                            SLB06
       if(cm(2*j).eq.0.0) go to 1                                         4135
       if(int(tb(3,m)+.1) .le. ix) go to 1                                4136
-      ix=tb(3,m)+.1                                                      4137
+c     ix=tb(3,m)+.1                                                      4137
+      ix=int(tb(3,m)+.1)                                                SLB06
       jj=j                                                               4138
     1 continue                                                           4139
       if(ix .le. 0) go to 2                                              4140
@@ -4854,7 +4938,8 @@ c    1ervations.'',/)') nd                                               4306
     3 continue                                                           4310
       do 4 i=1,n                                                         4311
       call rnms(r,1)                                                     4312
-      k=(n-i+1)*r+i                                                      4313
+c     k=(n-i+1)*r+i                                                      4313
+      k=int((n-i+1)*r+i)                                                SLB06
       t=wt(i,2)                                                          4314
       wt(i,2)=wt(k,2)                                                    4315
       wt(k,2)=t                                                          4316
@@ -4882,10 +4967,12 @@ c    1ervations.'',/)') nd                                               4306
       wn1=sc(2)                                                          4338
       wn=wn+wn1                                                          4339
       fc=fc+sc(1)                                                        4340
-      mk=sc((nk+1)**2+4)+.1                                              4341
+c     mk=sc((nk+1)**2+4)+.1                                              4341
+      mk=int(sc((nk+1)**2+4)+.1)                                        SLB06
       i=ir                                                               4342
     9 if(i.gt.n) go to 10                                                4343
-      k=wt(i,2)+.1                                                       4344
+c     k=wt(i,2)+.1                                                       4344
+      k=int(wt(i,2)+.1)                                                 SLB06
       wt(k,1)=w(k)                                                       4345
       sw=sw+w(k)                                                         4346
       call cvmod(k,n,x,y,w,nk,mk,tb,cm,sc,cv0,cv(1,3))                   4347
@@ -4954,9 +5041,11 @@ c    12,               '' with (estimated) pse ='',g12.4)') im,df,cvm    4399
       real x(n,*),y(n),w(n),tb(5,nk),cm(*),sc(*),cv(nk,2)                4410
       do 8 m=1,mk                                                        4411
       t=tb(2,m)                                                          4412
-      j=abs(t)+.1                                                        4413
+c     j=abs(t)+.1                                                        4413
+      j=int(abs(t)+.1)                                                  SLB06
       if(cm(2*j) .le. 0.0) go to 5                                       4414
-      k=x(i,j)+.1                                                        4415
+c     k=x(i,j)+.1                                                        4415
+      k=int(x(i,j)+.1)                                                  SLB06
       if(k .ne. 0) go to 1                                               4416
       u=0.0                                                              4417
       go to 2                                                            4418
@@ -4968,7 +5057,8 @@ c    12,               '' with (estimated) pse ='',g12.4)') im,df,cvm    4399
     3 u=0.0                                                              4424
       go to 6                                                            4425
     5 u=amax1(0.0,sign(1.0,t)*(x(i,j)-tb(3,m)))                          4426
-    6 l=tb(4,m)+.1                                                       4427
+c   6 l=tb(4,m)+.1                                                       4427
+    6 l=int(tb(4,m)+.1)                                                 SLB06
       if(l .le. 0) go to 7                                               4428
       cv(m,2)=u*cv(l,2)                                                  4429
       go to 8                                                            4430
@@ -5069,8 +5159,10 @@ c    1,5f7.1)')  k,m(1,k),m(2,k),(vm(l),l=m(4,k)+1,m(4,k)+m(3,k))        4511
 c     if(j1.lt.1.or.j1.gt.p) write(it,25) l,j1                           4524
 c     if(jn.lt.1.or.jn.gt.p) write(it,26) l,jn                           4525
 c     if(lx(jn).ge.0) write(it,27) l,jn,lx(jn)                           4526
-      k1=cm(2*jn)+.1                                                     4527
-      k2=cm(2*jn+1)+.1                                                   4528
+c     k1=cm(2*jn)+.1                                                     4527
+      k1=int(cm(2*jn)+.1)                                               SLB06
+c     k2=cm(2*jn+1)+.1                                                   4528
+      k2=int(cm(2*jn+1)+.1)                                             SLB06
       do 23 k=jp+1,jp+jv                                                 4529
       ig=0                                                               4530
       do 21 kk=k1,k2                                                     4531
@@ -5115,16 +5207,20 @@ c     if(ig.eq.0) write(it,28) l,vm(k),jn                                4536
       ig=0                                                               4569
       ip=lm                                                              4570
    37 if(ip.le.0) go to 39                                               4571
-      j1=abs(tb(2,ip))+.1                                                4572
+c     j1=abs(tb(2,ip))+.1                                                4572
+      j1=int(abs(tb(2,ip))+.1)                                          SLB06
       if(j1 .ne. jn) go to 38                                            4573
       ig=1                                                               4574
       go to 39                                                           4575
-   38 ip=tb(4,ip)+.1                                                     4576
+c  38 ip=tb(4,ip)+.1                                                     4576
+   38 ip=int(tb(4,ip)+.1)                                               SLB06
       go to 37                                                           4577
    39 if(ig .eq. 0) go to 45                                             4578
-      nc=cm(2*jn+1)-cm(2*jn)+1.1                                         4579
+c     nc=cm(2*jn+1)-cm(2*jn)+1.1                                         4579
+      nc=int(cm(2*jn+1)-cm(2*jn)+1.1)                                   SLB06
       t=tb(2,ip)                                                         4580
-      kp=tb(3,ip)+.1                                                     4581
+c     kp=tb(3,ip)+.1                                                     4581
+      kp=int(tb(3,ip)+.1)                                               SLB06
       do 44 l=1,nc                                                       4582
       lp=l+kp                                                            4583
       if(t .le. 0) go to 40                                              4584
@@ -5145,20 +5241,24 @@ c     if(ig.eq.0) write(it,28) l,vm(k),jn                                4536
       return                                                             4599
    45 ja=l                                                               4600
       norm=nord(lm,tb)+1                                                 4601
-      nc=cm(2*jn+1)-cm(2*jn)+1.1                                         4602
+c     nc=cm(2*jn+1)-cm(2*jn)+1.1                                         4602
+      nc=int(cm(2*jn+1)-cm(2*jn)+1.1)                                   SLB06
       do 56 lk=1,mk                                                      4603
       if(nord(lk,tb).ne.norm) go to 56                                   4604
       jg=0                                                               4605
       ip=lk                                                              4606
    46 if(ip.le.0) go to 55                                               4607
       t1=tb(2,ip)                                                        4608
-      j1=abs(t1)+.1                                                      4609
+c     j1=abs(t1)+.1                                                      4609
+      j1=int(abs(t1)+.1)                                                SLB06
       if(j1 .ne. jn) go to 54                                            4610
-      kp=tb(3,ip)+.1                                                     4611
+c     kp=tb(3,ip)+.1                                                     4611
+      kp=int(tb(3,ip)+.1)                                               SLB06
       kg=0                                                               4612
       do 52 l=1,nc                                                       4613
       lp=l+kp                                                            4614
-      lon=cm(lp)+.1                                                      4615
+c     lon=cm(lp)+.1                                                      4615
+      lon=int(cm(lp)+.1)                                                SLB06
       if(t1 .ge. 0.0) go to 48                                           4616
       if(lon .ne. 0) go to 47                                            4617
       lon=1                                                              4618
@@ -5181,7 +5281,8 @@ c     if(ig.eq.0) write(it,28) l,vm(k),jn                                4536
    53 if(kg .ne. 0) go to 54                                             4635
       jg=1                                                               4636
       go to 55                                                           4637
-   54 ip=tb(4,ip)+.1                                                     4638
+c  54 ip=tb(4,ip)+.1                                                     4638
+   54 ip=int(tb(4,ip)+.1)                                               SLB06
       go to 46                                                           4639
    55 if(jg.eq.0) go to 56                                               4640
       if(ieqbf(lk,lm,tb,cm) .ne. 1) go to 56                             4641
@@ -5194,7 +5295,8 @@ c     if(ig.eq.0) write(it,28) l,vm(k),jn                                4536
       jv=m(3,ja)                                                         4648
       jp=m(4,ja)                                                         4649
       do 59 l=1,n                                                        4650
-      kx=x(l,jn)+.1                                                      4651
+c     kx=x(l,jn)+.1                                                      4651
+      kx=int(x(l,jn)+.1)                                                SLB06
       ex=cm(int(cm(2*jn)+.1)+kx-1)                                       4652
       ig=0                                                               4653
       do 57 k=jp+1,jp+jv                                                 4654
@@ -5210,7 +5312,8 @@ c     if(ig.eq.0) write(it,28) l,vm(k),jn                                4536
       j=m(2,ja)                                                          4664
       jv=m(3,ja)                                                         4665
       jp=m(4,ja)                                                         4666
-      nv=cm(2*j+1)-cm(2*j)+1.1                                           4667
+c     nv=cm(2*j+1)-cm(2*j)+1.1                                           4667
+      nv=int(cm(2*j+1)-cm(2*j)+1.1)                                     SLB06
       do 60 k=1,nv                                                       4668
       vals(k)=0.0                                                        4669
    60 continue                                                           4670
@@ -5248,11 +5351,14 @@ c     if(ig.eq.0) write(it,28) l,vm(k),jn                                4536
       fmn=-alog(allf/(nep*nnt))/al25                                     4702
       fme=-alog(alf*0.125/nep)/al2                                       4703
       if(ms .le. 0) go to 1                                              4704
-      me=ms*fme/fmn+0.5                                                  4705
+c     me=ms*fme/fmn+0.5                                                  4705
+      me=int(ms*fme/fmn+0.5)                                            SLB06
       mn=ms                                                              4706
       go to 2                                                            4707
-    1 me=fme+0.5                                                         4708
-      mn=fmn+0.5                                                         4709
+c   1 me=fme+0.5                                                         4708
+    1 me=int(fme+0.5)                                                   SLB06
+c     mn=fmn+0.5                                                         4709
+      mn=int(fmn+0.5)                                                   SLB06
     2 me=max0(me,mn,2)                                                   4710
       nst=nnt-2*me-1                                                     4711
       nnr=nst/mn                                                         4712
@@ -5276,32 +5382,39 @@ c     if(ig.eq.0) write(it,28) l,vm(k),jn                                4536
       lg=0                                                               4730
     1 if(ipo.le.0) go to 16                                              4731
       to=tb(2,ipo)                                                       4732
-      jo=abs(to)+.1                                                      4733
+c     jo=abs(to)+.1                                                      4733
+      jo=int(abs(to)+.1)                                                SLB06
       jg=0                                                               4734
       if(cm(2*jo) .ne. 0.0) go to 2                                      4735
       t=tb(3,ipo)                                                        4736
       ic=0                                                               4737
       go to 3                                                            4738
-    2 ko=tb(3,ipo)+.1                                                    4739
-      nc=cm(2*jo+1)-cm(2*jo)+1.1                                         4740
+c   2 ko=tb(3,ipo)+.1                                                    4739
+    2 ko=int(tb(3,ipo)+.1)                                              SLB06
+c     nc=cm(2*jo+1)-cm(2*jo)+1.1                                         4740
+      nc=int(cm(2*jo+1)-cm(2*jo)+1.1)                                   SLB06
       ic=1                                                               4741
     3 ip=lk                                                              4742
     4 if(ip.le.0) go to 14                                               4743
       t1=tb(2,ip)                                                        4744
-      j1=abs(t1)+.1                                                      4745
+c     j1=abs(t1)+.1                                                      4745
+      j1=int(abs(t1)+.1)                                                SLB06
       if(j1 .ne. jo) go to 13                                            4746
       if(ic .ne. 0) go to 6                                              4747
       if(to*t1 .le. 0.0) go to 13                                        4748
       if(ieq(t,tb(3,ip),1.0) .ne. 1) go to 13                            4749
       jg=1                                                               4750
       go to 14                                                           4751
-    6 kp=tb(3,ip)+.1                                                     4752
+c   6 kp=tb(3,ip)+.1                                                     4752
+    6 kp=int(tb(3,ip)+.1)                                               SLB06
       kg=0                                                               4753
       do 11 l=1,nc                                                       4754
       lo=l+ko                                                            4755
       lp=l+kp                                                            4756
-      lon=cm(lo)+.1                                                      4757
-      lop=cm(lp)+.1                                                      4758
+c     lon=cm(lo)+.1                                                      4757
+      lon=int(cm(lo)+.1)                                                SLB06
+c     lop=cm(lp)+.1                                                      4758
+      lop=int(cm(lp)+.1)                                                SLB06
       if(to .ge. 0.0) go to 8                                            4759
       if(lon .ne. 0) go to 7                                             4760
       lon=1                                                              4761
@@ -5319,12 +5432,14 @@ c     if(ig.eq.0) write(it,28) l,vm(k),jn                                4536
    12 if(kg .ne. 0) go to 13                                             4773
       jg=1                                                               4774
       go to 14                                                           4775
-   13 ip=tb(4,ip)+.1                                                     4776
+c  13 ip=tb(4,ip)+.1                                                     4776
+   13 ip=int(tb(4,ip)+.1)                                               SLB06
       go to 4                                                            4777
    14 if(jg .ne. 0) go to 15                                             4778
       lg=1                                                               4779
       go to 16                                                           4780
-   15 ipo=tb(4,ipo)+.1                                                   4781
+c  15 ipo=tb(4,ipo)+.1                                                   4781
+   15 ipo=int(tb(4,ipo)+.1)                                             SLB06
       go to 1                                                            4782
    16 if(lg .ne. 0) go to 17                                             4783
       ieqbf=1                                                            4784
@@ -5418,7 +5533,8 @@ c    15,                      '' and recompile.'')') p                   4856
       if(jp.gt.p) jp=1                                                   4872
       fin=nn*pm(jp)-m(jp)                                                4873
       if(fin .le. 0.0) go to 5                                           4874
-      in=fin+0.5                                                         4875
+c     in=fin+0.5                                                         4875
+      in=int(fin+0.5)                                                   SLB06
       go to 6                                                            4876
     5 in=0                                                               4877
     6 in=min0(in,nnx-nn)                                                 4878
@@ -5429,7 +5545,8 @@ c    15,                      '' and recompile.'')') p                   4856
       go to 4                                                            4883
     8 do 11 k=1,in                                                       4884
       call rnms(r,1)                                                     4885
-      i=nn*r+1.0                                                         4886
+c     i=nn*r+1.0                                                         4886
+      i=int(nn*r+1.0)                                                   SLB06
       nnk=nn+k                                                           4887
       do 9 j=1,p                                                         4888
       sc(j,nnk)=sc(j,i)                                                  4889
@@ -5463,9 +5580,11 @@ c    15,                      '' and recompile.'')') p                   4856
       subroutine xmiss (n,x,xm,xp,xn)                                    4917
       real x(n,*),xm(*),xp(*),xn(n,*)                                    4918
       integer p                                                          4919
-      p=xp(1)+.1                                                         4920
+c     p=xp(1)+.1                                                         4920
+      p=int(xp(1)+.1)                                                   SLB06
       do 3 j=1,p                                                         4921
-      k=xp(j+1)+.1                                                       4922
+c     k=xp(j+1)+.1                                                       4922
+      k=int(xp(j+1)+.1)                                                 SLB06
       do 2 i=1,n                                                         4923
       if(x(i,j) .eq. xm(j)) go to 1                                      4924
       xn(i,j)=x(i,j)                                                     4925
@@ -5484,7 +5603,8 @@ c    15,                      '' and recompile.'')') p                   4856
     1 if(ip.le.0) go to 2                                                4938
       call isnstr(int(abs(tb(2,ip))+.1),jb)                              4939
       if(jb.eq.0) nnord=nnord+1                                          4940
-      ip=tb(4,ip)+.1                                                     4941
+c     ip=tb(4,ip)+.1                                                     4941
+      ip=int(tb(4,ip)+.1)                                               SLB06
       go to 1                                                            4942
     2 return                                                             4943
       end                                                                4944
@@ -5629,7 +5749,8 @@ c
       return                                                                    
       entry rnms (x,n)                                                          
       do 1 j=1,n                                                                
-      i=dmod(i*16807.d0,2147483647.d0)                                          
+c     i=dmod(i*16807.d0,2147483647.d0)                                          
+      i=int(dmod(i*16807.d0,2147483647.d0))                                SLB06
       u=i                                                                       
       u=u*.465661287d-9                                                         
       x(j)=u                                                                    
