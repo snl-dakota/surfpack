@@ -50,25 +50,6 @@ public:
   bad_surf_data(const std::string& msg = "") : std::runtime_error(msg) {}
 };
 
-/// Used in conjunction with the caching of SurfData::xMatrix and 
-/// SurfData::yVector values.  If an action is taken that would invalidate
-/// either of those values (e.g., a new point added to the data set), then
-/// the corresponding value inside this StateConsistency object is set to 
-/// false.  The SurfData object then knows that if its xMatrix or yVector
-/// value is requested, it must be repopulated.
-struct StateConsistency 
-{
-  /// True if the SurfData::xMatrix value is valid.
-  bool xMatrix;
-  
-  /// True if the SurfData::yVector is valid.
-  bool yVector;
-  
-  /// Both values are initially false and are set to true when the SurfData 
-  /// members they correspond to are initially filled.
-  StateConsistency() : xMatrix(false), yVector(false) {}
-};
-
 // ____________________________________________________________________________
 // Creation, Destruction, Initialization 
 // ____________________________________________________________________________
@@ -82,6 +63,13 @@ public:
 
   /// Read a set of SurfPoints from a std::istream
   SurfData(std::istream& is, bool binary = false);
+
+  /// Read a set of SurfPoints from a std::istream.  The stream does not
+  /// contain the normal header information (#points, #vars, #responses).
+  /// The #vars and #responses are explicitly specified in the constructor;
+  /// The stream reader processes data until eof, assuming one point per line.
+  SurfData(const std::string filename, unsigned n_vars, unsigned n_responses, 
+    unsigned n_cols_to_skip);
 
   /// Make a deep copy of the object 
   SurfData(const SurfData& other); 
@@ -99,10 +87,6 @@ private:
   /// Data member initialization that is common to all constructors
   void init();
   
-  /// Copy xMatrix and yVector from another SurfData object
-  void copyBlockData(const SurfData& other);
-
-  /// Deallocate any memory allocated for xMatrix and/or yVector.
   /// Call delete on the SurfPoint* in the data set.
   void cleanup();
 
@@ -149,14 +133,6 @@ public:
 
   /// Return defaultIndex
   unsigned getDefaultIndex() const;
-
-  /// Return point domains as a matrix in a contiguous block.  Be careful.
-  /// The data should not be changed.
-  const double* getXMatrix() const;
-
-  /// Return response values for the default response in a contiguous block.  
-  /// Be careful. The data should not be changed.
-  const double* getYVector() const;
 
   /// Retrieve the label for one of the predictor variables
   const std::string& getXLabel(unsigned index) const;
@@ -232,13 +208,6 @@ private:
   /// Set x vars labels to 'x0' 'x1', etc.; resp. vars to 'f0' 'f1', etc.
   void defaultLabels();
 
-  /// Creates a matrix of the domains for all of the points in a contiguous
-  /// block of memory, for use in matrix operations
-  void validateXMatrix() const;
- 
-  /// Creates a vector of response values for the default response value in
-  /// a contiguous blcok of memory
-  void validateYVector() const;
 public:
    
 // ____________________________________________________________________________
@@ -255,13 +224,14 @@ public:
   void writeBinary(std::ostream& os) const;
 
   /// Write the surface in text format
-  void writeText(std::ostream& os) const ; 
+  void writeText(std::ostream& os, bool write_header = true) const ; 
 
   /// Read the surface in binary format
   void readBinary(std::istream& is); 
 
   /// Read the surface in text format
-  void readText(std::istream& is); 
+  void readText(std::istream& is, bool read_header = true, 
+    unsigned skip_columns = 0); 
 
 private:
 
@@ -291,20 +261,8 @@ private:
   /// empty, this will not be the case.
   std::vector<unsigned> mapping;
 
-  /// Pointer to the domain of the data points, represented as a contiguous 
-  /// block of memory
-  mutable double* xMatrix;
-
-  /// Pointer to a set of response values for the data poitns, stored in a
-  /// contiguous block of memory
-  mutable double* yVector;
-
   /// The index of the response variable that will be returned by F
   mutable unsigned defaultIndex;
-
-  /// Records whether xMatrix and yVector are valid.  They are not populated
-  /// unless/until getXMatrix() or getYVector() is called. 
-  mutable StateConsistency valid;
 
   /// Labels for the predictor variables
   std::vector< std::string > xLabels;
@@ -353,7 +311,10 @@ public:
 
   /// If the line contains single-quoted string, parse them out as labels
   /// and return true; otherwise, return false
-  bool readLabelsIfPresent(std::istream& is);
+  bool readLabelsIfPresent(std::string single_line);
+
+  /// Read the #points, #vars, #responses
+  unsigned SurfData::readHeaderInfo(std::istream& is);
 
 // ____________________________________________________________________________
 // Testing 

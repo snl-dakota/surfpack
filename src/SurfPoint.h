@@ -47,9 +47,12 @@ public:
   /// Initialize with zero or more response values
   SurfPoint(const std::vector<double>& x, const std::vector<double>& f);
   
-  /// Read point from istream in either text or binary format
-  SurfPoint(unsigned xsize, unsigned fsize, std::istream& is, 
-    bool binary = false);
+  /// Read point from istream in binary format
+  SurfPoint(unsigned xsize, unsigned fsize, std::istream& is);
+
+  /// Read point from string in text format
+  SurfPoint(unsigned xsize, unsigned fsize, const std::string& single_line,
+    unsigned skip_columns = 0);
 
   /// Copy constructor performs a deep copy
   SurfPoint(const SurfPoint& other);
@@ -146,7 +149,7 @@ public:
   void readBinary(std::istream& is);
   
   /// Read location and responses of this point from stream in text format 
-  void readText(std::istream& is);
+  void readText(const std::string& single_line, unsigned skip_columns = 0);
 
 // ____________________________________________________________________________
 // Data members 

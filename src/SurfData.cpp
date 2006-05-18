@@ -1,11 +1,8 @@
 /*  _______________________________________________________________________
-
-    DAKOTA: Design Analysis Kit for Optimization and Terascale Applications
-    Copyright (c) 2001, Sandia National Laboratories.
-
+ 
     Surfpack: A Software Library of Multidimensional Surface Fitting Methods
-
-    Surfpack is distributed under the DAKOTA GNU General Public License.
+    Copyright (c) 2006, Sandia National Laboratories.
+    This software is distributed under the GNU General Public License.
     For more information, see the README file in the top Surfpack directory.
     _______________________________________________________________________ */
 #include "surfpack_config.h"
@@ -34,7 +31,7 @@ const int SurfData::DATA_MODIFIED = 2;
 
 /// Vector of points will be copied and checked for duplicates
 SurfData::SurfData(const vector<SurfPoint>& points_) 
-  : scaler(0), valid()
+  : scaler(0)
 {
   if (points_.empty()) {
     this->xsize = 0;
@@ -55,15 +52,39 @@ SurfData::SurfData(const vector<SurfPoint>& points_)
 
 /// Read a set of SurfPoints from a file
 SurfData::SurfData(const string filename) 
-: scaler(0), valid() 
+: scaler(0)
 {
   init();
   read(filename);
 }
   
+/// Read a set of SurfPoints from a std::istream.  The stream does not
+/// contain the normal header information (#points, #vars, #responses).
+/// The #vars and #responses are explicitly specified in the constructor;
+/// The stream reader processes data until eof, assuming one point per line.
+SurfData::SurfData(const string filename, unsigned n_vars, unsigned n_responses, 
+  unsigned n_cols_to_skip)
+: scaler(0)
+{
+  if (!surfpack::hasExtension(filename,".dat")) {
+    cerr << "Bad filename: " << filename << endl;
+    throw surfpack::io_exception(
+      "Expected .dat extension for filename"
+    );
+  }
+  ifstream infile(filename.c_str(),ios::in);
+  if (!infile) {
+    throw surfpack::file_open_failure(filename);
+  }
+  init();
+  this->xsize = n_vars;
+  this->fsize = n_responses;
+  readText(infile, false, n_cols_to_skip);
+}
+
 /// Read a set of SurfPoints from a std::istream
 SurfData::SurfData(std::istream& is, bool binary) 
-  : scaler(0), valid()
+  : scaler(0)
 {
   init();
   if (binary) {
@@ -83,13 +104,11 @@ SurfData::SurfData(const SurfData& other)
     this->addPoint(*other.points[i]);
   }
   mapping = other.mapping;
-  copyBlockData(other);
-  valid = other.valid;
   buildOrderedPoints();
 }
 
 /// First SurfPoint added will determine the dimensions of the data set 
-SurfData::SurfData() : scaler(0), valid()
+SurfData::SurfData() : scaler(0)
 {
     this->xsize = 0;
     this->fsize = 0;
@@ -109,8 +128,6 @@ void SurfData::init()
 {
   defaultIndex = 0;
   defaultMapping();
-  xMatrix = 0;
-  yVector = 0;
 }
 
 /// Copy only the points which have not been marked for exclusion
@@ -134,37 +151,9 @@ SurfData SurfData::copyActive()
   return newSD;
 }
   
-// Copy xMatrix and yVector from another SurfData object
-/// \todo Address the possibility of a memory allocation failure 
-void SurfData::copyBlockData(const SurfData& other)
-{
-  if (other.valid.xMatrix) {
-    unsigned numElements = mapping.size() * xsize;
-    xMatrix = new double[numElements];
-    memcpy(xMatrix,other.xMatrix, numElements*sizeof(double));
-  } else {
-    xMatrix = 0;
-  }
-
-  if (other.valid.yVector) {
-    unsigned numElements = mapping.size();
-    yVector = new double[numElements];
-    memcpy(yVector,other.yVector, numElements*sizeof(double));
-  } else {
-    yVector = 0;
-  }
-}
-  
-/// Deallocate any memory allocated for xMatrix and/or yVector.
 /// Call delete on the SurfPoint* in the data set.
 void SurfData::cleanup()
 {
-  delete xMatrix;
-  delete yVector;
-  xMatrix=0;
-  yVector=0;
-  valid.xMatrix = false;
-  valid.yVector = false;
   mapping.clear();
   orderedPoints.clear();
   for (unsigned j = 0; j < points.size(); j++) {
@@ -193,9 +182,7 @@ SurfData& SurfData::operator=(const SurfData& other)
     }
     this->excludedPoints = other.excludedPoints;
     this->mapping = other.mapping;
-    this->valid = other.valid;
     this->defaultIndex = other.defaultIndex;
-    copyBlockData(other);
   }
   buildOrderedPoints();
   return (*this);
@@ -287,26 +274,6 @@ unsigned SurfData::getDefaultIndex() const
   return defaultIndex;
 }
 
-/// Return point domains as a matrix in a contiguous block.  Be careful.
-/// The data should not be changed.
-const double* SurfData::getXMatrix() const
-{
-  if (!valid.xMatrix) {
-    validateXMatrix();
-  }
-  return xMatrix;
-}
-
-/// Return response values for the default response in a contiguous block.  
-/// Be careful. The data should not be changed.
-const double* SurfData::getYVector() const
-{
-  if (!valid.yVector) {
-    validateYVector();
-  }
-  return yVector;
-}
-  
 /// Retrieve the label for one of the predictor variables
 const std::string& SurfData::getXLabel(unsigned index) const
 {
@@ -360,7 +327,6 @@ void SurfData::setDefaultIndex(unsigned index)
 {
   static string header("Indexing error in SurfData::setDefaultIndex.");
   checkRangeNumResponses(header, index);
-  valid.yVector = false;
   defaultIndex = index;
 }
   
@@ -371,7 +337,6 @@ void SurfData::setResponse(unsigned index, double value)
   static string header("Indexing error in SurfData::setResponse.");
   checkRangeNumPoints(header, index);
   points[mapping[index]]->F(defaultIndex, value);
-  valid.yVector = false;
 }
   
 /// Calculates parameters so that the data can be viewed as scaled
@@ -424,10 +389,6 @@ void SurfData::addPoint(const SurfPoint& sp)
     SurfPoint* spPtr = *iter;
     *spPtr = sp;
   }
-  // Since a SurfPoint has been either added or modified, this->xMatrix and
-  // this->yVector are no longer valid.
-  valid.xMatrix = false;
-  valid.yVector = false;
   notifyListeners(SurfData::DATA_MODIFIED);
 }
 
@@ -555,32 +516,6 @@ void SurfData::defaultMapping()
   }
 }
    
-/// Creates a matrix of the domains for all of the points in a contiguous
-/// block of memory, for use in matrix operations
-void SurfData::validateXMatrix() const
-{
-  delete xMatrix;
-  xMatrix = new double[mapping.size() * xsize];
-  for (unsigned pt = 0; pt < mapping.size(); pt++) {
-    for (unsigned xval = 0; xval < xsize; xval++) {
-      xMatrix[pt+xval*mapping.size()] = points[mapping[pt]]->X()[xval];
-    }
-  }
-  valid.xMatrix = true;
-}
-
-/// Creates a vector of response values for the default response value in
-/// a contiguous blcok of memory
-void SurfData::validateYVector() const
-{
-  delete yVector;
-  yVector = new double[mapping.size()];
-  for (unsigned pt = 0; pt < mapping.size(); pt++) {
-    yVector[pt] = getResponse(pt);
-  }
-  valid.yVector = true;
-}
-
 /// Set the labels for the predictor variables
 void SurfData::setXLabels(std::vector<std::string>& labels)
 {
@@ -622,7 +557,8 @@ void SurfData::write(const std::string& filename) const
   } else if (binary) {
     writeBinary(outfile);
   } else {
-    writeText(outfile);
+    // Write the header info for .spd, not for .dat
+    writeText(outfile, surfpack::hasExtension(filename,".spd"));
   }
   outfile.close();
 }
@@ -641,8 +577,6 @@ void SurfData::read(const string& filename)
     readText(infile);
   }
   // Object may have already been created
-  valid.xMatrix = false;
-  valid.yVector = false;
   infile.close();
 }
 
@@ -653,17 +587,22 @@ void SurfData::writeBinary(ostream& os) const
   os.write((char*)&s,sizeof(s));
   os.write((char*)&xsize,sizeof(xsize));
   os.write((char*)&fsize,sizeof(fsize));
+  ///\todo accumulate all the writes into one big chunk of data
+  /// and write it out all at once.
   for (unsigned i = 0; i < mapping.size(); i++) {
     points[mapping[i]]->writeBinary(os);
   }
 }
 
 /// Write a set of SurfPoints to an output stream
-void SurfData::writeText(ostream& os) const
+void SurfData::writeText(ostream& os, bool write_header) const
 {
-    os << mapping.size() << endl
-       << xsize << endl 
-       << fsize << endl;
+    if (write_header) {
+      os << mapping.size() << endl
+         << xsize << endl 
+         << fsize << endl;
+    }
+    os << '%';
     for (unsigned i = 0; i < xLabels.size(); i++) {
       os << setw(surfpack::field_width) << xLabels[i];
     }
@@ -672,6 +611,7 @@ void SurfData::writeText(ostream& os) const
     }
     os << endl;
     for (unsigned i = 0; i < mapping.size(); i++) {
+      if (!write_header) os << setw((int)log10(mapping.size())+2) << (i+1);
       points[mapping[i]]->writeText(os);
     }
 }
@@ -679,7 +619,11 @@ void SurfData::writeText(ostream& os) const
 /// Read a set of SurfPoints from an input stream
 void SurfData::readBinary(istream& is) 
 {
-  unsigned numPointsRead = 0;
+  ///\todo Eliminate need for SurfPoint constructor that takes istream
+  ///Instead, allocate a big chunk of memory, read all of the data in
+  /// at the same time, then iterate through the block of data and
+  /// create SurfPoints using the constructor that takes x and f.
+  unsigned n_points_read = 0;
   unsigned size;
   try {
     cleanup();
@@ -687,68 +631,78 @@ void SurfData::readBinary(istream& is)
     is.read((char*)&xsize,sizeof(xsize));
     is.read((char*)&fsize,sizeof(fsize));
     points.clear();
-    for (numPointsRead = 0; numPointsRead < size; numPointsRead++) {
+    for (n_points_read = 0; n_points_read < size; n_points_read++) {
       // Throw an exception if we hit the end-of-file before we've
       // read the number of points that were supposed to be there.
       surfpack::checkForEOF(is);
       // True for fourth argument signals a binary read
-      this->addPoint(SurfPoint(xsize,fsize,is,true));  
+      this->addPoint(SurfPoint(xsize,fsize,is));  
     }
     defaultMapping();
   } catch(surfpack::io_exception&) {
     cerr << "Expected: " << size << " points.  "
-         << "Read: " << numPointsRead << " points." << endl;
+         << "Read: " << n_points_read << " points." << endl;
     throw;
   } 
 }
 
-/// Read a set of SurfPoints from an input stream
-void SurfData::readText(istream& is) 
+unsigned SurfData::readHeaderInfo(istream& is)
 {
-  unsigned numPointsRead = 0;
-  unsigned size;
-  try {
-    cleanup();
-    string sline;
-    getline(is,sline);
-    istringstream streamline(sline);
-    streamline >> size;
-    getline(is,sline);
-    streamline.str(sline);
-    streamline.clear();
+    unsigned declared_size;
+    string single_line;
+    getline(is,single_line);
+    istringstream streamline(single_line);
+    streamline >> declared_size;
+    getline(is,single_line);
+    streamline.str(single_line); streamline.clear();
     streamline >> xsize;
-    getline(is,sline);
-    streamline.str(sline);
+    getline(is,single_line);
+    streamline.str(single_line);
     streamline.clear();
     streamline >> fsize;
-    points.clear();
+    return declared_size;
+}
 
-    getline(is,sline);
-    streamline.str(sline);
-    streamline.clear();
-    if (!readLabelsIfPresent(streamline)) {
-      defaultLabels();
-      if (sline != "" && sline != "\n") {
-        istringstream firstpoint(sline);
-        this->addPoint(SurfPoint(xsize,fsize,firstpoint,false));
-        numPointsRead = 1;
+/// Read a set of SurfPoints from an input stream
+void SurfData::readText(istream& is, bool read_header, unsigned skip_columns) 
+{
+  unsigned n_points_read = 0;
+  unsigned declared_size = 0;
+  string single_line;
+  try {
+    cleanup();
+    points.clear();
+    if (read_header) declared_size = readHeaderInfo(is);
+
+    getline(is,single_line);
+    istringstream streamline(single_line);
+    if (!readLabelsIfPresent(single_line)) {
+      if (single_line != "" && single_line != "\n" && single_line[0] != '%') {
+        this->addPoint(SurfPoint(xsize,fsize,single_line));
+        n_points_read = 1;
       }
     }
-    while (numPointsRead < size) {
+    while (!is.eof()) {
       // Throw an exception if we hit the end-of-file before we've
       // read the number of points that were supposed to be there.
-      surfpack::checkForEOF(is);
+      //surfpack::checkForEOF(is);
+      getline(is,single_line);
+      if (single_line[0] == '%' || single_line == "") continue;
       // False for last argument signals a text read
-      this->addPoint(SurfPoint(xsize,fsize,is,false));  
-      numPointsRead++;
+      this->addPoint(SurfPoint(xsize,fsize,single_line, skip_columns));  
+      n_points_read++;
     }
     defaultMapping();
-  } catch(surfpack::io_exception& ioException) {
-    cerr << ioException.what() << endl
-         << "Expected: " << size << " points.  "
-         << "Read: " << numPointsRead << " points." << endl;
+  } catch(surfpack::io_exception& exception) {
+    cerr << exception.what() << endl;
     throw;
   } 
+  if (read_header && n_points_read != declared_size) {
+    ostringstream errormsg;
+    errormsg << "Expected: " << declared_size << " points.  "
+         << "Read: " << n_points_read << " points." << endl;
+    throw surfpack::io_exception(errormsg.str());
+  }
 }
 
 // Print set of data points to a stream. 
@@ -769,6 +723,8 @@ bool SurfData::hasBinaryFileExtension(const std::string& filename) const
   if (surfpack::hasExtension(filename,".bspd")) {
     return true;
   } else if (surfpack::hasExtension(filename,".spd")) {
+    return false;
+  } else if (surfpack::hasExtension(filename,".dat")) {
     return false;
   } else {
     throw surfpack::io_exception(
@@ -810,10 +766,12 @@ void SurfData::defaultLabels()
   }
 }
 
-bool SurfData::readLabelsIfPresent(std::istream& is)
+bool SurfData::readLabelsIfPresent(std::string single_line)
 {
+  if (single_line[0] == '%') single_line[0] = ' ';
   string label;
   xLabels.resize(xsize);
+  istringstream is(single_line);
   for (unsigned i = 0; i < xsize; i++) {
     is >> label;
     int first = label.find('\'');
@@ -822,6 +780,9 @@ bool SurfData::readLabelsIfPresent(std::istream& is)
 #else
     if (first <= label.size() || first > 0) {
 #endif
+      // Then there is an unquoted token on this line, so this is not a valid 
+      // line of column headings.  Use the default headings and return.
+      defaultLabels();
       return false;
     }
     xLabels[i] = label;

@@ -30,6 +30,13 @@ void SurfpackInterface::Load(SurfData*& data, const std::string filename)
   assert(data);
 }
 
+void SurfpackInterface::Load(SurfData*& data, const std::string filename,
+  unsigned n_vars, unsigned n_responses, unsigned skip_columns)
+{
+  data = new SurfData(filename,n_vars,n_responses,skip_columns);
+  assert(data);
+}
+
 void SurfpackInterface::Load(Surface*& surface, const std::string filename)
 {
   surface = SurfaceFactory::createSurface(filename);
@@ -172,7 +179,8 @@ void SurfpackInterpreter::executeLoad(const ParsedCommand& c)
   string filename = SurfpackParser::parseStringLiteral("file",c.arglist);
   if (surfpack::hasExtension(filename,".sps")) {
     executeLoadSurface(c);
-  } else if (surfpack::hasExtension(filename,".spd")) {
+  } else if (surfpack::hasExtension(filename,".spd") ||
+	     surfpack::hasExtension(filename,".dat")) {
     executeLoadData(c);
   } else {
     throw string("Non text file extension not currently supported");
@@ -181,10 +189,20 @@ void SurfpackInterpreter::executeLoad(const ParsedCommand& c)
 
 void SurfpackInterpreter::executeLoadData(const ParsedCommand& c)
 {
+  SurfData* data = 0;
   string name = SurfpackParser::parseIdentifier("name",c.arglist);
   string filename = SurfpackParser::parseStringLiteral("file",c.arglist);
-  SurfData* data = 0;
-  Load(data,filename);
+  bool valid = false;
+  int n_vars = 
+    SurfpackParser::parseInteger("n_vars", c.arglist,valid,false);
+  if (valid) {
+    // n_responses and required if n_vars is present
+    int n_responses = 
+      SurfpackParser::parseInteger("n_responses", c.arglist,valid,true);
+    Load(data,filename,n_vars,n_responses,1);
+  } else {
+    Load(data,filename);
+  }
   assert(data);
   symbolTable.dataVars.insert(SurfDataSymbol(name,data));
 }

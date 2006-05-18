@@ -18,6 +18,8 @@ class SurfpackParser;
 namespace SurfpackInterface
 {
   void Load(SurfData*& data, const std::string filename);
+  void Load(SurfData*& data, const std::string filename,
+    unsigned n_vars, unsigned n_responses, unsigned skip_columns);
   void Load(Surface*& surface, const std::string filename);
   //void Load(const std::string filename);
   void Save(SurfData* data, const std::string filename);

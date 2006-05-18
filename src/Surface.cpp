@@ -462,6 +462,7 @@ void Surface::setData(SurfData* sd_)
     dataModified = true;
   }
   responseIndex = sd ? sd->getDefaultIndex() : 0;
+  if (sd) xsize = sd->xSize();
 }
   
 /// Causes the data to be scaled along each dimension so that all of the

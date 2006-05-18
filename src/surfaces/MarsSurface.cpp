@@ -99,7 +99,7 @@ unsigned MarsSurface::minPointsRequired() const
       "Dimensionality of data needed to determine number of required samples."
     );
   } else {
-    return 4*xsize; 
+    return xsize+1; 
   }
 }
 

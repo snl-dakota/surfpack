@@ -900,7 +900,7 @@ void RBFNetSurface::readBinary(std::istream& is)
   double weight;
   centers.clear();
   for (unsigned j = 0; j < numcenters; j++) {
-    centers.push_back(SurfPoint(n_dimensions,0,is,true));
+    centers.push_back(SurfPoint(n_dimensions,0,is));
     is.read(reinterpret_cast<char*>(&size),sizeof(size));
     sizes.push_back(size);
     is.read(reinterpret_cast<char*>(&weight),sizeof(weight));
@@ -932,7 +932,8 @@ void RBFNetSurface::readText(std::istream& is)
   double weight;
   for (unsigned j = 0; j < numcenters; j++) {
     // read the location of a center in as a surfpoint
-    centers.push_back(SurfPoint(n_dimensions,0,is,false));
+    getline(is,sline);
+    centers.push_back(SurfPoint(n_dimensions,0,sline));
     //centers[j].writeText(cout);
     //cout << endl;
     // read size of rbf center;

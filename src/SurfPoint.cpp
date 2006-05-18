@@ -38,15 +38,20 @@ SurfPoint::SurfPoint(const vector<double>& x, const vector<double>& f)
   init();
 }
 
-/// Read point from istream in either text or binary format
-SurfPoint::SurfPoint(unsigned xsize, unsigned fsize, istream& is, bool binary) 
+/// Read point from istream in binary format
+SurfPoint::SurfPoint(unsigned xsize, unsigned fsize, istream& is) 
   : x(xsize), f(fsize)
 {
-  if (binary) {
-    readBinary(is);
-  } else { 
-    readText(is);
-  }
+  readBinary(is);
+  init();
+}
+
+/// Read point from string in text format
+SurfPoint::SurfPoint(unsigned xsize, unsigned fsize, const string& single_line,
+  unsigned skip_columns) 
+  : x(xsize), f(fsize)
+{
+  readText(single_line, skip_columns);
   init();
 }
 
@@ -318,15 +323,15 @@ void SurfPoint::readBinary(istream& is)
   }
 }
 
-void SurfPoint::readText(istream& is)
+void SurfPoint::readText(const string& single_line, unsigned skip_columns) 
 {
   unsigned xValsRead = 0;
   unsigned fValsRead = 0;
+  string dummy;
   try {
     // read the point as text
-    string sline;
-    getline(is,sline);
-    istringstream streamline(sline);
+    istringstream streamline(single_line);
+    for (unsigned i = 0; i < skip_columns; i++) streamline >> dummy;
     for (xValsRead = 0; xValsRead < x.size(); xValsRead++) {
        // Throw an exception if there are fewer values on this line that
        // expected.
@@ -340,7 +345,8 @@ void SurfPoint::readText(istream& is)
        streamline >> f[fValsRead];
     }
   } catch (surfpack::io_exception&) {
-    cerr << "\nExpected on this line: " << x.size() << " domain value(s) "
+    cerr << "Bad SurfPoint: " << single_line 
+	 << "\nExpected on this line: " << x.size() << " domain value(s) "
          << "and " << f.size() << " response value(s)." << endl
          << "Found: " << xValsRead << " domain value(s) and " 
          << fValsRead << " response value(s)." << endl;
