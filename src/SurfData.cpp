@@ -611,7 +611,9 @@ void SurfData::writeText(ostream& os, bool write_header) const
     }
     os << endl;
     for (unsigned i = 0; i < mapping.size(); i++) {
-      if (!write_header) os << setw((int)log10(mapping.size())+2) << (i+1);
+      if (!write_header) {
+        os << setw((int)log10((double)(mapping.size())+2)) << (i+1);
+      }
       points[mapping[i]]->writeText(os);
     }
 }
