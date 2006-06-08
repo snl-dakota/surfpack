@@ -15,6 +15,7 @@
 #include "KrigingCPPSurface.h"
 #include "KrigingSurface.h"
 #include "MarsSurface.h"
+#include "MarsValidator.h"
 #include "PolynomialSurface.h"
 #include "RBFNetSurface.h"
 
@@ -34,6 +35,8 @@ Surface* SurfaceFactory::createSurface(const string& filename)
     return new KrigingSurface(filename);
   } else if (name == "mars") {
     return new MarsSurface(filename);
+  } else if (name == "marsc") {
+    return new MarsCppSurface(filename);
   } else if (name == "rbf") {
     return new RBFNetSurface(filename);
   } else if (name == "ann") {
@@ -58,6 +61,8 @@ Surface* SurfaceFactory::createSurface(const string& type, SurfData* sd)
     return new KrigingCPPSurface(sd);
   } else if (type == "mars") {
     return new MarsSurface(sd);
+  } else if (type == "marsc") {
+    return new MarsCppSurface(sd);
   } else if (type == "rbf") {
     return new RBFNetSurface(sd);
   } else if (type == "ann") {
