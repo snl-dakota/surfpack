@@ -224,7 +224,8 @@ public:
   void writeBinary(std::ostream& os) const;
 
   /// Write the surface in text format
-  void writeText(std::ostream& os, bool write_header = true) const ; 
+  void writeText(std::ostream& os, bool write_header = true,
+    bool write_labels = true) const ; 
 
   /// Read the surface in binary format
   void readBinary(std::istream& is); 

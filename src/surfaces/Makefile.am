@@ -7,6 +7,8 @@ libsurfaces_la_SOURCES = KrigingSurface.cpp \
 			 KrigingCPPSurface.h \
 			 MarsSurface.cpp \
 			 MarsSurface.h \
+			 MarsValidator.cpp \
+			 MarsValidator.h \
 			 RBFNetSurface.cpp \
 			 RBFNetSurface.h \
 			 ANNSurface.cpp \

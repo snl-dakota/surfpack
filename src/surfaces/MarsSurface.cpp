@@ -39,7 +39,7 @@ void printIntMatrix(int* mat, unsigned rows, unsigned columns, ostream& os)
 // Data members 
 //_____________________________________________________________________________
 
-const string MarsSurface::name = "Mars";
+const string MarsSurface::name = "mars";
 
 //_____________________________________________________________________________
 // Creation, Destruction, Initialization

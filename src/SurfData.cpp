@@ -557,8 +557,9 @@ void SurfData::write(const std::string& filename) const
   } else if (binary) {
     writeBinary(outfile);
   } else {
-    // Write the header info for .spd, not for .dat
-    writeText(outfile, surfpack::hasExtension(filename,".spd"));
+    // Write the header and label info for .spd, not for .dat
+    bool metadata = surfpack::hasExtension(filename,".spd");
+    writeText(outfile, metadata, metadata);
   }
   outfile.close();
 }
@@ -595,25 +596,27 @@ void SurfData::writeBinary(ostream& os) const
 }
 
 /// Write a set of SurfPoints to an output stream
-void SurfData::writeText(ostream& os, bool write_header) const
+void SurfData::writeText(ostream& os, bool write_header, bool write_labels) const
 {
     if (write_header) {
       os << mapping.size() << endl
          << xsize << endl 
          << fsize << endl;
     }
-    os << '%';
-    for (unsigned i = 0; i < xLabels.size(); i++) {
-      os << setw(surfpack::field_width) << xLabels[i];
-    }
-    for (unsigned i = 0; i < fLabels.size(); i++) {
-      os << setw(surfpack::field_width) << fLabels[i];
-    }
-    os << endl;
-    for (unsigned i = 0; i < mapping.size(); i++) {
-      if (!write_header) {
-        os << setw((int)log10((double)(mapping.size())+2)) << (i+1);
+    if (write_labels) {
+      os << '%';
+      for (unsigned i = 0; i < xLabels.size(); i++) {
+        os << setw(surfpack::field_width) << xLabels[i];
       }
+      for (unsigned i = 0; i < fLabels.size(); i++) {
+        os << setw(surfpack::field_width) << fLabels[i];
+      }
+      os << endl;
+    }
+    for (unsigned i = 0; i < mapping.size(); i++) {
+      //if (!write_header) {
+      //  os << setw((int)log10((double)(mapping.size())+2)) << (i+1);
+      //}
       points[mapping[i]]->writeText(os);
     }
 }
