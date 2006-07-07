@@ -194,12 +194,15 @@ void SurfpackInterpreter::executeLoadData(const ParsedCommand& c)
   string filename = SurfpackParser::parseStringLiteral("file",c.arglist);
   bool valid = false;
   int n_vars = 
-    SurfpackParser::parseInteger("n_vars", c.arglist,valid,false);
+    SurfpackParser::parseInteger("n_predictors", c.arglist,valid,false);
   if (valid) {
-    // n_responses and required if n_vars is present
+    // n_responses is required if n_vars is present
     int n_responses = 
       SurfpackParser::parseInteger("n_responses", c.arglist,valid,true);
-    Load(data,filename,n_vars,n_responses,1);
+    int n_cols_to_skip = 
+      SurfpackParser::parseInteger("n_cols_to_skip", c.arglist,valid,false);
+    if (!valid) n_cols_to_skip = 0;
+    Load(data,filename,n_vars,n_responses,n_cols_to_skip);
   } else {
     Load(data,filename);
   }
@@ -275,7 +278,35 @@ void SurfpackInterpreter::executeSaveSurface(
   Save(surface,filename);
   // Call save surface
 }
-
+int getResponseIndex(const ArgList& arglist, const SurfData& sd)
+{
+  bool valid;
+  bool is_response;
+  unsigned int response_index;
+  string response_name = SurfpackParser::parseStringLiteral("response",
+	arglist,false);
+  if (response_name == "") {
+      response_index = 
+      SurfpackParser::parseInteger("response_index",arglist,valid,false);
+      if (!valid) {
+        // Neither response nor response_index specified
+        // Default index is 0
+        return 0;
+      } else {
+        return response_index;
+      }
+  } else {
+    valid = sd.varIndex(response_name, response_index, is_response);
+    if (!valid) {
+      cerr << "No response named '" << response_name << "' found." << endl;
+    } else if (!is_response) {
+      cerr << "'" << response_name << "' is a predictor variable, but a"
+	   << " response variable was requested" << endl;
+    } else {
+      return response_index;
+    }
+  }
+}
 void SurfpackInterpreter::executeCreateSurface(const ParsedCommand& c)
 {
   // Extract the variable name for this SurfData object
@@ -283,12 +314,8 @@ void SurfpackInterpreter::executeCreateSurface(const ParsedCommand& c)
   string data = SurfpackParser::parseIdentifier("data", c.arglist);
   string type = SurfpackParser::parseIdentifier("type", c.arglist);
   bool valid = false;
-  int response_index = 
-    SurfpackParser::parseInteger("response_index", c.arglist,valid,false);
-  if (!valid) {
-    response_index = 0;
-  }
   SurfData* sd = symbolTable.lookupData(data);
+  int response_index = getResponseIndex(c.arglist,*sd);
   // Call CreateSurface
   Surface* surface = 0; 
   CreateSurface(surface,sd,type,response_index);
@@ -306,7 +333,12 @@ void SurfpackInterpreter::executeEvaluate(const ParsedCommand& c)
   Surface* surface = symbolTable.lookupSurface(surf_name);
   SurfData* sd = symbolTable.lookupData(data);
   // Call Evaluate
-  surface->getValue(*sd);  
+  unsigned new_index = surface->getValue(*sd);  
+  string response_name = 
+    SurfpackParser::parseStringLiteral("response", c.arglist, false);
+  if (response_name != "") {
+    sd->setFLabel(new_index,response_name);
+  }
 }
 
 void SurfpackInterpreter::executeFitness(const ParsedCommand& c)

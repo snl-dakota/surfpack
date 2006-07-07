@@ -119,8 +119,8 @@ public:
 
   /// Evaluate the approximation surface at each point in the parameter
   /// surfData object.  Append the evaluations as a new response variable in
-  /// the data set.
-  virtual void getValue(SurfData& surfData);
+  /// the data set.  Return the index of the new response variable
+  virtual unsigned getValue(SurfData& surfData);
 
   virtual void gradient(const std::vector<double> & x, 
     std::vector<double>& gradient_vector);

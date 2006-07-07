@@ -161,7 +161,7 @@ void Surface::getValue(SurfData& surf_data, std::vector<double>& observed_vals,
 /// Evaluate the approximation surface at each point in the parameter
 /// surfData object.  Append the evaluations as a new response variable in
 /// the data set.
-void Surface::getValue(SurfData& surfData)
+unsigned Surface::getValue(SurfData& surfData)
 {
   set<unsigned> emptySet;
   surfData.setExcludedPoints(emptySet);
@@ -169,7 +169,7 @@ void Surface::getValue(SurfData& surfData)
   for (unsigned i = 0; i < surfData.size(); i++) {
     newValues.push_back(getValue(surfData[i].X()));
   }
-  surfData.addResponse(newValues);
+  return surfData.addResponse(newValues);
 }
 
 /// Modify one of the configuration options for this surface type 

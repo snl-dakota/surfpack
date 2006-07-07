@@ -66,7 +66,8 @@ SurfData::SurfData(const string filename, unsigned n_vars, unsigned n_responses,
   unsigned n_cols_to_skip)
 : scaler(0)
 {
-  if (!surfpack::hasExtension(filename,".dat")) {
+  if (!surfpack::hasExtension(filename,".dat") 
+    && !surfpack::hasExtension(filename,".spd")) {
     cerr << "Bad filename: " << filename << endl;
     throw surfpack::io_exception(
       "Expected .dat extension for filename"
@@ -291,20 +292,26 @@ const std::string& SurfData::getFLabel(unsigned index) const
 bool SurfData::varIndex(const std::string& name, unsigned& index, 
   bool& isResponse) const
 {
+  //\todo check for apostrophes rather than just assuming they're there
+  // Strip off the apostrophes at the beginning and end
+  string unquoted_name = name;
+  if (name.find('\'') != string::npos) {
+    unquoted_name = string(name,1,name.size()-2);
+  }
   vector< string>::const_iterator iter = 
-    find(xLabels.begin(),xLabels.end(),name);
+    find(xLabels.begin(),xLabels.end(),unquoted_name);
   if (iter != xLabels.end()) {
     index = iter - xLabels.begin();
     isResponse = false;
     return true;
   } else {
-    iter = find(fLabels.begin(),fLabels.end(),name);
+    iter = find(fLabels.begin(),fLabels.end(),unquoted_name);
     if (iter != fLabels.end()) {
       index = iter - fLabels.begin();
       isResponse = true;
       return true;
     } else {
-      cout << "Name sought: " << name << endl;
+      cout << "Name sought: " << unquoted_name << endl;
       cout << "Predictors: " << endl;
       copy(xLabels.begin(),xLabels.end(),ostream_iterator<string>(cout,"\n"));
       cout << "Responses: " << endl;
@@ -426,7 +433,7 @@ unsigned SurfData::addResponse(const vector<double>& newValues,
     fLabels.push_back(label);
   } else {
     ostringstream labelos;
-    labelos << "'f" << new_index << "'";
+    labelos << "f" << new_index ;
     fLabels.push_back(labelos.str());
   }
   return new_index;
@@ -528,10 +535,21 @@ void SurfData::setXLabels(std::vector<std::string>& labels)
 /// Set the labels for the response variables
 void SurfData::setFLabels(std::vector<std::string>& labels)
 {
-  if (labels.size() != xsize) {
+  if (labels.size() != fsize) {
     throw string("Dim mismatch in SurfData::setFLabels");
   }
   fLabels = labels;
+
+}
+
+/// Set the label for a single response variable
+void SurfData::setFLabel(unsigned index, std::string response_name)
+{
+  if (index >= fsize) {
+    throw string("Dim mismatch in SurfData::setFLabel");
+  }
+  fLabels[index] = response_name;
+  
 
 }
 
@@ -559,7 +577,7 @@ void SurfData::write(const std::string& filename) const
   } else {
     // Write the header and label info for .spd, not for .dat
     bool metadata = surfpack::hasExtension(filename,".spd");
-    writeText(outfile, metadata, metadata);
+    writeText(outfile, false, metadata);
   }
   outfile.close();
 }
@@ -754,48 +772,53 @@ void SurfData::notifyListeners(int msg)
   }
 }
 
-/// Set x vars labels to 'x0' 'x1', etc.; resp. vars to 'f0' 'f1', etc.
+/// Set x vars labels to x0 x1, etc.; resp. vars to f0 f1, etc.
 void SurfData::defaultLabels()
 {
   xLabels.resize(xsize);
   for (unsigned i = 0; i < xsize; i++) {
     ostringstream os;
-    os << "'x" << i << "'";
+    os << "x" << i ;
     xLabels[i] = os.str();
   }
   fLabels.resize(fsize);
   for (unsigned i = 0; i < fsize; i++) {
     ostringstream os;
-    os << "'f" << i << "'";
+    os << "f" << i ;
     fLabels[i] = os.str();
   }
 }
 
 bool SurfData::readLabelsIfPresent(std::string single_line)
 {
-  if (single_line[0] == '%') single_line[0] = ' ';
-  string label;
-  xLabels.resize(xsize);
-  istringstream is(single_line);
-  for (unsigned i = 0; i < xsize; i++) {
-    is >> label;
-    int first = label.find('\'');
-#ifdef HAVE_STD
-    if (first == string::npos) {
-#else
-    if (first <= label.size() || first > 0) {
-#endif
-      // Then there is an unquoted token on this line, so this is not a valid 
-      // line of column headings.  Use the default headings and return.
-      defaultLabels();
-      return false;
-    }
-    xLabels[i] = label;
-  }
-  fLabels.resize(fsize);
-  for (unsigned i = 0; i < fsize; i++) {
-    is >> fLabels[i];
-  }
+  if (single_line[0] != '%') {
+    defaultLabels();
+    return false;
+  } else {
+    single_line[0] = ' ';
+    string label;
+    xLabels.resize(xsize);
+    istringstream is(single_line);
+    for (unsigned i = 0; i < xsize; i++) {
+      is >> xLabels[i];
+      if (xLabels[i] == "") { 
+        // not enough heading names 
+        // line of column headings.  Use the default headings and return.
+        defaultLabels();
+        return false;
+      }
+    } // predictor variable labels
+    fLabels.resize(fsize);
+    for (unsigned i = 0; i < fsize; i++) {
+      is >> fLabels[i];
+      if (fLabels[i] == "") { 
+        // not enough heading names 
+        // line of column headings.  Use the default headings and return.
+        defaultLabels();
+        return false;
+      }
+    } // response variable labels
+  } // custom labels
   return true;
 }
 // ____________________________________________________________________________

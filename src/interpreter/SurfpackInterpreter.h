@@ -63,7 +63,6 @@ public:
   void executeGridSample(const ParsedCommand& command);
   void executeMonteCarloSample(const ParsedCommand& command);
   void executeShellCommand(const ParsedCommand& command);
-  
 protected:
   class command_error 
   {

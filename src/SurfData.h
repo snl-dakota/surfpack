@@ -201,6 +201,9 @@ public:
   /// Set the labels for the response variables
   void setFLabels(std::vector<std::string>& labels);
 
+  /// Set the label for a single response variable
+  void setFLabel(unsigned index, std::string);
+
 private:
   /// Maps all indices to themselves in the mapping data member
   void defaultMapping();
