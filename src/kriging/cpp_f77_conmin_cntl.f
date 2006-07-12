@@ -1,17 +1,10 @@
-c      _______________________________________________________________________
-c     
-c      Surfpack: A Software Library of Multidimensional Surface Fitting Methods
-c      Copyright (c) 2006, Sandia National Laboratories.
-c      This software is distributed under the GNU General Public License.
-c      For more information, see the README file in the top Surfpack directory.
-c      _______________________________________________________________________ 
 c _______________________________________________________________________
 c
-c DAKOTA: Design Analysis Kit for Optimization and Terascale Applications
-c Copyright (c) 2001, Sandia National Laboratories.
+c Surfpack: A Software Library of Multidimensional Surface Fitting Methods
+c Copyright (c) 2006, Sandia National Laboratories.
 c This software is distributed under the GNU General Public License.
-c For more information, see the README file in the top Dakota directory.
-c _______________________________________________________________________ 
+c For more information, see the README file in the top Surfpack directory.
+c _______________________________________________________________________
 c
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c234567

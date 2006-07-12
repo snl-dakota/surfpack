@@ -1,10 +1,10 @@
-c      _______________________________________________________________________
-c     
-c      Surfpack: A Software Library of Multidimensional Surface Fitting Methods
-c      Copyright (c) 2006, Sandia National Laboratories.
-c      This software is distributed under the GNU General Public License.
-c      For more information, see the README file in the top Surfpack directory.
-c      _______________________________________________________________________ 
+c _______________________________________________________________________
+c
+c Surfpack: A Software Library of Multidimensional Surface Fitting Methods
+c Copyright (c) 2006, Sandia National Laboratories.
+c This software is distributed under the GNU General Public License.
+c For more information, see the README file in the top Surfpack directory.
+c _______________________________________________________________________
 c
 c Sample user coded driver program for running MARS 3.6
 c

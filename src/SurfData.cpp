@@ -5,6 +5,7 @@
     This software is distributed under the GNU General Public License.
     For more information, see the README file in the top Surfpack directory.
     _______________________________________________________________________ */
+
 #include "surfpack_config.h"
 #include "surfpack.h"
 #include "SurfData.h"
