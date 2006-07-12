@@ -5,6 +5,7 @@
     This software is distributed under the GNU General Public License.
     For more information, see the README file in the top Surfpack directory.
     _______________________________________________________________________ */
+
 /* parser for surfpack */
 
 %{
