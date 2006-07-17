@@ -11,6 +11,23 @@
 using namespace std;
 using namespace SurfpackInterface;
 
+// Modified from http://mywebpage.netscape.com/yongweiwu/timeval.h.txt
+#if !defined(HAVE_GETTIMEOFDAY) && (defined(_MSC_VER) || defined(__MINGW32__))
+#include <windows.h>
+int gettimeofday (struct timeval *tv, void* tz)
+{
+  union {
+    __int64 ns100; /*time since 1 Jan 1601 in 100ns units */
+    FILETIME ft;
+  } now;
+
+  GetSystemTimeAsFileTime (&now.ft);
+  tv->tv_usec = (long) ((now.ns100 / 10LL) % 1000000LL);
+  tv->tv_sec = (long) ((now.ns100 - 116444736000000000LL) / 10000000LL);
+  return (0);
+}
+#endif
+
 double time_difference(struct timeval& starttime, struct timeval& endtime)
 {
   return (((double)endtime.tv_sec+(1.0e-06)*endtime.tv_usec) -

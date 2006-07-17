@@ -8,14 +8,6 @@
 
 #include "surfpack_config.h"
 
-/*  _______________________________________________________________________
-
-    DAKOTA: Design Analysis Kit for Optimization and Terascale Applications
-    Copyright (c) 2001, Sandia National Laboratories.
-    This software is distributed under the GNU General Public License.
-    For more information, see the README file in the top Dakota directory.
-    _______________________________________________________________________ */
-
 /*
  * File: random.C
  * -----------------
@@ -35,8 +27,6 @@
 #include <stdlib.h>
 #endif
 
-extern "C" void srand48(long int);
-
 using namespace std;
 /*
  * Function: gen_dscrno
@@ -47,7 +37,6 @@ using namespace std;
  */
 
 #define eps 1.0e-10
-double drand48(void);
 int gen_dscrno(int low,int high)
 {
    double x;

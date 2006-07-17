@@ -124,6 +124,10 @@ found_cppunit=yes
 ]))
 AM_CONDITIONAL(HAVE_CPPUNIT, test "$found_cppunit" = "yes")
 
+
+# Checks for library functions.
+AC_CHECK_FUNCS([gettimeofday drand48 srand48])
+
 # Autoconf creates a configure script.  When that configure script is
 # run, the appropriate Makefile.in files are created.  The .in
 # suffixes are not listed explicitly here, but that's what happens.

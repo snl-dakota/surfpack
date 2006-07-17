@@ -8,14 +8,6 @@
 
 #include "surfpack_config.h"
 
-/*  _______________________________________________________________________
-
-    DAKOTA: Design Analysis Kit for Optimization and Terascale Applications
-    Copyright (c) 2001, Sandia National Laboratories.
-    This software is distributed under the GNU General Public License.
-    For more information, see the README file in the top Dakota directory.
-    _______________________________________________________________________ */
-
 #ifndef SYSTEM_DEFS_H
 #define SYSTEM_DEFS_H
 

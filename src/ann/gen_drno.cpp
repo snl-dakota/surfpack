@@ -8,14 +8,6 @@
 
 #include "surfpack_config.h"
 
-/*  _______________________________________________________________________
-
-    DAKOTA: Design Analysis Kit for Optimization and Terascale Applications
-    Copyright (c) 2001, Sandia National Laboratories.
-    This software is distributed under the GNU General Public License.
-    For more information, see the README file in the top Dakota directory.
-    _______________________________________________________________________ */
-
 /*	This file is stored in gen_drno.c.
 	Its purpose is to generate random numbers from various random 
 	number sources.  At each call the parameter type must be specified,
