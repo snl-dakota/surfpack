@@ -68,6 +68,8 @@ public:
   virtual const Tuple& getTuple() const;
   static const std::vector< double >& 
     asVectorDouble(std::vector<double>& result, const Tuple& tuple);
+  static const std::vector< std::string >& 
+    asVectorString(std::vector<std::string>& result, const Tuple& tuple);
   virtual const std::string& argType() const;
 private:
   Tuple value;

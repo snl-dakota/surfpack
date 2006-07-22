@@ -148,6 +148,17 @@ RvalTuple::asVectorDouble(std::vector< double >& result, const Tuple& tuple)
   return result;
 }
 
+const std::vector< std::string >& 
+RvalTuple::asVectorString(std::vector< std::string >& result, 
+  const Tuple& tuple)
+{
+  result.resize(tuple.size());
+  for (unsigned i = 0; i < tuple.size(); i++) {
+    result[i] = tuple[i];
+  }
+  return result;
+}
+
 RvalTriplet::RvalTriplet(const Triplet& value_in) : value(value_in) 
 {
 
