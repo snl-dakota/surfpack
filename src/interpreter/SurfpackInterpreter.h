@@ -19,22 +19,21 @@ namespace SurfpackInterface
   void Load(SurfData*& data, const std::string filename,
     unsigned n_vars, unsigned n_responses, unsigned skip_columns);
   void Load(Surface*& surface, const std::string filename);
-  //void Load(const std::string filename);
   void Save(SurfData* data, const std::string filename);
   void Save(Surface* surface, const std::string filename);
-  // void Save(Surface* surface);
-  // void Save(SurfData* surface);
   void CreateSurface(Surface*& surface, SurfData* data, const std::string type, 
     int response_index = 0);
   void Evaluate(Surface* surface, SurfData* data);
   double Fitness(Surface* surface, const std::string metric, 
-         SurfData* data = 0, int response_index = 0);
+    SurfData* data = 0, int response_index = 0);
+  double Fitness(Surface* surface, unsigned n, 
+    SurfData* data = 0, int response_index = 0);
   void CreateAxes(AxesBounds*&, const std::string infostring,
-         AxesBounds::ParamType pt);
-  void GridSample(SurfData*& data, AxesBounds* axes, 
-                   std::vector< std::string > test_functions);
-  void MonteCarloSample(SurfData*& data, AxesBounds* axes, unsigned num_samples, 		std::vector< std::string > test_functions);
-  
+    AxesBounds::ParamType pt);
+  void CreateSample(SurfData*& data, AxesBounds* axes, 
+    std::vector<double>& grid_points, std::vector<std::string> test_functions);
+  void CreateSample(SurfData*& data, AxesBounds* axes, 
+    unsigned size, std::vector<std::string> test_functions);
 };
 
 class SurfpackInterpreter
@@ -42,24 +41,24 @@ class SurfpackInterpreter
 public:
   SurfpackInterpreter();
   ~SurfpackInterpreter();
-  void execute(const std::string* input_string = 0, const std::string* output_string = 0);
+  void execute(const std::string* input_string = 0, 
+    const std::string* output_string = 0);
   void commandLoop(std::ostream& os = std::cout, std::ostream& es = std::cerr);
 
   // individual surfpack commands
+  void executeConvertData(const ParsedCommand& command);
+  void executeConvertSurface(const ParsedCommand& command);
+  void executeCreateAxes(const ParsedCommand& command);
+  void executeCreateSample(const ParsedCommand& command);
+  void executeCreateSurface(const ParsedCommand& command);
+  void executeEvaluate(const ParsedCommand& command);
+  void executeFitness(const ParsedCommand& command);
   void executeLoad(const ParsedCommand& command);
   void executeLoadData(const ParsedCommand& command);
   void executeLoadSurface(const ParsedCommand& command);
+  void executeSave(const ParsedCommand& command);
   void executeSaveData(const ParsedCommand& command);
   void executeSaveSurface(const ParsedCommand& command);
-  void executeSave(const ParsedCommand& command);
-  void executeCreateSurface(const ParsedCommand& command);
-  void executeConvertData(const ParsedCommand& command);
-  void executeConvertSurface(const ParsedCommand& command);
-  void executeEvaluate(const ParsedCommand& command);
-  void executeFitness(const ParsedCommand& command);
-  void executeCreateAxes(const ParsedCommand& command);
-  void executeGridSample(const ParsedCommand& command);
-  void executeMonteCarloSample(const ParsedCommand& command);
   void executeShellCommand(const ParsedCommand& command);
 protected:
   class command_error 
@@ -74,7 +73,6 @@ protected:
     std::string msg;
     std::string cmdstring;
   };
-
 public:
   typedef std::pair<std::string, SurfData*> SurfDataSymbol;
   typedef std::map<std::string, SurfData*> SurfDataMap;
@@ -82,8 +80,6 @@ public:
   typedef std::map<std::string, Surface*> SurfaceMap;
   typedef std::pair<std::string, AxesBounds*> AxesBoundsSymbol;
   typedef std::map<std::string, AxesBounds*> AxesBoundsMap;
-  
-  
 private:
   struct SymbolTable
   {

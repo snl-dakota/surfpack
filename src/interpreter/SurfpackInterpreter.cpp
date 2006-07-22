@@ -75,24 +75,39 @@ double SurfpackInterface::Fitness(Surface* surface, const std::string metric,
   return surface->goodnessOfFit(metric,data);
 }
 
+double SurfpackInterface::Fitness(Surface* surface, unsigned n, 
+ SurfData* data, int response_index)
+{
+  assert(surface);
+  if (data) {
+    data->setDefaultIndex(response_index);
+  }
+  SurfData& valid_data = surface->checkData(data);
+  return surface->nFoldCrossValidation(valid_data,n);
+}
+
 void SurfpackInterface::CreateAxes(AxesBounds*& ab, const std::string infostring,
  AxesBounds::ParamType pt)
 {
   ab = new AxesBounds(infostring,pt);
 }
 
-void SurfpackInterface::GridSample(SurfData*& data, AxesBounds* axes, 
-	   std::vector< std::string > test_functions)
+void SurfpackInterface::CreateSample(SurfData*& data, AxesBounds* axes, 
+  std::vector<double>& grid_points, std::vector< std::string > test_functions)
 {
   assert(axes);
-  data = axes->sampleGrid(test_functions);
+  vector<unsigned> int_grid_points(grid_points.size());
+  for (unsigned i = 0; i < grid_points.size(); i++) {
+     int_grid_points[i] = static_cast<unsigned>(grid_points[i]);
+  }
+  data = axes->sampleGrid(int_grid_points,test_functions);
 }
 
-void SurfpackInterface::MonteCarloSample(SurfData*& data, AxesBounds* axes, 
-	unsigned num_samples, std::vector< std::string > test_functions)
+void SurfpackInterface::CreateSample(SurfData*& data, AxesBounds* axes, 
+	unsigned size, std::vector< std::string > test_functions)
 {
   assert(axes);
-  data = axes->sampleMonteCarlo(num_samples, test_functions);
+  data = axes->sampleMonteCarlo(size, test_functions);
 }
 ///////////////////////////////////////////////////////////////////////////////
 /////		SurfpackInterpreter namespace functions			  /////
@@ -126,35 +141,32 @@ void SurfpackInterpreter::commandLoop(std::ostream& os, std::ostream& es)
     try {
       if (commands[i].isShellCommand()) {
 	executeShellCommand(commands[i]);
-      } else if (commands[i].name == "Load") {
-        executeLoad(commands[i]);
-      } else if (commands[i].name == "LoadSurface") {
-        os << commands[i].cmdstring << endl;
-        executeLoadSurface(commands[i]);
-      } else if (commands[i].name == "LoadData") {
-        executeLoadData(commands[i]);
-      } else if (commands[i].name == "Save") {
-        executeSave(commands[i]);
-      } else if (commands[i].name == "SaveSurface") {
-        executeSaveSurface(commands[i]);
-      } else if (commands[i].name == "SaveData") {
-        executeSaveData(commands[i]);
-      } else if (commands[i].name == "ConvertData") {
-        executeConvertData(commands[i]);
-      } else if (commands[i].name == "ConvertSurface") {
-        executeConvertSurface(commands[i]);
+      //} else if (commands[i].name == "ConvertData") {
+      //  executeConvertData(commands[i]);
+      //} else if (commands[i].name == "ConvertSurface") {
+      //  executeConvertSurface(commands[i]);
+      } else if (commands[i].name == "CreateAxes") {
+        executeCreateAxes(commands[i]);
+      } else if (commands[i].name == "CreateSample") {
+        executeCreateSample(commands[i]);
       } else if (commands[i].name == "CreateSurface") {
         executeCreateSurface(commands[i]);
       } else if (commands[i].name == "Evaluate") {
         executeEvaluate(commands[i]);
       } else if (commands[i].name == "Fitness") {
         executeFitness(commands[i]);
-      } else if (commands[i].name == "CreateAxes") {
-        executeCreateAxes(commands[i]);
-      } else if (commands[i].name == "GridSample") {
-        executeGridSample(commands[i]);
-      } else if (commands[i].name == "MonteCarloSample") {
-        executeMonteCarloSample(commands[i]);
+      } else if (commands[i].name == "Load") {
+        executeLoad(commands[i]);
+      //} else if (commands[i].name == "LoadData") {
+      //  executeLoadData(commands[i]);
+      //} else if (commands[i].name == "LoadSurface") {
+      //  executeLoadSurface(commands[i]);
+      } else if (commands[i].name == "Save") {
+        executeSave(commands[i]);
+      //} else if (commands[i].name == "SaveData") {
+      //  executeSaveData(commands[i]);
+      //} else if (commands[i].name == "SaveSurface") {
+      //  executeSaveSurface(commands[i]);
       } else {
         es << "Unrecognized command: " << commands[i].name << endl;
       }
@@ -216,8 +228,7 @@ void SurfpackInterpreter::executeLoadSurface(const ParsedCommand& c)
   symbolTable.surfaceVars.insert(SurfaceSymbol(name,surf));
 }
 
-void SurfpackInterpreter::executeSaveData(
-  const ParsedCommand& c)
+void SurfpackInterpreter::executeSaveData(const ParsedCommand& c)
 {
   string data_name = SurfpackParser::parseIdentifier("data", c.arglist);
   string filename = SurfpackParser::parseStringLiteral("file", c.arglist);
@@ -236,8 +247,7 @@ void SurfpackInterpreter::executeConvertSurface(
 {
 }
 
-void SurfpackInterpreter::executeSave(
-  const ParsedCommand& c)
+void SurfpackInterpreter::executeSave(const ParsedCommand& c)
 {
   string filename = SurfpackParser::parseStringLiteral("file", c.arglist);
   // Don't automatically fail if either of these isn't defined
@@ -276,6 +286,7 @@ void SurfpackInterpreter::executeSaveSurface(
   Save(surface,filename);
   // Call save surface
 }
+
 int getResponseIndex(const ArgList& arglist, const SurfData& sd)
 {
   bool valid;
@@ -305,6 +316,7 @@ int getResponseIndex(const ArgList& arglist, const SurfData& sd)
     }
   }
 }
+
 void SurfpackInterpreter::executeCreateSurface(const ParsedCommand& c)
 {
   // Extract the variable name for this SurfData object
@@ -320,6 +332,42 @@ void SurfpackInterpreter::executeCreateSurface(const ParsedCommand& c)
   surface->configList(c.arglist);
   surface->createModel();
   symbolTable.surfaceVars.insert(SurfaceSymbol(name,surface));
+}
+
+void SurfpackInterpreter::executeCreateSample(const ParsedCommand& c)
+{
+  // Extract the variable name for this SurfData object
+  string name = SurfpackParser::parseIdentifier("name", c.arglist);
+  string axes = SurfpackParser::parseIdentifier("axes", c.arglist);
+  vector<double> grid_points = 
+    SurfpackParser::parseTuple("grid_points", c.arglist, false);
+  vector<string> test_functions = 
+    SurfpackParser::parseStringTuple("test_functions", c.arglist, false);
+  vector<string> x_labels = 
+    SurfpackParser::parseStringTuple("labels", c.arglist, false);
+  bool valid = false;
+  int n_points = SurfpackParser::parseInteger("size",c.arglist,valid,false);
+  AxesBounds* ab = symbolTable.lookupAxes(axes);
+  SurfData* sd = 0;
+  if (valid) {
+    if (!grid_points.empty()) { // both size and grid_points specified
+      cerr << "Cannot specify both size and grid_points variables" << endl;
+      exit(1);
+    } else { // only size specified
+	// MonteCarlo sample
+      SurfpackInterface::CreateSample(sd,ab,n_points,test_functions); 
+    }
+  } else {
+    if (!grid_points.empty()) { // only grid_points specified
+	// grid sample
+      SurfpackInterface::CreateSample(sd,ab,grid_points,test_functions); 
+    } else { // neither specified
+      cerr << "Must specify either size or grid_points" << endl;
+      exit(1);
+    }
+  }
+  if (!x_labels.empty()) sd->setXLabels(x_labels);
+  symbolTable.dataVars.insert(SurfDataSymbol(name,sd));
 }
 
 void SurfpackInterpreter::executeEvaluate(const ParsedCommand& c)
@@ -356,7 +404,14 @@ void SurfpackInterpreter::executeFitness(const ParsedCommand& c)
   if (!valid) { // No response_index was specified, use 0
     response_index = 0;
   }
-  double fitness = Fitness(surface,metric,sd,response_index); 
+  double fitness;
+  if (metric == "cv") {
+    unsigned n = 
+      static_cast<unsigned>(SurfpackParser::parseInteger("n",c.arglist,valid));
+    fitness = Fitness(surface,n,sd,response_index);
+  } else {
+    fitness = Fitness(surface,metric,sd,response_index); 
+  }
   cout << metric << " for " << surf_name;
   if (data != "") cout << " on " << data;
   cout << ": " << fitness << endl;
@@ -373,7 +428,7 @@ void SurfpackInterpreter::executeCreateAxes(const ParsedCommand& c)
   if (bounds == "") {
     if (filename == "") {
       // Do fail if both are missing
-      string msg="CreateAxes command requires 'bounds' or 'filename' argument";
+      string msg="CreateAxes command requires 'bounds' or 'file' argument";
       throw command_error(msg,c.cmdstring);
     } else {
       CreateAxes(sd,filename,AxesBounds::file);
@@ -381,42 +436,13 @@ void SurfpackInterpreter::executeCreateAxes(const ParsedCommand& c)
   } else {
     if (filename != "") {
       // Fail if both are specified 
-      string err = "CreateAxes can't have 'bounds' AND 'filename' arguments";
+      string err = "CreateAxes can't have 'bounds' AND 'file' arguments";
       throw command_error(err,c.cmdstring);
     } else {
       CreateAxes(sd,bounds,AxesBounds::data);
     }
   }
   symbolTable.axesVars.insert(AxesBoundsSymbol(name,sd));
-}
-
-void SurfpackInterpreter::executeGridSample(const ParsedCommand& c)
-{
-  string axes = SurfpackParser::parseIdentifier("axes", c.arglist);
-  string name = SurfpackParser::parseIdentifier("name", c.arglist);
-  AxesBounds* ab = symbolTable.lookupAxes(axes);
-  vector<string> testFunctions =
-    SurfpackParser::parseMultiString("test_function",c.arglist,false);
-  SurfData* grid_data = 0;
-  GridSample(grid_data, ab, testFunctions); 
-  symbolTable.dataVars.insert(SurfDataSymbol(name, grid_data));
-}
-
-void SurfpackInterpreter::executeMonteCarloSample(const ParsedCommand& c)
-{
-  string axes = SurfpackParser::parseIdentifier("axes", c.arglist);
-  string name = SurfpackParser::parseIdentifier("name", c.arglist);
-  AxesBounds* ab = symbolTable.lookupAxes(axes);
-  vector<string> test_functions =
-    SurfpackParser::parseMultiString("test_function",c.arglist,false);
-  bool valid = false;
-  int num_samples = 
-    SurfpackParser::parseInteger("size", c.arglist,valid,false);
-  if (!valid) num_samples = 100; // default value
-  SurfData* mc_data = 0;
-  MonteCarloSample(mc_data,ab,num_samples,test_functions); 
-  symbolTable.dataVars.insert(SurfDataSymbol(name, mc_data));
-
 }
 
 void SurfpackInterpreter::
@@ -477,4 +503,3 @@ AxesBounds* SurfpackInterpreter::SymbolTable::lookupAxes(std::string name)
   assert(iter->second);
   return iter->second;
 }
-
