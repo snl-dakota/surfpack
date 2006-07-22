@@ -16,186 +16,191 @@
 using namespace std;
 
 /// Object is created from an existing list of Axis objects
-AxesBounds::AxesBounds(vector<AxesBounds::Axis> axes_) 
-  : axes(axes_), ndims(axes.size()), point(ndims)
+AxesBounds::AxesBounds(vector<AxesBounds::Axis> axes_in) 
+  : axes(axes_in)
 {
 
 }
 
 /// Object is created from a text file
-AxesBounds::AxesBounds(string fileOrData, ParamType pt) 
+AxesBounds::AxesBounds(string file_or_data, ParamType pt) 
 {
     // Consider a file with the following data:
+    // 0 1 |
+    // 2 |
+    // -1 1
 
-    // 3
-    // v 0 10 10
-    // v 0 10 10
-    // f 5
+    // Each line of the file corresponds to one variable
+    // If there are two values on the line, they represent the minimum
+    // and maximum value for that variable.  If there is only one value
+    // that means that the variable is fixed (fixed variable = oxymoron?).
+    // White space is actually ignored.  The ranges for all dimensions
+    // could be one the same line.  The vertical bars between the values
+    // for different dimensions are required though.
 
-    // The first line indicates that the data set will have three dimensions.
-    // The next line says that the grid should go from 0 to 10 along the first
-    // dimension, with 10 data points.  Because the end points will always be
-    // included, the interval between points will be a little over 1.  (If it
-    // were exactly one, there would be points at 0, 1,..., 10, which would be
-    // 11 points total.  The second dimension also has ten points.  Since these
-    // are the only "variable" dimensions in the data set, the SurfData object
-    // will have 10 x 10 = 100 points.  The last line says that the third 
-    // dimension is fixed at the value 5.  So all 100 data points will have
-    // x[2] = 3.
-    
     // Make sure file is opened successfully.
+    // Note: infile is only used inside case file, but it cannot
+    // be declared inside a switch statement
     assert(pt == file || pt == data);
-    ifstream infile(fileOrData.c_str(), ios::in);
+    ifstream infile(file_or_data.c_str(), ios::in);
     switch(pt) {
-      case file:
+      case file: // the string is a file name
         if (!infile) {
-          throw surfpack::file_open_failure(fileOrData);
+          throw surfpack::file_open_failure(file_or_data);
         } 
         parseBounds(infile);
         break;
-      case data:
-        replace(fileOrData.begin(),fileOrData.end(),'|','\n');
-        istringstream is(fileOrData);
+      case data: // the string actually holds the boundary data
+        istringstream is(file_or_data);
         parseBounds(is);
         break;
     }
     infile.close();
 }    
 
+/// Read (min,max) pairs or a fixed value for each dimension.
+/// Data for different dimensions should be separated by '|' 
 void AxesBounds::parseBounds(std::istream& is)
 {
-
-    // Read the number of dimensions.
-    npts = 1;
-    string sline;
-    getline(is, sline);
-    istringstream istream(sline);
-    istream >> ndims;
-    axes.resize(ndims);
-    point.resize(ndims);
-    // Read the values for each dimension
-    for (int i = 0; i < ndims; i++) {
-        getline(is, sline);
-	istringstream streamline(sline);
-        char c;
-        streamline >> c;
-        // Is this a variable or fixed dimension?
-	if (c == 'v') {
-            // If it's variable, read min, max, and pts.
-            // Then compute the value for interval.
-	    streamline >> axes[i].min >> axes[i].max >> axes[i].pts;
-            if (axes[i].pts > 1) {
-              axes[i].interval = (axes[i].max - axes[i].min)/(axes[i].pts - 1);
-            } else {
-              axes[i].interval = 0.0;
-            }
-	    npts *= axes[i].pts;
-        } else if (c == 'f') {
-            // If it's fixed, read only min and max.  Use dummy values of 1
-            // and 0.0 for the pts and interval fields.
-            streamline >> axes[i].min;
-	    axes[i].max = axes[i].min;
-	    axes[i].pts = 1;
-	    axes[i].interval = 0.0;
-	} else {
-            // Each line after the first MUST begin with 'f' or 'v'.
-            ostringstream msg;
-            msg << "Expected 'f' or 'v' on line " 
-                << i+1
-                << "in AxesBounds::parseBounds" 
-                << endl;
- 	    throw surfpack::io_exception(msg.str());
-	}
+  axes.push_back(Axis());
+  string token;
+  while (!is.eof()) {
+    // read in min for current dimension
+    is >> axes.back().min;
+    // read in next token -- it should be either a '|' or the max for this dim
+    is >> token;
+    if (token == "|") {
+      axes.back().max = axes.back().min;
+      axes.push_back(Axis());
+      continue; // There is no 'max' for this dim; skip to next one
+    } else {
+      axes.back().max = atoi(token.c_str());
+      axes.back().minIsMax = false;
+      // now the next token should be a '|' or eof
+      is >> token;
+      if (is.eof()) break;
+      if (token != "|") {
+        cerr << "Expected |" << endl;
+ 	exit(1);
+      }
+      axes.push_back(Axis());
     }
+  }
+
+#ifdef DEBUG_AXES_BOUND
+  cout << "Axes values parsed" << endl;
+  for (unsigned i = 0; i < axes.size(); i++) {
+    cout << axes[i].min;
+    if (!axes[i].minIsMax) {
+      cout << " " << axes[i].max;
+    }
+    cout << endl;
+  }
+#endif
+      
 }
-     
+
+/// Based on the ranges for each variable contained in axes and the number
+/// of grid points requested per dimension (grid_points), computes and returns t/// the interval between two values on each dimension.
+vector<double> AxesBounds::computeIntervals(vector<Axis>& axes, 
+  const vector<unsigned>& grid_points)
+{
+  assert(axes.size() == grid_points.size());
+  vector<double> intervals(axes.size());
+  for (unsigned i = 0; i < grid_points.size(); i++) {
+    // Treating one as special case avoids div. by zero below
+    if (grid_points[i] == 1) {
+      intervals[i] = 0.0;
+    } else {
+      intervals[i] = (axes[i].max - axes[i].min)/(grid_points[i] - 1);
+    }
+  }
+  return intervals;
+}     
+
 /// No special behavior
 AxesBounds::~AxesBounds()
 {
 
 }
 
-/// Reset the counter used to iterate through dimensions for grid data.
-/// The next point to be added to the data set would be (axes[0].min, 
-/// axes[1].min, ..., axes[ndims - 1].min).
-void AxesBounds::initialize()
-{
-    point.resize(ndims);
-    for (int i = 0; i < ndims; i++) {
-	point[i] = 0;
-    }
-}
 
 /// Advance the counter used to iterate through dimensions for grid data.
-/// For example, if the client has requested a 10 x 10 grid, and the point
+/// For example, if the client has requested a 10 x 10 grid, and the odometer 
 /// data member currently holds (3,9), it will be advanced (not unlike an
 /// odometer) to (4,0).  This will signify that the next point to be added
-/// should be (axes[0].min+4*axes[0].interval, axes[1].min+0*axes[1].interval.
-void AxesBounds::nextPoint()
+/// should be (axes[0].min+4*intervals[0], axes[1].min+0*intervals[0].
+void AxesBounds::nextPoint(vector<unsigned>& point_odometer, 
+  const vector<unsigned>& grid_points)
 {
     // Scan across the "odometer" reading to find the first value that does
     // not need to roll over.  For example, if the user requested a 5 x 5 x 5 x
     // 5 grid and point holds (3,2,4,4), then the next value should be 
-    // (3,3,0,0), so the rightmost two values need to roll over, and curDim,
+    // (3,3,0,0), so the rightmost two values need to roll over, and cur_dim,
     // should point to the 2.
-    int curDim = ndims-1;
-    while (axes[curDim].pts == 1 || point[curDim] == (axes[curDim].pts - 1)) {
-	curDim--;
+    int cur_dim = axes.size()-1;
+    while (grid_points[cur_dim] == 1 || 
+	   point_odometer[cur_dim] == (grid_points[cur_dim] - 1)) {
+	cur_dim--;
     }
 
-    // If the odometer isn't maxed out, increase the digit at curDim by one,
+    // If the odometer isn't maxed out, increase the digit at cur_dim by one,
     // and then zero out everything to the right.
-    if (curDim < ndims) {
-        point[curDim]++;
-	curDim++;
-	while(curDim < ndims) {
-	    point[curDim] = 0;
-	    curDim++;
+    if (cur_dim < axes.size()) {
+        point_odometer[cur_dim]++;
+	cur_dim++;
+	while(cur_dim < axes.size()) {
+	    point_odometer[cur_dim] = 0;
+	    cur_dim++;
 	}
     }
 }
 
 /// Return a hypergrid data set as a SurfData object.  The client is 
 /// responsible to deallocate the memory.
-SurfData* AxesBounds::sampleGrid(const vector<string>& testFunctions) 
+SurfData* AxesBounds::sampleGrid(const vector<unsigned>& grid_points, const vector<string>& test_functions) 
 {
-  initialize();
-  surfptx.resize(ndims);
+  vector<unsigned> point_odometer(grid_points.size(),0);
+  vector<double> surfptx(axes.size());
   vector<SurfPoint> sps;
+  vector<double> intervals = computeIntervals(axes,grid_points);
+  unsigned npts = accumulate(grid_points.begin(),grid_points.end(),
+	1, multiplies<unsigned>());
   for (int i = 0; i < npts; i++) {
-      for (int j = 0; j < ndims; j++) {
-          surfptx[j] = axes[j].min + axes[j].interval*point[j];
+      for (int j = 0; j < axes.size(); j++) {
+          surfptx[j] = axes[j].min + intervals[j]*point_odometer[j];
       }
       SurfPoint sp(surfptx);
-      for (unsigned k = 0; k < testFunctions.size(); k++) {
-        sp.addResponse(surfpack::testFunction(testFunctions[k], sp.X()));
+      for (unsigned k = 0; k < test_functions.size(); k++) {
+        sp.addResponse(surfpack::testFunction(test_functions[k], sp.X()));
       }
       sps.push_back(sp);
-      nextPoint();
+      nextPoint(point_odometer, grid_points);
   }
-  return new SurfData(sps);
+  SurfData* sd = new SurfData(sps);
+  if (!test_functions.empty()) sd->setFLabels(test_functions);
+  return sd;
 }
 
-/// Return a data set with numPts SurfPoints.  Parameter testFunctions
+/// Return a data set with size SurfPoints.  Parameter test_functions
 /// must contain the names of zero or more functions at which all the data
 /// points should be evaluated.  The test functions should reside in the
 /// surfpack namespace.
-SurfData* AxesBounds::sampleMonteCarlo(unsigned numPts, 
-  const vector<string>& testFunctions) 
+SurfData* AxesBounds::sampleMonteCarlo(unsigned size, 
+  const vector<string>& test_functions) 
 {
-  surfptx.resize(ndims);
+  vector<double> surfptx(axes.size());
   vector<SurfPoint> sps;
-  for (unsigned i = 0; i < numPts; i++) {
-      for (unsigned j = 0; j < ndims; j++) {
+  for (unsigned i = 0; i < size; i++) {
+      for (unsigned j = 0; j < axes.size(); j++) {
 	surfptx[j] = (axes[j].max - axes[j].min) * 
           ((double)rand()/(double)INT_MAX)+ axes[j].min;
       }
       SurfPoint sp(surfptx);
-      for (unsigned k = 0; k < testFunctions.size(); k++) {
-        sp.addResponse(surfpack::testFunction(testFunctions[k], sp.X()));
+      for (unsigned k = 0; k < test_functions.size(); k++) {
+        sp.addResponse(surfpack::testFunction(test_functions[k], sp.X()));
       }
       sps.push_back(sp);
-      nextPoint();
   }
   return new SurfData(sps);
 }
