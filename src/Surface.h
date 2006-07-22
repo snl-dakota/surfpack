@@ -150,6 +150,7 @@ public:
   /// rest of the data is the residual for x.  The PRESS statistic is the 
   /// square root of the mean of the squares of all the residuals.
   virtual double press(SurfData& dataSet);
+  virtual double nFoldCrossValidation(SurfData& data, unsigned n);
 
   /// Statistically speaking, R^2 is extra sum of squares divided by the total
   /// sum of squares.  It measures how much of the variation in the data is 

@@ -237,6 +237,7 @@ double Surface::goodnessOfFit(const string metricName, SurfData* surfData)
   if (metricName == "rsquared") {
     return rSquared(sdRef);
   } else if (metricName == "press") {
+    return nFoldCrossValidation(sdRef,sdRef.size());
     return press(sdRef);
   } else {
     // The rest of these metrics all have many computations in common
@@ -306,7 +307,7 @@ double Surface::press(SurfData& dataSet)
     // data points except the current one.  Evaluate the new
     // surface at the omitted point and compute the residual
     // between the actual value and the value predicted by the new 
-    // model at That point.
+    // model at that point.
     unsigned totalPoints = activeSet.size();
     i = 0;
     set<unsigned> pointToSkip;
@@ -334,6 +335,78 @@ double Surface::press(SurfData& dataSet)
     return pressValue;
   }
   return 0.0;
+}
+
+unsigned block_low(unsigned i, unsigned n, unsigned p) { return i*n/p;}
+unsigned block_high(unsigned i, unsigned n, unsigned p) { return (i+1)*n/p-1;}
+double Surface::nFoldCrossValidation(SurfData& data, unsigned n)
+{
+  double total_error = 0.0;
+  // If n is evenly divisible by data.size(), then the number of points that
+  // gets left out each time is the same: n/data.size().  We need to make sure that
+  // even when the maximum number of points is excluded, there are still enough
+  // points to run the algorithm
+  unsigned data_size = data.size();
+  unsigned max_exclusions = data_size / n; 
+  if (data_size % n != 0) max_exclusions++;
+  if ((data_size - max_exclusions) < minPointsRequired()) {
+    throw SurfData::
+      bad_surf_data("Not enough data to compute n-fold cross validation.");
+  } else {
+    // If some of the points in the data set are already being excluded,
+    // copy all of the non-excluded data points into a new SurfData
+    // object where none of the points are excluded.  This will make
+    // the rest of the process simpler and more intuitive, albeit slightly less
+    // efficient 
+    bool containsInactives = !data.getExcludedPoints().empty();
+    SurfData active_set = (containsInactives) 
+      ? data.copyActive() : data;
+    data_size = active_set.size();
+
+    // Now create the partitions
+    vector<unsigned> skip_points(active_set.size());
+    for (unsigned i = 0; i < active_set.size(); i++) skip_points[i] = i;
+    ///\todo manage the seed and random number generation
+    random_shuffle(skip_points.begin(),skip_points.end(),surfpack::shared_rng());
+
+    copy(skip_points.begin(),skip_points.end(),ostream_iterator<unsigned>(cout," "));
+    // Compute the error for each partition
+    for (unsigned part_index = 0; part_index < n; part_index++) {
+      // Determine which points to exclude for the current partition
+      set<unsigned> points_to_exclude;
+      unsigned lower_index = block_low(part_index,data_size,n);
+      unsigned upper_index = block_high(part_index,data_size,n);
+      cout << "Partition " << part_index << " ex. pts.:" ;
+      for (unsigned k = lower_index; k <= upper_index; k++) {
+        points_to_exclude.insert(skip_points[k]);
+        cout << skip_points[k] << " ";
+      }
+      cout << endl;
+      // debug code
+      active_set.setExcludedPoints(points_to_exclude);
+      Surface* current_surf = makeSimilarWithNewData(&active_set);
+      double partition_error = 0.0;
+      // Now evaluate the surface at the points with known values that were 
+      // excluded. To make sure that the indices of the points are coorespond
+      // to the right points, we need to unexclude all points.
+      
+      // Accumulate the squared residuals
+      set<unsigned> no_exclusions;
+      active_set.setExcludedPoints(no_exclusions);
+      for (unsigned k = lower_index; k <= upper_index; k++) {
+        double observed = active_set[skip_points[k]].F(this->responseIndex);
+        double predicted = 
+          current_surf->getValue(active_set[skip_points[k]].X());
+        cout << "resid " << skip_points[k] << ": " << observed << " " << predicted 
+	     << endl;
+        partition_error += (observed - predicted)*(observed-predicted);
+      }
+      total_error += partition_error;
+      delete current_surf;
+    }
+    total_error = sqrt(total_error/active_set.size());
+  }
+  return total_error;
 }
 
 /// Statistically speaking, R^2 is extra sum of squares divided by the total
