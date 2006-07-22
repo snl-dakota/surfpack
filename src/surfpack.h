@@ -12,6 +12,7 @@
 #include "surfpack_config.h"
 #include "surfpack_system_headers.h"
 
+#include "MersenneTwister.h"
 #include "SurfpackMatrix.h"
 
 //class AbstractSurfDataIterator;
@@ -85,6 +86,30 @@ void DGGLSE_F77(int& m, int& n, int& p , double* A, int& lda,
 
 namespace surfpack {
 
+// _____________________________________________________________________________
+// Mersenne Twister Random Number Generator 
+// _____________________________________________________________________________
+                                                                                
+class MyRandomNumberGenerator : std::unary_function<int,int>
+{
+public:
+  MyRandomNumberGenerator() {}
+  MTRand mtrand;
+  int operator()(int n)
+  {
+    return mtrand.randInt(n-1);
+  }
+  void seed(int seeder)
+  {
+    mtrand.seed(seeder);
+  }
+  double randExc()
+  {
+    return mtrand.randExc();
+  }
+};
+                                                                                
+MyRandomNumberGenerator& shared_rng();
 
 // _____________________________________________________________________________
 // Constants 
