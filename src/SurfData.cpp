@@ -525,7 +525,7 @@ void SurfData::defaultMapping()
 }
    
 /// Set the labels for the predictor variables
-void SurfData::setXLabels(std::vector<std::string>& labels)
+void SurfData::setXLabels(const std::vector<std::string>& labels)
 {
   if (labels.size() != xsize) {
     throw string("Dim mismatch in SurfData::setXLabels");
@@ -534,24 +534,21 @@ void SurfData::setXLabels(std::vector<std::string>& labels)
 }
 
 /// Set the labels for the response variables
-void SurfData::setFLabels(std::vector<std::string>& labels)
+void SurfData::setFLabels(const std::vector<std::string>& labels)
 {
   if (labels.size() != fsize) {
     throw string("Dim mismatch in SurfData::setFLabels");
   }
   fLabels = labels;
-
 }
 
 /// Set the label for a single response variable
-void SurfData::setFLabel(unsigned index, std::string response_name)
+void SurfData::setFLabel(unsigned index, const std::string& response_name)
 {
   if (index >= fsize) {
     throw string("Dim mismatch in SurfData::setFLabel");
   }
   fLabels[index] = response_name;
-  
-
 }
 
 // ____________________________________________________________________________
