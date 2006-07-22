@@ -258,6 +258,34 @@ int SurfpackParser::parseInteger(const std::string& argname,
   return -1;
 }
 
+std::vector<double> SurfpackParser::parseTuple(const std::string& argname,
+  const ArgList& arglist, bool throwExIfAbsent)
+{
+  std::vector<double> result;
+  for (unsigned i = 0; i < arglist.size(); i++) {
+    if (arglist[i].name == argname) {
+      RvalTuple::asVectorDouble(result,arglist[i].getRVal()->getTuple());
+    }
+  }
+  if (result.empty() && throwExIfAbsent) throw std::string("parseTuple");
+  return result;
+}
+
+std::vector<std::string> 
+SurfpackParser::parseStringTuple(const std::string& argname,
+  const ArgList& arglist, bool throwExIfAbsent)
+{
+  std::vector<std::string> result;
+  for (unsigned i = 0; i < arglist.size(); i++) {
+    if (arglist[i].name == argname) {
+      RvalTuple::asVectorString(result,arglist[i].getRVal()->getTuple());
+    }
+  }
+  if (result.empty() && throwExIfAbsent) throw std::string("parseStringTuple");
+  return result;
+}
+
+
 std::vector<std::string> SurfpackParser::parseMultiString(
   const std::string& argname, const ArgList& arglist, bool throwExIfAbsent)
 {

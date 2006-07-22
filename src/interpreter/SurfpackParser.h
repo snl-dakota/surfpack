@@ -62,6 +62,10 @@ public:
     const ArgList& arglist, bool throwExIfAbsent = true);
   static int parseInteger(const std::string& argname,
     const ArgList& arglist, bool& valid, bool throwExIfAbsent = true);
+  static std::vector<double> parseTuple(const std::string& argname,
+    const ArgList& arglist, bool throwExIfAbsent = true);
+  static std::vector<std::string> parseStringTuple(const std::string& argname,
+    const ArgList& arglist, bool throwExIfAbsent = true);
   static std::vector<std::string> parseMultiString(const std::string& argname,
     const ArgList& arglist, bool throwExIfAbsent = true);
 protected:
