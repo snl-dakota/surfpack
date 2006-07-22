@@ -61,7 +61,7 @@ int main(int argc, char** argv)
     cout << setw(8) << setsizes[setsize] ;
     for (unsigned trial = 0; trial < num_trials; trial++) {
       SurfData* sd = 0;
-      MonteCarloSample(sd,ab,setsizes[setsize],functions);
+      CreateSample(sd,ab,setsizes[setsize],functions);
       //SurfData* sd = ab.sampleMonteCarlo(setsizes[setsize],functions);
       Surface* ks = 0;
       CreateSurface(ks,sd,string("kriging"));
