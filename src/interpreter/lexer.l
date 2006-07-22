@@ -13,16 +13,13 @@
 	extern void appendToken(const char*);
 %}
 %%
-Load |
-CreateSurface |
-ConvertData |
-ConvertSurface |
-MonteCarloSample |
-GridSample |
-Evaluate |
-Save |
 CreateAxes |
-Fitness               			{ appendToken(yytext); return STANDARD_COMMAND; }
+CreateSurface |
+CreateSample |
+Evaluate |
+Fitness |
+Load |
+Save               			{ appendToken(yytext); return STANDARD_COMMAND; }
 [[:alpha:]][[:alnum:]_]*		{ appendToken(yytext); return IDENTIFIER; }
 '[^']*'					{ appendToken(yytext); return STRING; }
 #.*\n					{  }
