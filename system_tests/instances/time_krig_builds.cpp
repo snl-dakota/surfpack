@@ -1,4 +1,6 @@
+#ifdef HAVE_CONFIG_H
 #include "surfpack_config.h"
+#endif
 #include "surfpack_system_headers.h"
 
 #include "surfpack.h"
@@ -8,12 +10,15 @@
 #include "KrigingSurface.h"
 #include "PolynomialSurface.h"
 
+#if !defined(HAVE_GETTIMEOFDAY) && (defined(_MSC_VER) || defined(__MINGW32__))
+#include <windows.h>
+#endif
+
 using namespace std;
 using namespace SurfpackInterface;
 
 // Modified from http://mywebpage.netscape.com/yongweiwu/timeval.h.txt
 #if !defined(HAVE_GETTIMEOFDAY) && (defined(_MSC_VER) || defined(__MINGW32__))
-#include <windows.h>
 int gettimeofday (struct timeval *tv, void* tz)
 {
   union {
