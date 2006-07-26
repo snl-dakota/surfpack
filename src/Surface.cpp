@@ -14,6 +14,8 @@
 #include "SurfScaler.h"
 
 using namespace std;
+using surfpack::dbg;
+const int dbgsrf = 0;
 
 // ____________________________________________________________________________
 // Creation, Destruction, Initialization 
@@ -238,7 +240,6 @@ double Surface::goodnessOfFit(const string metricName, SurfData* surfData)
     return rSquared(sdRef);
   } else if (metricName == "press") {
     return nFoldCrossValidation(sdRef,sdRef.size());
-    return press(sdRef);
   } else {
     // The rest of these metrics all have many computations in common
     // and are grouped together in the genericMetric method
@@ -367,21 +368,23 @@ double Surface::nFoldCrossValidation(SurfData& data, unsigned n)
     vector<unsigned> skip_points(active_set.size());
     for (unsigned i = 0; i < active_set.size(); i++) skip_points[i] = i;
     ///\todo manage the seed and random number generation
+    surfpack::shared_rng().seed(0);
     random_shuffle(skip_points.begin(),skip_points.end(),surfpack::shared_rng());
 
-    copy(skip_points.begin(),skip_points.end(),ostream_iterator<unsigned>(cout," "));
+    if (dbgsrf) copy(skip_points.begin(),skip_points.end(),
+      ostream_iterator<unsigned>(cout," "));
     // Compute the error for each partition
     for (unsigned part_index = 0; part_index < n; part_index++) {
       // Determine which points to exclude for the current partition
       set<unsigned> points_to_exclude;
       unsigned lower_index = block_low(part_index,data_size,n);
       unsigned upper_index = block_high(part_index,data_size,n);
-      cout << "Partition " << part_index << " ex. pts.:" ;
+      dbg(dbgsrf) << "Partition " << part_index << " ex. pts.:" ;
       for (unsigned k = lower_index; k <= upper_index; k++) {
         points_to_exclude.insert(skip_points[k]);
-        cout << skip_points[k] << " ";
+        dbg(dbgsrf) << skip_points[k] << " ";
       }
-      cout << endl;
+      dbg(dbgsrf) << '\n';
       // debug code
       active_set.setExcludedPoints(points_to_exclude);
       Surface* current_surf = makeSimilarWithNewData(&active_set);
@@ -397,8 +400,8 @@ double Surface::nFoldCrossValidation(SurfData& data, unsigned n)
         double observed = active_set[skip_points[k]].F(this->responseIndex);
         double predicted = 
           current_surf->getValue(active_set[skip_points[k]].X());
-        cout << "resid " << skip_points[k] << ": " << observed << " " << predicted 
-	     << endl;
+        dbg(dbgsrf) << "resid " << skip_points[k] << ": " << observed << " " << predicted 
+	     << '\n';
         partition_error += (observed - predicted)*(observed-predicted);
       }
       total_error += partition_error;
