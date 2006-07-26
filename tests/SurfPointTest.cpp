@@ -111,7 +111,7 @@ void SurfPointTest::testConstructorFromIStreamBinary()
  
   const string filename = fullPath("point1.sp"); 
   ifstream infile(filename.c_str());
-  SurfPoint sp(2, 2, infile, true);  
+  SurfPoint sp(2, 2, infile);  
   infile.close();
   CPPUNIT_ASSERT_EQUAL(sp.x[0], 1.0);
   CPPUNIT_ASSERT_EQUAL(sp.x[1], 2.0);
@@ -125,7 +125,9 @@ void SurfPointTest::testConstructorFromIStreamText()
 {
   const string filename = fullPath("point1.txt");
   ifstream infile(filename.c_str());
-  SurfPoint sp(2, 2, infile, false);  
+  string one_line;
+  getline(infile,one_line);
+  SurfPoint sp(2, 2, one_line, 0);  
   infile.close();
   CPPUNIT_ASSERT_EQUAL(sp.x[0], 1.0);
   CPPUNIT_ASSERT_EQUAL(sp.x[1], 2.0);
@@ -278,7 +280,7 @@ void SurfPointTest::testWriteBinary()
   spPtr2->writeBinary(outfile);
   outfile.close();
   ifstream infile(fullPath("writePoint.sp").c_str(),ios::in | ios::binary);
-  SurfPoint sp(1, 2, infile, true);
+  SurfPoint sp(1, 2, infile);
   SurfPoint sp2(x2, f1);
   CPPUNIT_ASSERT(sp == sp2);
 }
@@ -289,7 +291,9 @@ void SurfPointTest::testWriteText()
   spPtr2->writeText(outfile);
   outfile.close();
   ifstream infile(fullPath("writePoint.txt").c_str(),ios::in);
-  SurfPoint sp(1, 2, infile, false);
+  string one_line;
+  getline(infile,one_line);
+  SurfPoint sp(1, 2, one_line);
   SurfPoint sp2(x2, f1);
   CPPUNIT_ASSERT(sp == sp2);
 }
@@ -311,7 +315,9 @@ void SurfPointTest::testReadText()
   ifstream infile(filename.c_str(), ios::in );
   SurfPoint sp(*spPtr2);
   sp.x[0] = 3.0;
-  sp.readText(infile);
+  string one_line;
+  getline(infile,one_line);
+  sp.readText(one_line);
   CPPUNIT_ASSERT(sp == *spPtr2);
   infile.close();
 }

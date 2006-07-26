@@ -47,8 +47,6 @@ class SurfDataTest : public CppUnit::TestFixture
   CPPUNIT_TEST( testGetExcludedPoints );
   CPPUNIT_TEST( testGetResponse );
   CPPUNIT_TEST( testGetDefaultIndex );
-  CPPUNIT_TEST( testGetXMatrix );
-  CPPUNIT_TEST( testGetYVector );
   CPPUNIT_TEST( testHasBinaryExtension);
   CPPUNIT_TEST( testHasTextExtension);
   CPPUNIT_TEST( testSetDefaultIndex);
@@ -129,8 +127,6 @@ public:
   void testGetExcludedPoints();
   void testGetResponse();
   void testGetDefaultIndex();
-  void testGetXMatrix();
-  void testGetYVector();
   void testHasBinaryExtension();
   void testHasTextExtension();
   void testSetDefaultIndex();

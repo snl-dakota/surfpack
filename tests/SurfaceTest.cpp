@@ -107,7 +107,7 @@ void SurfaceTest::getValueVectorScaled()
   PolynomialSurface ps(surfd, 2);
   ps.scaleUniform();
   ps.createModel();
-  ps.write("badscale.sps");
+  ps.write(fullPath("badscale.sps"));
   cout << ps.scaler->asString();
   CPPUNIT_ASSERT(matches(ps.getValue(x),9.0));
 }
