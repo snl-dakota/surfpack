@@ -87,6 +87,27 @@ void DGGLSE_F77(int& m, int& n, int& p , double* A, int& lda,
 namespace surfpack {
 
 // _____________________________________________________________________________
+// Debugging Output Strategy 
+// _____________________________________________________________________________
+
+class DbgStream {
+public:
+  mutable int level;
+  DbgStream() : level(0) {}
+  ~DbgStream() {}
+  const DbgStream& operator()(int level_in) const {
+    level = level_in;
+    return *this;
+  }
+  template<typename T> const DbgStream& operator<<(const T& item) const {
+    if (level) {
+      cout << item;
+    }
+    return *this;
+  }
+};
+const DbgStream& dbg(int level_in);
+// _____________________________________________________________________________
 // Mersenne Twister Random Number Generator 
 // _____________________________________________________________________________
                                                                                 

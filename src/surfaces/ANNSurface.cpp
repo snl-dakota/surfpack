@@ -54,7 +54,7 @@ void ANNSurface::init()
 {
   norm_bound = 0.8; 
   percent = 0; 
-  svdfactor = 0.90;
+  svd_factor = 0.90;
 }
 
 //_____________________________________________________________________________
@@ -110,11 +110,11 @@ void ANNSurface::build(SurfData& data)
       //cout << "outputs[" << i << "]: " << training_outputs[i][0] << endl;
     }
   }
-  double local_norm_bound = 0.8, local_percent = 0, local_svdfactor = 0.99;
+  double local_norm_bound = 0.8, local_percent = 0, local_svd_factor = 0.99;
   annObject->normalize_data(training_inputs, training_outputs, local_norm_bound);
   annObject->set_aside_test_exemplars(local_percent);
   int num_neurons = annObject->numExemplars - 1;
-  annObject->build_approximation(local_svdfactor, num_neurons);
+  annObject->build_approximation(local_svd_factor, num_neurons);
 
   //for (unsigned k = 0; k < data.size(); k++) {
   //  cout << "Prediction " << k << " " << evaluate(data[k].X()) << endl;
@@ -126,8 +126,8 @@ void ANNSurface::config(const Arg& arg)
   string argname = arg.name;
   if (argname == "norm_bound") {
     norm_bound = arg.getRVal()->getReal();
-  } else if (argname == "svdfactor") {
-    svdfactor = arg.getRVal()->getReal();
+  } else if (argname == "svd_factor") {
+    svd_factor = arg.getRVal()->getReal();
   } else if (argname == "fraction_withheld") {
     percent = arg.getRVal()->getReal();
   } else {

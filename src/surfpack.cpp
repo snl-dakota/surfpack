@@ -12,6 +12,15 @@
 using namespace std;
 
 // _____________________________________________________________________________
+// Debugging Output Strategy 
+// _____________________________________________________________________________
+const surfpack::DbgStream& surfpack::dbg(int level_in)
+{
+  static DbgStream dbg_stream;
+  return dbg_stream(level_in);
+}
+
+// _____________________________________________________________________________
 // Mersenne Twister Random Number Generator 
 // _____________________________________________________________________________
 surfpack::MyRandomNumberGenerator& surfpack::shared_rng()

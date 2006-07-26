@@ -15,6 +15,7 @@
 
 using namespace std;
 using namespace surfpack;
+const int dbgkrig = 0;
 
 const string KrigingSurface::name = "Kriging";
 //_____________________________________________________________________________
@@ -55,7 +56,7 @@ void KrigingSurface::initialize()
   }
   // CONMIN parameters and array allocation
   NFDG   = 0;       // default finite difference flag
-  IPRINT = 1;       // default flag to control amount of output info
+  IPRINT = dbgkrig;       // default flag to control amount of output info
   ITMAX  = 100;     // default max number of iterations
   FDCH   =  1.0e-5; // default relative finite difference step size
   FDCHM  =  1.0e-5; // default absolute finite difference step size

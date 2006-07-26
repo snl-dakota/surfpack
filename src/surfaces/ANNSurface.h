@@ -75,7 +75,7 @@ protected:
   static const std::string name;
   ANNApprox* annObject;
   double norm_bound;
-  double svdfactor;
+  double svd_factor;
   double percent;
 
 //_____________________________________________________________________________
