@@ -381,7 +381,7 @@ void SurfpackInterpreter::executeEvaluate(const ParsedCommand& c)
   // Call Evaluate
   unsigned new_index = surface->getValue(*sd);  
   string response_name = 
-    SurfpackParser::parseStringLiteral("response", c.arglist, false);
+    SurfpackParser::parseIdentifier("label", c.arglist, false);
   if (response_name != "") {
     sd->setFLabel(new_index,response_name);
   }
