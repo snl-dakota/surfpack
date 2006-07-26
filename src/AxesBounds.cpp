@@ -14,6 +14,8 @@
 #include "AxesBounds.h"
 
 using namespace std;
+using surfpack::dbg;
+const int axdbg = 0;
 
 /// Object is created from an existing list of Axis objects
 AxesBounds::AxesBounds(vector<AxesBounds::Axis> axes_in) 
@@ -69,15 +71,18 @@ void AxesBounds::parseBounds(std::istream& is)
     is >> axes.back().min;
     // read in next token -- it should be either a '|' or the max for this dim
     is >> token;
+    dbg(axdbg) << "Token read; " << token << " eof?: " << is.eof() << "\n";
+    if (is.eof()) break;
     if (token == "|") {
       axes.back().max = axes.back().min;
       axes.push_back(Axis());
       continue; // There is no 'max' for this dim; skip to next one
     } else {
-      axes.back().max = atoi(token.c_str());
+      axes.back().max = atof(token.c_str());
       axes.back().minIsMax = false;
       // now the next token should be a '|' or eof
       is >> token;
+    dbg(axdbg) << "Token read; " << token << " eof?: " << is.eof() << "\n";
       if (is.eof()) break;
       if (token != "|") {
         cerr << "Expected |" << endl;
@@ -87,16 +92,17 @@ void AxesBounds::parseBounds(std::istream& is)
     }
   }
 
-#ifdef DEBUG_AXES_BOUND
-  cout << "Axes values parsed" << endl;
-  for (unsigned i = 0; i < axes.size(); i++) {
-    cout << axes[i].min;
-    if (!axes[i].minIsMax) {
-      cout << " " << axes[i].max;
-    }
-    cout << endl;
-  }
-#endif
+  if (axdbg) { // debug output
+    cout << "Axes values parsed" << endl;
+    for (unsigned i = 0; i < axes.size(); i++) {
+      cout << axes[i].min;
+      if (!axes[i].minIsMax) {
+        cout << " " << axes[i].max;
+      }
+      cout << endl;
+    } 
+    cout << "dims: " << axes.size() << endl;
+  } // debug output
       
 }
 
@@ -112,7 +118,9 @@ vector<double> AxesBounds::computeIntervals(vector<Axis>& axes,
     if (grid_points[i] == 1) {
       intervals[i] = 0.0;
     } else {
+      dbg(axdbg) << "i " << i << " min/max: " << axes[i].min << " " << axes[i].max << " gp: " << grid_points[i] << " int: ";
       intervals[i] = (axes[i].max - axes[i].min)/(grid_points[i] - 1);
+      dbg(axdbg) << intervals[i] << "\n";
     }
   }
   return intervals;
