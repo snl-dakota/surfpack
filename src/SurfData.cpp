@@ -622,7 +622,8 @@ void SurfData::writeText(ostream& os, bool write_header, bool write_labels) cons
     if (write_labels) {
       os << '%';
       for (unsigned i = 0; i < xLabels.size(); i++) {
-        os << setw(surfpack::field_width) << xLabels[i];
+        int correction = i ? 0 : 1; // the '%' takes up one space
+        os << setw(surfpack::field_width - correction) << xLabels[i];
       }
       for (unsigned i = 0; i < fLabels.size(); i++) {
         os << setw(surfpack::field_width) << fLabels[i];
