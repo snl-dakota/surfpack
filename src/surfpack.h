@@ -101,7 +101,7 @@ public:
   }
   template<typename T> const DbgStream& operator<<(const T& item) const {
     if (level) {
-      cout << item;
+      std::cout << item;
     }
     return *this;
   }
