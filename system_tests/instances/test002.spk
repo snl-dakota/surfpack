@@ -1,17 +1,15 @@
 # Load data from files
 
 # Load CreateAxes from files 
-CreateAxes[name = t2d_train, file = '../axes/2d_v25_m1to1x2.axb']
+CreateAxes[name = t2d_train, file = '../axes/test002_01.axb']
 CreateAxes[name = t2d_test, 
-  file = '../axes/2d_test_v50_m.95to.95x2.axb']
+  file = '../axes/test002_02.axb']
 
 # Generate data from CreateAxes using test functions
-MonteCarloSample[name = multi_002_0000625_mcl, axes = t2d_train,
-  		 test_function = rastrigin, test_function = rosenbrock, 
-  		 test_function = quasisine, test_function = sphere]
-MonteCarloSample[name = test_multi_002_0002500_mcl, axes = t2d_test,
-  		 test_function = rastrigin, test_function = rosenbrock, 
-  		 test_function = quasisine, test_function = sphere]
+CreateSample[name = multi_002_0000625_mcl, axes = t2d_train, size = 100,
+  test_functions = (rastrigin, rosenbrock, quasisine, sphere)]
+CreateSample[name = test_multi_002_0002500_mcl, axes = t2d_test, size = 100,
+  test_functions = (rastrigin, rosenbrock, quasisine, sphere)]
 
 # Load surfaces from files
 
