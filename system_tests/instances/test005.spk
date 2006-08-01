@@ -1,22 +1,21 @@
 # Load CreateAxes from files 
-CreateAxes[name = ax1p, file = '../axes/test005_1d_1p.axb']
-CreateAxes[name = ax0p, file = '../axes/test005_1d_0p.axb']
+CreateAxes[name = ax1, bounds = '-1e10 1e10']
 
 # Generate data from CreateAxes using test functions
-GridSample[name = d1p, axes = ax1p, test_function = rastrigin,
-	test_function = sphere]
-GridSample[name = d0p, axes = ax0p, test_function = sumofall,
-	test_function = sphere]
+CreateSample[name = grid, axes = ax1, test_functions = (rastrigin, sphere),
+  grid_points = (10)]
+CreateSample[name = mc, axes = ax1, test_functions = (sumofall, sphere), 
+  size = 10]
 
 # Create surfaces using existing data sets
-CreateSurface[name = rbf_1p, data = d1p, type = rbf,
+CreateSurface[name = mars_grid, data = grid, type = mars,
 		response_index = 1]
-CreateSurface[name = rbf_0p, data = d0p, type = rbf,
+CreateSurface[name = mars_mc, data = mc, type = mars,
 		response_index = 1]
 
 # Compute surface fitness metrics
-Fitness[surface = rbf_1p, metric = max_abs]
-Fitness[surface = rbf_0p, metric = max_abs]
+Fitness[surface = mars_grid, metric = max_abs]
+Fitness[surface = mars_mc, metric = max_abs]
 
 
 
