@@ -22,22 +22,13 @@ CreateSurface[name = mars_too_many, data = too_many,
 	      type = mars]
 ! echo mars 
 Fitness[surface = mars_too_many, metric = max_abs]
-CreateSurface[name = rbf_too_many, data = too_many, 
-	      type = rbf]
-! echo rbf
-Fitness[surface = rbf_too_many, metric = max_abs]
 CreateSurface[name = kriging_too_many, data = too_many, 
 	      type = kriging]
 ! echo kriging
 Fitness[surface = kriging_too_many, metric = max_abs]
 CreateSurface[name = ann_too_many, data = too_many, 
-	      type = 'ANN']
+	      type = ann]
 ! echo ann
-Fitness[surface = rbff_too_many, metric = max_abs]
-CreateSurface[name = ann_too_many, data = too_many, 
-	      type = rbf, radius = .1]
-! echo rbf net features
-Fitness[surface = rbff_too_many, metric = max_abs]
 CreateSurface[name = krigingf_too_many, data = too_many, 
 	      type = kriging, thetas = (10.0)]
 ! echo kriging features

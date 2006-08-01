@@ -1,34 +1,44 @@
-# Load CreateAxes from files 
-CreateAxes[name = ax_001d, file = '../axes/1d_v25_m5to10.axb']
-CreateAxes[name = ax_002d, file = '../axes/2d_v25_m5to10x2.axb']
-CreateAxes[name = ax_003d, file = '../axes/3d_v10_0to10x2_v2_0to5.axb'] 
-CreateAxes[name = ax_005d, file = '../axes/5d_v5_m2to2x5.axb']
+CreateAxes[name = ax_001d, bounds = '-10 10']
+CreateAxes[name = ax_002d, bounds = '-10 10 | -10 10']
+CreateAxes[name = ax_003d, bounds = '0 10 | 0 10 | 0 5'] 
+CreateAxes[name = ax_005d, bounds = '-2 2 | -2 2 | -2 2 | -2 2 | -2 2']
 CreateAxes[name = ax_010d,
-  file = '../axes/10d_v5_m10tom5x3_f3_f4_f5_v5_2to4x2_f0_f0.axb']
+  bounds = '-10 -5 | -10 -5 | -10 -5 | 3 | 4 | 5 | 2 4 | 2 4 | 0 | 0']
+! echo created axes
 
+#CreateAxes[name = ax_002d, bounds = '../axes/2d_v25_m5to10x2.axb']
+#CreateAxes[name = ax_003d, bounds = '../axes/3d_v10_0to10x2_v2_0to5.axb'] 
+#CreateAxes[name = ax_005d, bounds = '../axes/5d_v5_m2to2x5.axb']
+#CreateAxes[name = ax_010d,
+#  bounds = '../axes/10d_v5_m10tom5x3_f3_f4_f5_v5_2to4x2_f0_f0.axb']
 # Generate data from CreateAxes using test functions
-GridSample[name = sumof_001d, axes = ax_001d,
-	   test_function = sumofall]
-GridSample[name = sumof_002d, axes = ax_002d,
-	   test_function = sumofall]
-GridSample[name = sumof_003d, axes = ax_003d,
-	   test_function = sumofall]
-GridSample[name = sumof_005d, axes = ax_005d,
-	   test_function = sumofall]
-GridSample[name = sumof_010d, axes = ax_010d,
-	   test_function = sumofall]
+CreateSample[name = sumof_001d, axes = ax_001d, test_functions = (sumofall),
+  grid_points = (25)]
+! echo created sample 1
+CreateSample[name = sumof_002d, axes = ax_002d, test_functions = (sumofall),
+  grid_points = (25,25)]
+! echo created sample 2
+CreateSample[name = sumof_003d, axes = ax_003d, test_functions = (sumofall),
+  grid_points = (10,10,2)]
+! echo created sample 3
+CreateSample[name = sumof_005d, axes = ax_005d, test_functions = (sumofall),
+  grid_points = (5,5,5,5,5)]
+! echo created sample 5
+CreateSample[name = sumof_010d, axes = ax_010d, test_functions = (sumofall),
+  grid_points = (5,5,5,1,1,1,5,5,1,1)]
+! echo created sample 10
 
 
 #001d
 # Create surfaces using existing data sets
 CreateSurface[name = poly0_001d, data = sumof_001d, type = polynomial,
-	      order = 0]
+  order = 0]
 CreateSurface[name = poly1_001d, data = sumof_001d, type = polynomial,
-	      order = 1]
+  order = 1]
 CreateSurface[name = poly2_001d, data = sumof_001d, type = polynomial,
-	      order = 2]
+  order = 2]
 CreateSurface[name = poly3_001d, data = sumof_001d, type = polynomial,
-	      order = 3]
+  order = 3]
 CreateSurface[name = mars_001d, data = sumof_001d, type = mars]
 CreateSurface[name = kriging_001d, data = sumof_001d, type = kriging]
 CreateSurface[name = ann_001d, data = sumof_001d, type = ann]
@@ -66,13 +76,13 @@ Save[surface = ann_001d, file = '../tmp_surf/ann_sumof_001d.sps']
 #002d
 # Create surfaces using existing data sets
 CreateSurface[name = poly0_002d, data = sumof_002d, type = polynomial,
-	      order = 0]
+  order = 0]
 CreateSurface[name = poly1_002d, data = sumof_002d, type = polynomial,
-	      order = 1]
+  order = 1]
 CreateSurface[name = poly2_002d, data = sumof_002d, type = polynomial,
-	      order = 2]
+  order = 2]
 CreateSurface[name = poly3_002d, data = sumof_002d, type = polynomial,
-	      order = 3]
+  order = 3]
 CreateSurface[name = mars_002d, data = sumof_002d, type = mars]
 CreateSurface[name = kriging_002d, data = sumof_002d, type = kriging]
 CreateSurface[name = ann_002d, data = sumof_002d, type = ann]
@@ -110,13 +120,13 @@ Save[surface = ann_002d, file = '../tmp_surf/ann_sumof_002d.sps']
 #003d
 # Create surfaces using existing data sets
 CreateSurface[name = poly0_003d, data = sumof_003d, type = polynomial,
-	      order = 0]
+  order = 0]
 CreateSurface[name = poly1_003d, data = sumof_003d, type = polynomial,
-	      order = 1]
+  order = 1]
 CreateSurface[name = poly2_003d, data = sumof_003d, type = polynomial,
-	      order = 2]
+  order = 2]
 CreateSurface[name = poly3_003d, data = sumof_003d, type = polynomial,
-	      order = 3]
+  order = 3]
 CreateSurface[name = mars_003d, data = sumof_003d, type = mars]
 CreateSurface[name = kriging_003d, data = sumof_003d, type = kriging]
 CreateSurface[name = ann_003d, data = sumof_003d, type = ann]
@@ -154,13 +164,13 @@ Save[surface = ann_003d, file = '../tmp_surf/ann_sumof_003d.sps']
 #005d
 # Create surfaces using existing data sets
 CreateSurface[name = poly0_005d, data = sumof_005d, type = polynomial,
-	      order = 0]
+  order = 0]
 CreateSurface[name = poly1_005d, data = sumof_005d, type = polynomial,
-	      order = 1]
+  order = 1]
 CreateSurface[name = poly2_005d, data = sumof_005d, type = polynomial,
-	      order = 2]
+  order = 2]
 CreateSurface[name = poly3_005d, data = sumof_005d, type = polynomial,
-	      order = 3]
+  order = 3]
 CreateSurface[name = mars_005d, data = sumof_005d, type = mars]
 CreateSurface[name = kriging_005d, data = sumof_005d, type = kriging]
 CreateSurface[name = ann_005d, data = sumof_005d, type = ann]
@@ -198,13 +208,13 @@ Save[surface = ann_005d, file = '../tmp_surf/ann_sumof_005d.sps']
 #010d
 # Create surfaces using existing data sets
 CreateSurface[name = poly0_010d, data = sumof_010d, type = polynomial,
-	      order = 0]
+  order = 0]
 CreateSurface[name = poly1_010d, data = sumof_010d, type = polynomial,
-	      order = 1]
+  order = 1]
 CreateSurface[name = poly2_010d, data = sumof_010d, type = polynomial,
-	      order = 2]
+  order = 2]
 CreateSurface[name = poly3_010d, data = sumof_010d, type = polynomial,
-	      order = 3]
+  order = 3]
 CreateSurface[name = mars_010d, data = sumof_010d, type = mars]
 CreateSurface[name = kriging_010d, data = sumof_010d, type = kriging]
 CreateSurface[name = ann_010d, data = sumof_010d, type = ann]

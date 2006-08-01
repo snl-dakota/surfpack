@@ -1,21 +1,25 @@
 # Specify the (min,max) pairs along each dimension of the data set
-CreateAxes[name = axes2pX5d, file = '../axes/2pX5d.axb']
+CreateAxes[name = axestest007_01, file = '../axes/test007_01.axb']
 
 # Create Sample data that will be used to create Kriging approximation
-MonteCarloSample[name = mc_sample, axes = axes2pX5d, test_function = rosenbrock]
+CreateSample[name = mc_sample, axes = axestest007_01, test_functions = (rosenbrock),
+  size = 100]
 Save[data = mc_sample, file = '../tmp_data/rosen5d.spd']
 
 # Create the surface
-CreateSurface[name = rosenkrig, data = mc_sample, type = kriging, correlations = (1.0,2.0,3.0,4.0,5.0)]
+CreateSurface[name = rosenkrig, data = mc_sample, type = kriging, 
+  correlations = (1.0,2.0,3.0,4.0,5.0)]
 
 # Create two sets of test data...
 # ... one with 32 points
-GridSample[name = test32, axes = axes2pX5d, test_function = rosenbrock]
+CreateSample[name = test32, axes = axestest007_01, test_functions = (rosenbrock),
+  grid_points = (2,2,2,2,2)]
 Save[data = test32, file = '../tmp_data/test32_rosen.spd']
 
 # ... and another with 243 points
-CreateAxes[name = axes3pX5d, file = '../axes/3pX5d.axb']
-GridSample[name = test243, axes = axes3pX5d, test_function = rosenbrock]
+CreateAxes[name = axestest007_02, file = '../axes/test007_02.axb']
+CreateSample[name = test243, axes = axestest007_02, test_functions = (rosenbrock),
+  grid_points = (3,3,3,3,3)]
 Save[data = test243, file = '../tmp_data/test243_rosen.spd']
 
 #Evaluate fitness of kriging approximation using several metrics
