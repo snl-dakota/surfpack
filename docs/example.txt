@@ -1,6 +1,0 @@
-3 Crime data for metropolitan areas in the US
-2 population density in persons / sq. mi; median household income in thousands of $
-1 crime rate (reported crimes per 1000 people per yr)
-250 50 17
-700 35 33
-65 250 30

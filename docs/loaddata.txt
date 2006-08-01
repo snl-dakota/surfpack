@@ -1,1 +1,0 @@
-LoadData[name = simple7, file = 'simple7.txt']

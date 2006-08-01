@@ -1,1 +1,0 @@
-Evaluate[surface = cubic_poly_1st, data = test100]

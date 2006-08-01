@@ -1,2 +1,0 @@
-LoadData[name = holdout_data, file = 'holdout.txt']
-Fitness[surface = cubic_poly_1st, metric = mean_squared, data = holdout_data]

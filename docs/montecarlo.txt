@@ -1,2 +1,0 @@
-MonteCarloSample[name = random100, axes = test_axis, 
-                 size = 100, seed = 92613]
