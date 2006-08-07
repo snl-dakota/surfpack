@@ -16,6 +16,7 @@
 using namespace std;
 using namespace surfpack;
 const int dbgkrig = 0;
+const int dbgcorr = 0;
 
 const string KrigingSurface::name = "Kriging";
 //_____________________________________________________________________________
@@ -605,6 +606,7 @@ void KrigingSurface::printConminVariables(ostream& os)
 
 void KrigingSurface::buildModel(SurfData& data)
 {
+  if(dbgkrig) cout << "#data points for Kriging build: " << data.size() << "\n";
   assert(xsize);
   int xsize_as_int = static_cast<int>(xsize);
   numsamp = static_cast<int>(data.size());
@@ -688,6 +690,12 @@ void KrigingSurface::buildModel(SurfData& data)
     os << "After call to krigmodel in buildModel" << endl;
     printKrigModelVariables(os);
 #endif
+  }
+  if (dbgcorr) {
+    cout << "correlations: "; 
+    copy(thetaVector,thetaVector+xsize,
+	ostream_iterator<double>(cout," "));
+    cout << '\n';
   }
 }
 
