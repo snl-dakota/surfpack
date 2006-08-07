@@ -409,7 +409,9 @@ double Surface::nFoldCrossValidation(SurfData& data, unsigned n)
       total_error += partition_error;
       delete current_surf;
     }
-    total_error = sqrt(total_error/active_set.size());
+    // To get a value analogous to the root-mean-squared value (instead of
+    // something analogous to SSE, uncomment the following line
+    //total_error = sqrt(total_error/active_set.size());
   }
   return total_error;
 }
