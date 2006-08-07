@@ -43,8 +43,7 @@ double time_difference(struct timeval& starttime, struct timeval& endtime)
 int main(int argc, char** argv)
 {
   AxesBounds* ab = 0;
-  CreateAxes(ab,string("-2 2 | -2 2"),
-    AxesBounds::bounds);
+  CreateAxes(ab,string("-2 2 | -2 2"), AxesBounds::data);
   vector<string> functions;
   vector<double> thetas(2,1.0);
   vector<unsigned> setsizes;
