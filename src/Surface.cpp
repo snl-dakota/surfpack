@@ -387,7 +387,9 @@ double Surface::nFoldCrossValidation(SurfData& data, unsigned n)
       dbg(dbgsrf) << '\n';
       // debug code
       active_set.setExcludedPoints(points_to_exclude);
+      dbg(dbgsrf) << "active_set.size(): " << active_set.size() << "\n";
       Surface* current_surf = makeSimilarWithNewData(&active_set);
+      current_surf->createModel();
       double partition_error = 0.0;
       // Now evaluate the surface at the points with known values that were 
       // excluded. To make sure that the indices of the points are coorespond
@@ -520,14 +522,18 @@ double Surface::rootMeanSquared(std::vector<double>& observed,
 /// Associates a data set with this Surface object.  When Surface::build()
 /// is invoked, this is the data that will be used to create the Surface
 /// approximation.
-void Surface::setData(SurfData* sd_)
+void Surface::setData(SurfData* sd_in)
 {
+  if (sd_in) {
+    dbg(dbgsrf) << "sd_in->size(): " << sd_in->size() << "\n";
+  }
+    
   // If this Surface is already listening to a data set, it needs to notify that
   // SurfData object that it is going to stop listening.
   if (this->sd) {
     this->sd->removeListener(this);
   }
-  this->sd = sd_;
+  this->sd = sd_in;
   // Now request to be added to the new SurfData object's list of listeners.
   if (this->sd) {
     this->sd->addListener(this);
