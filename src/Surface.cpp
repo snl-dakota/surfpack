@@ -107,7 +107,7 @@ bool Surface::acceptableData() const
 /// Evaluate the approximation surface at point x and return the value.
 /// The point x must have the same dimensionality as this surface's SurfData.
 /// Make sure the surface is valid and then call evaluate
-double Surface::getValue(const std::vector<double>& x)
+double Surface::getValue(const vector<double>& x)
 {
   if (!builtOK || dataModified) {
     createModel();
@@ -132,7 +132,7 @@ double Surface::getValue(const SurfPoint& sp)
 /// Evaluate the approximation surface at each point in the parameter
 /// SurfData object.  In the ErrorStruct list, store the expected value (as
 /// returned by sd.getResponse()) and the estimated value.
-void Surface::getValue(SurfData& surf_data, std::vector<surfpack::ErrorStruct>& pts)
+void Surface::getValue(SurfData& surf_data, vector<surfpack::ErrorStruct>& pts)
 {
   for (unsigned i = 0; i < surf_data.size(); i++) {
     surfpack::ErrorStruct es;
@@ -147,8 +147,8 @@ void Surface::getValue(SurfData& surf_data, std::vector<surfpack::ErrorStruct>& 
 /// sd.getResponse() for each point sd) and corresponding predicted values 
 /// returned by sd.getResponse()) and the estimated value.  These lists are
 /// returned through the second and third parameters.
-void Surface::getValue(SurfData& surf_data, std::vector<double>& observed_vals,
-  std::vector<double>& predicted_vals)
+void Surface::getValue(SurfData& surf_data, vector<double>& observed_vals,
+  vector<double>& predicted_vals)
 {
   observed_vals.resize(surf_data.size());
   predicted_vals.resize(surf_data.size());
@@ -204,13 +204,13 @@ void Surface::config(const Arg& arg)
   }
 }
 
-void Surface::gradient(const std::vector<double> & x, 
-std::vector<double>& gradient_vector)
+void Surface::gradient(const vector<double> & x, 
+vector<double>& gradient_vector)
 {
   throw string("This surface type does not support hessians");
 }
 
-void Surface::hessian(const std::vector<double> & x, 
+void Surface::hessian(const vector<double> & x, 
 SurfpackMatrix<double>& hessian)
 {
   throw string("This surface type does not support hessians");
@@ -471,14 +471,14 @@ double Surface::rSquared(SurfData& dataSet)
 /// by the standard deviation of the observed data.  The relative average
 /// absolute error is the mean absolute error divided by the standard 
 /// deviation of observed data. 
-double Surface::genericMetric(std::vector<double>& observed,
-  std::vector<double>& predicted, enum MetricType mt, enum DifferenceType dt)
+double Surface::genericMetric(vector<double>& observed,
+  vector<double>& predicted, enum MetricType mt, enum DifferenceType dt)
 {
   /// Create a vector for storing the differences (absolute, relative, or 
   /// scaled) between observed and predicted values.
-  std::vector<double> diffs;
+  vector<double> diffs;
   // Iterator for capturing the max or min using STL generic algorithm
-  std::vector<double>::iterator iter;
+  vector<double>::iterator iter;
   // Compute the desired residuals (obs_i - pred_i); they may be
   // absolute, squared, or scaled (obs_i - pred_i)/obs_i, depending
   // on the value of dt
@@ -512,8 +512,8 @@ double Surface::genericMetric(std::vector<double>& observed,
   }
 }
 
-double Surface::rootMeanSquared(std::vector<double>& observed,
-  std::vector<double>& predicted)
+double Surface::rootMeanSquared(vector<double>& observed,
+  vector<double>& predicted)
 {
   return sqrt(genericMetric(observed,predicted,MT_MEAN,SQUARED));
 }
@@ -756,7 +756,7 @@ void Surface::read(const string filename)
 
 /// Return true if filename has .bsps extension, false if filename has .sps
 /// extension.  If neither, throw surfpack::io_exception.
-bool Surface::hasBinaryFileExtension(const std::string& filename) const
+bool Surface::hasBinaryFileExtension(const string& filename) const
 {
   if (surfpack::hasExtension(filename,".bsps")) {
     return true;

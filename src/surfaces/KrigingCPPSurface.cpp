@@ -79,7 +79,7 @@ unsigned KrigingCPPSurface::minPointsRequired() const
   }
 }
 
-double KrigingCPPSurface::evaluate(const std::vector<double>& x)
+double KrigingCPPSurface::evaluate(const vector<double>& x)
 { 
   vector<double> rx(sd->size()); // vector of observed values
   for (unsigned i = 0; i < sd->size(); i++) {
@@ -94,7 +94,7 @@ double KrigingCPPSurface::evaluate(const std::vector<double>& x)
 // Commands 
 //_____________________________________________________________________________
 
-void KrigingCPPSurface::setConminThetaVars(const std::vector<double>& vals)
+void KrigingCPPSurface::setConminThetaVars(const vector<double>& vals)
 {
   if (sd && sd->xSize() != vals.size()) {
     throw string("Dimension mismatch: conmin seed and data dimensionality");
@@ -108,11 +108,11 @@ void KrigingCPPSurface::useUniformCorrelationValue(double correlation)
   if (xsize == 0) {
     throw string("Must know data arity to use uniform correlation value.");
   }
-  std::vector<double> vals(xsize);
+  vector<double> vals(xsize);
   for (unsigned i = 0; i < xsize; i++) correlationVector[i] = correlation;
 }
 void KrigingCPPSurface::
-  usePreComputedCorrelationVector(const std::vector<double>& vals)
+  usePreComputedCorrelationVector(const vector<double>& vals)
 {
   if (sd && sd->xSize() > vals.size()) {
     throw string("Dimension mismatch: correlations and data dimensionality");
@@ -200,8 +200,8 @@ KrigingCPPSurface* KrigingCPPSurface::makeSimilarWithNewData(SurfData* surfData)
 //_____________________________________________________________________________
 
 double KrigingCPPSurface::
-  correlation_function(const std::vector<double>& correlations,
-  const std::vector<double>& pt1, const std::vector<double>& pt2)
+  correlation_function(const vector<double>& correlations,
+  const vector<double>& pt1, const vector<double>& pt2)
 {
   double sum = 0.0;
   double mult_term = 0.0;
@@ -212,7 +212,7 @@ double KrigingCPPSurface::
   return exp(-sum);
 }
 
-std::vector<double> KrigingCPPSurface::useConminToFindCorrelationParams()
+vector<double> KrigingCPPSurface::useConminToFindCorrelationParams()
 {
   //*******************CONMIN DATA**************************/
 

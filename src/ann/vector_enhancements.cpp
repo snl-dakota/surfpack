@@ -19,12 +19,12 @@ void reshape_2d(vector< vector< double > >& matrix, int rows, int columns)
   } 
 }
 
-int num_rows(std::vector< std::vector< double> >& matrix)
+int num_rows(vector< vector< double> >& matrix)
 {
   return matrix.size();
 }
 
-int num_columns(std::vector< std::vector< double> >& matrix)
+int num_columns(vector< vector< double> >& matrix)
 {
   return (matrix.size() == 0) ? 0 : matrix[0].size();
 }

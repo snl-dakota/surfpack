@@ -48,7 +48,7 @@ DimensionScaler* NonScaler::clone() const
   return new NonScaler();
 }
 
-std::string NonScaler::asString()
+string NonScaler::asString()
 {
   return string("Non-scaler");
 }
@@ -78,7 +78,7 @@ DimensionScaler* LogScaler::clone() const
   return new LogScaler();
 }
 
-std::string LogScaler::asString()
+string LogScaler::asString()
 {
   return string("Log-scaler");
 }
@@ -153,7 +153,7 @@ DimensionScaler* NormalizingScaler::clone() const
   return new NormalizingScaler(*this);
 }
 
-std::string NormalizingScaler::asString()
+string NormalizingScaler::asString()
 {
   ostringstream os;
   os << "offset: " << offset << " divisor: " << divisor;
@@ -224,7 +224,7 @@ double SurfScaler::descaleResponse(unsigned index, double value)
   return responseScalers[index]->descale(value);
 }
 
-std::string SurfScaler::asString()
+string SurfScaler::asString()
 {
   ostringstream os;
   os << "predictor variables" << endl;

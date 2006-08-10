@@ -75,16 +75,16 @@ SurfData SurfDataGenerator::pointSpecToSurfData(string filename) {
   return SurfData(sps);
 }
 
-void SurfDataGenerator::pointSpecToSurfDataFile(std::string pointSpecFilename,
-  std::string outputFilename, std::string functionName)
+void SurfDataGenerator::pointSpecToSurfDataFile(string pointSpecFilename,
+  string outputFilename, string functionName)
 {
   vector<string> container(1);
   container[0] = functionName;
   pointSpecToSurfDataFile(pointSpecFilename, outputFilename, container);
 }
 
-void SurfDataGenerator::pointSpecToSurfDataFile(std::string pointSpecFilename,
-  std::string outputFilename, std::vector<std::string> functionNames)
+void SurfDataGenerator::pointSpecToSurfDataFile(string pointSpecFilename,
+  string outputFilename, vector<string> functionNames)
 {
   SurfData sd = pointSpecToSurfData(pointSpecFilename);
   vector<double> responses(sd.size());
@@ -97,8 +97,8 @@ void SurfDataGenerator::pointSpecToSurfDataFile(std::string pointSpecFilename,
   sd.write(outputFilename);
 }
 
-void SurfDataGenerator::pointSpecToSurfDataFile(std::string pointSpecFilename,
-  std::string outputFilename)
+void SurfDataGenerator::pointSpecToSurfDataFile(string pointSpecFilename,
+  string outputFilename)
 {
   SurfData sd = pointSpecToSurfData(pointSpecFilename);
   sd.write(outputFilename); 

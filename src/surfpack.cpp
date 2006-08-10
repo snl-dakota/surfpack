@@ -35,7 +35,7 @@ surfpack::MyRandomNumberGenerator& surfpack::shared_rng()
 
 /// Write the value of contents to the file specified by filename.  Throw an
 /// exception if the file cannot be opened.
-void surfpack::writeFile(std::string filename, std::string contents)
+void surfpack::writeFile(string filename, string contents)
 {
   ofstream outfile(filename.c_str(), ios::out);
   if (!outfile) {
@@ -125,7 +125,7 @@ void surfpack::writeMatrix(const string filename, unsigned* mat, unsigned rows,
 
 /// Write the parameter header followed by the values in the vector
 /// \todo Use an output iterator instead.  Priority: very low.
-void surfpack::printVector(const std::string header, vector<double>& vec,
+void surfpack::printVector(const string header, vector<double>& vec,
   ostream& os)
 {
   os << header << " size: " << vec.size() << endl;
@@ -136,7 +136,7 @@ void surfpack::printVector(const std::string header, vector<double>& vec,
 
 /// Return true if the file specified by parameter file name has the extension
 /// specified by parameter extension
-bool surfpack::hasExtension(const std::string& filename, const std::string extension)
+bool surfpack::hasExtension(const string& filename, const string extension)
 {
   return (filename.find(extension) == filename.size() - extension.size());
 }
@@ -208,7 +208,7 @@ void surfpack::approximateByIntegers(vector<double>& vals, double epsilon)
 // ____________________________________________________________________________
 
 /// Return the sum of the vector of values
-double surfpack::sum_vector(std::vector<double>& vals)
+double surfpack::sum_vector(vector<double>& vals)
 {
   double sum = 0;
   for (unsigned i = 0; i < vals.size(); i++) {
@@ -218,7 +218,7 @@ double surfpack::sum_vector(std::vector<double>& vals)
 }
 
 /// Return the arithmetic mean (average) of the values in vector vals
-double surfpack::mean(std::vector<double>& vals)
+double surfpack::mean(vector<double>& vals)
 {
   //return sum_vector(vals) / vals.size();
   // Check for 'inf' and ignore those values
@@ -236,20 +236,20 @@ double surfpack::mean(std::vector<double>& vals)
 }
 
 /// Return the sample variance of the values in vals
-double surfpack::sample_var(std::vector<double>& vals)
+double surfpack::sample_var(vector<double>& vals)
 {
   double sse = sum_squared_deviations(vals);
   return sse / (vals.size() - 1);
 }
 
 /// Return the sample standard deviation of the values in vals
-double surfpack::sample_sd(std::vector<double>& vals)
+double surfpack::sample_sd(vector<double>& vals)
 {
   return sqrt(surfpack::sample_var(vals));
 }
 
 /// Return the sum of squared deviations from the mean
-double surfpack::sum_squared_deviations(std::vector<double>& vals)
+double surfpack::sum_squared_deviations(vector<double>& vals)
 {
   double sse = 0;
   double avg = surfpack::mean(vals);
@@ -260,7 +260,7 @@ double surfpack::sum_squared_deviations(std::vector<double>& vals)
 }
   
 /// Return the sum of absolute deviations from the mean
-double surfpack::sum_absolute_deviations(std::vector<double>& vals)
+double surfpack::sum_absolute_deviations(vector<double>& vals)
 {
   double sae = 0;
   double avg = surfpack::mean(vals);
@@ -271,8 +271,8 @@ double surfpack::sum_absolute_deviations(std::vector<double>& vals)
 }
 /// Return absolute, squared, or relative differences of second and third
 /// parameters through the first parameter
-void surfpack::differences(std::vector<double>& results, 
-  std::vector<double>& observed, std::vector<double>& predicted, 
+void surfpack::differences(vector<double>& results, 
+  vector<double>& observed, vector<double>& predicted, 
   enum DifferenceType dp)
 {
   results.resize(observed.size());
@@ -321,7 +321,7 @@ void surfpack::vectorDifference(vector<double>& diff, const vector<double>& pt1,
 // Functions for common linear algebra tasks 
 // ____________________________________________________________________________
 void surfpack::linearSystemLeastSquares(SurfpackMatrix<double>& A, 
-  std::vector<double>& x, std::vector<double>& b)
+  vector<double>& x, vector<double>& b)
 {
   // Rows in A must == size of b
   assert(A.getNRows() == b.size()); 
@@ -347,8 +347,8 @@ void surfpack::linearSystemLeastSquares(SurfpackMatrix<double>& A,
 }
 
 void surfpack::leastSquaresWithEqualityConstraints(SurfpackMatrix<double>& A, 
-  std::vector<double>& x, std::vector<double>& c,
-  SurfpackMatrix<double>& B, std::vector<double>& d)
+  vector<double>& x, vector<double>& c,
+  SurfpackMatrix<double>& B, vector<double>& d)
 {
   int m = static_cast<int>(A.getNRows());
   int n = static_cast<int>(A.getNCols());
@@ -447,8 +447,8 @@ vector< double >& surfpack::matrixVectorMult(vector< double >& result,
   return result;
 }
 
-double surfpack::dot_product(const std::vector< double >& vector_a, 
-	     const std::vector< double >& vector_b)
+double surfpack::dot_product(const vector< double >& vector_a, 
+	     const vector< double >& vector_b)
 {
   assert(vector_a.size() == vector_b.size()); 
   int size = static_cast<int>(vector_a.size());
@@ -502,7 +502,7 @@ double surfpack::testFunction(const string name, const vector<double>& pt)
 }
 
 /// Non-trivial polynomial function
-double surfpack::moderatepoly(const std::vector<double>& pt)
+double surfpack::moderatepoly(const vector<double>& pt)
 {
   double result = -3.0;
   for (unsigned i = 0; i < pt.size(); i++) {
@@ -518,7 +518,7 @@ double surfpack::moderatepoly(const std::vector<double>& pt)
 
 /// Tony Giunta's test function: a little wave mixed with a big wave, plus 
 /// noise
-double surfpack::quasisine(const std::vector<double>& pt)
+double surfpack::quasisine(const vector<double>& pt)
 {
   double result = 0.0;
   double c = 16.0/15.0;
@@ -557,7 +557,7 @@ double surfpack::rosenbrock(const vector<double>& pt)
 }
 
 /// f(x) = 3 + sigma{i=1 to n}(2*x_i)
-double surfpack::simplepoly(const std::vector<double>& pt)
+double surfpack::simplepoly(const vector<double>& pt)
 {
   double result = 3.0;
   for (unsigned i = 0; i < pt.size(); i++) {
@@ -568,7 +568,7 @@ double surfpack::simplepoly(const std::vector<double>& pt)
 }
 
 /// Sum of the sine function along each dimension
-double surfpack::sinewave(const std::vector<double>& pt)
+double surfpack::sinewave(const vector<double>& pt)
 {
   double result = 0.0;
   for (unsigned i = 0; i < pt.size(); i++) {
@@ -600,7 +600,7 @@ double surfpack::sumofall(const vector<double>& pt)
 }
 
 /// f(x) = sigma{i=1 to n}(x_i + sin x_i)
-double surfpack::xplussinex(const std::vector<double>& pt)
+double surfpack::xplussinex(const vector<double>& pt)
 {
   double result = 0.0;
   for (unsigned i = 0; i < pt.size(); i++) {
@@ -611,7 +611,7 @@ double surfpack::xplussinex(const std::vector<double>& pt)
 }
 
 /// Random (different queries for the same point will give different results)
-double surfpack::noise(const std::vector<double>& pt)
+double surfpack::noise(const vector<double>& pt)
 {
   return static_cast<double>(rand());
 }

@@ -242,7 +242,7 @@ unsigned KrigingSurface::minPointsRequired() const
   }
 }
 
-double KrigingSurface::evaluate(const std::vector<double>& x)
+double KrigingSurface::evaluate(const vector<double>& x)
 { 
   static int called = 0;
   ++called;
@@ -282,7 +282,7 @@ double KrigingSurface::evaluate(const std::vector<double>& x)
 // Commands 
 //_____________________________________________________________________________
 
-void KrigingSurface::setConminThetaVars(const std::vector<double>& vals)
+void KrigingSurface::setConminThetaVars(const vector<double>& vals)
 {
   if (sd && sd->xSize() != vals.size()) {
     throw string("Dimension mismatch: conmin seed and data dimensionality");
@@ -303,12 +303,12 @@ void KrigingSurface::useUniformCorrelationValue(double correlation)
   if (xsize == 0) {
     throw string("Must know data arity to use uniform correlation value.");
   }
-  std::vector<double> vals(xsize);
+  vector<double> vals(xsize);
   for (unsigned i = 0; i < xsize; i++) vals[i] = correlation;
   usePreComputedCorrelationVector(vals);
 }
 void KrigingSurface::
-  usePreComputedCorrelationVector(const std::vector<double>& vals)
+  usePreComputedCorrelationVector(const vector<double>& vals)
 {
   if (needsCleanup) {
     delete thetaVector;

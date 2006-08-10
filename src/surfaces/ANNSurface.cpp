@@ -65,7 +65,7 @@ void ANNSurface::init()
 // Queries
 //_____________________________________________________________________________
 
-const std::string ANNSurface::surfaceName() const
+const string ANNSurface::surfaceName() const
 {
   return name;
 }
@@ -81,7 +81,7 @@ unsigned ANNSurface::minPointsRequired() const
   }
 }
 
-double ANNSurface::evaluate(const std::vector<double>& x)
+double ANNSurface::evaluate(const vector<double>& x)
 {
   vector<double> annOutput(1);
   annObject->map(x, &annOutput);
@@ -153,18 +153,18 @@ ANNSurface* ANNSurface::makeSimilarWithNewData(SurfData* surfData)
 // I/O 
 //_____________________________________________________________________________
 
-void ANNSurface::writeBinary(std::ostream& os)
+void ANNSurface::writeBinary(ostream& os)
 {
   if (annObject) annObject->writeBinary(os);
 }
 
-void ANNSurface::writeText(std::ostream& os)
+void ANNSurface::writeText(ostream& os)
 {
   if (annObject) annObject->writeText(os);
 
 }
 
-void ANNSurface::readBinary(std::istream& is)
+void ANNSurface::readBinary(istream& is)
 {
 
   delete annObject;
@@ -172,7 +172,7 @@ void ANNSurface::readBinary(std::istream& is)
   annObject->readBinary(is);
 }
 
-void ANNSurface::readText(std::istream& is)
+void ANNSurface::readText(istream& is)
 {
   delete annObject;
   annObject = new ANNApprox;

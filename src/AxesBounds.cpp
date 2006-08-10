@@ -62,7 +62,7 @@ AxesBounds::AxesBounds(string file_or_data, ParamType pt)
 
 /// Read (min,max) pairs or a fixed value for each dimension.
 /// Data for different dimensions should be separated by '|' 
-void AxesBounds::parseBounds(std::istream& is)
+void AxesBounds::parseBounds(istream& is)
 {
   axes.push_back(Axis());
   string token;

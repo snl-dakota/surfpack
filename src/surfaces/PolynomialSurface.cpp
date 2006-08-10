@@ -30,7 +30,7 @@ PolynomialSurface::PolynomialSurface(SurfData* sd, unsigned order)
 }  
 
 PolynomialSurface::PolynomialSurface(unsigned x_size, unsigned order, 
-  std::vector<double> coefficients) : Surface(0), order(order), 
+  vector<double> coefficients) : Surface(0), order(order), 
   coefficients(coefficients), digits(order)
 {
 #ifdef __TESTING_MODE__
@@ -131,7 +131,7 @@ unsigned PolynomialSurface::minPointsRequired() const
   }
 }
 
-double PolynomialSurface::evaluate(const std::vector<double> & x)
+double PolynomialSurface::evaluate(const vector<double> & x)
 { 
   // Add sanity check on x
   double sum = 0;
@@ -143,7 +143,7 @@ double PolynomialSurface::evaluate(const std::vector<double> & x)
   return sum;
 }
 
-void PolynomialSurface::gradient(const std::vector<double> & x, std::vector<double>& gradient_vector)
+void PolynomialSurface::gradient(const vector<double> & x, vector<double>& gradient_vector)
 { 
   // Add sanity check on x
   assert(x.size() == xsize);
@@ -166,7 +166,7 @@ void PolynomialSurface::gradient(const std::vector<double> & x, std::vector<doub
   }
 }
 
-void PolynomialSurface::hessian(const std::vector<double> & x, SurfpackMatrix<double>& hessian)
+void PolynomialSurface::hessian(const vector<double> & x, SurfpackMatrix<double>& hessian)
 { 
   // Add sanity check on x
   assert(x.size() == xsize);
@@ -407,12 +407,12 @@ void PolynomialSurface::build(SurfData& data)
     //cout << "A" << endl;
     //cout << A.asString() << endl;
     //cout << "b" << endl;
-    //copy(b.begin(),b.end(),std::ostream_iterator<double>(cout,"\n"));
+    //copy(b.begin(),b.end(),ostream_iterator<double>(cout,"\n"));
     //cout << "leastSquares without any equality constraints" << endl;
     surfpack::linearSystemLeastSquares(A,coefficients,b);
     //surfpack::approximateByIntegers(coefficients);
     //cout << "coefficients" << endl;
-    //copy(coefficients.begin(),coefficients.end(),std::ostream_iterator<double>(cout,"\n"));
+    //copy(coefficients.begin(),coefficients.end(),ostream_iterator<double>(cout,"\n"));
   } else {
     //cout << "leastSquares with " << eqConRHS.size() << " equality constraints" << endl;
     surfpack::leastSquaresWithEqualityConstraints
@@ -466,7 +466,7 @@ void PolynomialSurface::resetTermCounter() const
   lastTerm = false;
 }
 
-double PolynomialSurface::computeTerm(const std::vector<double>& x) const
+double PolynomialSurface::computeTerm(const vector<double>& x) const
 {
   double product = 1.0;
   for (unsigned i = 0; i < digits.size(); i++) {
@@ -477,7 +477,7 @@ double PolynomialSurface::computeTerm(const std::vector<double>& x) const
 	    << "Variable " << digits[i] << " requested, but "
  	    << "point has only " << x.size() << " dimension(s)."
 	    << endl;
-        throw std::range_error(msg.str());
+        throw range_error(msg.str());
       }
       product *= x[digits[i]-1];
     }
@@ -485,9 +485,9 @@ double PolynomialSurface::computeTerm(const std::vector<double>& x) const
   return product;
 }
 
-double PolynomialSurface::computeDerivTerm(const std::vector<double>& x,
-  const std::vector<unsigned>& factorCounts, 
-  const std::vector<unsigned>& differentiationCounts) const
+double PolynomialSurface::computeDerivTerm(const vector<double>& x,
+  const vector<unsigned>& factorCounts, 
+  const vector<unsigned>& differentiationCounts) const
 {
   double product = 1.0;
   for (unsigned var = 0; var < factorCounts.size(); var++) {
@@ -532,7 +532,7 @@ void PolynomialSurface::nextTerm() const
         //for (unsigned j = 0; j < digits.size(); j++) {
         //  cout << digits[j] << endl;
         //}
-        throw std::range_error(
+        throw range_error(
           "Integer overflow: number of terms exceeds maximum integer");
       } else {
         termIndex++;
@@ -646,7 +646,7 @@ void PolynomialSurface::printTermLabel(ostream& os)
   os << label;
 }
 
-void PolynomialSurface::printTermComponents(std::ostream& os)
+void PolynomialSurface::printTermComponents(ostream& os)
 {
   os << " ";
   for (unsigned difVar = 0; difVar < digits.size(); difVar++) {

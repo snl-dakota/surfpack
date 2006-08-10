@@ -58,7 +58,7 @@ Basis* MarsBasis::clone() const
   return new MarsBasis(sign,knot,var_index,multiplier);
 }
 
-double MarsBasis::eval(const std::vector<double>& x) const
+double MarsBasis::eval(const vector<double>& x) const
 {
   assert(var_index < x.size());
   double val = sign*(x[var_index] - knot);
@@ -77,7 +77,7 @@ string UnityBasis::asString() const
   return "1.0";
 }
 
-double UnityBasis::eval(const std::vector<double>& x) const
+double UnityBasis::eval(const vector<double>& x) const
 {
   return 1.0;
 }
@@ -124,7 +124,7 @@ void MarsCppSurface::init()
 // Queries
 //_____________________________________________________________________________
 
-const std::string MarsCppSurface::surfaceName() const
+const string MarsCppSurface::surfaceName() const
 {
   return name;
 }
@@ -140,7 +140,7 @@ unsigned MarsCppSurface::minPointsRequired() const
   }
 }
 
-double MarsCppSurface::evaluate(const std::vector<double>& x)
+double MarsCppSurface::evaluate(const vector<double>& x)
 {
   assert (coeffs.size() == bfs.size());
   double sum;
@@ -316,20 +316,20 @@ MarsCppSurface* MarsCppSurface::makeSimilarWithNewData(SurfData* surfData)
 // I/O 
 //_____________________________________________________________________________
 
-void MarsCppSurface::writeBinary(std::ostream& os)
+void MarsCppSurface::writeBinary(ostream& os)
 {
 }
 
-void MarsCppSurface::writeText(std::ostream& os)
+void MarsCppSurface::writeText(ostream& os)
 {
 }
 
-void MarsCppSurface::readBinary(std::istream& is)
+void MarsCppSurface::readBinary(istream& is)
 {
 
 }
 
-void MarsCppSurface::readText(std::istream& is)
+void MarsCppSurface::readText(istream& is)
 {
 }
 

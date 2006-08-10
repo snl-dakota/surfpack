@@ -59,7 +59,7 @@ SurfData::SurfData(const string filename)
   read(filename);
 }
   
-/// Read a set of SurfPoints from a std::istream.  The stream does not
+/// Read a set of SurfPoints from a istream.  The stream does not
 /// contain the normal header information (#points, #vars, #responses).
 /// The #vars and #responses are explicitly specified in the constructor;
 /// The stream reader processes data until eof, assuming one point per line.
@@ -84,8 +84,8 @@ SurfData::SurfData(const string filename, unsigned n_vars, unsigned n_responses,
   readText(infile, false, n_cols_to_skip);
 }
 
-/// Read a set of SurfPoints from a std::istream
-SurfData::SurfData(std::istream& is, bool binary) 
+/// Read a set of SurfPoints from a istream
+SurfData::SurfData(istream& is, bool binary) 
   : scaler(0)
 {
   init();
@@ -256,7 +256,7 @@ bool SurfData::isScaled() const
 }
 
 /// Return the set of excluded points (the indices)
-const std::set<unsigned>& SurfData::getExcludedPoints() const 
+const set<unsigned>& SurfData::getExcludedPoints() const 
 {
   return excludedPoints;
 }
@@ -277,20 +277,20 @@ unsigned SurfData::getDefaultIndex() const
 }
 
 /// Retrieve the label for one of the predictor variables
-const std::string& SurfData::getXLabel(unsigned index) const
+const string& SurfData::getXLabel(unsigned index) const
 {
   return xLabels[index];
 }
 
 /// Retrieve the label for one of the predictor variables
-const std::string& SurfData::getFLabel(unsigned index) const
+const string& SurfData::getFLabel(unsigned index) const
 {
   return fLabels[index];
 }
 
 /// Retrieve the index and variable type (predictor/response) for a given
 /// name.  Return false if not found
-bool SurfData::varIndex(const std::string& name, unsigned& index, 
+bool SurfData::varIndex(const string& name, unsigned& index, 
   bool& isResponse) const
 {
   //\todo check for apostrophes rather than just assuming they're there
@@ -403,7 +403,7 @@ void SurfData::addPoint(const SurfPoint& sp)
 /// Add a new response variable to each point. Return the index of the new 
 /// variable.
 unsigned SurfData::addResponse(const vector<double>& newValues, 
-  std::string label)
+  string label)
 {
   unsigned new_index;
   ostringstream errormsg;
@@ -442,7 +442,7 @@ unsigned SurfData::addResponse(const vector<double>& newValues,
 
 /// Specify which points should be skipped.  This can be used when only a 
 /// subset of the SurfPoints should be used for some computation.
-void SurfData::setExcludedPoints(const std::set<unsigned>& excluded_points)
+void SurfData::setExcludedPoints(const set<unsigned>& excluded_points)
 {
   if (excluded_points.size() > points.size()) {
     throw bad_surf_data(
@@ -525,7 +525,7 @@ void SurfData::defaultMapping()
 }
    
 /// Set the labels for the predictor variables
-void SurfData::setXLabels(const std::vector<std::string>& labels)
+void SurfData::setXLabels(const vector<string>& labels)
 {
   if (labels.size() != xsize) {
     throw string("Dim mismatch in SurfData::setXLabels");
@@ -534,7 +534,7 @@ void SurfData::setXLabels(const std::vector<std::string>& labels)
 }
 
 /// Set the labels for the response variables
-void SurfData::setFLabels(const std::vector<std::string>& labels)
+void SurfData::setFLabels(const vector<string>& labels)
 {
   if (labels.size() != fsize) {
     throw string("Dim mismatch in SurfData::setFLabels");
@@ -543,7 +543,7 @@ void SurfData::setFLabels(const std::vector<std::string>& labels)
 }
 
 /// Set the label for a single response variable
-void SurfData::setFLabel(unsigned index, const std::string& response_name)
+void SurfData::setFLabel(unsigned index, const string& response_name)
 {
   if (index >= fsize) {
     throw string("Dim mismatch in SurfData::setFLabel");
@@ -557,7 +557,7 @@ void SurfData::setFLabel(unsigned index, const std::string& response_name)
 
 /// Write a set of SurfPoints to a file.  Opens the file and calls other 
 /// version of write.
-void SurfData::write(const std::string& filename) const
+void SurfData::write(const string& filename) const
 {
   if (mapping.empty()) {
     ostringstream errormsg;
@@ -740,7 +740,7 @@ ostream& operator<<(ostream& os, const SurfData& sd)
 
 /// Returns true if file has .bspd extension, false if it has .spd extension. 
 /// Otherwise, an exception is thrown.
-bool SurfData::hasBinaryFileExtension(const std::string& filename) const
+bool SurfData::hasBinaryFileExtension(const string& filename) const
 {
   if (surfpack::hasExtension(filename,".bspd")) {
     return true;
@@ -788,7 +788,7 @@ void SurfData::defaultLabels()
   }
 }
 
-bool SurfData::readLabelsIfPresent(std::string single_line)
+bool SurfData::readLabelsIfPresent(string single_line)
 {
   if (single_line[0] != '%') {
     defaultLabels();

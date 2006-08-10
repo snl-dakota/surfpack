@@ -277,7 +277,7 @@ void MultiLayerPerceptron::detailedAnalysis()
     called++;
 }
 
-double MultiLayerPerceptron::details(SurfData* data, std::ostream& os)
+double MultiLayerPerceptron::details(SurfData* data, ostream& os)
 {
     if (!data) {
 	    cerr << "No data in details" << endl;

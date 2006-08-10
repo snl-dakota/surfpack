@@ -22,37 +22,37 @@ using namespace SurfpackInterface;
 /////		SurfpackInterface namespace functions			  /////
 ///////////////////////////////////////////////////////////////////////////////
 
-void SurfpackInterface::Load(SurfData*& data, const std::string filename)
+void SurfpackInterface::Load(SurfData*& data, const string filename)
 {
   data = new SurfData(filename);
   assert(data);
 }
 
-void SurfpackInterface::Load(SurfData*& data, const std::string filename,
+void SurfpackInterface::Load(SurfData*& data, const string filename,
   unsigned n_vars, unsigned n_responses, unsigned skip_columns)
 {
   data = new SurfData(filename,n_vars,n_responses,skip_columns);
   assert(data);
 }
 
-void SurfpackInterface::Load(Surface*& surface, const std::string filename)
+void SurfpackInterface::Load(Surface*& surface, const string filename)
 {
   surface = SurfaceFactory::createSurface(filename);
 }
 
-void SurfpackInterface::Save(SurfData* data, const std::string filename)
+void SurfpackInterface::Save(SurfData* data, const string filename)
 {
   assert(data);
   data->write(filename);
 }
 
-void SurfpackInterface::Save(Surface* surface, const std::string filename)
+void SurfpackInterface::Save(Surface* surface, const string filename)
 {
   assert(surface);
   surface->write(filename);
 }
 
-void SurfpackInterface::CreateSurface(Surface*& surface, SurfData* data, const std::string type, int response_index)
+void SurfpackInterface::CreateSurface(Surface*& surface, SurfData* data, const string type, int response_index)
 {
   assert(data);
   data->setDefaultIndex(response_index);
@@ -65,7 +65,7 @@ void SurfpackInterface::Evaluate(Surface* surface, SurfData* data)
   surface->getValue(*data);
 }
 
-double SurfpackInterface::Fitness(Surface* surface, const std::string metric, 
+double SurfpackInterface::Fitness(Surface* surface, const string metric, 
  SurfData* data, int response_index)
 {
   assert(surface);
@@ -86,14 +86,14 @@ double SurfpackInterface::Fitness(Surface* surface, unsigned n,
   return surface->nFoldCrossValidation(valid_data,n);
 }
 
-void SurfpackInterface::CreateAxes(AxesBounds*& ab, const std::string infostring,
+void SurfpackInterface::CreateAxes(AxesBounds*& ab, const string infostring,
  AxesBounds::ParamType pt)
 {
   ab = new AxesBounds(infostring,pt);
 }
 
 void SurfpackInterface::CreateSample(SurfData*& data, AxesBounds* axes, 
-  std::vector<double>& grid_points, std::vector< std::string > test_functions)
+  vector<double>& grid_points, vector< string > test_functions)
 {
   assert(axes);
   vector<unsigned> int_grid_points(grid_points.size());
@@ -104,7 +104,7 @@ void SurfpackInterface::CreateSample(SurfData*& data, AxesBounds* axes,
 }
 
 void SurfpackInterface::CreateSample(SurfData*& data, AxesBounds* axes, 
-	unsigned size, std::vector< std::string > test_functions)
+	unsigned size, vector< string > test_functions)
 {
   assert(axes);
   data = axes->sampleMonteCarlo(size, test_functions);
@@ -123,8 +123,8 @@ SurfpackInterpreter::~SurfpackInterpreter()
 
 }
 
-void SurfpackInterpreter::execute(const std::string* input_string, 
-  const std::string* output_string)
+void SurfpackInterpreter::execute(const string* input_string, 
+  const string* output_string)
 {
   if (parser.yyparse(input_string, output_string) == 0) {
     commandLoop(cout , cerr);
@@ -134,7 +134,7 @@ void SurfpackInterpreter::execute(const std::string* input_string,
   }
 }
 
-void SurfpackInterpreter::commandLoop(std::ostream& os, std::ostream& es)
+void SurfpackInterpreter::commandLoop(ostream& os, ostream& es)
 {
   const vector<ParsedCommand>& commands = parser.commandList();
   for (unsigned i = 0; i < commands.size(); i++) {
@@ -172,10 +172,10 @@ void SurfpackInterpreter::commandLoop(std::ostream& os, std::ostream& es)
       }
     } catch (command_error& ce) {
       ce.print();
-    } catch (std::runtime_error& rte) {
+    } catch (runtime_error& rte) {
       es << "FailedInstruction: " << commands[i].cmdstring << endl;
       es << rte.what() << endl;
-    } catch (std::string& msg) {
+    } catch (string& msg) {
       es << "FailedInstruction: " << commands[i].cmdstring << endl;
       es << msg << endl;
     } catch (...) {
@@ -471,7 +471,7 @@ SurfpackInterpreter::SymbolTable::~SymbolTable()
   }
 }
 
-Surface* SurfpackInterpreter::SymbolTable::lookupSurface(std::string name)
+Surface* SurfpackInterpreter::SymbolTable::lookupSurface(string name)
 {
   SurfaceMap::iterator iter = surfaceVars.find(name);
   if (iter == surfaceVars.end()) {
@@ -482,7 +482,7 @@ Surface* SurfpackInterpreter::SymbolTable::lookupSurface(std::string name)
   return iter->second;
 }
 
-SurfData* SurfpackInterpreter::SymbolTable::lookupData(std::string name)
+SurfData* SurfpackInterpreter::SymbolTable::lookupData(string name)
 {
   SurfDataMap::iterator iter = dataVars.find(name);
   if (iter == dataVars.end()) {
@@ -493,7 +493,7 @@ SurfData* SurfpackInterpreter::SymbolTable::lookupData(std::string name)
   return iter->second;
 }
 
-AxesBounds* SurfpackInterpreter::SymbolTable::lookupAxes(std::string name)
+AxesBounds* SurfpackInterpreter::SymbolTable::lookupAxes(string name)
 {
   AxesBoundsMap::iterator iter = axesVars.find(name);
   if (iter == axesVars.end()) {

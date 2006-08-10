@@ -85,7 +85,7 @@ void MarsSurface::init()
 // Queries
 //_____________________________________________________________________________
 
-const std::string MarsSurface::surfaceName() const
+const string MarsSurface::surfaceName() const
 {
   return name;
 }
@@ -101,7 +101,7 @@ unsigned MarsSurface::minPointsRequired() const
   }
 }
 
-double MarsSurface::evaluate(const std::vector<double>& x)
+double MarsSurface::evaluate(const vector<double>& x)
 {
   //int nmcv = 0;
   //int ntcv = 0;
@@ -237,7 +237,7 @@ MarsSurface* MarsSurface::makeSimilarWithNewData(SurfData* surfData)
 // I/O 
 //_____________________________________________________________________________
 
-void MarsSurface::writeBinary(std::ostream& os)
+void MarsSurface::writeBinary(ostream& os)
 {
   int nmcv = 0;
   int ntcv = 0;
@@ -253,7 +253,7 @@ void MarsSurface::writeBinary(std::ostream& os)
   os.write(reinterpret_cast<char*>(im),imsize*sizeof(im[0]));
 }
 
-void MarsSurface::writeText(std::ostream& os)
+void MarsSurface::writeText(ostream& os)
 {
     int nmcv = 0;
     int ntcv = 0;
@@ -279,7 +279,7 @@ void MarsSurface::writeText(std::ostream& os)
     os.precision(old_precision);
 }
 
-void MarsSurface::readBinary(std::istream& is)
+void MarsSurface::readBinary(istream& is)
 {
 
   delete [] fm;
@@ -298,7 +298,7 @@ void MarsSurface::readBinary(std::istream& is)
   is.read(reinterpret_cast<char*>(im),imsize*sizeof(im[0]));
 }
 
-void MarsSurface::readText(std::istream& is)
+void MarsSurface::readText(istream& is)
 {
     delete [] fm;
     delete [] im;

@@ -40,7 +40,7 @@ void BasisFunction::resize(unsigned dims)
   radii.resize(dims);
 }
 
-double BasisFunction::evaluate(const std::vector<double>& x)
+double BasisFunction::evaluate(const vector<double>& x)
 {
   assert(x.size() == center.xSize());
   double accumulator = 0.0;
@@ -54,7 +54,7 @@ double BasisFunction::evaluate(const std::vector<double>& x)
   return sqrt(radii[0] + accumulator);
 }
 
-double BasisFunction::weightedEvaluate(const std::vector<double>& x)
+double BasisFunction::weightedEvaluate(const vector<double>& x)
 {
   return weight*evaluate(x);
 }
@@ -129,7 +129,7 @@ void RBFNetSurface::init()
 // Queries
 //_____________________________________________________________________________
 
-const std::string RBFNetSurface::surfaceName() const
+const string RBFNetSurface::surfaceName() const
 {
   return name;
 }
@@ -144,7 +144,7 @@ unsigned RBFNetSurface::minPointsRequired() const
   }
 }
 
-//double RBFNetSurface::evaluate(const std::vector<double>& x)
+//double RBFNetSurface::evaluate(const vector<double>& x)
 //{
 //  //cout << "Evaluate----------------------------------" << endl;
 //  double result = 0.0;
@@ -166,7 +166,7 @@ unsigned RBFNetSurface::minPointsRequired() const
 //  return result;
 //}
 
-double RBFNetSurface::evaluate(const std::vector<double>& x)
+double RBFNetSurface::evaluate(const vector<double>& x)
 {
   //cout << "Evaluate----------------------------------" << endl;
   double result = free_param;
@@ -393,7 +393,7 @@ void RBFNetSurface::buildCandidate(SurfData& surfData,
   delete [] responseVector;
 }
 
-void RBFNetSurface::printSet(std::string header, vector<BasisFunction*>& set)
+void RBFNetSurface::printSet(string header, vector<BasisFunction*>& set)
 {
     cout << header << endl;
     for (unsigned k = 0; k < set.size(); k++) {
@@ -523,8 +523,8 @@ void RBFNetSurface::selectModelBasisFunctions(SurfData& surfData)
 }
 
 bool RBFNetSurface::tryModel(SurfData& surfData, int currentIndex, int& bestIndex, 
-    double& bestMetric, std::vector< BasisFunction* >& currentSet, 
-    std::vector< BasisFunction* >& newBestSet)
+    double& bestMetric, vector< BasisFunction* >& currentSet, 
+    vector< BasisFunction* >& newBestSet)
 {
   bool updated = false;
   //printSet("Trying set", currentSet);
@@ -622,8 +622,8 @@ RBFNetSurface* RBFNetSurface::makeSimilarWithNewData(SurfData* surf_data)
 // Helper methods 
 //_____________________________________________________________________________
 
-double RBFNetSurface::computeMetric(std::vector<double>& left, 
-  std::vector<double>& right)
+double RBFNetSurface::computeMetric(vector<double>& left, 
+  vector<double>& right)
 {
   double leftsse = surfpack::sum_squared_deviations(left);
   double rightsse = surfpack::sum_squared_deviations(right);
@@ -760,7 +760,7 @@ void RBFNetSurface::partition(SurfData& surf_data, unsigned min_partition_size)
 }
 
 void RBFNetSurface::computeRBFCenters(
-  std::vector< PartitionNode* >& partitions)
+  vector< PartitionNode* >& partitions)
 {
   // Debug code begin
   //SurfData testData("linetest.txt");
@@ -854,7 +854,7 @@ void RBFNetSurface::computeRBFCenters(
 // I/O 
 //_____________________________________________________________________________
 
-void RBFNetSurface::writeBinary(std::ostream& os)
+void RBFNetSurface::writeBinary(ostream& os)
 {
   unsigned numcenters = centers.size();
   unsigned n_dimensions = centers[0].xSize();
@@ -869,7 +869,7 @@ void RBFNetSurface::writeBinary(std::ostream& os)
   }
 }
 
-void RBFNetSurface::writeText(std::ostream& os)
+void RBFNetSurface::writeText(ostream& os)
 {
   ios::fmtflags old_flags = os.flags();
   unsigned old_precision = os.precision(surfpack::output_precision);
@@ -886,7 +886,7 @@ void RBFNetSurface::writeText(std::ostream& os)
   os.precision(old_precision);
 }
 
-void RBFNetSurface::readBinary(std::istream& is)
+void RBFNetSurface::readBinary(istream& is)
 {
   unsigned numcenters;  
   unsigned n_dimensions;
@@ -906,7 +906,7 @@ void RBFNetSurface::readBinary(std::istream& is)
   }
 }
 
-void RBFNetSurface::readText(std::istream& is)
+void RBFNetSurface::readText(istream& is)
 {
   unsigned numcenters;  
   unsigned n_dimensions;

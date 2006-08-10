@@ -591,7 +591,7 @@ int  ANNApprox::update_approximation(void)
 { return(0); }
 //********************************************************
 
-void ANNApprox::writeBinary(std::ostream& os)
+void ANNApprox::writeBinary(ostream& os)
 {
   os.write(reinterpret_cast<char*>(&normalize_factor),sizeof(normalize_factor));
   os.write(reinterpret_cast<char*>(&numInputs),sizeof(numInputs));
@@ -628,7 +628,7 @@ void ANNApprox::writeBinary(std::ostream& os)
   }
 }
 
-void ANNApprox::writeText(std::ostream& os)
+void ANNApprox::writeText(ostream& os)
 {
   // ios_base::flags return object of type ios::fmtflags but OSF compiler doesn't like it
   ios::fmtflags old_flags = os.flags();
@@ -674,7 +674,7 @@ void ANNApprox::writeText(std::ostream& os)
   os.flags(old_flags);
 }
 
-void ANNApprox::readBinary(std::istream& is)
+void ANNApprox::readBinary(istream& is)
 {
   is.read(reinterpret_cast<char*>(&normalize_factor),sizeof(normalize_factor));
   is.read(reinterpret_cast<char*>(&numInputs),sizeof(numInputs));
@@ -720,7 +720,7 @@ void ANNApprox::readBinary(std::istream& is)
   
 }
 
-void ANNApprox::readText(std::istream& is)
+void ANNApprox::readText(istream& is)
 {
   string sline;
   istringstream streamline;

@@ -18,7 +18,7 @@
 
 using namespace std;
 
-const std::string& dataRoot(const std::string* newroot)
+const string& dataRoot(const string* newroot)
 {
   static string s("/tmp/mricha/SurfpackData");
   if (newroot) {
