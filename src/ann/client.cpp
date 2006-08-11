@@ -14,11 +14,18 @@
 
 #include <vector>
 #include "vector_enhancements.h"
-//#include "data_types.h"
-#include "system_defs.h"
+#include "surfpack_system_headers.h"
 #include "ann.h"
 
-using namespace std;
+using std::cin;
+using std::cout;
+using std::cerr;
+using std::endl;
+using std::ifstream;
+using std::ios;
+using std::ofstream;
+using std::vector;
+
 int main ()
 {
    ANNApprox test_it;

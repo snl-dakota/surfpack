@@ -11,7 +11,18 @@
 #include "SurfPoint.h"
 #include "SurfScaler.h"
 
-using namespace std;
+using std::cerr;
+using std::endl;
+using std::ios;
+using std::istream;
+using std::istringstream;
+using std::ostream;
+using std::ostringstream;
+using std::range_error;
+using std::setw;
+using std::string;
+using std::vector;
+
 // ____________________________________________________________________________
 // Creation, Destruction, Initialization 
 // ____________________________________________________________________________

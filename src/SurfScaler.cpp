@@ -11,7 +11,10 @@
 #include "SurfData.h"
 #include "SurfScaler.h"
 
-using namespace std;
+using std::endl;
+using std::ostringstream;
+using std::string;
+using std::vector;
 
 DimensionScaler::DimensionScaler()
 {

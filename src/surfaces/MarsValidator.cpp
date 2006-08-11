@@ -11,8 +11,18 @@
 #include "SurfData.h"
 #include "MarsValidator.h"
 
-using namespace std;
-using namespace surfpack;
+using std::cerr;
+using std::cout;
+using std::endl;
+using std::istream;
+using std::numeric_limits;
+using std::ostream;
+using std::ostream_iterator;
+using std::ostringstream;
+using std::set;
+using std::setw;
+using std::string;
+using std::vector;
 
 void printMatrixCpp(double* mat, unsigned rows, unsigned columns, ostream& os)
 {

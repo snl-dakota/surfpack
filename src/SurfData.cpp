@@ -12,7 +12,23 @@
 #include "Surface.h"
 #include "SurfScaler.h"
 
-using namespace std;
+using std::cerr;
+using std::cout;
+using std::endl;
+using std::ifstream;
+using std::istream;
+using std::istringstream;
+using std::ios;
+using std::list;
+using std::ofstream;
+using std::ostream;
+using std::ostream_iterator;
+using std::ostringstream;
+using std::range_error;
+using std::set;
+using std::setw;
+using std::string;
+using std::vector;
 
 // ____________________________________________________________________________
 // Constants 

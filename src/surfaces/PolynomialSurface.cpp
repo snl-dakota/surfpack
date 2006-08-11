@@ -11,7 +11,17 @@
 #include "SurfData.h"
 #include "PolynomialSurface.h"
 
-using namespace std;
+using std::endl;
+using std::ios;
+using std::istream;
+using std::istringstream;
+using std::ostream;
+using std::ostringstream;
+using std::range_error;
+using std::setprecision;
+using std::setw;
+using std::string;
+using std::vector;
 
 const string PolynomialSurface::name = "polynomial";
 

@@ -9,7 +9,17 @@
 #include "surfpack_config.h"
 #include "surfpack.h"
 
-using namespace std;
+using std::cerr;
+using std::endl;
+using std::ifstream;
+using std::istream;
+using std::ios;
+using std::numeric_limits;
+using std::ofstream;
+using std::ostream;
+using std::setw;
+using std::string;
+using std::vector;
 
 // _____________________________________________________________________________
 // Debugging Output Strategy 

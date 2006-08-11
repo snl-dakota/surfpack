@@ -11,8 +11,16 @@
 #include "SurfData.h"
 #include "MarsSurface.h"
 
-using namespace std;
-using namespace surfpack;
+using std::cerr;
+using std::endl;
+using std::ios;
+using std::istream;
+using std::istringstream;
+using std::max;
+using std::ostream;
+using std::setw;
+using std::string;
+using std::vector;
 
 void printMatrix(real* mat, unsigned rows, unsigned columns, ostream& os)
 {

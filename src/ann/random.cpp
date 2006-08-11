@@ -19,15 +19,16 @@
 #include <vector>
 
 #include "random.h" 
-//#include "data_types.h"
-#include "system_defs.h"
+#include "surfpack_system_headers.h"
+
 #ifdef HAVE_STD
 #include <cstdlib>
 #else
 #include <stdlib.h>
 #endif
 
-using namespace std;
+using std::vector;
+
 /*
  * Function: gen_dscrno
  * Usage: int gen_dscrno(low,high)

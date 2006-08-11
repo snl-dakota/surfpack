@@ -32,7 +32,7 @@
 	type is a character variable, and p points to an array of double.
 */
 
-#include "system_defs.h"
+#include "surfpack_system_headers.h"
 
 #define RCONST 32767.
 

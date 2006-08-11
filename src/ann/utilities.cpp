@@ -14,16 +14,19 @@
 
 #include <vector>
 #include "vector_enhancements.h"
-
-//#include "data_types.h"
-#include "system_defs.h"
+#include "surfpack_system_headers.h"
 #include "utilities.h"
+
 #ifdef HAVE_STD
 #include <cmath>
 #else
 #include <math.h>
 #endif
-using namespace std;
+
+using std::cerr;
+using std::endl;
+using std::vector;
+
 /*
  * Function: my_atanh
  * Usage: double my_atanh(x)

@@ -9,7 +9,7 @@
 #include "surfpack_config.h"
 
 #include <vector>
-using namespace std;
+using std::vector;
 
 void reshape_2d(vector< vector< double > >& matrix, int rows, int columns)
 {

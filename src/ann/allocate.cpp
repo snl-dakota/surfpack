@@ -16,10 +16,8 @@
  * file, these utility files are arranged in NO order. 
  */
 
-#include "system_defs.h"
+#include "surfpack_system_headers.h"
 #include "allocate.h" 
-
-using namespace std;
 
 /* nrutil.c */
 void nrerror(const char* error_text)

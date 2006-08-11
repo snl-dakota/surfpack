@@ -14,8 +14,18 @@
 
 //#define PRINT_DEBUG
 
-using namespace std;
-using namespace surfpack;
+using std::cout;
+using std::endl;
+using std::istream;
+using std::ostream;
+using std::string;
+using std::vector;
+using surfpack::dot_product;
+using surfpack::inverseAfterLUFact;
+using surfpack::LUFact;
+using surfpack::matrixVectorMult;
+using surfpack::sum_vector;
+using surfpack::vectorShift;
 
 #define CONMIN_F77 F77_FUNC(conmin,CONMIN)
 #ifdef __cplusplus
@@ -85,7 +95,7 @@ double KrigingCPPSurface::evaluate(const vector<double>& x)
   for (unsigned i = 0; i < sd->size(); i++) {
     rx[i] = correlation_function(correlationVector,x,(*sd)[i].X());
   }
-  double result = surfpack::dot_product(rx,this->rhs);
+  double result = dot_product(rx,this->rhs);
   return this->betaHat + result;
   
 }
@@ -141,30 +151,30 @@ void KrigingCPPSurface::build(SurfData& data)
   }
   // Invert the correlation matrix
   vector<int> ipvt;
-  surfpack::LUFact(R,ipvt);
+  LUFact(R,ipvt);
   cout << R.asString() << endl;
   // Calculate the determinant before doing the inversion
   determinantCorrMatrix = 1.0;
   for (unsigned i = 0; i < data.size(); i++) {
     determinantCorrMatrix *= R[i][i];
   }
-  surfpack::inverseAfterLUFact(R,ipvt);
+  inverseAfterLUFact(R,ipvt);
   vector<double> Rinv_times_y;
-  surfpack::matrixVectorMult(Rinv_times_y,R,y);
+  matrixVectorMult(Rinv_times_y,R,y);
   double denominator_sum = 0;
   for (unsigned i = 0; i < data.size(); i++) {
     for (unsigned j = 0; j < data.size(); j++) {
       denominator_sum += R[i][j]; 
     }
   }
-  double numerator_sum = surfpack::sum_vector(Rinv_times_y);
+  double numerator_sum = sum_vector(Rinv_times_y);
   this->betaHat = numerator_sum / denominator_sum;
   //cout << "betaHat: " << betaHat << endl;
   //cout << "numerator: " << numerator_sum << endl;
   //cout << "denominator: " << denominator_sum << endl;
-  surfpack::vectorShift(y,betaHat);
+  vectorShift(y,betaHat);
   matrixVectorMult(this->rhs,R,y);
-  double estVariance = surfpack::dot_product(y,rhs);
+  double estVariance = dot_product(y,rhs);
   //cout << "EstVariance: " << estVariance << endl;
   //cout << "determinantCorrMatrix: " << determinantCorrMatrix << endl;
   this->likelihood = 

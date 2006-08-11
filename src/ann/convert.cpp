@@ -18,12 +18,12 @@
 
 #include <vector>
 #include "vector_enhancements.h"
-#include "system_defs.h"
+#include "surfpack_system_headers.h"
 #include "convert.h"
-//extern "C" {
 #include "allocate.h"
-//}
-using namespace std;
+
+using std::vector;
+
 /*
  * Function: DakotaToPtrMatrix 
  * Usage: DakotaToPtrMatrix(matrix,drm)

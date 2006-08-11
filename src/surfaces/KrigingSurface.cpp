@@ -13,8 +13,17 @@
 
 //#define PRINT_DEBUG
 
-using namespace std;
-using namespace surfpack;
+using std::cerr;
+using std::cout;
+using std::endl;
+using std::ios;
+using std::istream;
+using std::istringstream;
+using std::ostream;
+using std::ostream_iterator;
+using std::string;
+using std::vector;
+
 const int dbgkrig = 0;
 const int dbgcorr = 0;
 

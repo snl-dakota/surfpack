@@ -11,7 +11,8 @@
 #include "surfpack.h"
 #include "SurfpackInterpreter.h"
 
-using namespace std;
+using std::vector;
+using std::string;
 
 int main(int argc, char** argv)
 {

@@ -11,7 +11,16 @@
 #include "SurfData.h"
 #include "SurfDataGenerator.h"
 
-using namespace std;
+using std::cerr;
+using std::endl;
+using std::ifstream;
+using std::ios;
+using std::istream;
+using std::istringstream;
+using std::ostream;
+using std::setw;
+using std::string;
+using std::vector;
 
 void SurfDataGenerator::readPointSpec(vector<Axis>& axes, istream& is)
 {

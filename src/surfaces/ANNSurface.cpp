@@ -14,7 +14,11 @@
 #include "SurfData.h"
 #include "ANNSurface.h"
 
-using namespace std;
+using std::istream;
+using std::ostream;
+using std::string;
+using std::vector;
+
 //_____________________________________________________________________________
 // Data members 
 //_____________________________________________________________________________

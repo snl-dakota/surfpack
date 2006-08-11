@@ -16,8 +16,18 @@
 #include "Surface.h"
 #include "SurfaceFactory.h"
 
-using namespace std;
-using namespace SurfpackInterface;
+using std::cerr;
+using std::cout;
+using std::endl;
+using std::ostream;
+using std::runtime_error;
+using std::string;
+using std::vector;
+using SurfpackInterface::CreateAxes;
+using SurfpackInterface::CreateSurface;
+using SurfpackInterface::Fitness;
+using SurfpackInterface::Load;
+using SurfpackInterface::Save;
 ///////////////////////////////////////////////////////////////////////////////
 /////		SurfpackInterface namespace functions			  /////
 ///////////////////////////////////////////////////////////////////////////////

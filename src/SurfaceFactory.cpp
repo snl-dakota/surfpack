@@ -18,7 +18,10 @@
 #include "RBFNetSurface.h"
 
 class SurfData;
-using namespace std;
+using std::cerr;
+using std::endl;
+using std::ostringstream;
+using std::string;
 
 /// Open up the file specified by parameter filename.  The first item in the 
 /// file should be the name of the surface type.  Once that information is 

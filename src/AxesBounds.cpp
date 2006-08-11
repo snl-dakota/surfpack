@@ -13,8 +13,18 @@
 #include "SurfData.h"
 #include "AxesBounds.h"
 
-using namespace std;
+using std::cerr;
+using std::cout;
+using std::endl;
+using std::ifstream;
+using std::ios;
+using std::istream;
+using std::istringstream;
+using std::multiplies;
+using std::string;
+using std::vector;
 using surfpack::dbg;
+
 const int axdbg = 0;
 
 /// Object is created from an existing list of Axis objects

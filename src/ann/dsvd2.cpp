@@ -32,16 +32,17 @@
 	**v	The matrix of singular vectors. (double)
 */
 
-#include "system_defs.h"
+#include "surfpack_system_headers.h"
 #include "allocate.h"
 #include "dsvd2.h"
+
 #ifdef HAVE_STD
 #include <cmath>
 #else
 #include <math.h>
 #endif
 
-using namespace std;
+using std::vector;
 
 
 void dsvd2(double **a, int m, int n, double **u,double *w,double **v)

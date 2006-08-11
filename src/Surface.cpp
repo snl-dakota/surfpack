@@ -13,8 +13,20 @@
 #include "Surface.h"
 #include "SurfScaler.h"
 
-using namespace std;
+using std::cout;
+using std::endl;
+using std::ifstream;
+using std::ios;
+using std::istringstream;
+using std::ofstream;
+using std::ostream;
+using std::ostream_iterator;
+using std::ostringstream;
+using std::set;
+using std::string;
+using std::vector;
 using surfpack::dbg;
+
 const int dbgsrf = 0;
 
 // ____________________________________________________________________________

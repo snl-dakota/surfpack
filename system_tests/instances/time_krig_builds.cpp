@@ -14,8 +14,15 @@
 #include <windows.h>
 #endif
 
-using namespace std;
-using namespace SurfpackInterface;
+using std::cout;
+using std::endl;
+using std::setw;
+using std::string;
+using std::vector;
+using SurfpackInterface::CreateAxes;
+using SurfpackInterface::CreateSample;
+using SurfpackInterface::CreateSurface;
+using SurfpackInterface::Save;
 
 // Modified from http://mywebpage.netscape.com/yongweiwu/timeval.h.txt
 #if !defined(HAVE_GETTIMEOFDAY) && (defined(_MSC_VER) || defined(__MINGW32__))

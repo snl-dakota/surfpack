@@ -12,12 +12,13 @@
 // ann.C - implementation file
 // ***************************
 
-// DAKOTA includes
-//#include "data_types.h"
+// Surfpack includes
 #include "surfpack.h"
-#include "system_defs.h"
+#include "surfpack_system_headers.h"
+
 #include <vector>
 #include <sstream>
+
 #ifdef HAVE_STD
 #include <cmath>
 #else
@@ -30,14 +31,21 @@
 #include "ann.h"
 #include "random.h"
 #include "convert.h"
-//extern "C" {
 #include "allocate.h"
 #include "dsvd2.h"
-//}
 
 extern "C" double atanh(double);
 
-using namespace std;
+using std::cerr;
+using std::cout;
+using std::endl;
+using std::istream;
+using std::istringstream;
+using std::ios;
+using std::ostream;
+using std::string;
+using std::vector;
+
 using namespace surfpack;
 
 

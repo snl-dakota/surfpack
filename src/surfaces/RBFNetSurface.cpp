@@ -11,7 +11,18 @@
 #include "RBFNetSurface.h"
 #include "SurfData.h"
 
-using namespace std;
+using std::cerr;
+using std::cout;
+using std::endl;
+using std::ios;
+using std::istream;
+using std::istringstream;
+using std::ostream;
+using std::stack;
+using std::setw;
+using std::string;
+using std::vector;
+
 //_____________________________________________________________________________
 // Data members 
 //_____________________________________________________________________________
