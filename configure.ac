@@ -7,7 +7,7 @@ AC_PREREQ([2.58])
 # This is Surfpack, version 0.1.  User will be invited to send email
 # to the address specified in the third argument when something goes
 # wrong.
-AC_INIT([Surfpack],[0.1],[mricha@sandia.gov])
+AC_INIT([Surfpack],[1.0],[mricha@sandia.gov])
 
 # The macros with the AM prefix are instructions to automake.
 # Automake will base some of its behavior on things it sees in this
