@@ -1,9 +1,10 @@
 # Load data from files
-Load[name = sensor_data, file = '../perm_data/sensor_1d.spd']
+Load[name = sensor_data, file = '../perm_data/sensor_1d.spd', n_predictors = 1,
+  n_responses = 1]
 
 # Create a test data set
-CreateAxes[name = ax_test, bounds = '1 | v 0 3 50']
-GridSample[name = sensor_test, axes = ax_test]
+CreateAxes[name = ax_test, bounds = '0 3']
+CreateSample[name = sensor_test, axes = ax_test, grid_points = (50)]
 
 # Create surfaces using existing data sets
 CreateSurface[name = poly0_sensor, data = sensor_data, type = polynomial,
@@ -17,7 +18,6 @@ CreateSurface[name = poly3_sensor, data = sensor_data, type = polynomial,
 CreateSurface[name = krig_sensor, data = sensor_data, type = kriging]
 CreateSurface[name = mars_sensor, data = sensor_data, type = mars]
 CreateSurface[name = ann_sensor, data = sensor_data, type = ann]
-CreateSurface[name = rbf_sensor, data = sensor_data, type = rbf]
 
 # Evaluate surfaces 
 Evaluate[surface = poly0_sensor, data = sensor_test]
@@ -27,7 +27,6 @@ Evaluate[surface = poly3_sensor, data = sensor_test]
 Evaluate[surface = krig_sensor, data = sensor_test]
 Evaluate[surface = mars_sensor, data = sensor_test]
 Evaluate[surface = ann_sensor, data = sensor_test]
-Evaluate[surface = rbf_sensor, data = sensor_test]
 
 # Compute surface fitness metrics
 Fitness[surface = poly0_sensor, metric = press]
@@ -37,7 +36,6 @@ Fitness[surface = poly3_sensor, metric = press]
 Fitness[surface = krig_sensor, metric = press]
 Fitness[surface = mars_sensor, metric = press]
 Fitness[surface = ann_sensor, metric = press]
-Fitness[surface = rbf_sensor, metric = press]
 
 # Save data to file
 Save[data = sensor_test, file = '../tmp_data/sensor_test.spd']
@@ -50,13 +48,12 @@ Save[surface = poly3_sensor, file = '../tmp_surf/poly3_sensor.sps']
 Save[surface = krig_sensor, file = '../tmp_surf/krig_sensor.sps']
 Save[surface = mars_sensor, file = '../tmp_surf/mars_sensor.sps']
 Save[surface = ann_sensor, file = '../tmp_surf/ann_sensor.sps']
-Save[surface = rbf_sensor, file = '../tmp_surf/rbf_sensor.sps']
 
 /*
 pushd ../tmp_data
 rm gnuplot_script 2> /dev/null 2
 echo "set term png; set output \"sensor.png\";" > gnuplot_script
-echo plot [100:2400] [200:1000] \"./sensor_test.txt\" using 1:2 >> gnuplot_script
+echo plot [100:2400] [200:1000] \"../tmp_data/sensor_test.spd\" using 1:2 >> gnuplot_script
 gnuplot gnuplot_script
 popd
 */

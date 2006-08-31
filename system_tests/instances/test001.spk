@@ -1,14 +1,15 @@
 # Load data from files
 !echo starting
-Load[name = zonk_1d_47p, file = '../perm_data/zonk_1d_47p.spd']
-Load[name = zonk_1d_24p, file = '../perm_data/zonk_1d_24p.spd']
+Load[name = zonk_1d_47p, file = '../perm_data/zonk_1d_47p.spd',
+  n_predictors = 1, n_responses = 1]
+Load[name = zonk_1d_24p, file = '../perm_data/zonk_1d_24p.spd',
+  n_predictors = 1, n_responses = 1]
 
 # Load AxesBounds from files 
-#CreateAxes[name = zonk_axb, file = '../axes/zonk_1d.axb']
-CreateAxes[name = zonk_axb, bounds = '1 | v 100 2400 250']
+CreateAxes[name = zonk_axb, bounds = '100 2400']
 
 # Generate data from CreateAxes using test functions
-GridSample[name = zonk_eval, axes = zonk_axb]
+CreateSample[name = zonk_eval, axes = zonk_axb, grid_points = (250)]
 
 # Load surfaces from files
 
