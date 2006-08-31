@@ -24,7 +24,6 @@ using std::multiplies;
 using std::string;
 using std::vector;
 using surfpack::dbg;
-
 const int axdbg = 0;
 
 /// Object is created from an existing list of Axis objects
@@ -63,7 +62,7 @@ AxesBounds::AxesBounds(string file_or_data, ParamType pt)
         parseBounds(infile);
         break;
       case data: // the string actually holds the boundary data
-        istringstream is(file_or_data);
+        istringstream is(file_or_data + " ");
         parseBounds(is);
         break;
     }
