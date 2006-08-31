@@ -156,6 +156,7 @@ public:
   /// sum of squares.  It measures how much of the variation in the data is 
   /// accounted for by the model (the approximating surface).
   virtual double rSquared(SurfData& dataSet);
+  virtual double r2(SurfData& dataSet);
 
   /// Compute one of several goodness of fit metrics.  The observed parameter
   /// should be a list of observed (or true) function values; the vector of

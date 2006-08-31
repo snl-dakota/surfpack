@@ -414,20 +414,21 @@ void PolynomialSurface::build(SurfData& data)
   }
   // Solve the system of equations
   if (eqConRHS.empty()) {
-    //cout << "A" << endl;
-    //cout << A.asString() << endl;
-    //cout << "b" << endl;
-    //copy(b.begin(),b.end(),ostream_iterator<double>(cout,"\n"));
-    //cout << "leastSquares without any equality constraints" << endl;
     surfpack::linearSystemLeastSquares(A,coefficients,b);
-    //surfpack::approximateByIntegers(coefficients);
-    //cout << "coefficients" << endl;
-    //copy(coefficients.begin(),coefficients.end(),ostream_iterator<double>(cout,"\n"));
   } else {
     //cout << "leastSquares with " << eqConRHS.size() << " equality constraints" << endl;
     surfpack::leastSquaresWithEqualityConstraints
       (A,coefficients,b,eqConLHS,eqConRHS);
   }
+  // The mean of the predictions at the sample sites 
+  // should be the same as the mean of training data responses
+  double sum_fi = 0.0;
+  double sum_fhati = 0.0;
+  for (unsigned i = 0; i < data.size(); i++) {
+    sum_fi += data.getResponse(i);
+    sum_fhati += evaluate(data[i].X());
+  }
+  ///\todo Print out a warning if sum_fi and sum_fhati are too different
 }
 
 /// Set the degree of the polynomial fit (e.g., linear=1, quadratic=2, etc.)

@@ -333,12 +333,18 @@ void surfpack::vectorDifference(vector<double>& diff, const vector<double>& pt1,
 void surfpack::linearSystemLeastSquares(SurfpackMatrix<double>& A, 
   vector<double>& x, vector<double>& b)
 {
+  const int debug = 0;
   // Rows in A must == size of b
   assert(A.getNRows() == b.size()); 
   // System must be square or over-constrained
   assert(A.getNRows() >= A.getNCols());
-  //cout << A.asString() << endl;
-  //copy(b.begin(),b.end(),ostream_iterator<double>(cout,"\n"));
+  if (debug) {
+    dbg(debug) << A.asString() << "\n\n";
+    for (unsigned i = 0; i < b.size(); i++) {
+      dbg(debug) << b[i] << "\n";
+    }
+    dbg(debug) << "\n";
+  }
   int n_rows = static_cast<int>(A.getNRows());
   int n_cols = static_cast<int>(A.getNCols());
   // Client may supply a "blank" initialized vector for x
@@ -353,7 +359,11 @@ void surfpack::linearSystemLeastSquares(SurfpackMatrix<double>& A,
     n_rows,&work[0],lwork,info);
   x = b;
   x.resize(n_cols);
-  //copy(x.begin(),x.end(),ostream_iterator<double>(cout,"\n"));
+  if (debug) {
+    for (unsigned i = 0; i < x.size(); i++) {
+      dbg(debug) << x[i] << "\n";
+    }
+  }
 }
 
 void surfpack::leastSquaresWithEqualityConstraints(SurfpackMatrix<double>& A, 

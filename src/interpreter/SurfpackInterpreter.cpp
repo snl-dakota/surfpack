@@ -203,7 +203,7 @@ void SurfpackInterpreter::executeLoad(const ParsedCommand& c)
 	     surfpack::hasExtension(filename,".dat")) {
     executeLoadData(c);
   } else {
-    throw string("Non text file extension not currently supported");
+    throw string("Expected file extension: .sps (surface) or .spd (data)");
   }
 }
 
@@ -302,7 +302,7 @@ int getResponseIndex(const ArgList& arglist, const SurfData& sd)
   bool valid;
   bool is_response;
   unsigned int response_index;
-  string response_name = SurfpackParser::parseStringLiteral("response",
+  string response_name = SurfpackParser::parseIdentifier("response",
 	arglist,false);
   if (response_name == "") {
       response_index = 

@@ -250,6 +250,8 @@ double Surface::goodnessOfFit(const string metricName, SurfData* surfData)
   SurfData& sdRef = checkData(surfData);
   if (metricName == "rsquared") {
     return rSquared(sdRef);
+  } else if (metricName == "r2") {
+    return r2(sdRef);
   } else if (metricName == "press") {
     return nFoldCrossValidation(sdRef,sdRef.size());
   } else {
@@ -415,7 +417,7 @@ double Surface::nFoldCrossValidation(SurfData& data, unsigned n)
         double predicted = 
           current_surf->getValue(active_set[skip_points[k]].X());
         dbg(dbgsrf) << "resid " << skip_points[k] << ": " << observed << " " << predicted 
-	     << '\n';
+	     << " " << observed-predicted << '\n';
         partition_error += (observed - predicted)*(observed-predicted);
       }
       total_error += partition_error;
@@ -426,6 +428,29 @@ double Surface::nFoldCrossValidation(SurfData& data, unsigned n)
     //total_error = sqrt(total_error/active_set.size());
   }
   return total_error;
+}
+
+// This is just another formulation of r^2.  We were skeptical
+// as to whether this formulation is equivalent to the one in 
+// the rSquared routine.  As far as I can tell, it is.
+double Surface::r2(SurfData& dataSet)
+{
+  double sum_observed = 0.0;
+  for (unsigned i = 0; i < dataSet.size(); i++) {
+    sum_observed += dataSet.getResponse(i);
+  }
+  double mean_obs = sum_observed / dataSet.size();
+  double sum_diff_obs = 0.0;
+  double sum_diff_est = 0.0;
+  for (unsigned i = 0; i < dataSet.size(); i++) {
+    double observedF = dataSet.getResponse(i);
+    double estimatedF = getValue(dataSet[i].X());
+    double diff_obs = observedF - mean_obs;
+    double diff_est = estimatedF - mean_obs;
+    sum_diff_obs += diff_obs*diff_obs;
+    sum_diff_est += diff_est*diff_est;
+  }
+  return sum_diff_est / sum_diff_obs;
 }
 
 /// Statistically speaking, R^2 is extra sum of squares divided by the total
