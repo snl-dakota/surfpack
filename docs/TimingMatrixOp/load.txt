@@ -1,0 +1,1 @@
+Load[name = timing_data, file = 'krigtimes_50to3000.txt']

@@ -1,0 +1,2 @@
+CreateSurface[name = timing_poly2, data = timing_data, type = polynomial,
+  order = 2]
