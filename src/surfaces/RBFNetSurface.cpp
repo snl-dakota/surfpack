@@ -14,10 +14,12 @@
 using std::cerr;
 using std::cout;
 using std::endl;
+using std::find;
 using std::ios;
 using std::istream;
 using std::istringstream;
 using std::ostream;
+using std::random_shuffle;
 using std::stack;
 using std::setw;
 using std::string;
