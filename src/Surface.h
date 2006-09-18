@@ -258,7 +258,7 @@ public:
 
   /// Return true if filename has .bsps extension, false if filename has .sps
   /// extension.  If neither, throw surfpack::io_exception.
-  bool Surface::hasBinaryFileExtension(const std::string& filename) const;
+  bool hasBinaryFileExtension(const std::string& filename) const;
 
 
 // ____________________________________________________________________________
