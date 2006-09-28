@@ -6,7 +6,9 @@
     For more information, see the README file in the top Surfpack directory.
     _______________________________________________________________________ */
 
+#ifdef HAVE_CONFIG_H
 #include "surfpack_config.h"
+#endif
 
 #ifndef POLYNOMIAL_SURFACE_TEST_H
 #define POLYNOMIAL_SURFACE_TEST_H 

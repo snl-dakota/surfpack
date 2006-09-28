@@ -6,7 +6,9 @@
     For more information, see the README file in the top Surfpack directory.
     _______________________________________________________________________ */
 
+#ifdef HAVE_CONFIG_H
 #include "surfpack_config.h"
+#endif
 #include "surfpack.h"
 #include "SurfPoint.h"
 #include "SurfScaler.h"

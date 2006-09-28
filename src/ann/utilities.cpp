@@ -6,7 +6,9 @@
     For more information, see the README file in the top Surfpack directory.
     _______________________________________________________________________ */
 
+#ifdef HAVE_CONFIG_H
 #include "surfpack_config.h"
+#endif
 
 /* This function will compute the arctanh for given
    value x

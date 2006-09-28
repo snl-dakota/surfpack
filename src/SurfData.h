@@ -9,7 +9,9 @@
 #ifndef __SURF_DATA_H__
 #define __SURF_DATA_H__
 
+#ifdef HAVE_CONFIG_H
 #include "surfpack_config.h"
+#endif
 #include "surfpack_system_headers.h"
 
 #include "SurfPoint.h"

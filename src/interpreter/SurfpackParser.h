@@ -8,7 +8,9 @@
 
 #ifndef MY_PARSING_STRUCTURES_H
 #define MY_PARSING_STRUCTURES_H
+#ifdef HAVE_CONFIG_H
 #include "surfpack_config.h"
+#endif
 #include "surfpack_system_headers.h"
 #include "SurfpackParserArgs.h"
 

@@ -6,7 +6,9 @@
     For more information, see the README file in the top Surfpack directory.
     _______________________________________________________________________ */
 
+#ifdef HAVE_CONFIG_H
 #include "surfpack_config.h"
+#endif
 
 void reshape_2d(std::vector< std::vector< double > >& matrix, int rows, int columns);
 int num_rows(std::vector< std::vector< double> >& matrix);

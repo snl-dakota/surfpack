@@ -9,7 +9,9 @@
 #ifndef SURFPACK_MATRIX
 #define SURFPACK_MATRIX
 
+#ifdef HAVE_CONFIG_H
 #include "surfpack_config.h"
+#endif
 #include "surfpack_system_headers.h"
 
 /// Helper class for SurfpackMatrix.  Allows for the double subscripting of

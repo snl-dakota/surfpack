@@ -1,5 +1,7 @@
 #ifdef HAVE_CONFIG_H
+#ifdef HAVE_CONFIG_H
 #include "surfpack_config.h"
+#endif
 #endif
 #include "surfpack_system_headers.h"
 

@@ -8,7 +8,9 @@
 
 #ifndef SURFACE_TEST_H
 #define SURFACE_TEST_H 
+#ifdef HAVE_CONFIG_H
 #include "surfpack_config.h"
+#endif
 #include <cppunit/extensions/HelperMacros.h>
 #include "SurfData.h"
 #include "surfpack.h"

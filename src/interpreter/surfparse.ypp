@@ -15,7 +15,9 @@ extern "C" int yylex();
 void yyerror(const char* s);
 
 #include "SurfpackParser.h"
+#ifdef HAVE_CONFIG_H
 #include "surfpack_config.h"
+#endif
 #define parser SurfpackParser::instance()
 
 %}
