@@ -6,7 +6,9 @@
     For more information, see the README file in the top Surfpack directory.
     _______________________________________________________________________ */
 
+#ifdef HAVE_CONFIG_H
 #include "surfpack_config.h"
+#endif
 #include "surfpack.h"
 #include "SurfData.h"
 #include "MarsValidator.h"
@@ -153,7 +155,7 @@ unsigned MarsCppSurface::minPointsRequired() const
 double MarsCppSurface::evaluate(const vector<double>& x)
 {
   assert (coeffs.size() == bfs.size());
-  double sum;
+  double sum = 0;
   for (unsigned i = 0; i < bfs.size(); i++) {
     sum += coeffs[i]*bfs[i]->eval(x);
   } 
