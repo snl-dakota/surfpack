@@ -8,7 +8,9 @@
 
 #ifndef __KRIGING_SURFACE_H__
 #define __KRIGING_SURFACE_H__
+#ifdef HAVE_CONFIG_H
 #include "surfpack_config.h"
+#endif
 #include "Surface.h"
 
 // Prototypes for the DAKOTA-to-CONMIN interface subroutine "callconmin"

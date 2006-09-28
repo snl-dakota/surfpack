@@ -8,7 +8,9 @@
 
 #ifndef __RBF_NET_SURFACE_H__ 
 #define __RBF_NET_SURFACE_H__ 
+#ifdef HAVE_CONFIG_H
 #include "surfpack_config.h"
+#endif
 #include "surfpack_system_headers.h"
 #include "SurfPoint.h"
 #include "Surface.h"

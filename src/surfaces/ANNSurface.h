@@ -8,7 +8,9 @@
 
 #ifndef __ANN_SURFACE_H__ 
 #define __ANN_SURFACE_H__ 
+#ifdef HAVE_CONFIG_H
 #include "surfpack_config.h"
+#endif
 #include "Surface.h"
 
 class SurfData;

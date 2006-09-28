@@ -8,7 +8,9 @@
 
 #ifndef __POLYNOMIAL_SURFACE_H__
 #define __POLYNOMIAL_SURFACE_H__
+#ifdef HAVE_CONFIG_H
 #include "surfpack_config.h"
+#endif
 #include "SurfpackMatrix.h"
 #include "Surface.h"
 

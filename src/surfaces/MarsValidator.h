@@ -8,7 +8,9 @@
 
 #ifndef __MARS_CPP_SURFACE_H__
 #define __MARS_CPP_SURFACE_H__
+#ifdef HAVE_CONFIG_H
 #include "surfpack_config.h"
+#endif
 #include "Surface.h"
 
 class Basis

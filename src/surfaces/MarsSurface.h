@@ -8,7 +8,9 @@
 
 #ifndef __MARS_SURFACE_H__
 #define __MARS_SURFACE_H__
+#ifdef HAVE_CONFIG_H
 #include "surfpack_config.h"
+#endif
 #include "Surface.h"
 
 typedef float real;
