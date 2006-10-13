@@ -14,7 +14,6 @@ libann_la_SOURCES = ann.cpp \
                     gen_drno.h \
                     random.cpp \
                     random.h \
-                    system_defs.h \
                     utilities.cpp \
                     utilities.h \
                     vector_enhancements.cpp \
