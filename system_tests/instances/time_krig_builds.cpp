@@ -16,10 +16,12 @@
 #include <windows.h>
 #endif
 
+using std::accumulate;
 using std::cout;
 using std::endl;
 using std::setw;
 using std::string;
+using std::sort;
 using std::vector;
 using SurfpackInterface::CreateAxes;
 using SurfpackInterface::CreateSample;
