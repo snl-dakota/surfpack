@@ -18,6 +18,7 @@
 class SurfPoint;
 class SurfData;
 class SurfScaler;
+namespace surfpack { class ErrorStruct; }
 
 enum MetricType {
   MT_RELATIVE_MAXIMUM,
