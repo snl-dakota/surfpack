@@ -782,8 +782,8 @@ void RBFNetSurface::computeRBFCenters(
   vector<BasisFunction*> unibasis(1);
   // End debug code
 
-  SurfData centersRBF();
-  SurfData sizesRBF();
+  SurfData centersRBF;
+  SurfData sizesRBF;
   // Iterate over all the sets, creating a new basis function
   // for each one
   for (unsigned i = 0; i < partitions.size(); i++) {

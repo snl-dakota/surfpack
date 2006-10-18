@@ -25,6 +25,7 @@ using std::ostream;
 using std::runtime_error;
 using std::string;
 using std::vector;
+using std::ostringstream;
 using SurfpackInterface::CreateAxes;
 using SurfpackInterface::CreateSurface;
 using SurfpackInterface::Fitness;
@@ -317,12 +318,15 @@ int getResponseIndex(const ArgList& arglist, const SurfData& sd)
         return response_index;
       }
   } else {
+    ostringstream os;
     valid = sd.varIndex(response_name, response_index, is_response);
     if (!valid) {
-      cerr << "No response named '" << response_name << "' found." << endl;
+      os << "No response named '" << response_name << "' found." << endl;
+      throw(os.str());
     } else if (!is_response) {
-      cerr << "'" << response_name << "' is a predictor variable, but a"
+      os << "'" << response_name << "' is a predictor variable, but a"
 	   << " response variable was requested" << endl;
+      throw(os.str());
     } else {
       return response_index;
     }
