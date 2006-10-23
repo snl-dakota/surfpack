@@ -27,23 +27,24 @@ lib_LTLIBRARIES = libsurfpack.la
 ## the distribution, even though they may not need to be compiled. The
 ## _SOURCES part is automake's way of specifying which files need to
 ## be compiled in order to build the libsurfpack.la target.
-libsurfpack_la_SOURCES = SurfPoint.cpp \
-			 SurfPoint.h \
+libsurfpack_la_SOURCES = AxesBounds.cpp \
+			 AxesBounds.h \
+			 MersenneTwister.h \
+			 Surface.cpp \
+			 SurfaceFactory.cpp \
+			 SurfaceFactory.h \
+			 Surface.h \
 			 SurfData.cpp \
 			 SurfData.h \
-			 Surface.cpp \
-			 Surface.h \
-			 SurfScaler.cpp \
-			 SurfScaler.h \
-			 AxesBounds.cpp \
-			 AxesBounds.h \
-			 SurfpackMatrix.tpl \
-			 SurfpackMatrix.h \
-			 surfpack_system_headers.h \
 			 surfpack.cpp \
 			 surfpack.h \
-			 SurfaceFactory.cpp \
-			 SurfaceFactory.h
+			 SurfpackMatrix.h \
+			 SurfpackMatrix.tpl \
+			 surfpack_system_headers.h \
+			 SurfPoint.cpp \
+			 SurfPoint.h \
+			 SurfScaler.cpp \
+			 SurfScaler.h
 
 ## _LIBADD is automake's way of saying that these libraries must also
 ## be linked in whenever libsurfpack.la is linked against.  The
