@@ -16,7 +16,11 @@
 #include "unittests.h"
 #include "PolynomialSurface.h"
 
-using namespace std;
+using std::cout;
+using std::endl;
+using std::ostringstream;
+using std::string;
+using std::vector;
 
 CPPUNIT_TEST_SUITE_REGISTRATION( PolynomialSurfaceTest );
 
@@ -80,7 +84,7 @@ void PolynomialSurfaceTest::tearDown()
 
 //void PolynomialSurfaceTest::constructor()
 //{
-//  SurfData sd(fullPath("oneDimQuadratic.spd"));
+//  SurfData sd(string("oneDimQuadratic.spd"));
 //  PolynomialSurface ps(&sd, 2);
 //  ps.createModel();
 //  ps.write("oneDQpoly2.sps");
@@ -92,7 +96,7 @@ void PolynomialSurfaceTest::tearDown()
 
 void PolynomialSurfaceTest::constructor()
 {
-  SurfData sd(fullPath("oneDimQuadratic.spd"));
+  SurfData sd(string("oneDimQuadratic.spd"));
   PolynomialSurface ps(&sd, 2);
   CPPUNIT_ASSERT(ps.scaler == 0);
   CPPUNIT_ASSERT(ps.xsize == 1);
@@ -129,7 +133,7 @@ void PolynomialSurfaceTest::constructorNullData()
 
 void PolynomialSurfaceTest::constructorZeroOrder()
 {
-  SurfData sd(fullPath("oneDimQuadratic.spd"));
+  SurfData sd(string("oneDimQuadratic.spd"));
   PolynomialSurface ps(&sd, 0);
   CPPUNIT_ASSERT(ps.scaler == 0);
   CPPUNIT_ASSERT(ps.xsize == 1);
@@ -148,8 +152,8 @@ void PolynomialSurfaceTest::constructorZeroOrder()
 
 void PolynomialSurfaceTest::constructorFromTextFile()
 {
-  SurfData sd(fullPath("oneDimQuadratic.spd"));
-  PolynomialSurface ps(fullPath("oneDQpoly2.sps"));
+  SurfData sd(string("oneDimQuadratic.spd"));
+  PolynomialSurface ps(string("oneDQpoly2.sps"));
   CPPUNIT_ASSERT(ps.scaler == 0);
   CPPUNIT_ASSERT(ps.xsize == 1);
   CPPUNIT_ASSERT(ps.builtOK);
@@ -166,8 +170,8 @@ void PolynomialSurfaceTest::constructorFromTextFile()
 
 void PolynomialSurfaceTest::constructorFromBinaryFile()
 {
-  SurfData sd(fullPath("oneDimQuadratic.spd"));
-  PolynomialSurface ps(fullPath("oneDQpoly2.bsps"));
+  SurfData sd(string("oneDimQuadratic.spd"));
+  PolynomialSurface ps(string("oneDQpoly2.bsps"));
   CPPUNIT_ASSERT(ps.scaler == 0);
   CPPUNIT_ASSERT(ps.xsize == 1);
   CPPUNIT_ASSERT(ps.builtOK);
@@ -237,7 +241,7 @@ void PolynomialSurfaceTest::constructorCopy()
 
 void PolynomialSurfaceTest::makeSimilarWithNewData()
 {
-  SurfData sd(fullPath("oneDimQuadratic.spd"));
+  SurfData sd(string("oneDimQuadratic.spd"));
   vector<double> coefficients(3);
   coefficients[0] = 0.0;
   coefficients[1] = 0.0;
@@ -356,10 +360,10 @@ void PolynomialSurfaceTest::evaluate()
 
 void PolynomialSurfaceTest::build()
 {
-  SurfData sd(fullPath("oneDimQuadratic.spd"));
+  SurfData sd(string("oneDimQuadratic.spd"));
   PolynomialSurface ps(&sd, 2);
   ps.createModel();
-  ps.write(fullPath("oneDQpoly2.sps"));
+  ps.write(string("oneDQpoly2.sps"));
   CPPUNIT_ASSERT(ps.coefficients.size() == 3);
   CPPUNIT_ASSERT(matches(ps.coefficients[0],0.0));
   CPPUNIT_ASSERT(matches(ps.coefficients[1],0.0));
@@ -368,7 +372,7 @@ void PolynomialSurfaceTest::build()
 
 void PolynomialSurfaceTest::computeTerm()
 {
-  SurfData sd(fullPath("oneDimQuadratic.spd"));
+  SurfData sd(string("oneDimQuadratic.spd"));
   PolynomialSurface ps(&sd, 2);
   ps.createModel();
   ps.resetTermCounter();
@@ -384,7 +388,7 @@ void PolynomialSurfaceTest::computeTerm()
 
 void PolynomialSurfaceTest::computeTermException()
 {
-  SurfData sd(fullPath("oneDimQuadratic.spd"));
+  SurfData sd(string("oneDimQuadratic.spd"));
   PolynomialSurface ps(&sd, 2);
   ps.createModel();
   ps.resetTermCounter();
@@ -872,8 +876,8 @@ void PolynomialSurfaceTest::leastSquares_2d_3o()
 
 void PolynomialSurfaceTest::io()
 {
-  SurfData sd(fullPath("oneDimQuadratic.spd"));
-  PolynomialSurface ps(fullPath("oneDQpoly2.sps"));
+  SurfData sd(string("oneDimQuadratic.spd"));
+  PolynomialSurface ps(string("oneDQpoly2.sps"));
   CPPUNIT_ASSERT(ps.xsize == 1);
   CPPUNIT_ASSERT(ps.builtOK);
   CPPUNIT_ASSERT(!ps.dataModified);
@@ -885,10 +889,10 @@ void PolynomialSurfaceTest::io()
   CPPUNIT_ASSERT(ps.order == 2);
   CPPUNIT_ASSERT(ps.coefficients.size() == 3);
   CPPUNIT_ASSERT(ps.digits.size() == 2);
-  ps.write(fullPath("oneDQpoly2copy.sps"));
-  PolynomialSurface ps2(fullPath("oneDQpoly2copy.sps"));
-  ps2.write(fullPath("oneDQpoly2copy.bsps"));
-  PolynomialSurface ps3(fullPath("oneDQpoly2copy.bsps"));
+  ps.write(string("oneDQpoly2copy.sps"));
+  PolynomialSurface ps2(string("oneDQpoly2copy.sps"));
+  ps2.write(string("oneDQpoly2copy.bsps"));
+  PolynomialSurface ps3(string("oneDQpoly2copy.bsps"));
   CPPUNIT_ASSERT(ps3.xsize == 1);
   CPPUNIT_ASSERT(ps3.builtOK);
   CPPUNIT_ASSERT(!ps3.dataModified);

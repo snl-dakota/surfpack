@@ -19,10 +19,6 @@
 
 int main(int argc, char* argv[])
 {
-  if (argc == 2) {
-    std::string dataroot = std::string(argv[1]);
-    dataRoot(&dataroot);
-  }
   // Get the top level suite from the registry
   CppUnit::Test *suite = CppUnit::TestFactoryRegistry::getRegistry().makeTest();
 
@@ -36,8 +32,6 @@ int main(int argc, char* argv[])
   // Run the test.
   bool wasSucessful = runner.run();
 
-  // Return error code 1 if the one of test failed.
-  cleanup();
+  // Return error code 1 if the one of tests failed.
   return wasSucessful ? 0 : 1;
 }
-

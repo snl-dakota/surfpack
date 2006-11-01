@@ -14,6 +14,7 @@
 #define SURFSCALERTEST_H
 
 #include <cppunit/extensions/HelperMacros.h>
+
 #include "SurfPoint.h"
 
 class SurfScalerTest : public CppUnit::TestFixture

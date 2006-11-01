@@ -107,6 +107,9 @@ case "$ac_cv_cxx_compiler_vendor" in
     ;;
 esac
 
+# Checks for library functions.
+AC_CHECK_FUNCS([gettimeofday drand48 srand48])
+
 # Set up conditional make check target using CppUnit.
 AM_PATH_CPPUNIT([1.9.4], [
   AC_MSG_RESULT(
@@ -123,10 +126,6 @@ found_cppunit=yes
 *** To get CppUnit see http://cppunit.sourceforge.net
 ]))
 AM_CONDITIONAL(HAVE_CPPUNIT, test "$found_cppunit" = "yes")
-
-
-# Checks for library functions.
-AC_CHECK_FUNCS([gettimeofday drand48 srand48])
 
 # Autoconf creates a configure script.  When that configure script is
 # run, the appropriate Makefile.in files are created.  The .in

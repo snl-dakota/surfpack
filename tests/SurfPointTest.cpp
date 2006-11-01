@@ -19,7 +19,13 @@
 #include "SurfPoint.h"
 #include "unittests.h"
 
-using namespace std;
+using std::cout;
+using std::endl;
+using std::ifstream;
+using std::ios;
+using std::ofstream;
+using std::string;
+using std::vector;
 
 CPPUNIT_TEST_SUITE_REGISTRATION( SurfPointTest );
 
@@ -111,7 +117,7 @@ void SurfPointTest::testConstructorFromIStreamBinary()
   //sp2.writeBinary(outfile);
   //outfile.close();
  
-  const string filename = fullPath("point1.sp"); 
+  const string filename = "point1.sp";
   ifstream infile(filename.c_str());
   SurfPoint sp(2, 2, infile);  
   infile.close();
@@ -125,7 +131,7 @@ void SurfPointTest::testConstructorFromIStreamBinary()
 
 void SurfPointTest::testConstructorFromIStreamText()
 {
-  const string filename = fullPath("point1.txt");
+  const string filename = "point1.txt";
   ifstream infile(filename.c_str());
   string one_line;
   getline(infile,one_line);
@@ -278,10 +284,10 @@ void SurfPointTest::testSetX()
 // I/O
 void SurfPointTest::testWriteBinary()
 {
-  ofstream outfile(fullPath("writePoint.sp").c_str(),ios::out | ios::binary);
+  ofstream outfile(string("writePoint.sp").c_str(),ios::out | ios::binary);
   spPtr2->writeBinary(outfile);
   outfile.close();
-  ifstream infile(fullPath("writePoint.sp").c_str(),ios::in | ios::binary);
+  ifstream infile(string("writePoint.sp").c_str(),ios::in | ios::binary);
   SurfPoint sp(1, 2, infile);
   SurfPoint sp2(x2, f1);
   CPPUNIT_ASSERT(sp == sp2);
@@ -289,10 +295,10 @@ void SurfPointTest::testWriteBinary()
 
 void SurfPointTest::testWriteText()
 {
-  ofstream outfile(fullPath("writePoint.txt").c_str(),ios::out);
+  ofstream outfile(string("writePoint.txt").c_str(),ios::out);
   spPtr2->writeText(outfile);
   outfile.close();
-  ifstream infile(fullPath("writePoint.txt").c_str(),ios::in);
+  ifstream infile(string("writePoint.txt").c_str(),ios::in);
   string one_line;
   getline(infile,one_line);
   SurfPoint sp(1, 2, one_line);
@@ -302,7 +308,7 @@ void SurfPointTest::testWriteText()
 
 void SurfPointTest::testReadBinary()
 {
-  const string filename = fullPath("point2.sp");
+  const string filename = "point2.sp";
   ifstream infile(filename.c_str(), ios::in | ios::binary);
   SurfPoint sp(*spPtr2);
   sp.x[0] = 3.0;
@@ -313,8 +319,8 @@ void SurfPointTest::testReadBinary()
 
 void SurfPointTest::testReadText()
 {
-  const string filename = fullPath("point2.txt");
-  ifstream infile(filename.c_str(), ios::in );
+  const string filename = "point2.txt";
+  ifstream infile(filename.c_str(), ios::in);
   SurfPoint sp(*spPtr2);
   sp.x[0] = 3.0;
   string one_line;

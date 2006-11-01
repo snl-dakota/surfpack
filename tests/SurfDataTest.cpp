@@ -23,7 +23,14 @@
 #include "SurfDataTest.h"
 #include "SurfScaler.h"
 
-using namespace std;
+using std::cout;
+using std::endl;
+using std::ifstream;
+using std::ios;
+using std::ofstream;
+using std::set;
+using std::string;
+using std::vector;
 
 CPPUNIT_TEST_SUITE_REGISTRATION( SurfDataTest );
 const unsigned numPoints = 5;
@@ -122,7 +129,7 @@ void SurfDataTest::testConstructorVectorPointsMismatchFs()
 void SurfDataTest::testConstructorFilenameText()
 {
   unsigned pointsInFile = 100;
-  const string filename = fullPath("rast100.spd");
+  const string filename = "rast100.spd";
   SurfData sd(filename);
   CPPUNIT_ASSERT(sd.points.size()==pointsInFile);
   CPPUNIT_ASSERT_EQUAL(sd.xsize, static_cast<unsigned>(2));
@@ -138,7 +145,7 @@ void SurfDataTest::testConstructorFilenameText()
 void SurfDataTest::testConstructorFilenameBinary()
 {
   unsigned pointsInFile = 100;
-  const string filename = fullPath("rast100.bspd");
+  const string filename = "rast100.bspd";
   SurfData sd(filename);
   CPPUNIT_ASSERT(sd.points.size()==pointsInFile);
   CPPUNIT_ASSERT_EQUAL(sd.xsize, static_cast<unsigned>(2));
@@ -154,7 +161,7 @@ void SurfDataTest::testConstructorFilenameBinary()
 void SurfDataTest::testConstructorIStreamText()
 {
   unsigned pointsInFile = 100;
-  const string filename = fullPath("rast100.spd");
+  const string filename = "rast100.spd";
   ifstream infile(filename.c_str(), ios::in);
   SurfData sd(infile, false);
   infile.close();
@@ -172,18 +179,18 @@ void SurfDataTest::testConstructorIStreamText()
 void SurfDataTest::testConstructorIStreamBinary()
 {
   unsigned pointsInFile = 100;
-  const string filename = fullPath("rast100.bspd");
+  const string filename = "rast100.bspd";
   ifstream infile(filename.c_str(), ios::in | ios::binary);
   SurfData sd(infile, true);
-  sd.write(fullPath("frombinary.spd"));
+  sd.write(string("frombinary.spd"));
   infile.close();
 
   // Read it in as text as well and make sure the values are the same
-  const string filenameText = fullPath("rast100.spd");
+  const string filenameText = string("rast100.spd");
   ifstream infileText(filenameText.c_str(), ios::in);
   SurfData sdText(infileText, false);
   infileText.close();
-  sdText.write(fullPath("fromtext.spd"));
+  sdText.write(string("fromtext.spd"));
 
   CPPUNIT_ASSERT(sd.points.size()==pointsInFile);
   CPPUNIT_ASSERT_EQUAL(sd.xsize, static_cast<unsigned>(2));
@@ -203,7 +210,7 @@ void SurfDataTest::testConstructorIStreamBinary()
 void SurfDataTest::testCopyConstructorSimple()
 {
   unsigned pointsInFile = 100;
-  const string filename = fullPath("rast100.bspd");
+  const string filename = "rast100.bspd";
   ifstream infile(filename.c_str(), ios::in);
   SurfData sd2(infile, true);
   infile.close();
@@ -236,7 +243,7 @@ void SurfDataTest::testCopyConstructorSimple()
 void SurfDataTest::testCopyConstructorComplex()
 {
   unsigned pointsInFile = 100;
-  const string filename = fullPath("rast100.bspd");
+  const string filename = "rast100.bspd";
   ifstream infile(filename.c_str(), ios::in);
   SurfData sd2(infile, true);
   infile.close();
@@ -314,14 +321,14 @@ void SurfDataTest::testCopyActiveEmpty()
 void SurfDataTest::testAssignment()
 {
   unsigned pointsInFile = 100;
-  const string filename = fullPath("rast100.spd");
+  const string filename = "rast100.spd";
   ifstream infile(filename.c_str(), ios::in);
   SurfData sdText(infile, false);
   infile.close();
 
   SurfData sdMain(sdText);
   
-  const string filenameBinary = fullPath("manypts.bspd");
+  const string filenameBinary = "manypts.bspd";
   ifstream infileBinary(filenameBinary.c_str(), ios::in);
   SurfData sdBinary(infileBinary, true);
   infileBinary.close();
@@ -355,7 +362,7 @@ void SurfDataTest::testAssignment()
 void SurfDataTest::testAssignmentToSelf()
 {
   unsigned pointsInFile = 100;
-  const string filename = fullPath("rast100.spd");
+  const string filename = "rast100.spd";
   ifstream infile(filename.c_str(), ios::in);
   SurfData sdText(infile, false);
   infile.close();
@@ -385,8 +392,8 @@ void SurfDataTest::testOperatorEquality()
   CPPUNIT_ASSERT(sd.operator==(*sdPtr1));
   CPPUNIT_ASSERT(sdPtr1->operator==(sd));
 
-  SurfData sdText(fullPath("rast100.spd").c_str());
-  SurfData sdBinary(fullPath("rast100.bspd").c_str());
+  SurfData sdText(string("rast100.spd").c_str());
+  SurfData sdBinary(string("rast100.bspd").c_str());
   CPPUNIT_ASSERT_EQUAL(sdText, sdBinary);
   sdText.points[0]->f[0] = 0.0;
   sdBinary.points[0]->f[0] = 1.0;
@@ -400,8 +407,8 @@ void SurfDataTest::testOperatorInequality()
   CPPUNIT_ASSERT(!sd.operator!=(*sdPtr1));
   CPPUNIT_ASSERT(!sdPtr1->operator!=(sd));
 
-  SurfData sdText(fullPath("rast100.spd").c_str());
-  SurfData sdBinary(fullPath("rast100.bspd").c_str());
+  SurfData sdText(string("rast100.spd").c_str());
+  SurfData sdBinary(string("rast100.bspd").c_str());
   CPPUNIT_ASSERT(!(sdText != sdBinary));
   sdText.points[0]->f[0] = 0.0;
   sdBinary.points[0]->f[0] = 1.0;
@@ -787,22 +794,22 @@ void SurfDataTest::testIsScaled()
 
 void SurfDataTest::testWriteBinary()
 {
-  sdPtr1->write(fullPath("surfdata1.bspd"));
-  SurfData sd(fullPath("surfdata1.bspd"));
+  sdPtr1->write(string("surfdata1.bspd"));
+  SurfData sd(string("surfdata1.bspd"));
   CPPUNIT_ASSERT(*sdPtr1 == sd);
 }
 
 void SurfDataTest::testWriteText()
 {
-  sdPtr1->write(fullPath("surfdata1.spd"));
-  SurfData sd(fullPath("surfdata1.spd"), 3, 3, 0);
+  sdPtr1->write(string("surfdata1.spd"));
+  SurfData sd(string("surfdata1.spd"), 3, 3, 0);
   CPPUNIT_ASSERT(*sdPtr1 == sd);
 }
 
 void SurfDataTest::testWriteNoPoints()
 {
   sdPtr1->setExcludedPoints(skipAllPoints);
-  sdPtr1->write(fullPath("surfdata1.spd"));
+  sdPtr1->write(string("surfdata1.spd"));
 }
 
 void SurfDataTest::testWriteNoFile()
@@ -815,22 +822,22 @@ void SurfDataTest::testWriteNoFile()
 
 void SurfDataTest::testWriteBadFileExtension()
 {
-  sdPtr1->write(fullPath("file.zip"));
+  sdPtr1->write(string("file.zip"));
 }
 
 void SurfDataTest::testReadNoFile()
 {
-  sdPtr1->read(fullPath("file_does_not_exist.spd"));
+  sdPtr1->read(string("file_does_not_exist.spd"));
 }
 
 void SurfDataTest::testReadTextFileTooShort()
 {
-  sdPtr1->read(fullPath("claimsTooMany.spd"));
+  sdPtr1->read(string("claimsTooMany.spd"));
 }
 
 void SurfDataTest::testReadBinaryFileTooShort()
 {
-  sdPtr1->read(fullPath("claimsTooMany.bspd"));
+  sdPtr1->read(string("claimsTooMany.bspd"));
 }
 
 void SurfDataTest::testBadSanityCheck()

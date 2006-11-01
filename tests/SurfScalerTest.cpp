@@ -21,7 +21,10 @@
 #include "SurfData.h"
 #include "unittests.h"
 
-using namespace std;
+using std::cout;
+using std::endl;
+using std::string;
+using std::vector;
 
 CPPUNIT_TEST_SUITE_REGISTRATION( SurfScalerTest );
 

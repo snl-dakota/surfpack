@@ -17,13 +17,17 @@
 #include "PolynomialSurface.h"
 #include "SurfScaler.h"
 
-using namespace std;
+using std::cout;
+using std::endl;
+using std::ostringstream;
+using std::string;
+using std::vector;
 
 CPPUNIT_TEST_SUITE_REGISTRATION( SurfaceTest );
 
 void SurfaceTest::setUp()
 {
-  surfd = new SurfData(fullPath("oneDimQuadratic.spd"));
+  surfd = new SurfData(string("oneDimQuadratic.spd"));
   polysurf = new PolynomialSurface(surfd,2);
 }
 
@@ -40,7 +44,7 @@ void SurfaceTest::xSize()
   CPPUNIT_ASSERT( ps.xSize() == 4 );
   PolynomialSurface ps2( 0, 2);
   CPPUNIT_ASSERT_EQUAL( (unsigned)0, ps2.xSize());
-  SurfData sd(fullPath("oneDimQuadratic.spd"));
+  SurfData sd(string("oneDimQuadratic.spd"));
   PolynomialSurface ps3(&sd,2);
   CPPUNIT_ASSERT_EQUAL( (unsigned)1, ps3.xSize() );
   ps3.setData(0);
@@ -57,7 +61,7 @@ void SurfaceTest::hasOriginalData()
   CPPUNIT_ASSERT( !ps.hasOriginalData() );
   PolynomialSurface ps2( 0, 2);
   CPPUNIT_ASSERT( !ps2.hasOriginalData() );
-  SurfData sd(fullPath("oneDimQuadratic.spd"));
+  SurfData sd(string("oneDimQuadratic.spd"));
   PolynomialSurface ps3(&sd,2);
   CPPUNIT_ASSERT( !ps3.hasOriginalData() );
   ps3.createModel();
@@ -71,21 +75,21 @@ void SurfaceTest::hasOriginalData()
 
 void SurfaceTest::acceptableData()
 {
-  SurfData sd(fullPath("oneDimQuadratic.spd"));
+  SurfData sd(string("oneDimQuadratic.spd"));
   PolynomialSurface ps(&sd,2);
   CPPUNIT_ASSERT( ps.acceptableData() );
 }
 
 void SurfaceTest::acceptableDataExceptionNull()
 {
-  SurfData sd(fullPath("oneDimQuadratic.spd"));
+  SurfData sd(string("oneDimQuadratic.spd"));
   PolynomialSurface ps(0,1);
   ps.acceptableData();
 }
 
 void SurfaceTest::acceptableDataExceptionNotEnough()
 {
-  SurfData sd(fullPath("oneDimQuadratic.spd"));
+  SurfData sd(string("oneDimQuadratic.spd"));
   PolynomialSurface ps(&sd,7);
   ps.acceptableData();
 }
@@ -109,7 +113,7 @@ void SurfaceTest::getValueVectorScaled()
   PolynomialSurface ps(surfd, 2);
   ps.scaleUniform();
   ps.createModel();
-  ps.write(fullPath("badscale.sps"));
+  ps.write(string("badscale.sps"));
   cout << ps.scaler->asString();
   CPPUNIT_ASSERT(matches(ps.getValue(x),9.0));
 }
@@ -258,7 +262,7 @@ void SurfaceTest::writeNoDataText()
   coefficients[1] = 0.0;
   coefficients[2] = 1.0;
   PolynomialSurface ps(1,2,coefficients);
-  ps.write(fullPath("poly2NoData.sps"));
+  ps.write(string("poly2NoData.sps"));
 }
 
 void SurfaceTest::writeNoDataBinary()
@@ -268,7 +272,7 @@ void SurfaceTest::writeNoDataBinary()
   coefficients[1] = 0.0;
   coefficients[2] = 1.0;
   PolynomialSurface ps(1,2,coefficients);
-  ps.write(fullPath("poly2NoData.bsps"));
+  ps.write(string("poly2NoData.bsps"));
 }
 
 void SurfaceTest::readNoFile()
@@ -278,13 +282,13 @@ void SurfaceTest::readNoFile()
 
 void SurfaceTest::readBadName()
 {
-  PolynomialSurface ps(fullPath("unknown.sps"));
+  PolynomialSurface ps(string("unknown.sps"));
 
 }
 
 void SurfaceTest::badFileExtension()
 {
-  PolynomialSurface ps(fullPath("unknown.krt"));
+  PolynomialSurface ps(string("unknown.krt"));
 }
 
 void SurfaceTest::print()

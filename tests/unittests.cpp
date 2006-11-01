@@ -18,25 +18,19 @@
 #include "unittests.h"
 #include "surfpack.h"
 
-using namespace std;
-
-const string& dataRoot(const string* newroot)
-{
-  static string s("/tmp/mricha/SurfpackData");
-  if (newroot) {
-    s = *newroot;
-  }
-  return s;
-}
-
-const string fullPath(const string filename)
-{
-  return dataRoot() + "/" + filename;
-}
+using std::cerr;
+using std::cout;
+using std::endl;
+using std::ios;
+using std::ofstream;
+using std::ostream;
+using std::setw;
+using std::string;
+using std::vector;
 
 void writePoint1Files()
 {
-  ofstream outfile(fullPath("point1.txt").c_str(), ios::out);
+  ofstream outfile(string("point1.txt").c_str(), ios::out);
   outfile << "1.0 2.0 3.0 4.0" << endl;
   outfile.close();
   double vals[4];
@@ -44,22 +38,21 @@ void writePoint1Files()
   vals[1] = 2.0;
   vals[2] = 3.0;
   vals[3] = 4.0;
-  ofstream outfile2(fullPath("point1.sp").c_str(), ios::out | ios::binary);
+  ofstream outfile2(string("point1.sp").c_str(), ios::out | ios::binary);
   outfile2.write(reinterpret_cast<char*>(&vals),sizeof(double)*4);
   outfile2.close();
-
 }
 
 void writePoint2Files()
 {
-  ofstream outfile(fullPath("point2.txt").c_str(), ios::out);
+  ofstream outfile(string("point2.txt").c_str(), ios::out);
   outfile << "0.0 1.0 -2.0" << endl;
   outfile.close();
   double vals[3];
   vals[0] = 0.0;
   vals[1] = 1.0;
   vals[2] = -2.0;
-  ofstream outfile2(fullPath("point2.sp").c_str(), ios::out | ios::binary);
+  ofstream outfile2(string("point2.sp").c_str(), ios::out | ios::binary);
   outfile2.write(reinterpret_cast<char*>(&vals),sizeof(double)*3);
   outfile2.close();
 }
@@ -70,16 +63,13 @@ void writeRastriginAndClaimsTooManyFiles()
   intvals[0] = 100;
   intvals[1] = 2;
   intvals[2] = 1;
-  ofstream rastriginText(fullPath("rast100.spd").c_str(),ios::out);
+  ofstream rastriginText(string("rast100.spd").c_str(),ios::out);
   setOstreamFlags(rastriginText);
-  ofstream rastriginBinary(fullPath("rast100.bspd").c_str(),
-    ios::out | ios::binary);
-  ofstream claimsTooManyText(fullPath("claimsTooMany.spd").c_str(),
-    ios::out);
+  ofstream rastriginBinary(string("rast100.bspd").c_str(),
+			   ios::out | ios::binary);
+  ofstream claimsTooManyText(string("claimsTooMany.spd").c_str(), ios::out);
   setOstreamFlags(claimsTooManyText);
-  ofstream claimsTooManyBinary(fullPath("claimsTooMany.bspd").c_str(),
-
-    ios::out);
+  ofstream claimsTooManyBinary(string("claimsTooMany.bspd").c_str(), ios::out);
   
   // write SurfData headers
   rastriginText << intvals[0] << endl 
@@ -125,7 +115,6 @@ void writeRastriginAndClaimsTooManyFiles()
   rastriginBinary.close(); 
   claimsTooManyText.close();
   claimsTooManyBinary.close();
-
 }
 
 void writeManyPtsFiles()
@@ -134,9 +123,9 @@ void writeManyPtsFiles()
   intvals[0] = 10000;
   intvals[1] = 5;
   intvals[2] = 1;
-  ofstream manyptsText(fullPath("manypts.spd").c_str(),ios::out);
+  ofstream manyptsText(string("manypts.spd").c_str(),ios::out);
   setOstreamFlags(manyptsText);
-  ofstream manyptsBinary(fullPath("manypts.bspd").c_str(),
+  ofstream manyptsBinary(string("manypts.bspd").c_str(),
     ios::out | ios::binary);
   
   // write SurfData headers
@@ -183,12 +172,11 @@ void writeManyPtsFiles()
   }     
   manyptsText.close();
   manyptsBinary.close(); 
-
 }
 
 void writeOneDimQuadratic()
 {
-  ofstream outfile(fullPath("oneDimQuadratic.spd").c_str(),ios::out);
+  ofstream outfile(string("oneDimQuadratic.spd").c_str(),ios::out);
   outfile << "7\n1\n1" << endl;
   outfile << "0.0 0.0" << endl;
   outfile << "1.0 1.0" << endl;
@@ -202,7 +190,7 @@ void writeOneDimQuadratic()
 
 void writeOneDQpoly2Files()
 {
-  ofstream outfile(fullPath("oneDQpoly2.sps").c_str(),ios::out);
+  ofstream outfile(string("oneDQpoly2.sps").c_str(),ios::out);
   outfile << "polynomial" << endl;
   outfile << "1 dimensions" << endl;
   outfile << "2 order" << endl;
@@ -223,7 +211,7 @@ void writeOneDQpoly2Files()
   outfile.close();
   
   // write the same surface out in binary
-  ofstream binoutfile(fullPath("oneDQpoly2.bsps").c_str(),ios::out|ios::binary);
+  ofstream binoutfile(string("oneDQpoly2.bsps").c_str(),ios::out|ios::binary);
   // write out the name
   string name = "polynomial";
   unsigned nameSize = name.length();
@@ -270,7 +258,7 @@ void writeOneDQpoly2Files()
 
 void writeUnknownSurfaceFile()
 {
-  ofstream outfile(fullPath("unknown.sps").c_str(),ios::out);
+  ofstream outfile(string("unknown.sps").c_str(),ios::out);
   outfile << "Unknown" << endl;
   outfile << "1 dimensions" << endl;
   outfile << "2 order" << endl;
@@ -302,17 +290,6 @@ void initialize()
 {
   static bool initialized = false;
   if (!initialized) {
-    ostringstream heredoc;
-    heredoc << "sh <<MKDIREOF" << endl
- 	    << "if test -d " << dataRoot()  << endl
- 	    << "then" << endl
- 	    << "  chmod 777 " << dataRoot() << endl
-	    << "  echo Directory already exists " << endl
-	    << "else" << endl
-	    << "  mkdir -m 777 " << dataRoot() << endl
-	    << "fi " << endl
- 	    << "MKDIREOF" << endl;
-    system(heredoc.str().c_str()); 
     initialized = true;
     cout << "Writing test files...." << endl;
     writePoint1Files();
@@ -322,20 +299,7 @@ void initialize()
     writeOneDimQuadratic();
     writeOneDQpoly2Files();
     writeUnknownSurfaceFile();
-    ostringstream permiss;
-    permiss << "cd " << dataRoot() << "; chmod 666 ./*; cd -" << endl;
-    system(permiss.str().c_str());
   }
-}
-
-void cleanup()
-{
-  cout << "Cleaning up test files...." << endl;
-  ostringstream heredoc;
-  heredoc << "sh <<RMDIREOF" << endl
-          << "rm -rf " << dataRoot() << endl
-          << "RMDIREOF" << endl;
-  system(heredoc.str().c_str()); 
 }
 
 bool matches(double observed, double target, double margin)

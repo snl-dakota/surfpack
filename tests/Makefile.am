@@ -36,7 +36,7 @@ srftest_LDFLAGS = $(CPPUNIT_LIBS)
 ## LAPACK_LIBS, BLAS_LIBS, and FLIBS would be set by the configure
 ## script.
 srftest_LDADD = $(top_builddir)/src/libsurfpack.la \
-		$(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS)
+		$(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS) $(LEXLIB)
 
 ## Specifies additional places to look for files requested via #include.
 INCLUDES = -I$(top_srcdir)/src -I$(top_srcdir)/src/surfaces \
@@ -49,5 +49,7 @@ INCLUDES = -I$(top_srcdir)/src -I$(top_srcdir)/src/surfaces \
 ## .da and .gcov files are extensions of files that may be created by the
 ## gcov profiler.  The *.ii and *.s files are temporary files that may be
 ## produced during C/C++ compilation.
-CLEANFILES = *.bb *.bbg *.da *.gcov *.ii *.s
+CLEANFILES = *.bb *.bbg *.da *.gcov *.ii *.s \
+             *.bspd *.bsps *.sp *.spd *.sps *.txt
+
 MAINTAINERCLEANFILES = Makefile.in

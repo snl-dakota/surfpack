@@ -14,6 +14,7 @@
 #define SURFPOINTTEST_H
 
 #include <cppunit/extensions/HelperMacros.h>
+
 #include "SurfPoint.h"
 #include "SurfData.h"
 

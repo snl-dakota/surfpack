@@ -12,8 +12,10 @@
 #include "surfpack_config.h"
 #endif
 #include <cppunit/extensions/HelperMacros.h>
+
 #include "SurfData.h"
 #include "surfpack.h"
+
 class Surface;
 class PolynomialSurface;
 
