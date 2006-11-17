@@ -855,3 +855,29 @@ void SurfDataTest::testStreamInsertion()
   cout << "End SurfDataTest" << endl;
 }
 
+void SurfDataTest::columnHeaderTest()
+{
+  // File that we're reading
+  // "%\tx\ty" << endl;
+  // "0.0 0.0" << endl;
+  // "1.0 1.0" << endl;
+  // "-1.0 1.0" << endl;
+  // "2.0 4.0" << endl;
+  // "-2.0 4.0" << endl;
+  // "3.0 9.0" << endl;
+  // "-3.0 9.0" << endl;
+  SurfData sd2("withHeader.spd",1,1,0);
+  CPPUNIT_ASSERT(sd2.points.size() == 7);
+  CPPUNIT_ASSERT(matches(sd2.points[0]->X()[0], 0.0));
+  CPPUNIT_ASSERT(matches(sd2.points[6]->X()[0], -3.0));
+ 
+  CPPUNIT_ASSERT_EQUAL(sd2.xsize, static_cast<unsigned>(1));
+  CPPUNIT_ASSERT_EQUAL(sd2.fsize, static_cast<unsigned>(1));
+  CPPUNIT_ASSERT(sd2.mapping.size()== sd2.points.size());
+  for (unsigned i = 0; i < sd2.points.size(); i++) {
+    CPPUNIT_ASSERT_EQUAL(sd2.mapping[i], i);
+  }
+  CPPUNIT_ASSERT(sd2.excludedPoints.empty());
+  CPPUNIT_ASSERT_EQUAL(sd2.defaultIndex, unsignedZero);
+}
+

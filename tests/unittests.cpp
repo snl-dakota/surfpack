@@ -256,6 +256,20 @@ void writeOneDQpoly2Files()
   binoutfile.close(); 
 }
 
+void writeSurfDataWithHeader()
+{
+  ofstream outfile(string("withHeader.spd").c_str(),ios::out);
+  outfile << "%\tx\ty" << endl;
+  outfile << "0.0 0.0" << endl;
+  outfile << "1.0 1.0" << endl;
+  outfile << "-1.0 1.0" << endl;
+  outfile << "2.0 4.0" << endl;
+  outfile << "-2.0 4.0" << endl;
+  outfile << "3.0 9.0" << endl;
+  outfile << "-3.0 9.0" << endl;
+  outfile.close();
+}
+
 void writeUnknownSurfaceFile()
 {
   ofstream outfile(string("unknown.sps").c_str(),ios::out);
@@ -298,6 +312,7 @@ void initialize()
     writeManyPtsFiles();
     writeOneDimQuadratic();
     writeOneDQpoly2Files();
+    writeSurfDataWithHeader();
     writeUnknownSurfaceFile();
   }
 }

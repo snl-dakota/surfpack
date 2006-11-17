@@ -25,6 +25,7 @@ void writeRastriginAndClaimsTooManyFiles();
 void writeManyPtsFiles();
 void writeOneDimQuadratic();
 void writeUnknownSurfaceFile();
+void writeSurfDataWithHeader();
 void setOstreamFlags(std::ostream& os);
 void initialize();
 bool matches(double observed, double target, double margin = 1.0e-2);

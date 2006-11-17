@@ -95,6 +95,7 @@ class SurfDataTest : public CppUnit::TestFixture
   CPPUNIT_TEST_EXCEPTION( testBadSanityCheck,
     SurfData::bad_surf_data);
   CPPUNIT_TEST( testStreamInsertion );
+CPPUNIT_TEST( columnHeaderTest );
   CPPUNIT_TEST_SUITE_END();
 public:
   void setUp();
@@ -173,6 +174,7 @@ private:
   std::vector<SurfPoint> surfpoints;
   std::set<unsigned> skipAllPoints;
   std::set<unsigned> skipPoints;
+void columnHeaderTest();
 };
 
 #endif
