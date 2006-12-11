@@ -39,13 +39,9 @@
 #include "dsvd2.h"
 
 #ifdef HAVE_STD
-#include <cmath>
-#else
-#include <math.h>
-#endif
-
-using std::vector;
-
+using std::fabs;
+using std::sqrt;
+#endif HAVE_STD
 
 void dsvd2(double **a, int m, int n, double **u,double *w,double **v)
 {

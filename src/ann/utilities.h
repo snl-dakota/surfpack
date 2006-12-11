@@ -19,15 +19,6 @@
 #ifndef _utilities_h_
 #define _utilities_h_
 
-
-/*
- * Function: my_atanh
- * Usage: double my_atanh(x)
- * -------------------------
- * This function will return the arctanh of argument x.
- */
-double my_atanh(double x);
-
 /*
  * Function: multiplyMM 
  * Usage: DakotaRealMatix = multiplyMM(std::vector< std::vector< double > > m1, std::vector< std::vector< double > > m2)

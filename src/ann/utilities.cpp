@@ -14,36 +14,13 @@
    value x
 */
 
-#include <vector>
-#include "vector_enhancements.h"
 #include "surfpack_system_headers.h"
 #include "utilities.h"
-
-#ifdef HAVE_STD
-#include <cmath>
-#else
-#include <math.h>
-#endif
+#include "vector_enhancements.h"
 
 using std::cerr;
 using std::endl;
 using std::vector;
-
-/*
- * Function: my_atanh
- * Usage: double my_atanh(x)
- * -------------------------
- * This function will compute the arctanh(x).
- */
-double my_atanh(double x)
-{
-  if (fabs(x) >= 1.0) {
-    cerr << "atanh(x) ERROR: |x| must be < 1.0" << endl;
-    exit(-1);
-  }
-
-  return( 0.5*log((1.0+x)/(1.0-x)) );
-}
 
 /*
  * Function: multiplyMM 
