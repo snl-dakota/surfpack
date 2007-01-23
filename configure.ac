@@ -114,16 +114,16 @@ AC_CHECK_FUNCS([gettimeofday drand48 srand48])
 AM_PATH_CPPUNIT([1.9.4], [
   AC_MSG_RESULT(
 
-*** Found CppUnit
-*** Setting up make check to run tests...)
+=== Found CppUnit
+=== Setting up make check to run tests...)
 found_cppunit=yes
 ],
   AC_MSG_RESULT([
 
-*** Unable to find a recent enough CppUnit
-*** Will not run unit testing!!
-***
-*** To get CppUnit see http://cppunit.sourceforge.net
+=== Unable to find a recent enough CppUnit
+=== Will not run unit testing!!
+===
+=== To get CppUnit see http://cppunit.sourceforge.net
 ]))
 AM_CONDITIONAL(HAVE_CPPUNIT, test "$found_cppunit" = "yes")
 

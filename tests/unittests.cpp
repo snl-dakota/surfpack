@@ -320,10 +320,10 @@ void initialize()
 bool matches(double observed, double target, double margin)
 {
   bool result;
-  if (abs(target) < 1e-10) {
-    result = abs(observed) < margin;
+  if (fabs(target) < 1e-10) {
+    result = fabs(observed) < margin;
   } else {
-    result = abs((observed - target) / target) < margin;
+    result = fabs((observed - target) / target) < margin;
   }
 
   if (result) return true;
