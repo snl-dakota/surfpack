@@ -145,6 +145,10 @@ double MarsSurface::evaluate(const vector<double>& x)
   }
   real* sp = new real[2];
   real* f = new real[1];
+  // (BMA, 4/17/2007): The following explicit initializations added due to
+  // similar need with fm and im in build(...) below.  Conservative.
+  memset(sp, 0, 2*sizeof(real));
+  f[0] = 0;
   FMODM_F77(interpolation,nval,xVector,fm,im,f,sp);
   delete [] sp;
   delete [] xVector;
@@ -180,6 +184,20 @@ void MarsSurface::build(SurfData& data)
   double* dp = new double[2*(max(n*max_bases,(max_bases+1)*(max_bases+1))+
 			     max((max_bases+2)*(nmcv+3),4*max_bases))];
   int* mm = new int[2*(n*np+2*max(max_interactions,nmcv))];
+
+  // (BMA, 04/17/2007): The following explicit initializations added due to
+  // valgrind reports of accessing uninitialized memory in fm.  Perhaps due to
+  // old FORTRAN compiler convention of zeroing variables.  This is likely more
+  // conservative than needed, but should be safer (at a cost).
+  memset( fm, 0, (3+max_bases*(5*max_interactions+nmcv+6)+2*np+ntcv)*
+	         sizeof(real) );
+  memset( im, 0, (21+max_bases*(3*max_interactions+8))*sizeof(int) );
+  memset( sp, 0, (2*(n*(max(max_bases+1,2)+3) + 
+		     max(3*n+5*max_bases+np,max(2*np,4*n))) +
+		  2*np+4*max_bases) * sizeof(real) );
+  memset( dp, 0, 2*(max(n*max_bases,(max_bases+1)*(max_bases+1))+
+		    max((max_bases+2)*(nmcv+3),4*max_bases))*sizeof(double) );
+  memset( mm, 0, 2*(n*np+2*max(max_interactions,nmcv))*sizeof(int) );
 
   //unsigned pts = data.size();
   //for (unsigned i = 0; i < pts; i++) {
