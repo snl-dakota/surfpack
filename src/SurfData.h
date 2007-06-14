@@ -318,7 +318,7 @@ public:
   bool readLabelsIfPresent(std::string single_line);
 
   /// Read the #points, #vars, #responses
-  unsigned SurfData::readHeaderInfo(std::istream& is);
+  unsigned readHeaderInfo(std::istream& is);
 
 // ____________________________________________________________________________
 // Testing 
