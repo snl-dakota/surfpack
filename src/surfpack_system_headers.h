@@ -42,6 +42,7 @@
 #include <list>
 #include <map>
 #include <numeric>
+#include <queue>
 #include <set>
 #include <sstream>
 #include <stack>
@@ -50,3 +51,15 @@
 #include <sys/time.h>
 #include <vector>
 #endif
+
+#include <boost/shared_ptr.hpp>
+
+typedef std::vector<double> VecDbl;
+typedef std::vector<double>::const_iterator VecDblIt;
+typedef std::vector<unsigned> VecUns;
+typedef std::vector<unsigned>::const_iterator VecUnsIt;
+typedef std::vector< std::vector< unsigned > > VecVecUns;
+typedef std::vector< std::vector< double > > VecVecDbl;
+typedef std::vector< std::string > VecStr;
+
+
