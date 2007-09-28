@@ -1,13 +1,10 @@
 ## Process this file with automake to produce Makefile.in
-noinst_LTLIBRARIES = libinterpreter.la
-
-libinterpreter_la_SOURCES = SurfpackParserArgs.cpp \
-			    SurfpackParserArgs.h
 
 AM_YFLAGS = -d
 
 if BUILD_STANDALONE
-libinterpreter_la_SOURCES += lexer.l \
+noinst_LTLIBRARIES = libinterpreter.la
+libinterpreter_la_SOURCES = lexer.l \
 			     surfparse.ypp \
 			     surfparse.h \
 			     SurfpackParser.cpp \
