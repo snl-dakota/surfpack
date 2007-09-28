@@ -1,11 +1,10 @@
 ## Process this file with automake to produce Makefile.in
 
 ## Build the Surfpack binary iff BUILD_STANDALONE has been set 
+## Must be explicitly enabled at configure time
 if BUILD_STANDALONE
   bin_PROGRAMS = surfpack
-  surfpack_SOURCES = main.cpp \
-		     SurfDataGenerator.cpp \
-		     SurfDataGenerator.h
+  surfpack_SOURCES = main.cpp 
   surfpack_LDADD = $(top_builddir)/src/libsurfpack.la
 if NEEDS_EXTRA_LAPACK_ROUTINES
   surfpack_LDADD += $(BLAS_LIBS) $(LIBS) $(FLIBS) $(LEXLIB)

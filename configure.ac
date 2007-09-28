@@ -82,8 +82,9 @@ AM_CONDITIONAL([NEEDS_EXTRA_LAPACK_ROUTINES],[test "x$acx_lapack_ok" != xyes])
 AC_PROG_LEX
 AC_PROG_YACC
 
-# If some kind of lex and yacc are found, build the standalone executable 
-ACX_BUILD_STANDALONE
+# Only build the standalone program if it is specifically requested
+AC_ARG_ENABLE(standalone,AS_HELP_STRING([--enable-standalone],[build command-line interpreter (needs lex, yacc)]),[enable_standalone=$enableval],[enable_standalone=no])
+AM_CONDITIONAL([BUILD_STANDALONE], [test "x$enable_standalone" = xyes])
 
 # Checks for C++ ISO standard compliance.
 AC_CXX_HAVE_STD
@@ -109,6 +110,8 @@ esac
 
 # Checks for library functions.
 AC_CHECK_FUNCS([gettimeofday drand48 srand48])
+AC_CHECK_LIB([gslcblas],[cblas_ddot])
+AC_CHECK_LIB([gsl],[gsl_ran_fdist_pdf])
 
 # Set up conditional make check target using CppUnit.
 AM_PATH_CPPUNIT([1.9.4], [
