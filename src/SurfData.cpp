@@ -13,6 +13,7 @@
 #include "SurfData.h"
 #include "Surface.h"
 #include "SurfScaler.h"
+#include "ModelScaler.h"
 
 using std::cerr;
 using std::cout;
@@ -213,7 +214,7 @@ bool SurfData::operator==(const SurfData& other) const
 {
   if (this->xsize == other.xsize && 
       this->fsize == other.fsize &&
-      this->size() == other.size()) {
+      this->size() == other.size()) { 
     for (unsigned i = 0; i < points.size(); i++) {
       if (*this->points[i] != *other.points[i]) {
         return false;
@@ -237,6 +238,25 @@ const SurfPoint& SurfData::operator[](unsigned index) const
   static string header("Indexing error in SurfData::operator[] const.");
   checkRangeNumPoints(header, index);
   return *points[mapping[index]];
+}
+
+/// Return the value for point pt along dimension dim
+double SurfData::operator()(unsigned pt, unsigned dim) const
+{
+  assert(pt < size());
+  assert(dim < xSize());
+  //return points[mapping[pt]]->X()[dim];
+  return points[mapping[pt]]->X()[dim];
+}
+
+/// Return the vector of predictor vars for point index 
+const vector<double>& SurfData::operator()(unsigned pt) const
+{
+  if (pt >= size()) {
+    cout << "Assertion failure.  Pt: " << pt << " size: " << size() << endl;
+  }
+  assert(pt < size());
+  return points[mapping[pt]]->X();
 }
 
 // ____________________________________________________________________________
@@ -286,6 +306,27 @@ double SurfData::getResponse(unsigned index) const
   static string header("Indexing error in SurfData::getResponse.");
   checkRangeNumPoints(header, index);
   return points[mapping[index]]->F(defaultIndex);
+}
+
+/// Get the responses for all of the points as a vector
+std::vector< double > SurfData::getResponses() const
+{
+  vector< double > result(mapping.size());
+  for (unsigned i = 0; i < mapping.size(); i++) {
+    result[i] = points[mapping[i]]->F(defaultIndex);
+  }
+  return result;
+}
+
+/// Get the predictor for all of the points as a vector
+std::vector< double > SurfData::getPredictor(unsigned index) const
+{
+  assert(index < xSize());
+  vector< double > result(mapping.size());
+  for (unsigned i = 0; i < mapping.size(); i++) {
+    result[i] = (*this)(i,index);
+  }
+  return result;
 }
 
 /// Get default index
@@ -377,7 +418,6 @@ void SurfData::setScaler(SurfScaler* scaler_in)
     disableScaling();
   }
 }
-    
 /// Add a point to the data set. The parameter point will be copied.
 void SurfData::addPoint(const SurfPoint& sp) 
 {
@@ -909,4 +949,15 @@ void SurfData::checkRangeNumResponses(const string& header,
     }
     throw range_error(errormsg.str());
   }
+}
+
+VecVecDbl SurfData::asVecVecDbl(const SurfData& data)
+{
+  VecVecDbl result(data.size(),data.xSize());
+  for (unsigned i = 0; i < data.size(); i++) {
+    for (unsigned j = 0; j < data.xSize(); j++) {
+      result[i][j] = data(i,j);
+    }
+  }
+  return result;
 }

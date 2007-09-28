@@ -294,6 +294,8 @@ double Surface::goodnessOfFit(const string metricName, SurfData* surfData)
       return genericMetric(observed,predicted,MT_MEAN,SCALED);
     } else if (metricName == "root_mean_squared") {
       return rootMeanSquared(observed,predicted);
+    } else if (metricName == "l2norm") {
+      return sqrt(genericMetric(observed,predicted,MT_SUM,SQUARED));
     } else {
       throw string("No error metric of that type in this class");
     }

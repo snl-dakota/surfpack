@@ -106,6 +106,12 @@ public:
   /// Return a const reference to SurfPoint at given index
   const SurfPoint& operator[](unsigned index) const;
 
+  /// Return the value for point pt along dimension dim
+  double operator()(unsigned pt, unsigned dim) const;
+
+  /// Return the vector of predictor vars for point index 
+  const std::vector<double>& operator()(unsigned pt) const;
+
 // ____________________________________________________________________________
 // Queries 
 // ____________________________________________________________________________
@@ -130,6 +136,12 @@ public:
 
   /// Get the response value of the (index)th point
   double getResponse(unsigned index) const;
+
+  /// Get the responses for all of the points as a vector
+  std::vector< double > getResponses() const;
+  
+  /// Get the predictor for all the points as a vector
+  std::vector< double > getPredictor(unsigned index) const;
 
   /// Return defaultIndex
   unsigned getDefaultIndex() const;
@@ -320,6 +332,7 @@ public:
   /// Read the #points, #vars, #responses
   unsigned readHeaderInfo(std::istream& is);
 
+  static VecVecDbl asVecVecDbl(const SurfData& data);
 // ____________________________________________________________________________
 // Testing 
 // ____________________________________________________________________________
