@@ -31,6 +31,7 @@ public:
   /// hyper-gridding, the pts and interval fields are also used.  
   struct Axis {
       Axis() : min(0.0), max(0.0), minIsMax(true) {}
+      Axis(double min_in, double max_in) : min(min_in), max(max_in), minIsMax(min==max) {}
 
       /// Minimum value along this dimension.
       double min;
@@ -40,15 +41,16 @@ public:
 
       /// No variation along this dimension
       bool minIsMax;
-  };
 
-  enum ParamType {file = 1, data = 2};
+      std::string asString() const;
+  };
 
   /// Object is created from an existing list of Axis objects
   AxesBounds( std::vector<Axis> axes_in);
 
-  /// Object is created from a text file
-  AxesBounds( std::string file_or_data, ParamType pt = file);
+  /// Object is created from a string containing min/max pairs
+  // along one or more axes, delimited by | 
+  AxesBounds( std::string bounds);
 
   /// No special behavior
   ~AxesBounds();
@@ -56,14 +58,15 @@ public:
   /// Return a hypergrid data set as a SurfData object.  The client is 
   /// responsible to deallocate the memory.
   SurfData* sampleGrid(const std::vector<unsigned>& grid_points, 
-    const std::vector<std::string>& test_functions);
+    const std::vector<std::string>& test_functions) const;
 
   /// Return a data set with size SurfPoints.  Parameter test_functions
   /// must contain the names of zero or more functions at which all the data
   /// points should be evaluated.  The test functions should reside in the
   /// surfpack namespace.  The client must deallocate the memory.
   SurfData* sampleMonteCarlo(unsigned size, 
-    const std::vector<std::string>& test_functions);
+    const std::vector<std::string>& test_functions) const;
+  SurfData* sampleMonteCarlo(unsigned size) const; 
 
   /// Advance the counter used to iterate through dimensions for grid data.
   /// For example, if the client has requested a 10 x 10 grid, and the point
@@ -71,10 +74,25 @@ public:
   /// odometer) to (4,0).  This will signify that the next point to be added
   /// should be (axes[0].min+4*axes[0].interval, axes[1].min+0*axes[1].interval.
   void nextPoint(std::vector<unsigned>& point_odometer,
-    const std::vector<unsigned>& grid_points);
+    const std::vector<unsigned>& grid_points) const;
 
-  std::vector<double> computeIntervals(std::vector<Axis>& axes, 
-    const std::vector<unsigned>& grid_points);
+  std::vector<double> computeIntervals(const std::vector<Axis>& axes, 
+    const std::vector<unsigned>& grid_points) const;
+
+  /// Return the information stores in m_axes as a text string
+  std::string asString() const;
+
+  /// Return the number of dimensions 
+  unsigned size() const;
+
+  /// Return a reference to the bounds for the dimension specified by index
+  const Axis& operator[](unsigned index) const;
+
+  /// Return a reference to the vector of Axis
+  const std::vector<Axis>& axes() const;
+
+  /// Return the smallest hypercube that contains all the data
+  static AxesBounds boundingBox(const SurfData& sd);
 
 protected:
   /// Parse out the boundary information from an input stream created from a 
@@ -83,6 +101,6 @@ protected:
 
 protected:
   /// The set of <minimum, maximum> specifications for each dimension
-  std::vector<Axis> axes;
+  std::vector<Axis> m_axes;
 };
 #endif
