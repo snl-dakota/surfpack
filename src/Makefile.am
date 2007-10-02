@@ -1,12 +1,19 @@
 ## Process this file with automake to produce Makefile.in
-SUBDIRS = ann conmin interpreter kriging mars surfaces
+##-- SUBDIRS = ann conmin interpreter kriging mars surfaces
+SUBDIRS = ann conmin kriging mars surfaces
 
 SUBLIBS = ann/libann.la \
           conmin/libconmin.la \
-          interpreter/libinterpreter.la \
           kriging/libkriging.la \
           mars/libmars.la \
           surfaces/libsurfaces.la
+##-- was in list interpreter/libinterpreter.la \
+
+if BUILD_STANDALONE
+SUBDIRS += interpreter 
+SUBLIBS += interpreter/libinterpreter.la
+endif
+
 
 if NEEDS_EXTRA_LAPACK_ROUTINES
 SUBDIRS += lapack
@@ -20,6 +27,7 @@ endif
 ## called for.
 lib_LTLIBRARIES = libsurfpack.la
 
+libsurfpack_la_CPPFLAGS= -g -fno-inline
 ## libsurfpack_la is the canonicalized form of the libsurfpack.la that
 ## was listed above as one of the targets that needs to be built by
 ## this makefile.  (See the automake manual for the canonicalization
@@ -41,6 +49,10 @@ libsurfpack_la_SOURCES = AxesBounds.cpp \
 			 SurfpackMatrix.h \
 			 SurfpackMatrix.tpl \
 			 surfpack_system_headers.h \
+			 SurfpackInterface.h \
+			 SurfpackInterface.cpp \
+			 SurfpackParserArgs.h \
+ 			 SurfpackParserArgs.cpp \
 			 SurfPoint.cpp \
 			 SurfPoint.h \
 			 SurfScaler.cpp \
@@ -54,8 +66,8 @@ libsurfpack_la_LIBADD = $(SUBLIBS)
 ## Specifies additional places for the compiler to look for files that
 ## are requested via #include.
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src \
-	   -I$(top_srcdir)/src/ann \
 	   -I$(top_srcdir)/src/interpreter \
+	   -I$(top_srcdir)/src/ann \
 	   -I$(top_srcdir)/src/surfaces
 
 ## The Makefiles produced by automake create a target named "clean"

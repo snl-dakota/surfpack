@@ -52,8 +52,6 @@
 #include <vector>
 #endif
 
-#include <boost/shared_ptr.hpp>
-
 typedef std::vector<double> VecDbl;
 typedef std::vector<double>::const_iterator VecDblIt;
 typedef std::vector<unsigned> VecUns;
