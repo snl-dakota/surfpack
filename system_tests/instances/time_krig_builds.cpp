@@ -7,7 +7,7 @@
 
 #include "surfpack.h"
 #include "SurfData.h"
-#include "SurfpackInterpreter.h"
+#include "SurfpackInterface.h"
 #include "AxesBounds.h"
 #include "KrigingSurface.h"
 #include "PolynomialSurface.h"
@@ -54,7 +54,7 @@ double time_difference(struct timeval& starttime, struct timeval& endtime)
 int main(int argc, char** argv)
 {
   AxesBounds* ab = 0;
-  CreateAxes(ab,string("-2 2 | -2 2"), AxesBounds::data);
+  CreateAxes(ab,string("-2 2 | -2 2"));
   vector<string> functions;
   vector<double> thetas(2,1.0);
   vector<unsigned> setsizes;
@@ -64,8 +64,8 @@ int main(int argc, char** argv)
   vector<double> responses(2);
   double timeneeded;
   SurfData krigtimes;
-  for (unsigned i = 3050; i <= 5000; i += 50) setsizes.push_back(i);
-  setsizes.push_back(10000);
+  for (unsigned i = 30; i <= 50; i += 5) setsizes.push_back(i);
+  setsizes.push_back(100);
   //for (unsigned i = 500; i < 1000; i += 25) setsizes.push_back(i);
   //for (unsigned i = 1000; i <= 2500; i += 100) setsizes.push_back(i);
   functions.push_back(string("rosenbrock"));
@@ -75,7 +75,7 @@ int main(int argc, char** argv)
     cout << setw(8) << setsizes[setsize] ;
     for (unsigned trial = 0; trial < num_trials; trial++) {
       SurfData* sd = 0;
-      CreateSample(sd,ab,setsizes[setsize],functions);
+      CreateSample(sd,*ab,setsizes[setsize],functions);
       //SurfData* sd = ab.sampleMonteCarlo(setsizes[setsize],functions);
       Surface* ks = 0;
       CreateSurface(ks,sd,string("kriging"));
