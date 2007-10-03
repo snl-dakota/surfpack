@@ -191,7 +191,7 @@ void PolynomialSurface::hessian(const vector<double> & x, SurfpackMatrix<double>
   // Differentiate with respect to each variable
   for (unsigned difVar1 = 0; difVar1 < xsize; difVar1++) {
     for (unsigned difVar2 = difVar1; difVar2 < xsize; difVar2++) {
-      hessian[difVar1][difVar2] = hessian[difVar2][difVar1] = 0.0;
+      hessian(difVar1,difVar2) = hessian(difVar2,difVar1) = 0.0;
       resetTermCounter();
       differentiationCounts = vector<unsigned>(xsize,0);
       differentiationCounts[difVar1]++;
@@ -199,8 +199,8 @@ void PolynomialSurface::hessian(const vector<double> & x, SurfpackMatrix<double>
       for (unsigned term = 0; term < coefficients.size(); term++) {
         accumulateLikeFactors(factorCounts);
         double addition = coefficients[term] * computeDerivTerm(x, factorCounts, differentiationCounts);
-        hessian[difVar1][difVar2] += addition;
-        if (difVar1 != difVar2) hessian[difVar2][difVar1] += addition;
+        hessian(difVar1,difVar2) += addition;
+        if (difVar1 != difVar2) hessian(difVar2,difVar1) += addition;
         nextTerm();
       }
     }
@@ -227,7 +227,7 @@ void PolynomialSurface::setEqualityConstraints(unsigned asv,const SurfPoint& sp,
   if (asv & 1) {
     resetTermCounter();
     while (!lastTerm) {
-      eqConLHS[index][termIndex] = computeTerm(sp.X());
+      eqConLHS(index,termIndex) = computeTerm(sp.X());
       nextTerm();
     }
     eqConRHS[index] = valuePtr;
@@ -246,7 +246,7 @@ void PolynomialSurface::setEqualityConstraints(unsigned asv,const SurfPoint& sp,
       resetTermCounter(); 
       while (!lastTerm) {
         accumulateLikeFactors(factorCounts);
-        eqConLHS[index][termIndex] = 
+        eqConLHS(index,termIndex) = 
           computeDerivTerm(sp.X(), factorCounts, differentiationCounts);
         nextTerm();
       }
@@ -270,11 +270,11 @@ void PolynomialSurface::setEqualityConstraints(unsigned asv,const SurfPoint& sp,
         resetTermCounter(); 
         while (!lastTerm) {
           accumulateLikeFactors(factorCounts);
-          eqConLHS[index][termIndex] = 
+          eqConLHS(index,termIndex) = 
             computeDerivTerm(sp.X(), factorCounts, differentiationCounts);
           nextTerm();
         }
-        eqConRHS[index] = hessian[difVar1][difVar2];
+        eqConRHS[index] = hessian(difVar1,difVar2);
         ++index;
       } // difVar2
     } // difVar1
@@ -409,7 +409,7 @@ void PolynomialSurface::build(SurfData& data)
   for(unsigned i = 0; i < data.size(); i++) {
     resetTermCounter();
     while (!lastTerm) {
-      A[i][termIndex] = computeTerm(data[i].X());
+      A(i,termIndex) = computeTerm(data[i].X());
       nextTerm();
     }
     b[i] = data.getResponse(i);
