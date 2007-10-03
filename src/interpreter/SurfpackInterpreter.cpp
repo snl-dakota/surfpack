@@ -13,6 +13,7 @@
 #include "AxesBounds.h"
 #include "SurfpackParserArgs.h"
 #include "SurfpackParser.h"
+#include "SurfpackInterface.h"
 #include "SurfpackInterpreter.h"
 #include "SurfData.h"
 #include "Surface.h"
@@ -31,97 +32,6 @@ using SurfpackInterface::CreateSurface;
 using SurfpackInterface::Fitness;
 using SurfpackInterface::Load;
 using SurfpackInterface::Save;
-///////////////////////////////////////////////////////////////////////////////
-/////		SurfpackInterface namespace functions			  /////
-///////////////////////////////////////////////////////////////////////////////
-
-void SurfpackInterface::Load(SurfData*& data, const string filename)
-{
-  data = new SurfData(filename);
-  assert(data);
-}
-
-void SurfpackInterface::Load(SurfData*& data, const string filename,
-  unsigned n_vars, unsigned n_responses, unsigned skip_columns)
-{
-  data = new SurfData(filename,n_vars,n_responses,skip_columns);
-  assert(data);
-}
-
-void SurfpackInterface::Load(Surface*& surface, const string filename)
-{
-  surface = SurfaceFactory::createSurface(filename);
-}
-
-void SurfpackInterface::Save(SurfData* data, const string filename)
-{
-  assert(data);
-  data->write(filename);
-}
-
-void SurfpackInterface::Save(Surface* surface, const string filename)
-{
-  assert(surface);
-  surface->write(filename);
-}
-
-void SurfpackInterface::CreateSurface(Surface*& surface, SurfData* data, const string type, int response_index)
-{
-  assert(data);
-  data->setDefaultIndex(response_index);
-  surface = SurfaceFactory::createSurface(type, data);
-  surface->config(Arg::makeArg("xsize",data->xSize()));
-}
-
-void SurfpackInterface::Evaluate(Surface* surface, SurfData* data)
-{
-  surface->getValue(*data);
-}
-
-double SurfpackInterface::Fitness(Surface* surface, const string metric, 
- SurfData* data, int response_index)
-{
-  assert(surface);
-  if (data) {
-    data->setDefaultIndex(response_index);
-  }
-  return surface->goodnessOfFit(metric,data);
-}
-
-double SurfpackInterface::Fitness(Surface* surface, unsigned n, 
- SurfData* data, int response_index)
-{
-  assert(surface);
-  if (data) {
-    data->setDefaultIndex(response_index);
-  }
-  SurfData& valid_data = surface->checkData(data);
-  return surface->nFoldCrossValidation(valid_data,n);
-}
-
-void SurfpackInterface::CreateAxes(AxesBounds*& ab, const string infostring,
- AxesBounds::ParamType pt)
-{
-  ab = new AxesBounds(infostring,pt);
-}
-
-void SurfpackInterface::CreateSample(SurfData*& data, AxesBounds* axes, 
-  vector<double>& grid_points, vector< string > test_functions)
-{
-  assert(axes);
-  vector<unsigned> int_grid_points(grid_points.size());
-  for (unsigned i = 0; i < grid_points.size(); i++) {
-     int_grid_points[i] = static_cast<unsigned>(grid_points[i]);
-  }
-  data = axes->sampleGrid(int_grid_points,test_functions);
-}
-
-void SurfpackInterface::CreateSample(SurfData*& data, AxesBounds* axes, 
-	unsigned size, vector< string > test_functions)
-{
-  assert(axes);
-  data = axes->sampleMonteCarlo(size, test_functions);
-}
 ///////////////////////////////////////////////////////////////////////////////
 /////		SurfpackInterpreter namespace functions			  /////
 ///////////////////////////////////////////////////////////////////////////////
@@ -355,8 +265,8 @@ void SurfpackInterpreter::executeCreateSample(const ParsedCommand& c)
   // Extract the variable name for this SurfData object
   string name = SurfpackParser::parseIdentifier("name", c.arglist);
   string axes = SurfpackParser::parseIdentifier("axes", c.arglist);
-  vector<double> grid_points = 
-    SurfpackParser::parseTuple("grid_points", c.arglist, false);
+  vector<unsigned> grid_points = 
+    SurfpackParser::parseUnsignedTuple("grid_points", c.arglist, false);
   vector<string> test_functions = 
     SurfpackParser::parseStringTuple("test_functions", c.arglist, false);
   vector<string> x_labels = 
@@ -371,12 +281,12 @@ void SurfpackInterpreter::executeCreateSample(const ParsedCommand& c)
       exit(1);
     } else { // only size specified
 	// MonteCarlo sample
-      SurfpackInterface::CreateSample(sd,ab,n_points,test_functions); 
+      SurfpackInterface::CreateSample(sd,*ab,n_points,test_functions); 
     }
   } else {
     if (!grid_points.empty()) { // only grid_points specified
 	// grid sample
-      SurfpackInterface::CreateSample(sd,ab,grid_points,test_functions); 
+      SurfpackInterface::CreateSample(sd,*ab,grid_points,test_functions); 
     } else { // neither specified
       cerr << "Must specify either size or grid_points" << endl;
       exit(1);
@@ -437,26 +347,8 @@ void SurfpackInterpreter::executeCreateAxes(const ParsedCommand& c)
 {
   string name = SurfpackParser::parseIdentifier("name", c.arglist);
   string bounds = 
-    SurfpackParser::parseStringLiteral("bounds", c.arglist, false);
-  string filename = 
-    SurfpackParser::parseStringLiteral("file", c.arglist, false);
-  AxesBounds* sd = 0;
-  if (bounds == "") {
-    if (filename == "") {
-      // Do fail if both are missing
-      string msg="CreateAxes command requires 'bounds' or 'file' argument";
-      throw command_error(msg,c.cmdstring);
-    } else {
-      CreateAxes(sd,filename,AxesBounds::file);
-    }
-  } else {
-    if (filename != "") {
-      // Fail if both are specified 
-      string err = "CreateAxes can't have 'bounds' AND 'file' arguments";
-      throw command_error(err,c.cmdstring);
-    } else {
-      CreateAxes(sd,bounds,AxesBounds::data);
-    }
+    SurfpackParser::parseStringLiteral("bounds", c.arglist, true);
+  CreateAxes(sd,bounds);
   }
   symbolTable.axesVars.insert(AxesBoundsSymbol(name,sd));
 }

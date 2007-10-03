@@ -15,29 +15,6 @@ class Surface;
 class ParsedCommand;
 class SurfpackParser;
 
-namespace SurfpackInterface
-{
-  void Load(SurfData*& data, const std::string filename);
-  void Load(SurfData*& data, const std::string filename,
-    unsigned n_vars, unsigned n_responses, unsigned skip_columns);
-  void Load(Surface*& surface, const std::string filename);
-  void Save(SurfData* data, const std::string filename);
-  void Save(Surface* surface, const std::string filename);
-  void CreateSurface(Surface*& surface, SurfData* data, const std::string type, 
-    int response_index = 0);
-  void Evaluate(Surface* surface, SurfData* data);
-  double Fitness(Surface* surface, const std::string metric, 
-    SurfData* data = 0, int response_index = 0);
-  double Fitness(Surface* surface, unsigned n, 
-    SurfData* data = 0, int response_index = 0);
-  void CreateAxes(AxesBounds*&, const std::string infostring,
-    AxesBounds::ParamType pt);
-  void CreateSample(SurfData*& data, AxesBounds* axes, 
-    std::vector<double>& grid_points, std::vector<std::string> test_functions);
-  void CreateSample(SurfData*& data, AxesBounds* axes, 
-    unsigned size, std::vector<std::string> test_functions);
-};
-
 class SurfpackInterpreter
 {
 public:

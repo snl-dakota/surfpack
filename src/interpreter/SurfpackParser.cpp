@@ -273,6 +273,21 @@ std::vector<double> SurfpackParser::parseTuple(const std::string& argname,
   return result;
 }
 
+std::vector<unsigned> SurfpackParser::parseUnsignedTuple(const std::string& argname,
+  const ArgList& arglist, bool throwExIfAbsent)
+{
+  std::vector<double> dresult;
+  std::vector<unsigned> result;
+  for (unsigned i = 0; i < arglist.size(); i++) {
+    if (arglist[i].name == argname) {
+      RvalTuple::asVectorDouble(dresult,arglist[i].getRVal()->getTuple());
+    }
+  }
+  for (unsigned i = 0; i < dresult.size(); i++) result.push_back((unsigned)dresult[i]);
+  if (result.empty() && throwExIfAbsent) throw std::string("parseUnsignedTuple");
+  return result;
+}
+
 std::vector<std::string> 
 SurfpackParser::parseStringTuple(const std::string& argname,
   const ArgList& arglist, bool throwExIfAbsent)
