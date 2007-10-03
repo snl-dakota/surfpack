@@ -38,11 +38,11 @@ public:
 #endif
 };
 
-class NonScaler : public DimensionScaler
+class NoScaler : public DimensionScaler
 {
 public:
-  NonScaler();
-  virtual ~NonScaler();
+  NoScaler();
+  virtual ~NoScaler();
   virtual double scale(double value);
   virtual double descale(double value);
   virtual DimensionScaler* clone() const;
@@ -60,13 +60,13 @@ public:
   virtual std::string asString();
 };
 
-class NormalizingScaler : public DimensionScaler
+class NormalizeScaler : public DimensionScaler
 {
 public:
-  NormalizingScaler(const SurfData& surf_data, unsigned dim, 
+  NormalizeScaler(const SurfData& surf_data, unsigned dim, 
     bool response = DimensionScaler::predictor_var);
-  NormalizingScaler(const NormalizingScaler& other);
-  virtual ~NormalizingScaler();
+  NormalizeScaler(const NormalizeScaler& other);
+  virtual ~NormalizeScaler();
   virtual double scale(double value);
   virtual double descale(double value);
   virtual DimensionScaler* clone() const;

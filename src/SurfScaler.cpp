@@ -28,32 +28,32 @@ DimensionScaler::~DimensionScaler()
 
 }
 
-NonScaler::NonScaler()
+NoScaler::NoScaler()
 {
 
 }
 
-NonScaler::~NonScaler()
+NoScaler::~NoScaler()
 {
 
 }
 
-double NonScaler::scale(double value)
-{
-  return value;
-}
-
-double NonScaler::descale(double value)
+double NoScaler::scale(double value)
 {
   return value;
 }
 
-DimensionScaler* NonScaler::clone() const
+double NoScaler::descale(double value)
 {
-  return new NonScaler();
+  return value;
 }
 
-string NonScaler::asString()
+DimensionScaler* NoScaler::clone() const
+{
+  return new NoScaler();
+}
+
+string NoScaler::asString()
 {
   return string("Non-scaler");
 }
@@ -88,13 +88,13 @@ string LogScaler::asString()
   return string("Log-scaler");
 }
 
-NormalizingScaler::NormalizingScaler(const NormalizingScaler& other)
+NormalizeScaler::NormalizeScaler(const NormalizeScaler& other)
   : offset(other.offset), divisor(other.divisor)
 {
 
 }
 
-NormalizingScaler::NormalizingScaler(const SurfData& surf_data, 
+NormalizeScaler::NormalizeScaler(const SurfData& surf_data, 
   unsigned dim, bool response) : offset(0.0), divisor(1.0)
 {
   if (surf_data.size() > 0) {
@@ -138,27 +138,27 @@ NormalizingScaler::NormalizingScaler(const SurfData& surf_data,
   }
 }
 
-NormalizingScaler::~NormalizingScaler()
+NormalizeScaler::~NormalizeScaler()
 {
 
 }
 
-double NormalizingScaler::scale(double value)
+double NormalizeScaler::scale(double value)
 {
   return (value - offset) / divisor;
 }
 
-double NormalizingScaler::descale(double value)
+double NormalizeScaler::descale(double value)
 {
   return (value * divisor) + offset;
 }
 
-DimensionScaler* NormalizingScaler::clone() const
+DimensionScaler* NormalizeScaler::clone() const
 {
-  return new NormalizingScaler(*this);
+  return new NormalizeScaler(*this);
 }
 
-string NormalizingScaler::asString()
+string NormalizeScaler::asString()
 {
   ostringstream os;
   os << "offset: " << offset << " divisor: " << divisor;
@@ -265,10 +265,10 @@ void SurfScaler::normalizeAll(const SurfData& sd)
   responseScalers = vector< DimensionScaler* >(sd.fSize(),0);
   if (sd.size() > 0) {
     for(unsigned i = 0; i < scalers.size(); i++) {
-      scalers[i] = new NormalizingScaler(sd,i);
+      scalers[i] = new NormalizeScaler(sd,i);
     }
     for(unsigned i = 0; i < responseScalers.size(); i++) {
-      responseScalers[i] = new NormalizingScaler(sd,i,true);
+      responseScalers[i] = new NormalizeScaler(sd,i,true);
     }
   }
 }
@@ -330,7 +330,7 @@ void SurfScaler::config(const SurfData& sd, const Arg& arg)
       bool found = sd.varIndex(vars[i],index,response);
       assert(found);
       if (found) {
-        setDimensionScaler(index, NormalizingScaler(sd,index,response), 
+        setDimensionScaler(index, NormalizeScaler(sd,index,response), 
           response);
       }
     }
@@ -352,7 +352,7 @@ void SurfScaler::config(const SurfData& sd, const Arg& arg)
 /// each dim to non-scaling
 void SurfScaler::sizeToMatch(const SurfData& sd)
 {
-  NonScaler ns;
+  NoScaler ns;
   while (scalers.size() != sd.xSize()) {
     scalers.push_back(ns.clone());
   }
