@@ -20,14 +20,15 @@ class SurfData;
 class SurfScaler;
 namespace surfpack { class ErrorStruct; }
 
-enum MetricType {
-  MT_RELATIVE_MAXIMUM,
-  MT_RELATIVE_AVERAGE,
-  MT_MINIMUM,
-  MT_MAXIMUM,
-  MT_SUM,
-  MT_MEAN
-};
+enum MetricType;
+// {
+//  MT_RELATIVE_MAXIMUM,
+//  MT_RELATIVE_AVERAGE,
+//  MT_MINIMUM,
+//  MT_MAXIMUM,
+//  MT_SUM,
+//  MT_MEAN
+//};
 
 /// Abstract base class for implementation of a surface-fitting algorithm.  
 /// Each algorithm produces a function approximation given a set of data.  Some
