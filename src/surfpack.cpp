@@ -210,7 +210,7 @@ void surfpack::approximateByIntegers(vector<double>& vals, double epsilon)
   for(vector<double>::iterator iter = vals.begin(); iter != vals.end();
     ++iter) {
     double approx = static_cast<double>(static_cast<int>(*iter));
-    if (abs(*iter-approx) < epsilon) {
+    if (fabs(*iter-approx) < epsilon) {
       *iter = approx;
     }
   }
@@ -289,10 +289,10 @@ void surfpack::differences(vector<double>& results,
 {
   results.resize(observed.size());
   for (unsigned i = 0; i < observed.size(); i++) {
-    results[i] = abs(observed[i] - predicted[i]);
+    results[i] = fabs(observed[i] - predicted[i]);
     switch (dp) {
       case SQUARED: results[i] *= results[i]; break;
-      case SCALED: results[i] /= abs(observed[i]); break;
+      case SCALED: results[i] /= fabs(observed[i]); break;
     }
   }
 }
@@ -329,10 +329,24 @@ void surfpack::vectorDifference(vector<double>& diff, const vector<double>& pt1,
   }
 }
 
+VecDbl surfpack::weightedAvg(const VecDbl& first, const VecDbl& second,
+  double alpha)
+{
+  assert(first.size() == second.size());
+  assert(alpha >= 0.0);
+  assert(alpha <= 1.0);
+  VecDbl result(first.size());
+  double beta = 1.0 - alpha;
+  for (unsigned i = 0; i < result.size(); i++) {
+    result[i] = first[i]*alpha + beta*second[i];
+  }
+  return result; 
+}
+
 // ____________________________________________________________________________
 // Functions for common linear algebra tasks 
 // ____________________________________________________________________________
-void surfpack::linearSystemLeastSquares(SurfpackMatrix<double>& A, 
+void surfpack::linearSystemLeastSquares(MtxDbl& A, 
   vector<double>& x, vector<double>& b)
 {
   const int debug = 0;
@@ -357,7 +371,7 @@ void surfpack::linearSystemLeastSquares(SurfpackMatrix<double>& A,
   int info;
   int nrhs=1;
   char trans = 'N';
-  DGELS_F77(trans,n_rows,n_cols,nrhs,&A[0][0],n_rows,&b[0],
+  DGELS_F77(trans,n_rows,n_cols,nrhs,&A(0,0),n_rows,&b[0],
     n_rows,&work[0],lwork,info);
   x = b;
   x.resize(n_cols);
@@ -368,9 +382,9 @@ void surfpack::linearSystemLeastSquares(SurfpackMatrix<double>& A,
   }
 }
 
-void surfpack::leastSquaresWithEqualityConstraints(SurfpackMatrix<double>& A, 
+void surfpack::leastSquaresWithEqualityConstraints(MtxDbl& A, 
   vector<double>& x, vector<double>& c,
-  SurfpackMatrix<double>& B, vector<double>& d)
+  MtxDbl& B, vector<double>& d)
 {
   int m = static_cast<int>(A.getNRows());
   int n = static_cast<int>(A.getNCols());
@@ -385,8 +399,8 @@ void surfpack::leastSquaresWithEqualityConstraints(SurfpackMatrix<double>& A,
   ///\todo Compute optimal blocksize before running dgglse
   vector<double> work(lwork);
   int info = 0;
-  //SurfpackMatrix<double> Acopy = A;
-  //SurfpackMatrix<double> Bcopy = B;
+  //MtxDbl Acopy = A;
+  //MtxDbl Bcopy = B;
   //cout << endl;
   //cout << "A" << endl;
   //cout << A.asString() << endl;
@@ -401,7 +415,7 @@ void surfpack::leastSquaresWithEqualityConstraints(SurfpackMatrix<double>& A,
   //copy(d.begin(),d.end(),ostream_iterator<double>(cout,"\n"));
   //cout << "x before" << endl;
   //copy(x.begin(),x.end(),ostream_iterator<double>(cout,"\n"));
-  DGGLSE_F77(m,n,p,&A[0][0],m,&B[0][0],p,&c[0],&d[0],&x[0],&work[0],lwork,info);
+  DGGLSE_F77(m,n,p,&A(0,0),m,&B(0,0),p,&c[0],&d[0],&x[0],&work[0],lwork,info);
   //cout << "x after" << endl;
   //copy(x.begin(),x.end(),ostream_iterator<double>(cout,"\n"));
   //vector<double> result;
@@ -411,7 +425,7 @@ void surfpack::leastSquaresWithEqualityConstraints(SurfpackMatrix<double>& A,
   if (info != 0) throw string("Error in dgglse\n");
 }
 
-SurfpackMatrix< double >& surfpack::inverse(SurfpackMatrix< double>& matrix)
+MtxDbl& surfpack::inverse(SurfpackMatrix< double>& matrix)
 {
   int n_rows = static_cast<int>(matrix.getNRows());
   int n_cols = static_cast<int>(matrix.getNCols());
@@ -421,12 +435,12 @@ SurfpackMatrix< double >& surfpack::inverse(SurfpackMatrix< double>& matrix)
   vector<double> work(lwork);
   int lda = n_cols;
   int info = 0;
-  DGETRF_F77(n_rows,n_cols,&matrix[0][0],lda,&ipvt[0],info);
-  DGETRI_F77(n_rows,&matrix[0][0],lda,&ipvt[0],&work[0],lwork,info);
+  DGETRF_F77(n_rows,n_cols,&matrix(0,0),lda,&ipvt[0],info);
+  DGETRI_F77(n_rows,&matrix(0,0),lda,&ipvt[0],&work[0],lwork,info);
   return matrix;
 }
 
-SurfpackMatrix< double >& surfpack::LUFact(SurfpackMatrix< double>& matrix,
+MtxDbl& surfpack::LUFact(SurfpackMatrix< double>& matrix,
   vector<int>& ipvt)
 {
   int n_rows = static_cast<int>(matrix.getNRows());
@@ -436,11 +450,11 @@ SurfpackMatrix< double >& surfpack::LUFact(SurfpackMatrix< double>& matrix,
   ipvt.resize(n_rows);
   int lda = n_cols;
   int info = 0;
-  DGETRF_F77(n_rows,n_cols,&matrix[0][0],lda,&ipvt[0],info);
+  DGETRF_F77(n_rows,n_cols,&matrix(0,0),lda,&ipvt[0],info);
   return matrix;
 }
 
-SurfpackMatrix< double >& surfpack::inverseAfterLUFact(SurfpackMatrix< double>& matrix, vector<int>& ipvt)
+MtxDbl& surfpack::inverseAfterLUFact(MtxDbl& matrix, vector<int>& ipvt)
 {
   int n_rows = static_cast<int>(matrix.getNRows());
   int n_cols = static_cast<int>(matrix.getNCols());
@@ -448,29 +462,77 @@ SurfpackMatrix< double >& surfpack::inverseAfterLUFact(SurfpackMatrix< double>& 
   vector<double> work(lwork);
   int lda = n_rows;
   int info = 0;
-  DGETRI_F77(n_rows,&matrix[0][0],lda,&ipvt[0],&work[0],lwork,info);
+  DGETRI_F77(n_rows,&matrix(0,0),lda,&ipvt[0],&work[0],lwork,info);
   return matrix;
 }
 
-vector< double >& surfpack::matrixVectorMult(vector< double >& result,
-  SurfpackMatrix< double >& matrix, vector< double >& the_vector)
+VecDbl& surfpack::matrixVectorMult(VecDbl& result,
+  MtxDbl& matrix, VecDbl& the_vector, char trans)
 {
-  assert(matrix.getNCols() == the_vector.size());
-  result.resize(matrix.getNRows());
-  char transpose = 'N';
+  assert((trans == 'N' && matrix.getNCols() == the_vector.size()) ||
+	 (trans == 'T' && matrix.getNRows() == the_vector.size()));
+  int result_size = (trans == 'N') ? matrix.getNRows() : matrix.getNCols();
+  result.resize(result_size);
+  //char transpose = 'N';
   int n_rows = static_cast<int>(matrix.getNRows());
   int n_cols = static_cast<int>(matrix.getNCols());
   int incx = 1;
   int incy = 1;
   double alpha = 1.0;
   double beta = 0.0;
-  DGEMV_F77(transpose,n_rows,n_cols,alpha,&matrix[0][0],n_rows,&the_vector[0],
+  DGEMV_F77(trans,n_rows,n_cols,alpha,&matrix(0,0),n_rows,&the_vector[0],
     incx, beta, &result[0], incy);
   return result;
 }
 
-double surfpack::dot_product(const vector< double >& vector_a, 
-	     const vector< double >& vector_b)
+MtxDbl& surfpack::matrixMatrixMult(MtxDbl& result, MtxDbl& matrixA, 
+  MtxDbl& matrixB, char transA, char transB)
+{
+  assert(matrixA.getNCols(transA) == matrixB.getNRows(transB));
+  result.reshape(matrixA.getNRows(transA),matrixB.getNCols(transB));
+  int n_rows = static_cast<int>(matrixA.getNRows(transA));
+  int n_cols = static_cast<int>(matrixB.getNCols(transB));
+  int k = static_cast<int>(matrixA.getNCols(transA));
+  int lda = matrixA.getNRows(); // leading dimension irrespective of trans
+  int ldb = matrixB.getNRows(); // leading dimension irrespective of trans
+  int ldc = result.getNRows(); // leading dimension irrespective of trans
+  double alpha = 1.0; // coefficent of matrix multiply
+  double beta = 0.0;  // coefficient of result matrix
+  DGEMM_F77(transA,transB,n_rows,n_cols,k,alpha,&matrixA(0,0),lda,&matrixB(0,0),ldb,beta,&result(0,0),ldc);
+  return result;
+}
+  /// matrix-matrix addition
+MtxDbl& surfpack::matrixSum(MtxDbl& result, MtxDbl& matrixA, MtxDbl& matrixB)
+{
+  assert (matrixA.getNRows() == matrixB.getNRows());
+  assert (matrixA.getNCols() == matrixB.getNCols());
+  result.reshape(matrixA.getNRows(),matrixA.getNCols());
+  /// todo check for self in matrix oper= and then create a += func
+  /// todo Then this can be simplified/optimized
+  for (unsigned i = 0; i < matrixA.getNRows(); i++) {
+    for (unsigned j = 0; j < matrixA.getNCols(); j++) {
+      result(i,j) = matrixA(i,j) + matrixB(i,j);
+    }
+  }
+}
+
+MtxDbl& surfpack::matrixSubtraction(MtxDbl& result, MtxDbl& matrixA, 
+  MtxDbl& matrixB)
+{
+  assert (matrixA.getNRows() == matrixB.getNRows());
+  assert (matrixA.getNCols() == matrixB.getNCols());
+  result.reshape(matrixA.getNRows(),matrixA.getNCols());
+  /// todo check for self in matrix oper= and then create a += func
+  /// todo Then this can be simplified/optimized
+  for (unsigned i = 0; i < matrixA.getNRows(); i++) {
+    for (unsigned j = 0; j < matrixA.getNCols(); j++) {
+      result(i,j) = matrixA(i,j) - matrixB(i,j);
+    }
+  }
+}
+
+double surfpack::dot_product(const VecDbl& vector_a, 
+	     const VecDbl& vector_b)
 {
   assert(vector_a.size() == vector_b.size()); 
   int size = static_cast<int>(vector_a.size());
@@ -480,10 +542,9 @@ double surfpack::dot_product(const vector< double >& vector_a,
 			const_cast<double*>( &vector_b[0] ), inc);
 }
 
-vector< double >& surfpack::vectorShift(vector< double >& the_vector,
-  double shift_value)
+VecDbl& surfpack::vectorShift(VecDbl& the_vector, double shift_value)
 {
-  for (vector< double >::iterator iter = the_vector.begin();
+  for (VecDbl::iterator iter = the_vector.begin();
        iter != the_vector.end(); ++iter) {
     *iter -= shift_value;
   }
@@ -636,4 +697,13 @@ double surfpack::xplussinex(const vector<double>& pt)
 double surfpack::noise(const vector<double>& pt)
 {
   return static_cast<double>(rand());
+}
+
+std::string surfpack::toString(const VecDbl& v)
+{
+  std::ostringstream os;
+  for (unsigned i = 0; i < v.size(); i++) {
+    os << v[i] << " ";
+  }
+  return os.str();
 }

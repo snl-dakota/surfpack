@@ -27,6 +27,14 @@ enum DifferenceType {
   SCALED
 };
 
+enum MetricType {
+  MT_RELATIVE_MAXIMUM,
+  MT_RELATIVE_AVERAGE,
+  MT_MINIMUM,
+  MT_MAXIMUM,
+  MT_SUM,
+  MT_MEAN
+};
 
 // Perform LU factorization
 #define DGETRF_F77 F77_FUNC(dgetrf,DGETRF)
@@ -137,11 +145,11 @@ MyRandomNumberGenerator& shared_rng();
 // _____________________________________________________________________________
 // Constants 
 // _____________________________________________________________________________
-  // Length of the field for double-precision number stream output
-  const unsigned field_width = 26;
-
   // Precision of output for double precision numbers
-  const unsigned output_precision = 17;
+  const unsigned output_precision = 3;
+
+  // Length of the field for double-precision number stream output
+  const unsigned field_width = output_precision + 9;
 
 // _____________________________________________________________________________
 // Nested Types 
@@ -210,7 +218,7 @@ MyRandomNumberGenerator& shared_rng();
     unsigned columns, bool c_style = false);
 
   /// Write the parameter header followed by the values in the vector
-  void printVector(const std::string header, std::vector<double>& vec, 
+  void printVector(const std::string header, VecDbl& vec, 
     std::ostream& os = std::cout);
 
   /// Return true if the file specified by parameter file name has the extension
@@ -231,79 +239,105 @@ MyRandomNumberGenerator& shared_rng();
   const std::string readName(std::istream& is, bool binary);
 
   /// Round values that are close to integers to integers
-  void approximateByIntegers(std::vector<double>& vals, double epsilon = 1.e-6);
+  void approximateByIntegers(VecDbl& vals, double epsilon = 1.e-6);
 
 // ____________________________________________________________________________
 // Vector helper methods 
 // ____________________________________________________________________________
 
   /// Return the sum of the vector of values
-  double sum_vector(std::vector<double>& vals);
+  double sum_vector(VecDbl& vals);
 
   /// Return the arithmetic mean (average) of the values in vector vals
-  double mean(std::vector<double>& vals);
+  double mean(VecDbl& vals);
 
   /// Return the sample variance of the values in vals
-  double sample_var(std::vector<double>& vals);
+  double sample_var(VecDbl& vals);
   
   /// Return the sample standard deviation of the values in vals
-  double sample_sd(std::vector<double>& vals);
+  double sample_sd(VecDbl& vals);
 
   /// Return the sum of squared deviations from the mean
-  double sum_squared_deviations(std::vector<double>& vals);
+  double sum_squared_deviations(VecDbl& vals);
 
   /// Return the sum of absolute deviations from the mean
-  double sum_absolute_deviations(std::vector<double>& vals);
+  double sum_absolute_deviations(VecDbl& vals);
 
   /// Return absolute, squared, or relative differences of second and third
   /// parameters through the first parameter
-  void differences(std::vector<double>& results, std::vector<double>& observed,
-    std::vector<double>& predicted, enum DifferenceType dp = ABSOLUTE);
+  void differences(VecDbl& results, VecDbl& observed,
+    VecDbl& predicted, enum DifferenceType dp = ABSOLUTE);
   
   /// Return the euclidean distance between pt1 and pt2.  Throw an exception if
   /// the dimensionality of the two vectors does not match.
-  double euclideanDistance(const std::vector<double>& pt1, 
-    const std::vector<double>& pt2);
+  double euclideanDistance(const VecDbl& pt1, 
+    const VecDbl& pt2);
 
   /// Store the vector difference between pt1 and pt2 in the paramter diff.
   /// Throw an exception if the dimensionality of the points does not match.
-  void vectorDifference(std::vector<double>& diff, 
-    const std::vector<double>& pt1, const std::vector<double>& pt2);
+  void vectorDifference(VecDbl& diff, const VecDbl& pt1, const VecDbl& pt2);
 // ____________________________________________________________________________
 // Functions for common linear algebra tasks 
 // ____________________________________________________________________________
   /// Least squares solve of system Ax = b
-  void linearSystemLeastSquares(SurfpackMatrix<double>& A, 
-    std::vector<double>& x, std::vector<double>& b);
+  void linearSystemLeastSquares(MtxDbl& A, VecDbl& x, VecDbl& b);
 
   /// Least squares solve os system Ax = c, subject to Bx = d
-  void leastSquaresWithEqualityConstraints(SurfpackMatrix<double>& A, 
-    std::vector<double>& x, std::vector<double>& c,
-    SurfpackMatrix<double>& B, std::vector<double>& d);
+  void leastSquaresWithEqualityConstraints(MtxDbl& A, 
+    VecDbl& x, VecDbl& c,
+    MtxDbl& B, VecDbl& d);
 
   /// Calls dgetrf followed by dgetri
-  SurfpackMatrix< double >& inverse(SurfpackMatrix< double >& matrix);
+  MtxDbl& inverse(MtxDbl& matrix);
 
   /// Calls dgetrf to compute LU Decomposition
-  SurfpackMatrix< double >& LUFact(SurfpackMatrix< double >& matrix, 
+  MtxDbl& LUFact(MtxDbl& matrix, 
     std::vector<int>& ipvt);
 
   /// Calls dgetri to compute matrix inverse, after prior call to dgetrf
-  SurfpackMatrix< double >& 
-    inverseAfterLUFact(SurfpackMatrix<double>& matrix, std::vector<int>& ipvt);
+  MtxDbl& inverseAfterLUFact(MtxDbl& matrix, std::vector<int>& ipvt);
 
+  /// Note: These matrix functions would not fit easily in SurfpackMatrix.h
+  /// because the fortran math functions are not templated
   /// matrix-vector mutltiplication
-  std::vector< double >& matrixVectorMult(std::vector< double >& result,
-    SurfpackMatrix< double >& matrix, std::vector< double >& the_vector);
+  VecDbl& matrixVectorMult(VecDbl& result,
+    MtxDbl& matrix, VecDbl& the_vector,
+    char trans = 'N');
+
+  /// matrix-matrix multiplication
+  MtxDbl& matrixMatrixMult(MtxDbl& result, MtxDbl& matrixA, MtxDbl& matrixB,
+    char transA = 'N', char transB = 'N');
+
+  /// matrix-matrix addition
+  MtxDbl& matrixSum(MtxDbl& result, MtxDbl& matrixA, MtxDbl& matrixB);
+  MtxDbl& matrixSubtraction(MtxDbl& result, MtxDbl& matrixA, MtxDbl& matrixB);
 
   /// vector-vector inner product
-  double dot_product(const std::vector< double >& vector_a, 
-    const std::vector< double >& vector_b);
+  double dot_product(const VecDbl& vector_a, const VecDbl& vector_b);
 
   /// Adds or subtracts same value to all vector elements
-  std::vector< double >& vectorShift(std::vector< double >& the_vector,
-    double shift_value);
- 
+  VecDbl& vectorShift(VecDbl& the_vector, double shift_value);
+  
+  /// Returns the weighted average of two vectors: alpha*first+(1-alpha)*second
+VecDbl weightedAvg(const VecDbl& first, const VecDbl& second, double alpha = 0.5);
+// ____________________________________________________________________________
+// Converting a string to a vector 
+// ____________________________________________________________________________
+template<typename T>
+std::vector<T> toVec(const std::string& s)
+{
+  std::istringstream is(s);
+  std::vector<T> result;
+  if (s == "") return result;
+  T temp;
+  do {
+    is >> temp;
+    result.push_back(temp);
+  } while (!is.eof());
+  return result;
+}
+
+std::string toString(const VecDbl& v);
 // ____________________________________________________________________________
 // Testing 
 // ____________________________________________________________________________
@@ -311,40 +345,41 @@ MyRandomNumberGenerator& shared_rng();
   /// point specified by parameter pt
   /// \todo Change if-else construct to lookup in STL map of <name, function>
   /// pairs.
-  double testFunction(const std::string name, const std::vector<double>& pt);
+  double testFunction(const std::string name, const VecDbl& pt);
 
   /// Non-trivial polynomial function
-  double moderatepoly(const std::vector<double>& pt);
+  double moderatepoly(const VecDbl& pt);
 
   /// Tony Giunta's test function: a little wave mixed with a big wave, plus 
   /// noise
-  double quasisine(const std::vector<double>& pt);
+  double quasisine(const VecDbl& pt);
 
   /// f(x) = sigma{i=1 to n}(x_i^2 - 10*cos(2*pi*x) + 10).  With side 
   /// constraints near zero (e.g. +/-10) along each dimension, the function 
   /// appears highly-multimodal.  With larger bounds, the bowl shape becomes
   /// more dominant and the waviness is reduced to noise.
-  double rastrigin(const std::vector<double>& pt);
+  double rastrigin(const VecDbl& pt);
 
   /// A multi-dimensional extension of the classic Rosenbrock test function
-  double rosenbrock(const std::vector<double>& pt);
+  double rosenbrock(const VecDbl& pt);
 
   /// f(x) = 3 + sigma{i=1 to n}(2*x_i)
-  double simplepoly(const std::vector<double>& pt);
+  double simplepoly(const VecDbl& pt);
 
   /// Sum of the sine function along each dimension
-  double sinewave(const std::vector<double>& pt);
+  double sinewave(const VecDbl& pt);
 
   /// Sum of squares along each dimension
-  double sphere(const std::vector<double>& pt);
+  double sphere(const VecDbl& pt);
 
   /// f(x) = sigma{i=1 to i}(x_i)
-  double sumofall(const std::vector<double>& pt);
+  double sumofall(const VecDbl& pt);
 
   /// f(x) = sigma{i=1 to n}(x_i + sin x_i)
-  double xplussinex(const std::vector<double>& pt);
+  double xplussinex(const VecDbl& pt);
 
   /// Random (different queries for the same point will give different results)
-  double noise(const std::vector<double>& pt);
+  double noise(const VecDbl& pt);
 } // namespace surfpack
+ 
 #endif
