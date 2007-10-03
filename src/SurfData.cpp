@@ -13,7 +13,6 @@
 #include "SurfData.h"
 #include "Surface.h"
 #include "SurfScaler.h"
-#include "ModelScaler.h"
 
 using std::cerr;
 using std::cout;
