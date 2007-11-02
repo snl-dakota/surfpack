@@ -3,7 +3,7 @@ noinst_LTLIBRARIES = libkriging.la
 
 libkriging_la_SOURCES = krig_model.f cpp_f77_conmin_cntl.f
 
-INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src -I$(top_srcdir)/src/interpreter
+INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src 
 
 CLEANFILES = *.bb *.bbg *.da *.gcov *.ii *.s
 MAINTAINERCLEANFILES = Makefile.in
