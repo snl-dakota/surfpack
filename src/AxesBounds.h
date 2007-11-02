@@ -59,6 +59,7 @@ public:
   /// responsible to deallocate the memory.
   SurfData* sampleGrid(const std::vector<unsigned>& grid_points, 
     const std::vector<std::string>& test_functions) const;
+  SurfData* sampleGrid(const std::vector<unsigned>& grid_points) const; 
 
   /// Return a data set with size SurfPoints.  Parameter test_functions
   /// must contain the names of zero or more functions at which all the data

@@ -183,6 +183,10 @@ void AxesBounds::nextPoint(vector<unsigned>& point_odometer,
 
 /// Return a hypergrid data set as a SurfData object.  The client is 
 /// responsible to deallocate the memory.
+SurfData* AxesBounds::sampleGrid(const vector<unsigned>& grid_points) const
+{
+  return sampleGrid(grid_points,vector<string>());
+}
 SurfData* AxesBounds::sampleGrid(const vector<unsigned>& grid_points, const vector<string>& test_functions) const
 {
   vector<unsigned> point_odometer(grid_points.size(),0);
