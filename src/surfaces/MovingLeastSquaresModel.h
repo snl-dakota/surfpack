@@ -38,7 +38,7 @@ friend class MovingLeastSquaresModelTest;
 ///	Moving Least Squares Model Factory
 ///////////////////////////////////////////////////////////
 
-class MovingLeastSquaresModelFactory : SurfpackModelFactory 
+class MovingLeastSquaresModelFactory : public SurfpackModelFactory 
 {
 
 public:
