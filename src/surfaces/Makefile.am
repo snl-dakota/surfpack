@@ -10,7 +10,21 @@ libsurfaces_la_SOURCES = KrigingSurface.cpp \
 			 ANNSurface.cpp \
 			 ANNSurface.h \
 			 PolynomialSurface.cpp \
-			 PolynomialSurface.h
+			 PolynomialSurface.h \
+			 MovingLeastSquaresModel.cpp \
+			 MovingLeastSquarsModel.h \
+			 LinearRegressionModel.cpp \
+			 LinearRegressionModel.h \
+			 RadialBasisFunctionModel.cpp \
+			 RadialBasisFunctionModel.h \
+			 DirectANNModel.cpp \
+			 DirectANNModel.h \
+		         KrigingModel.cpp \
+			 KrigingModel.h \
+			 SurfpackModel.cpp \
+			 SurfpackModel.h \
+			 ModelScaler.cpp \
+			 ModelScaler.h
 
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src \
 	   -I$(top_srcdir)/src/ann \

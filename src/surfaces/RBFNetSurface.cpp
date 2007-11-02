@@ -643,9 +643,9 @@ double RBFNetSurface::computeMetric(vector<double>& left,
   double leftsse = surfpack::sum_squared_deviations(left);
   double rightsse = surfpack::sum_squared_deviations(right);
   double sum = leftsse + rightsse;
-  cout << " Left: " << setw(15) << leftsse
-       << " Right: " << setw(15) << rightsse
-       << " Sum: " << setw(15) << sum;
+  //cout << " Left: " << setw(15) << leftsse
+  //     << " Right: " << setw(15) << rightsse
+  //     << " Sum: " << setw(15) << sum;
   return sum;
 //  return surfpack::sum_squared_deviations(left) + 
 //	 surfpack::sum_squared_deviations(right);
@@ -706,9 +706,9 @@ void RBFNetSurface::partition(SurfData& surf_data, unsigned min_partition_size)
 	// Compute the mean and standard deviation for values in the 'left'
 	// collection; then do the same for the one on the right.  The metric
 	// value is the sum of the standard deviations for the left and right. 
-        cout << "ThreshInd: " << setw(5) << thresholdPoint << " Thresh: " << currentSplitValue;
+        //cout << "ThreshInd: " << setw(5) << thresholdPoint << " Thresh: " << currentSplitValue;
         double metric = computeMetric(left,right);
-        cout << endl;
+        //cout << endl;
         //cout << "left: " << left.size()
 	//     << " right: " << right.size()
 	//     << " Metric for dim " << dim 
@@ -751,13 +751,13 @@ void RBFNetSurface::partition(SurfData& surf_data, unsigned min_partition_size)
     currentNode->right_child = newRightNode;
     currentNode->left_child = newLeftNode;
     if (newRight.size() > min_partition_size) {
-      cout << "New set (right): " << newRight.size() << endl;
+      //cout << "New set (right): " << newRight.size() << endl;
       sets.push(newRightNode);
     } else {
       stash.push_back(newRightNode);
     }
     if (newLeft.size() > min_partition_size) {
-      cout << "New set (left): " << newLeft.size() << endl;
+      //cout << "New set (left): " << newLeft.size() << endl;
       sets.push(newLeftNode);
     } else {
       stash.push_back(newLeftNode);
@@ -770,7 +770,9 @@ void RBFNetSurface::partition(SurfData& surf_data, unsigned min_partition_size)
     //  cout << *current[j] << endl;
     //}
   //}
-  exit(0);
+  //exit(0);
+  //cout << "stash size: " << stash.size() << endl;
+  //cout << "data size: " << surf_data.size() << endl;
   computeRBFCenters(stash);
 }
 

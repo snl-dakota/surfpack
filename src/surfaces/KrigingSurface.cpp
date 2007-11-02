@@ -68,7 +68,7 @@ void KrigingSurface::initialize()
   }
   // CONMIN parameters and array allocation
   NFDG   = 0;       // default finite difference flag
-  IPRINT = dbgkrig;       // default flag to control amount of output info
+  IPRINT = dbgkrig; // default flag to control amount of output info
   ITMAX  = 100;     // default max number of iterations
   FDCH   =  1.0e-5; // default relative finite difference step size
   FDCHM  =  1.0e-5; // default absolute finite difference step size
@@ -645,7 +645,7 @@ void KrigingSurface::buildModel(SurfData& data)
     //writeMatrix("xMatrix before conmin",xMatrix,numsamp,xsize,cout);
     //writeMatrix("yVector before conmin",yValueVector,numsamp,1,cout);
 #ifdef PRINT_DEBUG
-    ofstream before("before.txt",ios::out);
+    std::ofstream before("before.txt",ios::out);
     //ostream& os = cout;
     //os << "Before call to callconmin in buildModel" << endl;
     printConminVariables(before);
@@ -666,7 +666,7 @@ void KrigingSurface::buildModel(SurfData& data)
 		   workVector[0],workVectorQuad[0],iworkVector[0], 
 		   numSampQuad,conminSingleArray);
 #ifdef PRINT_DEBUG
-    ofstream after("after.txt",ios::out);
+    std::ofstream after("after.txt",ios::out);
     //os << "After call to callconmin in buildModel" << endl;
     printConminVariables(after);
     after.close();
