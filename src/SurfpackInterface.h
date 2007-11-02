@@ -14,6 +14,8 @@ class SurfData;
 class Surface;
 class ParsedCommand;
 class SurfpackParser;
+class SurfpackModel;
+class ParamList;
 
 namespace SurfpackInterface
 {
@@ -41,3 +43,45 @@ namespace SurfpackInterface
     unsigned size, const std::vector<std::string>& test_functions);
 };
 
+namespace NewInterface
+{
+  SurfData* LoadData(const std::string& filename);
+  SurfData* LoadData(const std::string& filename, unsigned n_predictors,
+    unsigned n_responses, unsigned n_cols_to_skip);
+  SurfpackModel* LoadModel(const std::string& filename);
+  void Save(const SurfpackModel* model, const std::string& filename);
+  void Save(const SurfData* data, const std::string& filename);
+  SurfpackModel* CreateSurface(const SurfData* sd, const ParamList& al);
+  void Evaluate(const SurfpackModel* model, SurfData* sd, 
+    const std::string& response_name = "");
+  AxesBounds* CreateAxes(const std::string axes);
+  SurfData* CreateSample(const AxesBounds* axes, const VecUns grid_points);
+  SurfData* CreateSample(const AxesBounds* axes, unsigned n_samples);
+  double Fitness(const SurfpackModel*, SurfData* sd, 
+    const std::string& metric, unsigned response = 0);
+  double Fitness(const SurfpackModel*, const std::string& metric, 
+    unsigned response = 0);
+};
+
+
+// SurfData* LoadData(string filename)
+// SurfData* LoadData(string filename, vars, resp, skips)
+
+// SurfpackModel* LoadModel(string filename)
+
+// void Save(SurfpackModel*, string filename)
+// void Save(SurfData*, string filename)
+
+// SurfpackModel* Create(SurfData& sd, ArgList& al) 
+
+// void Evaluate(SurfpackModel*, SurfData*)
+
+// AxesBounds* CreateAxes(string axes)
+
+// SurfData* CreateSample(AxesBounds* axes, grid_points) 
+// SurfData* CreateSample(Axesbounds* axes, num_samples) 
+
+// double Fitness(SurfpackModel*, data, metric, response = 0)
+// double Fitness(SurfpackModel*, metric, response = 0)
+
+ 

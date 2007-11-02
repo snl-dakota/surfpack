@@ -56,7 +56,11 @@ libsurfpack_la_SOURCES = AxesBounds.cpp \
 			 SurfPoint.cpp \
 			 SurfPoint.h \
 			 SurfScaler.cpp \
-			 SurfScaler.h
+			 SurfScaler.h \
+			 Conmin.cpp \
+			 Comin.h \
+			 ModelFitness.cpp \
+			 ModelFitness.h
 
 ## _LIBADD is automake's way of saying that these libraries must also
 ## be linked in whenever libsurfpack.la is linked against.  The
