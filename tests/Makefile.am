@@ -15,15 +15,30 @@ srftest_SOURCES = SurfPointTest.h \
 		  SurfPointTest.cpp \
 		  SurfScalerTest.h \
 		  SurfScalerTest.cpp \
+		  ModelScalerTest.cpp \
+		  ModelScalerTest.h \
+		  ModelFactoryTest.cpp \
+		  ModelFactoryTest.h \
 		  unittests.h \
 		  unittests.cpp \
 		  SurfDataTest.h \
 		  SurfDataTest.cpp \
-		  PolynomialSurfaceTest.cpp \
-		  PolynomialSurfaceTest.h \
 		  SurfaceTest.cpp \
 		  SurfaceTest.h \
+		  SurfpackCommonTest.cpp \
+		  SurfpackCommonTest.h \
+		  SurfpackModelTest.cpp \
+		  SurfpackModelTest.h \
+		  LinearRegressionModelTest.cpp \
+		  LinearRegressionModelTest.h \
+		  KrigingModelTest.cpp \
+		  KrigingModelTest.h \
+		  MovingLeastSquaresTest.cpp \
+		  MovingLeastSquaresTest.h \
+		  RadialBasisFunctionTest.cpp \
+		  RadialBasisFunctionTest.h \
 		  srftestmain.cpp 
+
 
 ## Somehow, CppUnit is able to communicate its desired C++ compilation
 ## flags.  Frankly, I don't know how this works.
