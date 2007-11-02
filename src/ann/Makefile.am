@@ -3,7 +3,6 @@ noinst_LTLIBRARIES = libann.la
 
 libann_la_SOURCES = ann.cpp \
                     ann.h \
-                    client.cpp \
                     allocate.cpp \
                     allocate.h \
                     convert.cpp \
