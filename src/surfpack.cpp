@@ -230,7 +230,7 @@ double surfpack::sum_vector(vector<double>& vals)
 }
 
 /// Return the arithmetic mean (average) of the values in vector vals
-double surfpack::mean(vector<double>& vals)
+double surfpack::mean(const VecDbl& vals)
 {
   //return sum_vector(vals) / vals.size();
   // Check for 'inf' and ignore those values
@@ -697,6 +697,13 @@ double surfpack::xplussinex(const vector<double>& pt)
 double surfpack::noise(const vector<double>& pt)
 {
   return static_cast<double>(rand());
+}
+
+std::string surfpack::toString(unsigned val)
+{
+  std::ostringstream os;
+  os << val;
+  return os.str();
 }
 
 std::string surfpack::toString(const VecDbl& v)

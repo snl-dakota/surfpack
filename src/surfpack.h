@@ -249,7 +249,7 @@ MyRandomNumberGenerator& shared_rng();
   double sum_vector(VecDbl& vals);
 
   /// Return the arithmetic mean (average) of the values in vector vals
-  double mean(VecDbl& vals);
+  double mean(const VecDbl& vals);
 
   /// Return the sample variance of the values in vals
   double sample_var(VecDbl& vals);
@@ -336,6 +336,8 @@ std::vector<T> toVec(const std::string& s)
   } while (!is.eof());
   return result;
 }
+
+  std::string toString(unsigned);
 
 std::string toString(const VecDbl& v);
 // ____________________________________________________________________________
