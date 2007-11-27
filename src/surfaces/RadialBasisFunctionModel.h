@@ -56,4 +56,22 @@ protected:
 friend class RadialBasisFunctionModelTest;
 };
 
+///////////////////////////////////////////////////////////
+///	Radial Basis Function Model Factory
+///////////////////////////////////////////////////////////
+
+class RadialBasisFunctionModelFactory : public SurfpackModelFactory 
+{
+
+public:
+  RadialBasisFunctionModelFactory();
+  RadialBasisFunctionModelFactory(const ParamMap& args);
+  virtual SurfpackModel* Create(const SurfData& sd);
+  virtual SurfpackModel* Create(const std::string& model_string);
+  virtual void config();
+protected:
+  unsigned nCenters;
+  unsigned minPartition;
+};
+
 #endif

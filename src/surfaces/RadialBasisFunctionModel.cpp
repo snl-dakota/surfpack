@@ -7,6 +7,7 @@
 using std::cout;
 using std::endl;
 using std::vector;
+using std::string;
 
 const unsigned granularity = 1000;
 const double maxe = 8.0;
@@ -324,3 +325,85 @@ RadialBasisFunctionModel RadialBasisFunctionModel::Create(const SurfData& sd)
   VecDbl coeffs(candidates.size(),1.0);
   return RadialBasisFunctionModel(candidates,coeffs);
 }
+
+///////////////////////////////////////////////////////////
+///	Moving Least Squares Model Factory
+///////////////////////////////////////////////////////////
+
+RadialBasisFunctionModelFactory::RadialBasisFunctionModelFactory()
+  : SurfpackModelFactory(), nCenters(0), minPartition(1)
+{
+
+}
+
+RadialBasisFunctionModelFactory::RadialBasisFunctionModelFactory(const ParamMap& args)
+  : SurfpackModelFactory(args), nCenters(0), minPartition(1)
+{
+
+}
+
+void RadialBasisFunctionModelFactory::config()
+{
+  SurfpackModelFactory::config();
+  string strarg;
+  strarg = params["centers"];
+  if (strarg != "") nCenters = atoi(strarg.c_str());
+  strarg = params["min_partition"];
+  if (strarg != "") minPartition = atoi(strarg.c_str());
+}
+
+SurfpackModel* RadialBasisFunctionModelFactory::Create(const SurfData& sd)
+{
+  this->add("ndims",surfpack::toString(sd.xSize()));
+  this->config();
+  if (nCenters == 0) nCenters = sd.size();
+  RbfBest bestset(std::numeric_limits<double>::max(),VecUns());
+  SurfData centers = cvts(AxesBounds::boundingBox(sd));
+  printf("centers: %d\n",centers.size());
+  SurfData radiuses = radii(centers);
+  printf("radii: %d\n",radiuses.size());
+  VecDbl b = sd.getResponses();
+  VecRbf candidates = makeRbfs(centers,radiuses);
+  //printf("candidates: %d\n",candidates.size());
+  augment(candidates);
+  VecDbl cfs(candidates.size(),0.0);
+  for (unsigned i = 0; i < 100; i++) {
+    VecUns used = probInclusion(candidates.size(),.5);
+    //cout << "used size: " << used.size() << endl;
+    MtxDbl A = getMatrix(sd,candidates,used);
+    //cout << "A: " << A(0,0) << " i: " << i << endl;
+    //cout << "rows,cols: " << A.getNRows() << " " << A.getNCols() << endl;
+    VecDbl x;
+    //if (i > 47) {
+    //  cout << A.asString() << endl;
+    //  copy(b.begin(),b.end(),std::ostream_iterator<double>(cout,"\n"));
+    //}
+    surfpack::linearSystemLeastSquares(A,x,b);
+    //cout << "Iteration: " << i << " vals: " << surfpack::toString(x) << endl;
+    //VecDbl coeffs = fullCoeff(candidates.size(),x,used);
+    //RadialBasisFunctionModel rbfm(candidates,coeffs);
+    //StandardFitness sf;
+    //double fitness = sf(rbfm,sd);
+    //cout << "#rbfs: " << used.size() << " fitness: " << fitness << endl;
+    //if (fitness < bestset.first) bestset = RbfBest(fitness,used);
+  }
+  // recompute coeffs for best one; if we cached it, we wouldn't have to redo
+  //VecUns used = bestset.second;
+  //MtxDbl A = getMatrix(sd,candidates,used);
+  //VecDbl x;
+  //surfpack::linearSystemLeastSquares(A,x,b);
+  //VecDbl coeffs = fullCoeff(candidates.size(),x,used);
+  VecDbl coeffs(candidates.size(),1.0);
+  //return RadialBasisFunctionModel(candidates,coeffs);
+  SurfpackModel* sm = new RadialBasisFunctionModel(candidates, coeffs); 
+  assert(sm);
+  return sm; 
+}
+
+SurfpackModel* RadialBasisFunctionModelFactory::Create(const std::string& model_string)
+{
+  ///\todo Be able to parse an RBF model from a string
+  assert(false);
+  return 0;
+}
+
