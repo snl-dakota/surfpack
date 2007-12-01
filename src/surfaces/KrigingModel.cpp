@@ -10,6 +10,7 @@
 using std::cout;
 using std::endl;
 using std::vector;
+using std::string;
 
 double correlation_function(const VecDbl& correlations,
   const VecDbl& pt1, const VecDbl& pt2)
@@ -424,11 +425,55 @@ VecDbl ConminKriging::gradient(const VecDbl& x)
 //  KrigingBasisSet kbs(SurfData::asVecVecDbl(sd),best_guess);
 //}
 
-typedef std::pair<double,VecDbl> KMPair;
-KrigingModel KrigingModel::Create(const SurfData& sd)
+///////////////////////////////////////////////////////////
+/// 	Kriging Model Factory	
+///////////////////////////////////////////////////////////
+
+KrigingModelFactory::KrigingModelFactory()
+  : SurfpackModelFactory(), correlations(0)
 {
+
+}
+
+KrigingModelFactory::KrigingModelFactory(const ParamMap& args)
+  : SurfpackModelFactory(args), correlations(0)
+{
+
+}
+
+void KrigingModelFactory::config()
+{
+  SurfpackModelFactory::config();
+  string strarg;
+  strarg = params["correlations"];
+  if (strarg != "") correlations = surfpack::toVec<double>(strarg); 
+}
+
+SurfpackModel* KrigingModelFactory::Create(const std::string& model_string)
+{
+  ///\todo Be able to parse an RBF model from a string
+  assert(false);
+  return 0;
+}
+
+
+typedef std::pair<double,VecDbl> KMPair;
+SurfpackModel* KrigingModelFactory::Create(const SurfData& sd)
+{
+  this->add("ndims",surfpack::toString(sd.xSize()));
+  this->config();
+  // If the correlations are already set, 
+  if (!correlations.empty()) {
+    assert(correlations.size() == ndims);
+    return new KrigingModel(sd,correlations);
+  } 
+
+  // Otherwise, use conmin to find correlations
   vector<AxesBounds::Axis> axes;
-  for (unsigned i = 0; i < sd.xSize(); i++) axes.push_back(AxesBounds::Axis(0,150));
+  double max_correlation = 15.0;
+  for (unsigned i = 0; i < sd.xSize(); i++) {
+    axes.push_back(AxesBounds::Axis(0,max_correlation));
+  }
   AxesBounds ax(axes);
   KMPair best(std::numeric_limits<double>::max(),VecDbl(sd.xSize(),1.0));
   SurfData* corrs = ax.sampleMonteCarlo(500);
@@ -457,14 +502,7 @@ KrigingModel KrigingModel::Create(const SurfData& sd)
   copy(best.second.begin(),best.second.end(),std::ostream_iterator<double>(cout," ")); 
   cout << " lik: " << best.first << endl;
   delete corrs;
-  return KrigingModel(sd,best.second);
+  return new KrigingModel(sd,best.second);
 }
-
-
-KrigingModel KrigingModel::Create(const SurfData& sd, const VecDbl& correlations)
-{
-  return KrigingModel(sd,correlations);
-}
-
 
 

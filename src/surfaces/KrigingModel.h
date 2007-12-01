@@ -39,12 +39,12 @@ public:
   static KrigingModel Create(const SurfData& sd);
   static KrigingModel Create(const SurfData& sd, const VecDbl& correlations);
   static MtxDbl corrMtx(const VecDbl& corr_vec, const SurfData& data);
+  double likelihood;
 protected:
   virtual double evaluate(const VecDbl& x) const;
   KrigingBasisSet bs;
   VecDbl rhs;
   double betaHat;
-  double likelihood;
 friend class KrigingModelTest;
 };
 
@@ -59,5 +59,22 @@ public:
 protected:
   const SurfData& data;
   VecDbl rhs;
+};
+
+///////////////////////////////////////////////////////////
+///   Kriging Model Factory	
+///////////////////////////////////////////////////////////
+
+class KrigingModelFactory : public SurfpackModelFactory 
+{
+
+public:
+  KrigingModelFactory();
+  KrigingModelFactory(const ParamMap& args);
+  virtual SurfpackModel* Create(const SurfData& sd);
+  virtual SurfpackModel* Create(const std::string& model_string);
+  virtual void config();
+protected:
+  VecDbl correlations;
 };
 #endif

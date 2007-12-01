@@ -347,8 +347,11 @@ VecDbl surfpack::weightedAvg(const VecDbl& first, const VecDbl& second,
 // Functions for common linear algebra tasks 
 // ____________________________________________________________________________
 void surfpack::linearSystemLeastSquares(MtxDbl& A, 
-  vector<double>& x, vector<double>& b)
+  vector<double>& x, vector<double> b)
 {
+  ///\todo Change input b to be pass by value.  It gets overwritten
+  /// inside of dgels, and that has caused some problems.  It's probably
+  /// better to just copy the whole vector and pass the copy to dgels.
   const int debug = 0;
   // Rows in A must == size of b
   assert(A.getNRows() == b.size()); 

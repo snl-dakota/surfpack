@@ -14,12 +14,8 @@
 
 #include "surfpack_system_headers.h"
 #include "SurfpackModel.h"
-
-//typedef std::vector<double> VecDbl;
-//typedef std::vector<double>::const_iterator VecDblIt;
-//typedef std::vector<unsigned> VecUns;
-//typedef std::vector<unsigned>::const_iterator VecUnsIt;
-//typedef std::vector< std::vector< unsigned > > VecVecUns;
+#include "SurfpackMatrix.h"
+class SurfPoint;
 
 class LRMBasisSet
 {
@@ -39,11 +35,6 @@ public:
     const VecDbl& coeffs_in);
   virtual VecDbl gradient(const VecDbl& x) const;
   virtual std::string asString() const;
-//Factory type stuff
-  static LinearRegressionModel Create(const SurfData& sd);
-  static LRMBasisSet CreateLRM(unsigned order, unsigned dims);
-  static VecDbl lrmSolve(const LRMBasisSet& bs, const ScaledSurfData& ssd);
-// End factory stuff
 protected:
   virtual double evaluate(const VecDbl& x) const;
   LRMBasisSet bs;
@@ -57,4 +48,27 @@ struct Term {
   Term(const VecUns& vars_in) : color(false), vars(vars_in) {}
 };
   
+///////////////////////////////////////////////////////////
+///	Linear Regression Model Factory	
+///////////////////////////////////////////////////////////
+
+class LinearRegressionModelFactory : public SurfpackModelFactory 
+{
+
+public:
+  LinearRegressionModelFactory();
+  LinearRegressionModelFactory(const ParamMap& args);
+  void setEqualityConstraints(unsigned asv,const SurfPoint& sp,  
+    double valuePtr, VecDbl& gradientPtr, MtxDbl& hessianPtr);
+  virtual SurfpackModel* Create(const SurfData& sd);
+  virtual SurfpackModel* Create(const std::string& model_string);
+  virtual void config();
+  virtual unsigned minPointsRequired();
+  VecDbl lrmSolve(const LRMBasisSet& bs, const ScaledSurfData& ssd);
+  static LRMBasisSet CreateLRM(unsigned order, unsigned dims);
+protected:
+  unsigned order;
+  MtxDbl eqConLHS;
+  VecDbl eqConRHS;
+};
 #endif

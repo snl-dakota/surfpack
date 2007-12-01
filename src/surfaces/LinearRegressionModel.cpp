@@ -3,8 +3,10 @@
 #include "LinearRegressionModel.h"
 #include "SurfData.h"
 
+
 using std::cout;
 using std::endl;
+using std::string;
 
 double LRMBasisSet::eval(unsigned index, const VecDbl& x) const
 {
@@ -107,11 +109,11 @@ std::string LinearRegressionModel::asString() const
   return os.str();
 }
 
-///////////////////////////////////////////////////////////////////////////////
-//////////////           FACTORY METHODS     //////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////
+///	Moving Least Squares Model Factory
+///////////////////////////////////////////////////////////
 
-VecDbl LinearRegressionModel::lrmSolve(const LRMBasisSet& bs, const ScaledSurfData& ssd)
+VecDbl LinearRegressionModelFactory::lrmSolve(const LRMBasisSet& bs, const ScaledSurfData& ssd)
 {
   MtxDbl A(ssd.size(),bs.size(),true);
   for (unsigned i = 0; i < ssd.size(); i++) {
@@ -121,12 +123,16 @@ VecDbl LinearRegressionModel::lrmSolve(const LRMBasisSet& bs, const ScaledSurfDa
   }
   VecDbl b = ssd.getResponses();
   VecDbl x;
-  surfpack::linearSystemLeastSquares(A,x,b);
+  if (eqConRHS.empty()) {
+    surfpack::linearSystemLeastSquares(A,x,b);
+  } else {
+    surfpack::leastSquaresWithEqualityConstraints(A,x,b,eqConLHS,eqConRHS);
+  }
   return x; 
 }
 
-//LinearRegressionModel
-LRMBasisSet LinearRegressionModel::CreateLRM(unsigned order, unsigned dims)
+LRMBasisSet LinearRegressionModelFactory::CreateLRM(unsigned order, 
+  unsigned dims)
 {
   LRMBasisSet bs;
   bs.add(std::string(""));
@@ -157,8 +163,17 @@ LRMBasisSet LinearRegressionModel::CreateLRM(unsigned order, unsigned dims)
   return bs;
 } 
 
-LinearRegressionModel LinearRegressionModel::Create(const SurfData& sd)
+SurfpackModel* LinearRegressionModelFactory::Create(const std::string& model_string)
 {
+  ///\todo Be able to parse an RBF model from a string
+  assert(false);
+  return 0;
+}
+
+SurfpackModel* LinearRegressionModelFactory::Create(const SurfData& sd)
+{
+  this->add("ndims",surfpack::toString(sd.xSize()));
+  this->config();
   ModelScaler* ms = NormalizingScaler::Create(sd);
   ScaledSurfData ssd(*ms,sd);
   
@@ -168,8 +183,103 @@ LinearRegressionModel LinearRegressionModel::Create(const SurfData& sd)
   VecDbl coeffs = lrmSolve(bs,ssd);
   copy(coeffs.begin(),coeffs.end(),std::ostream_iterator<double>(cout,"|"));
   cout << "\n";
-  LinearRegressionModel lrm(sd.xSize(),bs,coeffs);
-  lrm.scaler(ms);
+  SurfpackModel* lrm = new LinearRegressionModel(sd.xSize(),bs,coeffs);
+  lrm->scaler(ms);
   delete ms;
   return lrm;
+}
+
+unsigned LinearRegressionModelFactory::minPointsRequired()
+{
+  config();
+  LRMBasisSet bs = CreateLRM(order,ndims);
+  return bs.size() - eqConRHS.size();
+}
+
+LinearRegressionModelFactory::LinearRegressionModelFactory()
+  : SurfpackModelFactory(), order(2)
+{
+
+}
+
+LinearRegressionModelFactory::LinearRegressionModelFactory(const ParamMap& args)
+  : SurfpackModelFactory(args), order(2)
+{
+
+}
+
+void LinearRegressionModelFactory::config()
+{
+  SurfpackModelFactory::config();
+  string strarg;
+  strarg = params["order"];
+  if (strarg != "") order = atoi(strarg.c_str());
+}
+
+void LinearRegressionModelFactory::setEqualityConstraints(unsigned asv,const SurfPoint& sp,  double valuePtr, VecDbl& gradient, MtxDbl& hessian)
+{
+  config();
+  LRMBasisSet bs = CreateLRM(order,ndims);
+  VecDbl coefficients(bs.size());
+  unsigned numConstraints = 0;
+  if (asv & 1) numConstraints += 1; // value at a particular point
+  if (asv & 2) numConstraints += ndims; // gradient at a point
+  if (asv & 4) numConstraints += (ndims*ndims+ndims)/2; // hessian at a point
+  eqConRHS.resize( numConstraints );
+  // Must compute number of terms first
+  //MtxDbl temp(eqConRHS.size(),coefficients.size(),true);
+  //eqConLHS = temp;
+  eqConLHS.reshape(eqConRHS.size(),coefficients.size());
+  // Marks the index of the next constraint to be added (necessary since
+  // indices of e.g. the gradient constraints will be different depending on
+  // whether or not the value constraint is used
+  unsigned index = 0;
+  // If requested, add the equality constraint for the point value
+  if (asv & 1) {
+    for (unsigned i = 0; i < bs.size(); i++) {
+      eqConLHS(index,i) = bs.eval(i,sp.X());
+      eqConRHS[index] = valuePtr;
+      ++index;
+    }
+  }
+
+  // If requested, add the equality constraints for the gradient
+  if (asv & 2) {
+    //const VecDbl& gradient = *gradientPtr;
+    assert(gradient.size() == ndims);
+    VecUns factorCounts;
+    VecUns diff_counts;
+    for (unsigned dif_var = 0; dif_var < ndims; dif_var++ ) {
+      diff_counts = VecUns(ndims,0);
+      diff_counts[dif_var] = 1;
+      for (unsigned i = 0; i < bs.size(); i++) {
+        eqConLHS(index,i) = bs.deriv(i,sp.X(), diff_counts);
+        ++index;
+      }
+      eqConRHS[index] = gradient[dif_var];
+      ++index;
+    }
+  }
+
+  // If requested, add the equality constraints for the hessian
+  if (asv & 4) {
+    //MtxDbl& hessian = *hessianPtr;
+    assert(hessian.getNCols() == ndims);
+    assert(hessian.getNRows() == ndims);
+    VecUns factorCounts;
+    VecUns diff_counts;
+    for (unsigned dif_var1 = 0; dif_var1 < ndims; dif_var1++ ) {
+      for (unsigned dif_var2 = dif_var1; dif_var2 < ndims; dif_var2++ ) {
+        diff_counts = VecUns(ndims,0);
+        diff_counts[dif_var1]++;
+        diff_counts[dif_var2]++;
+        for (unsigned i = 0; i < bs.size(); i++) {
+          eqConLHS(index,i) = bs.deriv(i,sp.X(), diff_counts);
+          ++index;
+        }
+        eqConRHS[index] = hessian(dif_var1,dif_var2);
+        ++index;
+      } // dif_var2
+    } // dif_var1
+  } // if hessian needed
 }

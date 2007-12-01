@@ -280,7 +280,7 @@ MyRandomNumberGenerator& shared_rng();
 // Functions for common linear algebra tasks 
 // ____________________________________________________________________________
   /// Least squares solve of system Ax = b
-  void linearSystemLeastSquares(MtxDbl& A, VecDbl& x, VecDbl& b);
+  void linearSystemLeastSquares(MtxDbl& A, VecDbl& x, VecDbl b);
 
   /// Least squares solve os system Ax = c, subject to Bx = d
   void leastSquaresWithEqualityConstraints(MtxDbl& A, 

@@ -18,7 +18,7 @@
 #include "LinearRegressionModel.h"
 
 class AxesBounds;
-SurfPoint centroid(const SurfData& sd);
+SurfPoint computeCentroid(const SurfData& sd);
 void updateCentroid(VecDbl& centroid, const VecDbl& newpt, unsigned weight);
 SurfData cvts(const AxesBounds& ab);
 SurfData radii(const SurfData& generators);
@@ -49,7 +49,6 @@ public:
   virtual double evaluate(const VecDbl& x) const;
   virtual VecDbl gradient(const VecDbl& x) const;
   virtual std::string asString() const;
-  static RadialBasisFunctionModel Create(const SurfData& sd);
 protected:
   VecRbf rbfs;
   VecDbl coeffs;

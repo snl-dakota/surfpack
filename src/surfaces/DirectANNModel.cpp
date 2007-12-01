@@ -6,6 +6,7 @@
 
 using std::cout;
 using std::endl;
+using std::string;
 
 DirectANNBasisSet::DirectANNBasisSet(const MtxDbl& weights_in)
   : weights(weights_in)
@@ -111,24 +112,60 @@ MtxDbl randomMatrix(unsigned nrows, unsigned ncols)
   return rm;
 }
 
-DirectANNModel DirectANNModel::Create(const SurfData& sd, unsigned nnodes)
+///////////////////////////////////////////////////////////
+/// 	DirectANN Model Factory	
+///////////////////////////////////////////////////////////
+
+DirectANNModelFactory::DirectANNModelFactory()
+  : SurfpackModelFactory(), nNodes(0)
 {
+
+}
+
+DirectANNModelFactory::DirectANNModelFactory(const ParamMap& args)
+  : SurfpackModelFactory(args), nNodes(0)
+{
+
+}
+
+void DirectANNModelFactory::config()
+{
+  SurfpackModelFactory::config();
+  string strarg;
+  strarg = params["nodes"];
+  if (strarg != "") nNodes = atoi(strarg.c_str()); 
+}
+
+SurfpackModel* DirectANNModelFactory::Create(const std::string& model_string)
+{
+  ///\todo Be able to parse an RBF model from a string
+  assert(false);
+  return 0;
+}
+
+
+typedef std::pair<double,VecDbl> KMPair;
+SurfpackModel* DirectANNModelFactory::Create(const SurfData& sd)
+{
+  this->add("ndims",surfpack::toString(sd.xSize()));
+  this->config();
   const unsigned maxnodes = 100;
   assert(sd.size());
   assert(sd.xSize());
-  if (!nnodes) nnodes = sd.size();
-  if (nnodes > maxnodes) nnodes = maxnodes;
-  MtxDbl random_weights = randomMatrix(nnodes,sd.xSize()+1);
+  if (!nNodes) nNodes = sd.size();
+  if (nNodes > maxnodes) nNodes = maxnodes;
+  MtxDbl random_weights = randomMatrix(nNodes,sd.xSize()+1);
   DirectANNBasisSet bs(random_weights);
-  MtxDbl A(sd.size(),nnodes+1,true);
+  MtxDbl A(sd.size(),nNodes+1,true);
   VecDbl b(sd.size(),0.0);
   for (unsigned samp = 0; samp < sd.size(); samp++) {
-    for (unsigned n = 0; n < nnodes; n++) { 
+    for (unsigned n = 0; n < nNodes; n++) { 
       A(samp,n) = bs.eval(n,sd(samp));
     }
-    A(samp,nnodes) = 1.0; // for hidden layer bias
+    A(samp,nNodes) = 1.0; // for hidden layer bias
     b[samp] = atanh(sd.getResponse(samp));
   }
   VecDbl x;
   surfpack::linearSystemLeastSquares(A,x,b);
+  return new DirectANNModel(bs,x);
 }

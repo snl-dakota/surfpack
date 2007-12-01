@@ -32,7 +32,6 @@ class DirectANNModel : public SurfpackModel
 {
 public:
   DirectANNModel(const DirectANNBasisSet& bs_in, const VecDbl& coeffs_in);
-  static DirectANNModel Create(const SurfData& sd, unsigned nnodes = 0);
   virtual VecDbl gradient(const VecDbl& x) const;
   virtual std::string asString() const;
 protected:
@@ -42,4 +41,20 @@ protected:
 friend class DirectANNModelTest;
 };
 
+///////////////////////////////////////////////////////////
+///   Direct ANN Model Factory	
+///////////////////////////////////////////////////////////
+
+class DirectANNModelFactory : public SurfpackModelFactory 
+{
+
+public:
+  DirectANNModelFactory();
+  DirectANNModelFactory(const ParamMap& args);
+  virtual SurfpackModel* Create(const SurfData& sd);
+  virtual SurfpackModel* Create(const std::string& model_string);
+  virtual void config();
+protected:
+  unsigned nNodes;
+};
 #endif
