@@ -29,6 +29,9 @@ CPPUNIT_TEST( matrixReshapeTest );
 CPPUNIT_TEST( matrixResizeCTest );
 CPPUNIT_TEST( stringToVecUnsTest );
 CPPUNIT_TEST( weightedAvgTest );
+CPPUNIT_TEST( toString );
+CPPUNIT_TEST( fromVec );
+CPPUNIT_TEST( blockTests );
   CPPUNIT_TEST_SUITE_END();
 public:
   void setUp();
@@ -41,6 +44,9 @@ void matrixReshapeTest();
 void matrixResizeCTest();
 void stringToVecUnsTest();
 void weightedAvgTest();
+void toString();
+void fromVec();
+void blockTests();
 };
 
 #endif

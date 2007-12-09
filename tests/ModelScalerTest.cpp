@@ -90,16 +90,18 @@ void ModelScalerTest::NormalizingScalerModelTest()
   SurfData* sd = SurfpackInterface::CreateSample("-10 10 | -10 10","11 11","sphere");
   CPPUNIT_ASSERT(sd->size() == 121);
   VecDbl pt(2,0.0);
-  LinearRegressionModel lrm = LinearRegressionModel::Create(*sd);
+  LinearRegressionModelFactory lrmf;
+  SurfpackModel* lrm = lrmf.Create(*sd);
   // First, see what the lrm is like with the default (no) scaling
-  CPPUNIT_ASSERT(matches(0.0,lrm(pt)));
+  CPPUNIT_ASSERT(matches(0.0,(*lrm)(pt)));
   pt[0] = pt[1] = 2.0;
-  CPPUNIT_ASSERT(matches(8.0,lrm(pt)));
+  CPPUNIT_ASSERT(matches(8.0,(*lrm)(pt)));
   StandardFitness sf;
-  cout << "Standard Fitness: " << sf(lrm,*sd) << endl;
-  cout << lrm.asString() << endl; 
-  cout << lrm.scaler()->asString() << endl; 
+  cout << "Standard Fitness: " << sf(*lrm,*sd) << endl;
+  cout << lrm->asString() << endl; 
+  cout << lrm->scaler()->asString() << endl; 
   delete sd;
+  delete lrm;
   // Min is -2 and range is 4
 }
 

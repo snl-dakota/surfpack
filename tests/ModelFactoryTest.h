@@ -19,11 +19,13 @@ class ModelFactoryTest : public CppUnit::TestFixture
 {
   CPPUNIT_TEST_SUITE( ModelFactoryTest );
 CPPUNIT_TEST( simpleTest );
+CPPUNIT_TEST( argsTest );
   CPPUNIT_TEST_SUITE_END();
 public:
   void setUp();
   void tearDown();
 void simpleTest();
+void argsTest();
 };
 
 #endif

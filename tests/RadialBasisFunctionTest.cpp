@@ -118,7 +118,7 @@ void RadialBasisFunctionTest::partitionTest()
 void RadialBasisFunctionTest::centroidTest()
 {
   SurfData* sd = SurfpackInterface::CreateSample("-2 2 | -2 2","10 10","sphere");
-  SurfPoint sp = centroid(*sd); 
+  SurfPoint sp = computeCentroid(*sd); 
   delete sd; sd = 0;
 }
 
@@ -128,7 +128,7 @@ void RadialBasisFunctionTest::centroidTest2()
   sd.addPoint(SurfPoint(surfpack::toVec<double>("1 2 3")));
   sd.addPoint(SurfPoint(surfpack::toVec<double>("4 2 9")));
   sd.addPoint(SurfPoint(surfpack::toVec<double>("-2 2 3")));
-  SurfPoint c = centroid(sd);
+  SurfPoint c = computeCentroid(sd);
   CPPUNIT_ASSERT(matches(c[0],1.0));
   CPPUNIT_ASSERT(matches(c[1],2.0));
   CPPUNIT_ASSERT(matches(c[2],5.0));
@@ -161,7 +161,13 @@ void RadialBasisFunctionTest::cvtTest()
 
 void RadialBasisFunctionTest::createTest()
 {
-  SurfData* sd = SurfpackInterface::CreateSample("-2 2 | -2 2","10 10","sphere");
-  RadialBasisFunctionModel rbfm = RadialBasisFunctionModel::Create(*sd);
+  SurfData* sd = SurfpackInterface::CreateSample("-2 2 | -2 2","10 10","moderatepoly");
+  RadialBasisFunctionModelFactory rbfmf;
+  SurfpackModel* model = rbfmf.Create(*sd);
+  VecDbl est = (*model)(*sd);
+  sd->addResponse(est,"est");
+  sd->write("rbftest.spd");
+  delete sd;
+  delete model;
 }
 

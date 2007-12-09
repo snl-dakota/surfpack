@@ -48,9 +48,18 @@ void ModelFactoryTest::tearDown()
 void ModelFactoryTest::simpleTest()
 {
   SurfData* sd = SurfpackInterface::CreateSample("-2 2 | -2 2","10 10","sphere");
-  MovingLeastSquaresModelFactory mlsf;
-  SurfpackModel* mlsm = mlsf.Create(*sd);
+  SurfpackModelFactory* mlsf = new MovingLeastSquaresModelFactory;
+  SurfpackModel* mlsm = mlsf->Create(*sd);
   VecDbl vd = surfpack::toVec<double>("0.0 0.0");
   cout << (*mlsm)(vd) << endl;
+  delete mlsm;
+  delete mlsf;
+}
+
+void ModelFactoryTest::argsTest()
+{
+  ParamMap args;
+  args.insert(ModelParam(string("type"),string("polynomial")));
+  args["order"] = "polynomial"; 
 }
 

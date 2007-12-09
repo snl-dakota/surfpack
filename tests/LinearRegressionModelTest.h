@@ -33,7 +33,7 @@ class LinearRegressionModelTest : public CppUnit::TestFixture
 //CPPUNIT_TEST( plotTest1 );
 CPPUNIT_TEST( termPrinterTest );
 CPPUNIT_TEST( createModelTest );
-CPPUNIT_TEST( FTest );
+//CPPUNIT_TEST( FTest );
   CPPUNIT_TEST_SUITE_END();
 public:
   AxesBounds* ab;
@@ -51,7 +51,7 @@ void quadratic2DTest();
 void plotTest1();
 void termPrinterTest();
 void createModelTest();
-void FTest();
+//void FTest();
 };
 
 #endif

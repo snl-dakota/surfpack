@@ -54,14 +54,16 @@ void KrigingModelTest::simpleTest()
   //SurfData* sd = SurfpackInterface::CreateSample("-2 2 | -2 2","10 10","sphere");
   SurfData sd("data_samples.spd",3,1,0);
   cout << sd.size() << endl;
-  KrigingModel km = KrigingModel::Create(sd,surfpack::toVec<double>("13.2792 3.07625 7.961"));
-  VecDbl responses = km(sd);
+  KrigingModelFactory kmf;
+  kmf.add("correlations","13.2792 3.07625 7.961");
+  SurfpackModel* km = kmf.Build(sd);
+  VecDbl responses = (*km)(sd);
   sd.addResponse(responses);
   sd.write("test_on_train.spd");
   
   //SurfData* sdp = SurfpackInterface::CreateSample("2.53e06 2.55e06 | 7.64e05 7.66e05 | 148 149","10 10 10","");
   SurfData* sdp = SurfpackInterface::CreateSample("1.53e06 2.55e06 | 7.04e05 8.66e05 | 140 159","10 10 10","");
-  VecDbl responses2 = km(*sdp);
+  VecDbl responses2 = (*km)(*sdp);
   sdp->addResponse(responses2);
   sdp->write("test_data.spd");
   delete sdp;

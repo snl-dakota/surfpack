@@ -147,3 +147,62 @@ void SurfpackCommonTest::weightedAvgTest()
   CPPUNIT_ASSERT(matches(z[0],.4));
 }
 
+void SurfpackCommonTest::toString()
+{
+}
+
+void SurfpackCommonTest::fromVec()
+{
+
+  std::vector<unsigned> uv(4,3);
+  CPPUNIT_ASSERT(surfpack::fromVec<unsigned>(uv) == string("3 3 3 3"));
+  
+  //cout << surfpack::fromVec<unsigned>(uv) << endl;
+  std::vector<std::string> sv;
+  sv.push_back("sphere");
+  sv.push_back("rosenbrock");
+  sv.push_back("rastrigin");
+  CPPUNIT_ASSERT(surfpack::fromVec<std::string>(sv) == string("sphere rosenbrock rastrigin"));
+  //CPPUNIT_ASSERT(surfpack::fromVec<std::string>(sv) == string("sphere rosenbrock rastrigin"));
+
+}
+
+void SurfpackCommonTest::blockTests()
+{
+  unsigned p = 5;
+  unsigned n = 17;
+  CPPUNIT_ASSERT(surfpack::block_low(0,p,n) == 0);
+  CPPUNIT_ASSERT(surfpack::block_low(1,p,n) == 3);
+  CPPUNIT_ASSERT(surfpack::block_low(2,p,n) == 6);
+  CPPUNIT_ASSERT(surfpack::block_low(3,p,n) == 10);
+  CPPUNIT_ASSERT(surfpack::block_low(4,p,n) == 13);
+  CPPUNIT_ASSERT(surfpack::block_low(0,p,n) == 0);
+  CPPUNIT_ASSERT(surfpack::block_high(0,p,n) == 2);
+  CPPUNIT_ASSERT(surfpack::block_high(1,p,n) == 5);
+  CPPUNIT_ASSERT(surfpack::block_high(2,p,n) == 9);
+  CPPUNIT_ASSERT(surfpack::block_high(3,p,n) == 12);
+  CPPUNIT_ASSERT(surfpack::block_high(4,p,n) == 16);
+  CPPUNIT_ASSERT(surfpack::block_size(0,p,n) == 3);
+  CPPUNIT_ASSERT(surfpack::block_size(1,p,n) == 3);
+  CPPUNIT_ASSERT(surfpack::block_size(2,p,n) == 4);
+  CPPUNIT_ASSERT(surfpack::block_size(3,p,n) == 3);
+  CPPUNIT_ASSERT(surfpack::block_size(4,p,n) == 4);
+  CPPUNIT_ASSERT(surfpack::block_owner(0,p,n) == 0);
+  CPPUNIT_ASSERT(surfpack::block_owner(1,p,n) == 0);
+  CPPUNIT_ASSERT(surfpack::block_owner(2,p,n) == 0);
+  CPPUNIT_ASSERT(surfpack::block_owner(3,p,n) == 1);
+  CPPUNIT_ASSERT(surfpack::block_owner(4,p,n) == 1);
+  CPPUNIT_ASSERT(surfpack::block_owner(5,p,n) == 1);
+  CPPUNIT_ASSERT(surfpack::block_owner(6,p,n) == 2);
+  CPPUNIT_ASSERT(surfpack::block_owner(7,p,n) == 2);
+  CPPUNIT_ASSERT(surfpack::block_owner(8,p,n) == 2);
+  CPPUNIT_ASSERT(surfpack::block_owner(9,p,n) == 2);
+  CPPUNIT_ASSERT(surfpack::block_owner(10,p,n) == 3);
+  CPPUNIT_ASSERT(surfpack::block_owner(11,p,n) == 3);
+  CPPUNIT_ASSERT(surfpack::block_owner(12,p,n) == 4);
+  CPPUNIT_ASSERT(surfpack::block_owner(13,p,n) == 4);
+  CPPUNIT_ASSERT(surfpack::block_owner(14,p,n) == 4);
+  CPPUNIT_ASSERT(surfpack::block_owner(15,p,n) == 4);
+  CPPUNIT_ASSERT(surfpack::block_owner(16,p,n) == 4);
+}
+

@@ -319,7 +319,7 @@ void LinearRegressionModelTest::plotTest1()
 
 void LinearRegressionModelTest::termPrinterTest()
 {
-  LinearRegressionModel::CreateLRM(2,2);
+  LinearRegressionModelFactory::CreateLRM(2,2);
   VecUns u, v;
   u.push_back(1);
   u.push_back(10);
@@ -335,53 +335,57 @@ void LinearRegressionModelTest::createModelTest()
 {
   SurfData* sd = SurfpackInterface::CreateSample(string("-2 2 | -2 2"),
     string("8 8"),string("sphere"));
-  LinearRegressionModel lrm = LinearRegressionModel::Create(*sd);
-  cout << lrm.asString() << endl;
+  LinearRegressionModelFactory lrmf;
+  SurfpackModel* lrm = lrmf.Create(*sd);
+  cout << lrm->asString() << endl;
   return;
-  CPPUNIT_ASSERT(matches(lrm.coeffs[0],0.0));
-  CPPUNIT_ASSERT(matches(lrm.coeffs[1],0.0));
-  CPPUNIT_ASSERT(matches(lrm.coeffs[2],1.0));
-  CPPUNIT_ASSERT(matches(lrm.coeffs[3],0.0));
-  CPPUNIT_ASSERT(matches(lrm.coeffs[4],0.0));
-  CPPUNIT_ASSERT(matches(lrm.coeffs[5],1.0));
+  CPPUNIT_ASSERT(matches(dynamic_cast<LinearRegressionModel*>(lrm)->coeffs[0],0.0));
+  CPPUNIT_ASSERT(matches(dynamic_cast<LinearRegressionModel*>(lrm)->coeffs[1],0.0));
+  CPPUNIT_ASSERT(matches(dynamic_cast<LinearRegressionModel*>(lrm)->coeffs[2],1.0));
+  CPPUNIT_ASSERT(matches(dynamic_cast<LinearRegressionModel*>(lrm)->coeffs[3],0.0));
+  CPPUNIT_ASSERT(matches(dynamic_cast<LinearRegressionModel*>(lrm)->coeffs[4],0.0));
+  CPPUNIT_ASSERT(matches(dynamic_cast<LinearRegressionModel*>(lrm)->coeffs[5],1.0));
+  delete lrm;
   delete sd;
 }
 
 extern "C" double gsl_ran_fdist_pdf(double,double,double);
-void LinearRegressionModelTest::FTest()
-{
-  // Make a set of data that is a full quadratic fit plus some random noise
-  SurfData* sd = SurfpackInterface::CreateSample(string("-2 2 | -2 2"),
-    string("8 8"),string("sphere"));
-  LRMBasisSet bs = LinearRegressionModel::CreateLRM(2,2);
-  CPPUNIT_ASSERT(bs.size() == 6);
-  VecDbl coeffs = surfpack::toVec<double>(string("1 -2 3 -1 3 1"));
-  LinearRegressionModel lrmTemp(2,bs,coeffs);
-  VecDbl responses = lrmTemp(*sd);
-  // Add some random noise to the data
-  for (unsigned i = 0; i < responses.size(); i++) {
-    responses[i] += ((double)rand()/INT_MAX-.5)/2.0;
-  }
-  unsigned new_index = sd->addResponse(responses);
-  sd->setDefaultIndex(new_index);
-  // Now fit a full model to this data
-  LinearRegressionModel lrmFull = LinearRegressionModel::Create(*sd);
-  cout << lrmFull.asString() << endl;
-  StandardFitness sf;
-  double ssr_full = sf(lrmFull,*sd);
-  // Now remove a term to create a reduced model
-  bs.bases.erase(bs.bases.begin()+2);
-  VecDbl coeffs_reduced = LinearRegressionModel::lrmSolve(bs,ScaledSurfData(NonScaler(),*sd));
-  LinearRegressionModel lrmReduced(2,bs,coeffs_reduced);
-  double ssr_reduced = sf(lrmReduced,*sd);
-  cout << "Fitness Full: " << ssr_full << endl;
-  cout << "Fitness Reduced: " << ssr_reduced << endl;
-
-  // compute degrees of freedom
-  unsigned df_num = 1;
-  unsigned df_denom = sd->size() - coeffs.size();
-  double Fstat = (ssr_reduced - ssr_full)*df_denom/ssr_full;
-  double fpdf = gsl_ran_fdist_pdf(Fstat,df_num,df_denom);
-  cout << "Fstat: " << Fstat << " fpdf: " << fpdf << endl;
-}
+//void LinearRegressionModelTest::FTest()
+//{
+//  // Make a set of data that is a full quadratic fit plus some random noise
+//  SurfData* sd = SurfpackInterface::CreateSample(string("-2 2 | -2 2"),
+//    string("8 8"),string("sphere"));
+//  LRMBasisSet bs = LinearRegressionModelFactory::CreateLRM(2,2);
+//  CPPUNIT_ASSERT(bs.size() == 6);
+//  VecDbl coeffs = surfpack::toVec<double>(string("1 -2 3 -1 3 1"));
+//  LinearRegressionModel lrmTemp(2,bs,coeffs);
+//  VecDbl responses = lrmTemp(*sd);
+//  // Add some random noise to the data
+//  for (unsigned i = 0; i < responses.size(); i++) {
+//    responses[i] += ((double)rand()/INT_MAX-.5)/2.0;
+//  }
+//  unsigned new_index = sd->addResponse(responses);
+//  sd->setDefaultIndex(new_index);
+//  // Now fit a full model to this data
+//  LinearRegressionModelFactory lrmf;
+//  LinearRegressionModel* lrmFull = lrmf.Create(*sd);
+//  cout << lrmFull->asString() << endl;
+//  StandardFitness sf;
+//  double ssr_full = sf(*lrmFull,*sd);
+//  // Now remove a term to create a reduced model
+//  bs.bases.erase(bs.bases.begin()+2);
+//  VecDbl coeffs_reduced = LinearRegressionModel::lrmSolve(bs,ScaledSurfData(NonScaler(),*sd));
+//  LinearRegressionModel lrmReduced(2,bs,coeffs_reduced);
+//  double ssr_reduced = sf(lrmReduced,*sd);
+//  cout << "Fitness Full: " << ssr_full << endl;
+//  cout << "Fitness Reduced: " << ssr_reduced << endl;
+//
+//  // compute degrees of freedom
+//  unsigned df_num = 1;
+//  unsigned df_denom = sd->size() - coeffs.size();
+//  double Fstat = (ssr_reduced - ssr_full)*df_denom/ssr_full;
+//  double fpdf = gsl_ran_fdist_pdf(Fstat,df_num,df_denom);
+//  cout << "Fstat: " << Fstat << " fpdf: " << fpdf << endl;
+//  delete lrmFull;
+//}
 
