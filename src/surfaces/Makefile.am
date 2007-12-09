@@ -21,6 +21,8 @@ libsurfaces_la_SOURCES = KrigingSurface.cpp \
 			 DirectANNModel.h \
 		         KrigingModel.cpp \
 			 KrigingModel.h \
+		         MarsModel.cpp \
+			 MarsModel.h \
 			 SurfpackModel.cpp \
 			 SurfpackModel.h \
 			 ModelScaler.cpp \

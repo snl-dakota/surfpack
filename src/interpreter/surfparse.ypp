@@ -31,7 +31,7 @@ void yyerror(const char* s);
 
 %%
 
-input:		/* empty */
+input:		/* empty  {parser.printComms();} */
 	|	statement input
 	|	shellcommand input
 ;
@@ -50,14 +50,14 @@ arglisttail: 	/* empty */
 	| 	',' arg arglisttail
 ;
 
-arg:		IDENTIFIER {parser.addArgName();} '=' argval
+arg:		IDENTIFIER {parser.addArgName();} '=' argval {parser.appendArg();}
 ;
 
-argval:		IDENTIFIER 			{parser.addArgValIdent();}
-	|	INTEGER				{parser.addArgValInt();}
-	|	STRING				{parser.addArgValString();}
-	|	REAL				{parser.addArgValReal();}
-	|	tuple				{parser.addArgValTuple();}
+argval:		IDENTIFIER 			{parser.addArg(); parser.addArgValIdent();}
+	|	INTEGER				{parser.addArg(); parser.addArgValInt();}
+	|	STRING				{parser.addArg(); parser.addArgValString();}
+	|	REAL				{parser.addArg(); parser.addArgValReal();}
+	|	tuple				{ parser.addArgValTuple();}
 	| 	{parser.pushNewArgList();} arglist {parser.addArgValArgList();}
 ;
 

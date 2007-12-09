@@ -389,7 +389,7 @@ bool SurfData::varIndex(const string& name, unsigned& index,
 /// it sets this value so that the response value lookup function will return
 /// the value for the response variable that that particular Surface object
 /// is interested in.  
-void SurfData::setDefaultIndex(unsigned index)
+void SurfData::setDefaultIndex(unsigned index) const
 {
   static string header("Indexing error in SurfData::setDefaultIndex.");
   checkRangeNumResponses(header, index);

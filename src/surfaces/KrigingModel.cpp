@@ -74,11 +74,12 @@ KrigingModel::KrigingModel(const KrigingBasisSet& bs_in, const VecDbl& rhs_in)
 KrigingModel::KrigingModel(const SurfData& sd, const VecDbl& correlations)
   : SurfpackModel(sd.xSize()), bs(SurfData::asVecVecDbl(sd),correlations)
 {
+  // Scale the data (in hopes of improving numerical properties)
   ModelScaler* ms = NormalizingScaler::Create(sd);
-  //sd.writeText(cout);
   ScaledSurfData ssd(*ms,sd);
   this->scaler(ms);
   bs = KrigingBasisSet(ScaledSurfData::asVecVecDbl(ssd),correlations);
+
   MtxDbl R = getMatrix(ssd,correlations);
   //cout << "R(1,0): " << R.asString() << endl;
   VecDbl y = ssd.getResponses();
@@ -100,15 +101,15 @@ KrigingModel::KrigingModel(const SurfData& sd, const VecDbl& correlations)
   double denominator_sum = Rinv.sum();
   double numerator_sum = surfpack::sum_vector(Rinv_times_y);
   this->betaHat = numerator_sum / denominator_sum;
-  cout << "betaHat: " << betaHat << endl;
-  cout << "numerator: " << numerator_sum << endl;
-  cout << "denominator: " << denominator_sum << endl;
+  //cout << "betaHat: " << betaHat << endl;
+  //cout << "numerator: " << numerator_sum << endl;
+  //cout << "denominator: " << denominator_sum << endl;
   surfpack::vectorShift(y,betaHat);
   VecDbl& y_minus_betahat = y;
   surfpack::matrixVectorMult(this->rhs,Rinv,y_minus_betahat);
   double estVariance = surfpack::dot_product(y_minus_betahat,rhs);
-  cout << "EstVariance: " << estVariance << endl;
-  cout << "determinantCorrMatrix: " << determinantCorrMatrix << endl;
+  //cout << "EstVariance: " << estVariance << endl;
+  //cout << "determinantCorrMatrix: " << determinantCorrMatrix << endl;
   //double likelihood = 
   //  -0.5*sd.size()*log(estVariance)+log(determinantCorrMatrix);
   this->likelihood = log(estVariance)+log(determinantCorrMatrix);
@@ -128,8 +129,6 @@ MtxDbl KrigingModel::getMatrix(const ScaledSurfData& ssd, const VecDbl& correlat
       } else {
         const VecDbl pt1 = ssd(i);
         const VecDbl& pt2 = ssd(j);
-  //copy(pt1.begin(),pt1.end(),std::ostream_iterator<double>(cout," "));
-  //copy(pt2.begin(),pt2.end(),std::ostream_iterator<double>(cout," "));
         R(i,j) = 
    	  correlation_function(correlations,pt1,pt2);
       }
@@ -137,6 +136,23 @@ MtxDbl KrigingModel::getMatrix(const ScaledSurfData& ssd, const VecDbl& correlat
   }
   return R;
 }
+
+MtxDbl KrigingModel::corrMtx(const VecDbl& corr_vec, const SurfData& data)
+{
+  MtxDbl R(data.size(),data.size(),true); // correlation matrix
+  for (unsigned i = 0; i < data.size(); i++) {
+    for (unsigned j = 0; j < data.size(); j++) {
+      if (i == j) {
+        R(i,j) = 1.0;
+      } else {
+        R(i,j) = 
+   	  correlation_function(corr_vec,data[i].X(),data[j].X());
+      }
+    }
+  }
+  return R;
+}
+
 double KrigingModel::evaluate(const VecDbl& x) const
 {
   assert(rhs.size() == bs.centers.size());
@@ -308,8 +324,8 @@ void ConminKriging::optimize(VecDbl& x, double& final_val, unsigned max_iter)
   
   vector<double> lower_bounds(N1,0.0);
   vector<double> upper_bounds(N1,0.0);
-  lowerBounds = VecDbl(NDV,-99999);
-  upperBounds = VecDbl(NDV,99999);
+  lowerBounds = VecDbl(NDV,1e-3);
+  upperBounds = VecDbl(NDV,1e+6);
   NSIDE = 1;
   copy(lowerBounds.begin(),lowerBounds.end(),lower_bounds.begin());
   copy(upperBounds.begin(),upperBounds.end(),upper_bounds.begin());
@@ -349,22 +365,6 @@ void ConminKriging::optimize(VecDbl& x, double& final_val, unsigned max_iter)
   printf("x.size(): %d query_pt.size(): %d N1: %d\n",x.size(),query_pt.size(),N1);
   } while (IGOTO != 0);
   final_val = OBJ;
-}
-
-MtxDbl KrigingModel::corrMtx(const VecDbl& corr_vec, const SurfData& data)
-{
-  MtxDbl R(data.size(),data.size(),true); // correlation matrix
-  for (unsigned i = 0; i < data.size(); i++) {
-    for (unsigned j = 0; j < data.size(); j++) {
-      if (i == j) {
-        R(i,j) = 1.0;
-      } else {
-        R(i,j) = 
-   	  correlation_function(corr_vec,data[i].X(),data[j].X());
-      }
-    }
-  }
-  return R;
 }
 
 double ConminKriging::objective(const VecDbl& x)
@@ -430,13 +430,15 @@ VecDbl ConminKriging::gradient(const VecDbl& x)
 ///////////////////////////////////////////////////////////
 
 KrigingModelFactory::KrigingModelFactory()
-  : SurfpackModelFactory(), correlations(0)
+  : SurfpackModelFactory(), 
+  correlations(0), max_iter(50), conmin_seed(0)
 {
 
 }
 
 KrigingModelFactory::KrigingModelFactory(const ParamMap& args)
-  : SurfpackModelFactory(args), correlations(0)
+  : SurfpackModelFactory(args), 
+  correlations(0), max_iter(50), conmin_seed(0)
 {
 
 }
@@ -447,6 +449,14 @@ void KrigingModelFactory::config()
   string strarg;
   strarg = params["correlations"];
   if (strarg != "") correlations = surfpack::toVec<double>(strarg); 
+  strarg = params["max_iter"];
+  if (strarg != "") {
+    max_iter = atoi(strarg.c_str()); 
+    assert(max_iter >= 0);
+  }
+  strarg = params["conmin_seed"];
+  if (strarg != "") conmin_seed = surfpack::toVec<double>(strarg); 
+  
 }
 
 SurfpackModel* KrigingModelFactory::Create(const std::string& model_string)
@@ -462,13 +472,21 @@ SurfpackModel* KrigingModelFactory::Create(const SurfData& sd)
 {
   this->add("ndims",surfpack::toString(sd.xSize()));
   this->config();
-  // If the correlations are already set, 
-  if (!correlations.empty()) {
-    assert(correlations.size() == ndims);
-    return new KrigingModel(sd,correlations);
-  } 
 
-  // Otherwise, use conmin to find correlations
+  if (!correlations.empty()) {
+    // don't do anything to them
+  } else if (!conmin_seed.empty()) {
+    correlations = conminCorrelations(sd);
+  } else {
+    correlations = sampleCorrelations(sd);
+  }
+  assert(correlations.size() == ndims);
+  return new KrigingModel(sd,correlations);
+}
+
+
+VecDbl KrigingModelFactory::sampleCorrelations(const SurfData& sd)
+{
   vector<AxesBounds::Axis> axes;
   double max_correlation = 15.0;
   for (unsigned i = 0; i < sd.xSize(); i++) {
@@ -476,33 +494,45 @@ SurfpackModel* KrigingModelFactory::Create(const SurfData& sd)
   }
   AxesBounds ax(axes);
   KMPair best(std::numeric_limits<double>::max(),VecDbl(sd.xSize(),1.0));
-  SurfData* corrs = ax.sampleMonteCarlo(500);
+  SurfData* corrs = ax.sampleMonteCarlo(5);
   
   StandardFitness sf;
   for (unsigned i = 0; i < corrs->size(); i++) {
-    VecDbl correlations = (*corrs)(i);
-  cout << "Our Correlations: ";
-  copy(correlations.begin(),correlations.end(),std::ostream_iterator<double>(cout," "));
+    VecDbl candidates = (*corrs)(i);
+  //cout << "Our Correlations: ";
+  //copy(correlations.begin(),correlations.end(),std::ostream_iterator<double>(cout," "));
   
-    KrigingModel km(sd,correlations);
+    KrigingModel km(sd,candidates);
     double fitness = sf(km,sd);
     cout << "Our Fitness: " << fitness << "*********************************" << endl;
     double lk = km.likelihood;
     if (lk == lk && lk > (-std::numeric_limits<double>::max()) && lk < best.first)     {
-      best = KMPair(lk,correlations);
-      cout << "Update" << endl;
-    } else if (lk != lk) {
-      cout << "Not equal to self: " << lk << endl;
-    } else if (lk >= best.first) {
-      cout << "Not good enough: " << lk << " " << best.first <<  endl;
-    } else if (!(lk > std::numeric_limits<double>::min())) {
-      cout << "Not greater than min: " << lk << endl;
+      best = KMPair(lk,candidates);
+      //cout << "Update" << endl;
     }
+    //} else if (lk != lk) {
+    //  // NaN
+    //  //cout << "Not equal to self: " << lk << endl;
+    //} else if (lk >= best.first) {
+    //  //cout << "Not good enough: " << lk << " " << best.first <<  endl;
+    //} else if (!(lk > std::numeric_limits<double>::min())) {
+    //  // -inf
+    //  //cout << "Not greater than min: " << lk << endl;
+    //}
   }
   copy(best.second.begin(),best.second.end(),std::ostream_iterator<double>(cout," ")); 
-  cout << " lik: " << best.first << endl;
+  //cout << " lik: " << best.first << endl;
   delete corrs;
-  return new KrigingModel(sd,best.second);
+  return best.second; 
 }
 
-
+VecDbl KrigingModelFactory::conminCorrelations(const SurfData& sd)
+{
+  ConminKriging ck(sd);
+  if (conmin_seed.empty()) conmin_seed = VecDbl(sd.xSize(),1.0);
+  VecDbl results = conmin_seed;
+  double final;
+  int max_iter = 40;
+  ck.optimize(results, final, max_iter);
+  return results;
+}

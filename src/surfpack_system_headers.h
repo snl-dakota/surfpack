@@ -59,5 +59,8 @@ typedef std::vector<unsigned>::const_iterator VecUnsIt;
 typedef std::vector< std::vector< unsigned > > VecVecUns;
 typedef std::vector< std::vector< double > > VecVecDbl;
 typedef std::vector< std::string > VecStr;
+typedef std::set< unsigned > SetUns;
 
-
+typedef std::pair< std::string, std::string > ModelParam;
+typedef std::map< std::string, std::string> ParamMap;
+typedef std::pair< std::string, ParamMap> Command;

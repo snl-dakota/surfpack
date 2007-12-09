@@ -41,6 +41,30 @@ surfpack::MyRandomNumberGenerator& surfpack::shared_rng()
   return mrng;
 }
                                                                            
+// _____________________________________________________________________________
+// Block partitioning helper methods 
+// _____________________________________________________________________________
+
+unsigned surfpack::block_low(unsigned id, unsigned p, unsigned n)
+{
+  return id*n/p;
+}
+
+unsigned surfpack::block_high(unsigned id, unsigned p, unsigned n)
+{
+  return block_low(id+1,p,n)-1;
+}
+
+unsigned surfpack::block_size(unsigned id, unsigned p, unsigned n)
+{
+  return block_high(id,p,n)-block_low(id,p,n)+1;
+}
+
+unsigned surfpack::block_owner(unsigned j, unsigned p, unsigned n)
+{
+  return (p*(j+1)-1)/n;
+}
+
 // ____________________________________________________________________________
 // I/O 
 // ____________________________________________________________________________
@@ -453,7 +477,9 @@ MtxDbl& surfpack::LUFact(SurfpackMatrix< double>& matrix,
   ipvt.resize(n_rows);
   int lda = n_cols;
   int info = 0;
+  //std::cout << "Matrix size: " << n_rows << " " << n_cols << std::endl;
   DGETRF_F77(n_rows,n_cols,&matrix(0,0),lda,&ipvt[0],info);
+  //std::cout << "Done with dgetrf" << std::endl;
   return matrix;
 }
 
@@ -465,7 +491,9 @@ MtxDbl& surfpack::inverseAfterLUFact(MtxDbl& matrix, vector<int>& ipvt)
   vector<double> work(lwork);
   int lda = n_rows;
   int info = 0;
+  //std::cout << "Matrix size: " << n_rows << " " << n_cols << std::endl;
   DGETRI_F77(n_rows,&matrix(0,0),lda,&ipvt[0],&work[0],lwork,info);
+  //std::cout << "Done with getri" << std::endl;
   return matrix;
 }
 
@@ -716,4 +744,12 @@ std::string surfpack::toString(const VecDbl& v)
     os << v[i] << " ";
   }
   return os.str();
+}
+
+void surfpack::stripQuotes(std::string& str) 
+{
+    int pos;
+    while ( (pos = str.find('\'')) != std::string::npos) {
+      str.erase(pos,pos+1);
+    }
 }

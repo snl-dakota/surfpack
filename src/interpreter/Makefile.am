@@ -19,7 +19,7 @@ BUILT_SOURCES = lexer.c \
 		surfparse.h
 endif
 
-INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src
+INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src -I$(top_srcdir)/src/surfaces
 
 MAINTAINERCLEANFILES = Makefile.in
 

@@ -16,6 +16,8 @@
 
 class Surface;
 class SurfData;
+class SurfpackModelFactory;
+class SurfpackModel;
 /// The createSurface methods are intended to be a sort of virtual constructor.
 /// When new Surface sub-classes are added, the changes can be made here 
 /// without having to touch the Surface class itself.
@@ -35,5 +37,7 @@ namespace SurfaceFactory {
   /// surface.  The client is responsible to call delete on the Surface* that
   /// is returned.
   Surface* createSurface(const std::string& type, SurfData* surfData);
+
+  SurfpackModelFactory* createModelFactory(ParamMap& args);
 }
 #endif

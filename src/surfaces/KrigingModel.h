@@ -33,14 +33,13 @@ class KrigingModel : public SurfpackModel
 public:
   KrigingModel(const KrigingBasisSet& bs_in, const VecDbl& rhs_in);
   KrigingModel(const SurfData& sd, const VecDbl& correlations);
-  MtxDbl getMatrix(const ScaledSurfData& ssd, const VecDbl& correlations);
   virtual VecDbl gradient(const VecDbl& x) const;
   virtual std::string asString() const;
-  static KrigingModel Create(const SurfData& sd);
-  static KrigingModel Create(const SurfData& sd, const VecDbl& correlations);
-  static MtxDbl corrMtx(const VecDbl& corr_vec, const SurfData& data);
+
   double likelihood;
+  static MtxDbl corrMtx(const VecDbl& corr_vec, const SurfData& data);
 protected:
+  MtxDbl getMatrix(const ScaledSurfData& ssd, const VecDbl& correlations);
   virtual double evaluate(const VecDbl& x) const;
   KrigingBasisSet bs;
   VecDbl rhs;
@@ -75,6 +74,10 @@ public:
   virtual SurfpackModel* Create(const std::string& model_string);
   virtual void config();
 protected:
+  VecDbl sampleCorrelations(const SurfData& sd);
+  VecDbl conminCorrelations(const SurfData& sd);
   VecDbl correlations;
+  int max_iter;
+  VecDbl conmin_seed;
 };
 #endif

@@ -177,11 +177,11 @@ void NewInterface::Save(const SurfData* data, const std::string& filename)
   data->write(filename);
 }
 
-SurfpackModel* NewInterface::CreateSurface(const SurfData* sd, const ParamList& al)
+SurfpackModel* NewInterface::CreateSurface(const SurfData* sd, ParamMap& args)
 {
   assert(sd);
   SurfpackModel* model = 0;
-  // Surface* model = ModelFactory::Create(ParamList)
+  // Surface* model = ModelFactory::Create(ParamMap)
   return model;
 }
 
@@ -192,6 +192,19 @@ void NewInterface::Evaluate(const SurfpackModel* model, SurfData* sd,
   assert(sd);
   VecDbl responses = (*model)(*sd);
   sd->addResponse(responses, response_name);
+}
+
+void NewInterface::Evaluate(SurfData* sd, const VecStr test_functions)
+{
+  assert(sd);
+  for (VecStr::const_iterator itr = test_functions.begin();
+    itr != test_functions.end(); ++itr) {
+    VecDbl results(sd->size());
+    for (unsigned i = 0; i < results.size(); i++) {
+      results[i] = surfpack::testFunction(*itr,(*sd)(i));
+    }
+    sd->addResponse(results,*itr);
+  } 
 }
 
 AxesBounds* NewInterface::CreateAxes(const std::string axes)
@@ -210,20 +223,22 @@ SurfData* NewInterface::CreateSample(const AxesBounds* axes, unsigned n_samples)
 }
 
 double NewInterface::Fitness(const SurfpackModel* model, SurfData* sd, 
-const std::string& metric, unsigned response)
+const std::string& metric, unsigned response, unsigned n)
 {
   assert(model);
   assert(sd);
   sd->setDefaultIndex(response);
-  //ModelFitness* mf = ModelFitness::Create(metric);
-  //return (*mf)(*model,*sd);
-  return 0.0;
+  ModelFitness* mf = ModelFitness::Create(metric,n);
+  double result = (*mf)(*model,*sd);
+  delete mf;
+  return result;
 }
 
 /// Doxygen comment
 double NewInterface::Fitness(const SurfpackModel*, const std::string& metric, 
-unsigned response)
+unsigned response, unsigned n)
 {
+  throw string("Must pass data set to compute metric");
   return 0.0;
 }
 

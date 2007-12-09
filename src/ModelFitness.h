@@ -72,7 +72,8 @@ class ModelFitness
 {
 public:
   virtual double operator()(const SurfpackModel& sm, const SurfData& sd) const = 0;
-  static ModelFitness* Create(const std::string& metric);
+  virtual double operator()(const VecDbl& obs, const VecDbl& pred) const;
+  static ModelFitness* Create(const std::string& metric, unsigned n = 0);
   static VecDbl getResiduals(const Residual& resid, const VecDbl& obs, const VecDbl& pred);
 };
 
@@ -82,8 +83,17 @@ public:
   StandardFitness();
   StandardFitness(const Residual& resid_in, const VecSummary& vecsumry_in);
   virtual double operator()(const SurfpackModel& sm, const SurfData& sd) const;
+  virtual double operator()(const VecDbl& obs, const VecDbl& pred) const;
 protected:
   Residual resid;
   VecSummary vecsumry;
+};
+
+class CrossValidationFitness : public ModelFitness
+{
+public:
+  CrossValidationFitness(unsigned n_in);
+  virtual double operator()(const SurfpackModel& sm, const SurfData& sd) const;
+  unsigned n;
 };
 #endif

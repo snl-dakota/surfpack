@@ -101,29 +101,18 @@ std::string DirectANNModel::asString() const
   return os.str();
 }
 
-MtxDbl randomMatrix(unsigned nrows, unsigned ncols)
-{
-  MtxDbl rm(nrows,ncols);
-  for (unsigned i = 0; i < nrows; i++) {
-    for (unsigned j = 0; j < ncols; j++) {
-      rm(i,j) = (double)rand()/INT_MAX;
-    }
-  }
-  return rm;
-}
-
 ///////////////////////////////////////////////////////////
 /// 	DirectANN Model Factory	
 ///////////////////////////////////////////////////////////
 
 DirectANNModelFactory::DirectANNModelFactory()
-  : SurfpackModelFactory(), nNodes(0)
+  : SurfpackModelFactory(), nodes(0), range(2.0), samples(1)
 {
 
 }
 
 DirectANNModelFactory::DirectANNModelFactory(const ParamMap& args)
-  : SurfpackModelFactory(args), nNodes(0)
+  : SurfpackModelFactory(args), nodes(0), range(2.0), samples(1)
 {
 
 }
@@ -133,7 +122,11 @@ void DirectANNModelFactory::config()
   SurfpackModelFactory::config();
   string strarg;
   strarg = params["nodes"];
-  if (strarg != "") nNodes = atoi(strarg.c_str()); 
+  if (strarg != "") nodes = atoi(strarg.c_str()); 
+  strarg = params["range"];
+  if (strarg != "") range = atof(strarg.c_str()); 
+  strarg = params["samples"];
+  if (strarg != "") samples = atoi(strarg.c_str()); 
 }
 
 SurfpackModel* DirectANNModelFactory::Create(const std::string& model_string)
@@ -147,25 +140,51 @@ SurfpackModel* DirectANNModelFactory::Create(const std::string& model_string)
 typedef std::pair<double,VecDbl> KMPair;
 SurfpackModel* DirectANNModelFactory::Create(const SurfData& sd)
 {
-  this->add("ndims",surfpack::toString(sd.xSize()));
-  this->config();
+  // Scale the data (in hopes of improving numerical properties)
+  ModelScaler* ms = NormalizingScaler::Create(sd);
+  ScaledSurfData ssd(*ms,sd);
+
+  // Fix the number of nodes
   const unsigned maxnodes = 100;
-  assert(sd.size());
-  assert(sd.xSize());
-  if (!nNodes) nNodes = sd.size();
-  if (nNodes > maxnodes) nNodes = maxnodes;
-  MtxDbl random_weights = randomMatrix(nNodes,sd.xSize()+1);
+  assert(ssd.size());
+  assert(ssd.xSize());
+  if (!nodes) nodes = ssd.size();
+  if (nodes > maxnodes) nodes = maxnodes;
+
+  // Randomly generate weights for the first layer
+  MtxDbl random_weights = randomMatrix(nodes,ssd.xSize()+1);
   DirectANNBasisSet bs(random_weights);
-  MtxDbl A(sd.size(),nNodes+1,true);
-  VecDbl b(sd.size(),0.0);
-  for (unsigned samp = 0; samp < sd.size(); samp++) {
-    for (unsigned n = 0; n < nNodes; n++) { 
-      A(samp,n) = bs.eval(n,sd(samp));
+
+  // Solve linear system to compute weights for second layer
+  MtxDbl A(ssd.size(),nodes+1,true);
+  VecDbl b(ssd.size(),0.0);
+  for (unsigned samp = 0; samp < ssd.size(); samp++) {
+    for (unsigned n = 0; n < nodes; n++) { 
+      A(samp,n) = bs.eval(n,ssd(samp));
+      //cout << "A(" << samp << "," << n << "): " << A(samp,n) << endl;
     }
-    A(samp,nNodes) = 1.0; // for hidden layer bias
-    b[samp] = atanh(sd.getResponse(samp));
+    A(samp,nodes) = 1.0; // for hidden layer bias
+    b[samp] = atanh(ssd.getResponse(samp));
+      //cout << "b(" << samp <<  "): " << b[samp] << endl;
   }
   VecDbl x;
+  //cout << "Ready to solve" << endl;
   surfpack::linearSystemLeastSquares(A,x,b);
-  return new DirectANNModel(bs,x);
+  //cout << "Solved" << endl;
+  SurfpackModel* model = new DirectANNModel(bs,x);
+  model->scaler(ms);
+  delete ms;
+  return model;
 }
+
+MtxDbl DirectANNModelFactory::randomMatrix(unsigned nrows, unsigned ncols)
+{
+  MtxDbl rm(nrows,ncols);
+  for (unsigned i = 0; i < nrows; i++) {
+    for (unsigned j = 0; j < ncols; j++) {
+      rm(i,j) = (surfpack::shared_rng().randExc() * range) - (range / 2.0);
+    }
+  }
+  return rm;
+}
+

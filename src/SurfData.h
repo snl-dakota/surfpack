@@ -167,7 +167,7 @@ public:
   /// it sets this value so that the response value lookup function will return
   /// the value for the response variable that that particular Surface object
   /// is interested in.  
-  void setDefaultIndex(unsigned index); 
+  void setDefaultIndex(unsigned index) const; 
   
   /// Set the response value of the (index)th point that corresponds to this
   /// surface

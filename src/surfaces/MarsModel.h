@@ -6,8 +6,8 @@
     For more information, see the README file in the top Surfpack directory.
     _______________________________________________________________________ */
 
-#ifndef __DIRECT_ANN_MODEL_H__
-#define __DIRECT_ANN_MODEL_H__
+#ifndef __MARS_MODEL_H__
+#define __MARS_MODEL_H__
 #ifdef HAVE_CONFIG_H
 #include "surfpack_config.h"
 #endif
@@ -15,49 +15,62 @@
 #include "surfpack_system_headers.h"
 #include "SurfpackModel.h"
 #include "SurfpackMatrix.h"
+class SurfPoint;
 
+typedef float real;
 
-class DirectANNBasisSet
+#define MARS_F77 F77_FUNC(mars,MARS)
+#ifdef __cplusplus
+extern "C" /* prevent C++ name mangling */
+#endif
+void MARS_F77(int&, int&, real*, real*, real*, int&, int&, int*,
+	      real*, int*, real*, double*, int*);
+
+#define FMODM_F77 F77_FUNC(fmodm,FMODM)
+#ifdef __cplusplus
+extern "C" /* prevent C++ name mangling */
+#endif
+void FMODM_F77(int&, int&, real*, real*, int*, real*, real*);
+
+class MarsModel : public SurfpackModel
 {
 public:
-  MtxDbl weights;
-  DirectANNBasisSet(const MtxDbl& weights_in);
-  double eval(unsigned index, const VecDbl& x) const;
-  double deriv(unsigned index, const VecDbl& x, const VecUns& vars) const;
-  double nodeSum(unsigned index, const VecDbl& x) const;
-  std::string asString() const;
-};
-
-class DirectANNModel : public SurfpackModel
-{
-public:
-  DirectANNModel(const DirectANNBasisSet& bs_in, const VecDbl& coeffs_in);
+  MarsModel(const unsigned dims, real* fm_in, int fmsize, int* im_in, 
+    int imsize, int interp);
   virtual VecDbl gradient(const VecDbl& x) const;
   virtual std::string asString() const;
 protected:
   virtual double evaluate(const VecDbl& x) const;
-  DirectANNBasisSet bs;
   VecDbl coeffs;
-friend class DirectANNModelTest;
+
+  std::vector<real> fm;
+  std::vector<int> im;
+  int interpolation;
+friend class MarsModelTest;
 };
 
 ///////////////////////////////////////////////////////////
-///   Direct ANN Model Factory	
+///	Linear Regression Model Factory	
 ///////////////////////////////////////////////////////////
 
-class DirectANNModelFactory : public SurfpackModelFactory 
+class MarsModelFactory : public SurfpackModelFactory 
 {
 
 public:
-  DirectANNModelFactory();
-  DirectANNModelFactory(const ParamMap& args);
+  MarsModelFactory();
+  MarsModelFactory(const ParamMap& args);
   virtual SurfpackModel* Create(const SurfData& sd);
   virtual SurfpackModel* Create(const std::string& model_string);
-  MtxDbl randomMatrix(unsigned nrows, unsigned ncols);
   virtual void config();
+  virtual unsigned minPointsRequired();
 protected:
-  unsigned nodes;
-  double range;
-  unsigned samples;
+  real* xMatrix;
+  real* fm;
+  int* im;
+  int n;
+  int np;
+  int max_bases; 
+  int max_interactions;
+  int interpolation;
 };
 #endif

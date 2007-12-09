@@ -1,9 +1,11 @@
 #include "SurfpackModel.h"
 #include "SurfData.h"
+#include "surfpack.h"
 
 using std::cout;
 using std::endl;
 using std::vector;
+using std::string;
 
 
 ///////////////////////////////////////////////////////////
@@ -52,6 +54,16 @@ SurfpackModel::~SurfpackModel()
   delete mScaler; mScaler = 0;
 }
 
+VecDbl SurfpackModel::gradient(const VecDbl& x) const
+{
+  throw std::string("This model does not currently support gradients");
+}
+
+MtxDbl SurfpackModel::hessian(const VecDbl& x) const
+{
+  throw std::string("This model does not currently support hessians");
+}
+
 void SurfpackModel::scaler(ModelScaler* ms)
 {
   delete mScaler;
@@ -68,13 +80,13 @@ ModelScaler* SurfpackModel::scaler() const
 ///////////////////////////////////////////////////////////
 
 SurfpackModelFactory::SurfpackModelFactory()
-  : params(), ndims(0)
+  : params(), ndims(0), response_index(0)
 {
 
 }
 
 SurfpackModelFactory::SurfpackModelFactory(const ParamMap& params_in)
-  : params(params_in), ndims(0)
+  : params(params_in), ndims(0), response_index(0)
 {
 
 }
@@ -83,6 +95,8 @@ void SurfpackModelFactory::config()
 {
   ndims = atoi(params["ndims"].c_str());
   assert(ndims);
+  string arg = params["response_index"];
+  if (arg != "") response_index = atoi(arg.c_str());
 }
 
 unsigned SurfpackModelFactory::minPointsRequired()
@@ -102,4 +116,19 @@ void SurfpackModelFactory::add(std::string name, std::string value)
   params.insert(ModelParam(name,value));
 }
 
-
+SurfpackModel* SurfpackModelFactory::Build(const SurfData& sd)
+{
+  this->add("ndims",surfpack::toString(sd.xSize()));
+  this->config();
+    for (ParamMap::iterator itr = params.begin();
+        itr != params.end(); itr++) {
+      std::cout << "     " << itr->first << ": " << itr->second << std::endl;
+    }
+  sd.setDefaultIndex(this->response_index);
+  if (sd.size() < minPointsRequired()) {
+    throw string("Not enough Points");
+  }
+  SurfpackModel* model = Create(sd);
+  model->parameters(params);
+  return model;
+}

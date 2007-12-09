@@ -9,13 +9,13 @@
 #ifdef HAVE_CONFIG_H
 #include "surfpack_config.h"
 #endif
+#include "surfpack_system_headers.h"
 #include "AxesBounds.h"
 class SurfData;
 class Surface;
 class ParsedCommand;
 class SurfpackParser;
 class SurfpackModel;
-class ParamList;
 
 namespace SurfpackInterface
 {
@@ -51,16 +51,17 @@ namespace NewInterface
   SurfpackModel* LoadModel(const std::string& filename);
   void Save(const SurfpackModel* model, const std::string& filename);
   void Save(const SurfData* data, const std::string& filename);
-  SurfpackModel* CreateSurface(const SurfData* sd, const ParamList& al);
+  SurfpackModel* CreateSurface(const SurfData* sd, ParamMap& args);
   void Evaluate(const SurfpackModel* model, SurfData* sd, 
     const std::string& response_name = "");
+  void Evaluate(SurfData* sd, const VecStr test_functions);
   AxesBounds* CreateAxes(const std::string axes);
   SurfData* CreateSample(const AxesBounds* axes, const VecUns grid_points);
   SurfData* CreateSample(const AxesBounds* axes, unsigned n_samples);
   double Fitness(const SurfpackModel*, SurfData* sd, 
-    const std::string& metric, unsigned response = 0);
+    const std::string& metric, unsigned response = 0, unsigned n = 0);
   double Fitness(const SurfpackModel*, const std::string& metric, 
-    unsigned response = 0);
+    unsigned response = 0, unsigned n = 0);
 };
 
 

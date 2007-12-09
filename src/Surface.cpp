@@ -358,8 +358,6 @@ double Surface::press(SurfData& dataSet)
   return 0.0;
 }
 
-unsigned block_low(unsigned i, unsigned n, unsigned p) { return i*n/p;}
-unsigned block_high(unsigned i, unsigned n, unsigned p) { return (i+1)*n/p-1;}
 double Surface::nFoldCrossValidation(SurfData& data, unsigned n)
 {
   double total_error = 0.0;
@@ -397,8 +395,8 @@ double Surface::nFoldCrossValidation(SurfData& data, unsigned n)
     for (unsigned part_index = 0; part_index < n; part_index++) {
       // Determine which points to exclude for the current partition
       set<unsigned> points_to_exclude;
-      unsigned lower_index = block_low(part_index,data_size,n);
-      unsigned upper_index = block_high(part_index,data_size,n);
+      unsigned lower_index = surfpack::block_low(part_index,data_size,n);
+      unsigned upper_index = surfpack::block_high(part_index,data_size,n);
       dbg(dbgsrf) << "Partition " << part_index << " ex. pts.:" ;
       for (unsigned k = lower_index; k <= upper_index; k++) {
         points_to_exclude.insert(skip_points[k]);

@@ -136,8 +136,6 @@ LRMBasisSet LinearRegressionModelFactory::CreateLRM(unsigned order,
 {
   LRMBasisSet bs;
   bs.add(std::string(""));
-  //unsigned order = 3;
-  //unsigned dims = 3;
   std::deque<Term> q;
   q.push_front(Term(VecUns()));
   while (!q.empty()) {
@@ -148,12 +146,10 @@ LRMBasisSet LinearRegressionModelFactory::CreateLRM(unsigned order,
       Term new_term = Term(v);
       if (v.empty()) new_term.vars.push_back(0);
       else new_term.vars.push_back(v.back());
-      //std::copy(new_term.vars.begin(),new_term.vars.end(),std::ostream_iterator<unsigned>(std::cout," ")); std::cout << "\n";
       bs.bases.push_back(new_term.vars);
       q.push_front(new_term);
     } else if (!v.empty() && v.back() < dims-1) {
       v.back()++;
-      //std::copy(v.begin(),v.end(),std::ostream_iterator<unsigned>(std::cout," ")); std::cout << "\n";
       bs.bases.push_back(v);
       t.color = false;
     } else {
@@ -165,24 +161,22 @@ LRMBasisSet LinearRegressionModelFactory::CreateLRM(unsigned order,
 
 SurfpackModel* LinearRegressionModelFactory::Create(const std::string& model_string)
 {
-  ///\todo Be able to parse an RBF model from a string
+  ///\todo Be able to parse an LRM model from a string
   assert(false);
   return 0;
 }
 
 SurfpackModel* LinearRegressionModelFactory::Create(const SurfData& sd)
 {
-  this->add("ndims",surfpack::toString(sd.xSize()));
-  this->config();
   ModelScaler* ms = NormalizingScaler::Create(sd);
   ScaledSurfData ssd(*ms,sd);
   
-  LRMBasisSet bs = CreateLRM(2,sd.xSize());
-  cout << bs.asString() << endl;
-  cout << "sd size: " << sd.size() << endl;
+  LRMBasisSet bs = CreateLRM(order,sd.xSize());
+  //cout << bs.asString() << endl;
+  //cout << "sd size: " << sd.size() << " bs size: " << bs.size() <<  endl;
   VecDbl coeffs = lrmSolve(bs,ssd);
-  copy(coeffs.begin(),coeffs.end(),std::ostream_iterator<double>(cout,"|"));
-  cout << "\n";
+  //copy(coeffs.begin(),coeffs.end(),std::ostream_iterator<double>(cout,"|"));
+  //cout << "\n";
   SurfpackModel* lrm = new LinearRegressionModel(sd.xSize(),bs,coeffs);
   lrm->scaler(ms);
   delete ms;

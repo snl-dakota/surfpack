@@ -143,6 +143,15 @@ public:
 MyRandomNumberGenerator& shared_rng();
 
 // _____________________________________________________________________________
+// Block partitioning helper methods 
+// _____________________________________________________________________________
+
+unsigned block_low(unsigned id, unsigned p, unsigned n);
+unsigned block_high(unsigned id, unsigned p, unsigned n);
+unsigned block_size(unsigned id, unsigned p, unsigned n);
+unsigned block_owner(unsigned j, unsigned p, unsigned n);
+
+// _____________________________________________________________________________
 // Constants 
 // _____________________________________________________________________________
   // Precision of output for double precision numbers
@@ -337,9 +346,32 @@ std::vector<T> toVec(const std::string& s)
   return result;
 }
 
+template<typename T>
+std::string toString(T arg)
+{
+  std::ostringstream os;
+  os << arg;
+  return os.str();
+}
+
+template<typename T>
+std::string fromVec(const std::vector<T>& vec)
+{
+  std::ostringstream os;
+  for (typename std::vector<T>::const_iterator itr = vec.begin();
+	itr != vec.end(); ++itr) {
+    if (itr != vec.begin()) os << " ";
+    os << *itr;
+  }
+  return os.str();
+}
+
   std::string toString(unsigned);
 
 std::string toString(const VecDbl& v);
+
+void stripQuotes(std::string& str);
+
 // ____________________________________________________________________________
 // Testing 
 // ____________________________________________________________________________

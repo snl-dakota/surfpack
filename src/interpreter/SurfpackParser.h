@@ -35,6 +35,9 @@ class SurfpackParser
 public:
   // commands for use by the Bison parser
   void addCommandName();
+  void printComms();
+  void appendArg();
+  void addArg();
   void addArgName();
   void addArgValIdent();
   void addArgValInt();
@@ -94,6 +97,13 @@ protected:
   ~SurfpackParser();
   SurfpackParser(const SurfpackParser&);
   const SurfpackParser& operator=(const SurfpackParser&);
+
+  // For keeping track of parsed commands
+public:
+  static std::string argname;
+  static std::string argval;
+  static ParamMap params;
+  static std::vector<Command> comms;
 
 private:
   std::vector<ParsedCommand> commands;

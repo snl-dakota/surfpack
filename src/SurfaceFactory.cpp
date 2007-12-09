@@ -17,6 +17,14 @@
 #include "PolynomialSurface.h"
 #include "RBFNetSurface.h"
 
+#include "SurfpackModel.h"
+#include "LinearRegressionModel.h"
+#include "RadialBasisFunctionModel.h"
+#include "DirectANNModel.h"
+#include "KrigingModel.h"
+#include "MovingLeastSquaresModel.h"
+#include "MarsModel.h"
+
 class SurfData;
 using std::cerr;
 using std::endl;
@@ -69,3 +77,25 @@ Surface* SurfaceFactory::createSurface(const string& type, SurfData* sd)
   }
 }
 
+SurfpackModelFactory* SurfaceFactory::createModelFactory(ParamMap& args)
+{
+  string type = args["type"];
+  SurfpackModelFactory* smf; 
+  if (type == "") throw string("Model must declare type");
+  else if (type == "polynomial") {
+    smf = new LinearRegressionModelFactory(args);
+  } else if (type == "mls") {
+    smf = new MovingLeastSquaresModelFactory(args);
+  } else if (type == "rbf") {
+    smf = new RadialBasisFunctionModelFactory(args);
+  } else if (type == "kriging") {
+    smf = new KrigingModelFactory(args);
+  } else if (type == "ann") {
+    smf = new DirectANNModelFactory(args);
+  } else if (type == "mars") {
+    smf = new MarsModelFactory(args);
+  } else {
+    throw string("Model type requested not recognized");
+  }
+  return smf;
+}
