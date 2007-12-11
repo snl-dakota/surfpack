@@ -321,17 +321,16 @@ void RadialBasisFunctionModelFactory::config()
 
 SurfpackModel* RadialBasisFunctionModelFactory::Create(const SurfData& sd)
 {
-  this->add("ndims",surfpack::toString(sd.xSize()));
-  this->config();
   if (nCenters == 0) nCenters = sd.size();
   RbfBest bestset(std::numeric_limits<double>::max(),VecUns());
   SurfData centers = cvts(AxesBounds::boundingBox(sd));
-  //printf("centers: %d\n",centers.size());
+  printf("data points: %d\n",sd.size());
+  printf("centers: %d\n",centers.size());
   SurfData radiuses = radii(centers);
-  //printf("radii: %d\n",radiuses.size());
+  printf("radii: %d\n",radiuses.size());
   VecDbl b = sd.getResponses();
   VecRbf candidates = makeRbfs(centers,radiuses);
-  //printf("candidates: %d\n",candidates.size());
+  printf("candidates: %d\n",candidates.size());
   augment(candidates);
   VecDbl cfs(candidates.size(),0.0);
   for (unsigned i = 0; i < 50; i++) {

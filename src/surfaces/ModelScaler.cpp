@@ -22,6 +22,11 @@ double NonScaler::scaleResponse(double unscaled_response) const
   return unscaled_response; 
 }
 
+ModelScaler* NonScaler::Create(const SurfData& data)
+{
+  return new NonScaler(); 
+}
+
 std::string NonScaler::asString()
 {
   return string("No scaling");
@@ -53,7 +58,7 @@ double NormalizingScaler::scaleResponse(double unscaled_response) const
   return (unscaled_response - descaler.offset) / descaler.scaleFactor;
 }
 
-NormalizingScaler* NormalizingScaler::Create(const SurfData& data)
+ModelScaler* NormalizingScaler::Create(const SurfData& data)
 {
   vector<NormalizingScaler::Scaler> scalers(data.xSize());
   for (unsigned i = 0; i < data.xSize(); i++) {

@@ -347,7 +347,7 @@ std::vector<T> toVec(const std::string& s)
 }
 
 template<typename T>
-std::string toString(T arg)
+std::string toString(const T arg)
 {
   std::ostringstream os;
   os << arg;
@@ -365,10 +365,6 @@ std::string fromVec(const std::vector<T>& vec)
   }
   return os.str();
 }
-
-  std::string toString(unsigned);
-
-std::string toString(const VecDbl& v);
 
 void stripQuotes(std::string& str);
 

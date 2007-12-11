@@ -409,6 +409,7 @@ void SurfpackInterpreter::execLoad(ParamMap& args)
 
 void SurfpackInterpreter::execLoadData(ParamMap& args)
 {
+  try {
   SurfData* data = 0;
   string name = asStr(args["name"]); 
   string filename = asStr(args["file"]); 
@@ -425,6 +426,9 @@ void SurfpackInterpreter::execLoadData(ParamMap& args)
   }
   assert(data);
   symbolTable.dataVars.insert(SurfDataSymbol(name,data));
+  } catch (...) {
+    cout << "Error caught in execLoadData: Did you forget to specify n_predictors and n_responses?" << endl;
+  }
 }
 
 ///\todo Add support for LoadSurface in interpreter

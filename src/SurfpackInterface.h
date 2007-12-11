@@ -64,25 +64,3 @@ namespace NewInterface
     unsigned response = 0, unsigned n = 0);
 };
 
-
-// SurfData* LoadData(string filename)
-// SurfData* LoadData(string filename, vars, resp, skips)
-
-// SurfpackModel* LoadModel(string filename)
-
-// void Save(SurfpackModel*, string filename)
-// void Save(SurfData*, string filename)
-
-// SurfpackModel* Create(SurfData& sd, ArgList& al) 
-
-// void Evaluate(SurfpackModel*, SurfData*)
-
-// AxesBounds* CreateAxes(string axes)
-
-// SurfData* CreateSample(AxesBounds* axes, grid_points) 
-// SurfData* CreateSample(Axesbounds* axes, num_samples) 
-
-// double Fitness(SurfpackModel*, data, metric, response = 0)
-// double Fitness(SurfpackModel*, metric, response = 0)
-
- 

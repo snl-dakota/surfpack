@@ -148,7 +148,7 @@ SurfpackModel* DirectANNModelFactory::Create(const SurfData& sd)
   const unsigned maxnodes = 100;
   assert(ssd.size());
   assert(ssd.xSize());
-  if (!nodes) nodes = ssd.size();
+  if (!nodes) nodes = ssd.size() - 1;
   if (nodes > maxnodes) nodes = maxnodes;
 
   // Randomly generate weights for the first layer
@@ -169,6 +169,7 @@ SurfpackModel* DirectANNModelFactory::Create(const SurfData& sd)
   }
   VecDbl x;
   //cout << "Ready to solve" << endl;
+  cout << "ssd size: " << ssd.size() << " nodes: " << nodes << " rows: " << A.getNRows() << "  cols: " << A.getNCols() << endl;
   surfpack::linearSystemLeastSquares(A,x,b);
   //cout << "Solved" << endl;
   SurfpackModel* model = new DirectANNModel(bs,x);

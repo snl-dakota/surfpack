@@ -59,7 +59,7 @@ public:
   LinearRegressionModelFactory();
   LinearRegressionModelFactory(const ParamMap& args);
   void setEqualityConstraints(unsigned asv,const SurfPoint& sp,  
-    double valuePtr, VecDbl& gradientPtr, MtxDbl& hessianPtr);
+    double valuePtr, VecDbl* gradientPtr, MtxDbl* hessianPtr);
   virtual SurfpackModel* Create(const SurfData& sd);
   virtual SurfpackModel* Create(const std::string& model_string);
   virtual void config();

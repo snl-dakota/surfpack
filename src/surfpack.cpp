@@ -377,17 +377,18 @@ void surfpack::linearSystemLeastSquares(MtxDbl& A,
   /// inside of dgels, and that has caused some problems.  It's probably
   /// better to just copy the whole vector and pass the copy to dgels.
   const int debug = 0;
-  // Rows in A must == size of b
-  assert(A.getNRows() == b.size()); 
-  // System must be square or over-constrained
-  assert(A.getNRows() >= A.getNCols());
   if (debug) {
+    dbg(debug) << "\nA(" << A.getNRows() <<  "," << A.getNCols() << "):\n";
     dbg(debug) << A.asString() << "\n\n";
     for (unsigned i = 0; i < b.size(); i++) {
       dbg(debug) << b[i] << "\n";
     }
     dbg(debug) << "\n";
   }
+  // Rows in A must == size of b
+  assert(A.getNRows() == b.size()); 
+  // System must be square or over-constrained
+  assert(A.getNRows() >= A.getNCols());
   int n_rows = static_cast<int>(A.getNRows());
   int n_cols = static_cast<int>(A.getNCols());
   // Client may supply a "blank" initialized vector for x
@@ -728,22 +729,6 @@ double surfpack::xplussinex(const vector<double>& pt)
 double surfpack::noise(const vector<double>& pt)
 {
   return static_cast<double>(rand());
-}
-
-std::string surfpack::toString(unsigned val)
-{
-  std::ostringstream os;
-  os << val;
-  return os.str();
-}
-
-std::string surfpack::toString(const VecDbl& v)
-{
-  std::ostringstream os;
-  for (unsigned i = 0; i < v.size(); i++) {
-    os << v[i] << " ";
-  }
-  return os.str();
 }
 
 void surfpack::stripQuotes(std::string& str) 

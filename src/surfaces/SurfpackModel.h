@@ -68,7 +68,7 @@ public:
   virtual unsigned minPointsRequired();
   virtual void config();
   const ParamMap& parameters() const;
-  void add(std::string name, std::string value);
+  void add(const std::string& name, const std::string& value);
 protected:
   ParamMap params;
   unsigned ndims;

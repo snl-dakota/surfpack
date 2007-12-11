@@ -113,8 +113,6 @@ void MovingLeastSquaresModelFactory::config()
 
 SurfpackModel* MovingLeastSquaresModelFactory::Create(const SurfData& sd)
 {
-  this->add("ndims",surfpack::toString(sd.xSize()));
-  this->config();
   LRMBasisSet lrmbs = LinearRegressionModelFactory::CreateLRM(order,ndims);
   SurfpackModel* sm = new MovingLeastSquaresModel(sd, lrmbs, weight); 
   assert(sm);

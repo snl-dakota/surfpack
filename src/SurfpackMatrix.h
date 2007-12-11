@@ -200,16 +200,15 @@ template< typename T >
 const std::string SurfpackMatrix< T >::asString() const
 {
   std::ostringstream os;
+  os.precision(3);
   unsigned index;
-  for (unsigned i = 0; i < nRows; i++) {
-    // In C, members of the row are contiguous.  In Fortran, if the matrix has
-    // n rows, the elements of any row are spaced n elements apart.
-    for (unsigned r = 0; r < nRows; r++) {
-      for (unsigned c = 0; c < nCols; c++) {
-        os << (*this)(r,c) << " ";
-      }
-      os << " ";
+  // In C, members of the row are contiguous.  In Fortran, if the matrix has
+  // n rows, the elements of any row are spaced n elements apart.
+  for (unsigned r = 0; r < nRows; r++) {
+    for (unsigned c = 0; c < nCols; c++) {
+      os << std::setw(7) << (*this)(r,c) << " ";
     }
+    os << "\n";
   }
   return os.str();
 }

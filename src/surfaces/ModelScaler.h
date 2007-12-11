@@ -32,6 +32,7 @@ public:
   virtual double descale(double scaled_response) const ;
   virtual double scaleResponse(double unscaled_response) const ;
   virtual std::string asString();
+  static ModelScaler* Create(const SurfData& data);
   virtual ModelScaler* clone() const;
 };
 
@@ -50,7 +51,7 @@ public:
   NormalizingScaler(const std::vector<Scaler>& s, const Scaler& d) 
     : scalers(s), descaler(d), result(s.size()) {}
   ~NormalizingScaler() {}
-  static NormalizingScaler* Create(const SurfData& data);
+  static ModelScaler* Create(const SurfData& data);
   virtual ModelScaler* clone() const;
 protected:
   std::vector<Scaler> scalers;

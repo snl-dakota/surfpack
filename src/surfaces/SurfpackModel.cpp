@@ -111,14 +111,22 @@ const ParamMap& SurfpackModelFactory::parameters() const
   return params;
 }
 
-void SurfpackModelFactory::add(std::string name, std::string value)
+void SurfpackModelFactory::add(const std::string& name, const std::string& value)
 {
   params.insert(ModelParam(name,value));
 }
 
 SurfpackModel* SurfpackModelFactory::Build(const SurfData& sd)
 {
-  this->add("ndims",surfpack::toString(sd.xSize()));
+  //cout << "Data:\n";
+  //sd.writeText(cout);
+  //cout << "\nParams:\n";
+  //
+  //  for (ParamMap::iterator itr = params.begin();
+  //      itr != params.end(); itr++) {
+  //    std::cout << "     " << itr->first << ": " << itr->second << std::endl;
+  //  }
+  this->add("ndims",surfpack::toString<unsigned>(sd.xSize()));
   this->config();
     for (ParamMap::iterator itr = params.begin();
         itr != params.end(); itr++) {

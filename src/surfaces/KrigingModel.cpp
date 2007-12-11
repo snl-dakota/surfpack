@@ -75,7 +75,7 @@ KrigingModel::KrigingModel(const SurfData& sd, const VecDbl& correlations)
   : SurfpackModel(sd.xSize()), bs(SurfData::asVecVecDbl(sd),correlations)
 {
   // Scale the data (in hopes of improving numerical properties)
-  ModelScaler* ms = NormalizingScaler::Create(sd);
+  ModelScaler* ms = NonScaler::Create(sd);
   ScaledSurfData ssd(*ms,sd);
   this->scaler(ms);
   bs = KrigingBasisSet(ScaledSurfData::asVecVecDbl(ssd),correlations);

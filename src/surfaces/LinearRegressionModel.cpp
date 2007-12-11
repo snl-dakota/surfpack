@@ -76,11 +76,13 @@ LinearRegressionModel::LinearRegressionModel(const unsigned dims,
 
 double LinearRegressionModel::evaluate(const VecDbl& x) const
 {
+  static int times_called = 0;
   assert(coeffs.size() == bs.bases.size());
   double sum = 0;
   for (unsigned i = 0; i < coeffs.size(); i++) {
     sum += coeffs[i]*bs.eval(i,x);
   }
+  //cout << "LinearRegression: times called: " << ++times_called << endl;
   return sum;
 }
 
@@ -122,7 +124,7 @@ VecDbl LinearRegressionModelFactory::lrmSolve(const LRMBasisSet& bs, const Scale
     }
   }
   VecDbl b = ssd.getResponses();
-  VecDbl x;
+  VecDbl x(bs.size());
   if (eqConRHS.empty()) {
     surfpack::linearSystemLeastSquares(A,x,b);
   } else {
@@ -168,7 +170,8 @@ SurfpackModel* LinearRegressionModelFactory::Create(const std::string& model_str
 
 SurfpackModel* LinearRegressionModelFactory::Create(const SurfData& sd)
 {
-  ModelScaler* ms = NormalizingScaler::Create(sd);
+  //ModelScaler* ms = NormalizingScaler::Create(sd);
+  ModelScaler* ms = NonScaler::Create(sd);
   ScaledSurfData ssd(*ms,sd);
   
   LRMBasisSet bs = CreateLRM(order,sd.xSize());
@@ -210,8 +213,10 @@ void LinearRegressionModelFactory::config()
   if (strarg != "") order = atoi(strarg.c_str());
 }
 
-void LinearRegressionModelFactory::setEqualityConstraints(unsigned asv,const SurfPoint& sp,  double valuePtr, VecDbl& gradient, MtxDbl& hessian)
+void LinearRegressionModelFactory::setEqualityConstraints(unsigned asv,const SurfPoint& sp,  double valuePtr, VecDbl* gradientPtr, MtxDbl* hessianPtr)
 {
+  const VecDbl& gradient = *gradientPtr;
+  const MtxDbl& hessian = *hessianPtr;
   config();
   LRMBasisSet bs = CreateLRM(order,ndims);
   VecDbl coefficients(bs.size());
@@ -232,9 +237,9 @@ void LinearRegressionModelFactory::setEqualityConstraints(unsigned asv,const Sur
   if (asv & 1) {
     for (unsigned i = 0; i < bs.size(); i++) {
       eqConLHS(index,i) = bs.eval(i,sp.X());
-      eqConRHS[index] = valuePtr;
-      ++index;
     }
+    eqConRHS[index] = valuePtr;
+    ++index;
   }
 
   // If requested, add the equality constraints for the gradient
