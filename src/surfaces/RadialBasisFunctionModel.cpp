@@ -8,6 +8,10 @@ using std::cout;
 using std::endl;
 using std::vector;
 using std::string;
+using std::max;
+using std::min;
+using surfpack::shared_rng;
+using surfpack::fromVec;
 
 SurfPoint computeCentroid(const SurfData& sd)
 {
@@ -67,23 +71,22 @@ SurfData radii(const SurfData& generators)
   return result;
 }
 
-SurfData cvts(const AxesBounds& ab)
+SurfData cvts(const AxesBounds& ab, unsigned ngenerators, unsigned ninfluencers,
+  double minalpha = .5, double maxalpha = .99)
 {
-  unsigned q = 100; // number of sample points for Ju-Du-Gunzburger alg.
-  unsigned g = 50; // number of sample points for Ju-Du-Gunzburger alg.
-  double minalpha = .5;
-  double maxalpha = .99;
-  SurfData* generators = ab.sampleMonteCarlo(g);
+  assert(ninfluencers > ngenerators);
+  SurfData* generators = ab.sampleMonteCarlo(ngenerators);
   unsigned iters = 10;
   for (unsigned i = 0; i < iters; i++) {
-    SurfData* samples = ab.sampleMonteCarlo(q);
-    vector<SurfData> closestSets(g);
-    for (unsigned samp = 0; samp < samples->size(); samp++) {
-      closestSets[findClosest(*generators,(*samples)(samp))].addPoint((*samples)[samp]);
+    SurfData* influencers = ab.sampleMonteCarlo(ninfluencers);
+    vector<SurfData> closestSets(ngenerators);
+    for (unsigned samp = 0; samp < influencers->size(); samp++) {
+      unsigned nearest = findClosest(*generators,(*influencers)(samp));
+      closestSets[nearest].addPoint((*influencers)[samp]);
     } // for each sample pt
     // Find centroids, update generators
     SurfData* new_generators = new SurfData;
-    for (unsigned gen = 0; gen < g; gen++) {
+    for (unsigned gen = 0; gen < ngenerators; gen++) {
       if (closestSets[gen].size() != 0) {
         SurfPoint center = computeCentroid(closestSets[gen]);
         double genweight = minalpha + (maxalpha - minalpha)*((double)i/iters);
@@ -94,7 +97,7 @@ SurfData cvts(const AxesBounds& ab)
       }
     }
     delete generators; generators = new_generators;
-    delete samples;
+    delete influencers;
   } // end iteration
   SurfData result(*generators);
   delete generators;
@@ -137,26 +140,30 @@ void augment(VecRbf& rbfs)
   }
 }
 
-MtxDbl getMatrix(const SurfData& sd, const VecRbf& candidates, const VecUns& used)
+MtxDbl getMatrix(const SurfData& sd, const VecRbf& candidates, VecUns used)
 {
-  assert(candidates.size() >= used.size());
+  std::sort(used.begin(),used.end());
   MtxDbl A(sd.size(),used.size(),true);
-  for (unsigned rowa = 0; rowa < A.getNRows(); rowa++) {
-    for (unsigned cola = 0; cola < A.getNCols(); cola++) {
+  unsigned nrows = sd.size();
+  unsigned ncols = used.size();
+  for (unsigned rowa = 0; rowa < nrows; rowa++) {
+    for (unsigned cola = 0; cola < ncols; cola++) {
+      assert(used[cola] < candidates.size());
       A(rowa,cola) = candidates[used[cola]](sd(rowa));
     }
   }
   return A;
 }
 
-VecUns probInclusion(unsigned vec_size, double prob)
+VecUns probInclusion(unsigned vec_size, unsigned max_size, double prob)
 {
   assert(prob >= 0.0);
   assert(prob <= 1.0);
   assert(vec_size);
   VecUns result;
   for (unsigned i = 0; i < vec_size; i++) {
-    if ((double)rand()/INT_MAX < prob) result.push_back(i);
+    if (result.size() >= max_size) break;
+    if (shared_rng().randExc() < prob) result.push_back(i);
   }
   return result;
 }
@@ -294,13 +301,15 @@ typedef std::pair<double,VecUns> RbfBest;
 ///////////////////////////////////////////////////////////
 
 RadialBasisFunctionModelFactory::RadialBasisFunctionModelFactory()
-  : SurfpackModelFactory(), nCenters(0), minPartition(1)
+  : SurfpackModelFactory(), nCenters(0), cvtPts(0), maxSubsets(0), 
+  minPartition(1)
 {
 
 }
 
 RadialBasisFunctionModelFactory::RadialBasisFunctionModelFactory(const ParamMap& args)
-  : SurfpackModelFactory(args), nCenters(0), minPartition(1)
+  : SurfpackModelFactory(args), nCenters(0), cvtPts(0), maxSubsets(0), 
+  minPartition(1)
 {
 
 }
@@ -311,30 +320,31 @@ void RadialBasisFunctionModelFactory::config()
   string strarg;
   strarg = params["centers"];
   if (strarg != "") nCenters = atoi(strarg.c_str());
+  strarg = params["cvt_pts"];
+  if (strarg != "") cvtPts = atoi(strarg.c_str());
+  strarg = params["max_subsets"];
+  if (strarg != "") maxSubsets = atoi(strarg.c_str());
   strarg = params["min_partition"];
   if (strarg != "") minPartition = atoi(strarg.c_str());
-  //strarg = params["cvt_pts"];
-  //if (strarg != "") cvtPts = atoi(strarg.c_str());
-  //strarg = params["trials"];
-  //if (strarg != "") trials = atoi(strarg.c_str());
 }
 
 SurfpackModel* RadialBasisFunctionModelFactory::Create(const SurfData& sd)
 {
-  if (nCenters == 0) nCenters = sd.size();
+  unsigned max_centers = 100;
+  unsigned max_max_subsets = 100;
+  if (nCenters == 0) nCenters = min(max_centers,sd.size());
+  if (cvtPts == 0) cvtPts = 10*nCenters;
+  if (maxSubsets == 0) maxSubsets = min(max_max_subsets,3*nCenters);
   RbfBest bestset(std::numeric_limits<double>::max(),VecUns());
-  SurfData centers = cvts(AxesBounds::boundingBox(sd));
-  printf("data points: %d\n",sd.size());
-  printf("centers: %d\n",centers.size());
+  
+  SurfData centers = cvts(AxesBounds::boundingBox(sd),nCenters,cvtPts);
   SurfData radiuses = radii(centers);
-  printf("radii: %d\n",radiuses.size());
   VecDbl b = sd.getResponses();
   VecRbf candidates = makeRbfs(centers,radiuses);
-  printf("candidates: %d\n",candidates.size());
   augment(candidates);
-  VecDbl cfs(candidates.size(),0.0);
-  for (unsigned i = 0; i < 50; i++) {
-    VecUns used = probInclusion(candidates.size(),.5);
+  assert(candidates.size() == 2*nCenters);
+  for (unsigned i = 0; i < maxSubsets; i++) {
+    VecUns used = probInclusion(candidates.size(),sd.size(),.5);
     MtxDbl A = getMatrix(sd,candidates,used);
     VecDbl x;
     surfpack::linearSystemLeastSquares(A,x,b);
@@ -342,18 +352,14 @@ SurfpackModel* RadialBasisFunctionModelFactory::Create(const SurfData& sd)
     RadialBasisFunctionModel rbfm(candidates,coeffs);
     StandardFitness sf;
     double fitness = sf(rbfm,sd);
-    //cout << "#rbfs: " << used.size() << " fitness: " << fitness << endl;
     if (fitness < bestset.first) bestset = RbfBest(fitness,used);
   }
-  //cout << "Best fitness: " << bestset.first << endl;
-  // Now create an RBF set that only includes the ones that have
-  // non-zero coefficients
   VecUns used = bestset.second;
   VecRbf final_rbfs;
   VecUns final_used(used.size());
   for (unsigned i = 0; i < used.size(); i++) {
     final_used[i] = i;
-    final_rbfs.push_back(candidates[i]);
+    final_rbfs.push_back(candidates[used[i]]);
   }
   // Recompute the coefficients.  If we cached the result, we wouldn't
   // have to do it again.  
@@ -361,6 +367,9 @@ SurfpackModel* RadialBasisFunctionModelFactory::Create(const SurfData& sd)
   VecDbl x;
   surfpack::linearSystemLeastSquares(A,x,b);
   SurfpackModel* sm = new RadialBasisFunctionModel(final_rbfs, x); 
+  StandardFitness sf;
+  double fitness = sf(*sm,sd);
+  //cout << "Cached fitness: " << bestset.first << " recomputed: " << fitness << endl;
   assert(sm);
   return sm; 
 }

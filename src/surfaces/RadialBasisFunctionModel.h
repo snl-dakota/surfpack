@@ -70,6 +70,8 @@ public:
   virtual void config();
 protected:
   unsigned nCenters;
+  unsigned cvtPts;
+  unsigned maxSubsets;
   unsigned minPartition;
 };
 
