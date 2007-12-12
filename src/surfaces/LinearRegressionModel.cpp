@@ -6,6 +6,7 @@
 
 using std::cout;
 using std::endl;
+using std::accumulate;
 using std::string;
 
 double LRMBasisSet::eval(unsigned index, const VecDbl& x) const

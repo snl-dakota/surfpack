@@ -24,6 +24,7 @@ using std::ios;
 using std::istringstream;
 using std::max_element;
 using std::min_element;
+using std::random_shuffle;
 using std::ofstream;
 using std::ostream;
 using std::ostream_iterator;

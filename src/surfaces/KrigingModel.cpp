@@ -9,6 +9,7 @@
 
 using std::cout;
 using std::endl;
+using std::copy;
 using std::vector;
 using std::string;
 
