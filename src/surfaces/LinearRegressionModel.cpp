@@ -229,7 +229,7 @@ void LinearRegressionModelFactory::setEqualityConstraints(unsigned asv,const Sur
   // Must compute number of terms first
   //MtxDbl temp(eqConRHS.size(),coefficients.size(),true);
   //eqConLHS = temp;
-  eqConLHS.reshape(eqConRHS.size(),coefficients.size());
+  eqConLHS.reshape(numConstraints,coefficients.size());
   // Marks the index of the next constraint to be added (necessary since
   // indices of e.g. the gradient constraints will be different depending on
   // whether or not the value constraint is used
@@ -254,7 +254,6 @@ void LinearRegressionModelFactory::setEqualityConstraints(unsigned asv,const Sur
       diff_counts[dif_var] = 1;
       for (unsigned i = 0; i < bs.size(); i++) {
         eqConLHS(index,i) = bs.deriv(i,sp.X(), diff_counts);
-        ++index;
       }
       eqConRHS[index] = gradient[dif_var];
       ++index;
