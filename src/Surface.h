@@ -13,6 +13,7 @@
 #include "surfpack_config.h"
 #endif
 #include "surfpack_system_headers.h"
+#include "surfpack.h"
 #include "SurfpackParserArgs.h"
 
 class SurfPoint;
@@ -20,7 +21,8 @@ class SurfData;
 class SurfScaler;
 namespace surfpack { class ErrorStruct; }
 
-enum MetricType;
+// BMA: For AIX included the surfpack.h above and commented enum
+//enum MetricType;
 // {
 //  MT_RELATIVE_MAXIMUM,
 //  MT_RELATIVE_AVERAGE,

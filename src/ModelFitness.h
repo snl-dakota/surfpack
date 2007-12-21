@@ -13,6 +13,7 @@
 #include "surfpack_config.h"
 #endif
 #include "surfpack_system_headers.h"
+#include "surfpack.h"
 
 //class SurfPoint;
 //class SurfData;
@@ -20,7 +21,8 @@
 //namespace surfpack { class ErrorStruct; }
 //
 
-enum MetricType;
+// BMA: For AIX included the surfpack.h above and commented enum
+//enum MetricType;
 template< typename T>
 std::vector< T >& vecSubInPlace(std::vector< T >& sub, std::vector< T >& min)
 {
