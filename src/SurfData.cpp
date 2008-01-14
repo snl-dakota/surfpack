@@ -952,8 +952,9 @@ void SurfData::checkRangeNumResponses(const string& header,
 
 VecVecDbl SurfData::asVecVecDbl(const SurfData& data)
 {
-  VecVecDbl result(data.size(),data.xSize());
+  VecVecDbl result(data.size());
   for (unsigned i = 0; i < data.size(); i++) {
+    result[i].resize(data.xSize());
     for (unsigned j = 0; j < data.xSize(); j++) {
       result[i][j] = data(i,j);
     }

@@ -546,6 +546,7 @@ MtxDbl& surfpack::matrixSum(MtxDbl& result, MtxDbl& matrixA, MtxDbl& matrixB)
       result(i,j) = matrixA(i,j) + matrixB(i,j);
     }
   }
+  return result;
 }
 
 MtxDbl& surfpack::matrixSubtraction(MtxDbl& result, MtxDbl& matrixA, 
@@ -561,6 +562,7 @@ MtxDbl& surfpack::matrixSubtraction(MtxDbl& result, MtxDbl& matrixA,
       result(i,j) = matrixA(i,j) - matrixB(i,j);
     }
   }
+  return result;
 }
 
 double surfpack::dot_product(const VecDbl& vector_a, 

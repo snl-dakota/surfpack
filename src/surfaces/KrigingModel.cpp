@@ -6,6 +6,7 @@
 #include "ModelScaler.h"
 #include "AxesBounds.h"
 #include "ModelFitness.h"
+#include "Conmin.h"
 
 using std::cout;
 using std::endl;
@@ -352,7 +353,7 @@ void ConminKriging::optimize(VecDbl& x, double& final_val, unsigned max_iter)
     //printf("OBJ: %f Constraints: %f %f %f\n",OBJ,cv[0],cv[1],cv[2]);
     //cout << "Conmin info: " << conminInfo << endl;
     //break;
-    conmin_(
+    CONMIN_F77(
               &query_pt[0],&lower_bounds[0],&upper_bounds[0],
               &cv[0],
               &SCAL[0],&DF[0],&A[0],&S[0],&G1[0],&G2[0],&B[0],&C[0],

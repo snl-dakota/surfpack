@@ -218,6 +218,7 @@ void LinearRegressionModelFactory::setEqualityConstraints(unsigned asv,const Sur
 {
   const VecDbl& gradient = *gradientPtr;
   const MtxDbl& hessian = *hessianPtr;
+  if (!asv) return; // There are no constraints
   config();
   LRMBasisSet bs = CreateLRM(order,ndims);
   VecDbl coefficients(bs.size());
@@ -229,7 +230,7 @@ void LinearRegressionModelFactory::setEqualityConstraints(unsigned asv,const Sur
   // Must compute number of terms first
   //MtxDbl temp(eqConRHS.size(),coefficients.size(),true);
   //eqConLHS = temp;
-  eqConLHS.reshape(numConstraints,coefficients.size());
+  eqConLHS.reshape(eqConRHS.size(),coefficients.size());
   // Marks the index of the next constraint to be added (necessary since
   // indices of e.g. the gradient constraints will be different depending on
   // whether or not the value constraint is used
@@ -248,12 +249,11 @@ void LinearRegressionModelFactory::setEqualityConstraints(unsigned asv,const Sur
     //const VecDbl& gradient = *gradientPtr;
     assert(gradient.size() == ndims);
     VecUns factorCounts;
-    VecUns diff_counts;
+    VecUns diff_vars(1); // Holds index of var to differentiate w.r.t.
     for (unsigned dif_var = 0; dif_var < ndims; dif_var++ ) {
-      diff_counts = VecUns(ndims,0);
-      diff_counts[dif_var] = 1;
+      diff_vars[0] = dif_var;
       for (unsigned i = 0; i < bs.size(); i++) {
-        eqConLHS(index,i) = bs.deriv(i,sp.X(), diff_counts);
+        eqConLHS(index,i) = bs.deriv(i,sp.X(), diff_vars);
       }
       eqConRHS[index] = gradient[dif_var];
       ++index;
@@ -266,15 +266,13 @@ void LinearRegressionModelFactory::setEqualityConstraints(unsigned asv,const Sur
     assert(hessian.getNCols() == ndims);
     assert(hessian.getNRows() == ndims);
     VecUns factorCounts;
-    VecUns diff_counts;
+    VecUns diff_vars(2); // Holds indices of vars to differentiate w.r.t.
     for (unsigned dif_var1 = 0; dif_var1 < ndims; dif_var1++ ) {
+      diff_vars[0] = dif_var1;
       for (unsigned dif_var2 = dif_var1; dif_var2 < ndims; dif_var2++ ) {
-        diff_counts = VecUns(ndims,0);
-        diff_counts[dif_var1]++;
-        diff_counts[dif_var2]++;
+        diff_vars[1] = dif_var2;
         for (unsigned i = 0; i < bs.size(); i++) {
-          eqConLHS(index,i) = bs.deriv(i,sp.X(), diff_counts);
-          ++index;
+          eqConLHS(index,i) = bs.deriv(i,sp.X(), diff_vars);
         }
         eqConRHS[index] = hessian(dif_var1,dif_var2);
         ++index;

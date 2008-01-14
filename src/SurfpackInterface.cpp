@@ -163,7 +163,8 @@ SurfData* NewInterface::LoadData(const std::string& filename, unsigned n_predict
 
 SurfpackModel* NewInterface::LoadModel(const std::string& filename)
 {
-
+  throw string("LoadModel is not currently supported");
+  return 0;
 }
 
 void NewInterface::Save(const SurfpackModel* model, const std::string& filename)
