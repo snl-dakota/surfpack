@@ -111,10 +111,10 @@ SurfPoint& SurfPoint::operator=(const SurfPoint& other)
 
 bool doubles_match(double x, double y)
 {
-    if (abs(x) < 1e-10) {
-      if (abs(y) > 1e-10) return false;
+    if (fabs(x) < 1e-10) {
+      if (fabs(y) > 1e-10) return false;
     } else {
-      if (abs(x-y)/abs(x) > 1e-10) return false;
+      if (fabs(x-y)/fabs(x) > 1e-10) return false;
     }
     return true;
 }

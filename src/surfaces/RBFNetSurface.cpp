@@ -830,12 +830,12 @@ void RBFNetSurface::computeRBFCenters(
         double radiusavg = 0.0;
         for (unsigned d = 0; d < newcenter.size(); d++) {
           newcenter[d] = (maxes[d] + mins[d]) / 2;
-          newradius[d] = 100.0*abs(maxes[d] - mins[d]);
+          newradius[d] = 100.0*fabs(maxes[d] - mins[d]);
           radiusavg += newradius[d];
         }
         radiusavg /= newcenter.size();
         for (unsigned d = 0; d < newcenter.size(); d++) {
-          if (abs(newradius[d]) < .01 * radiusavg) {
+          if (fabs(newradius[d]) < .01 * radiusavg) {
             newradius[d] = radiusavg;
           } 
         }
