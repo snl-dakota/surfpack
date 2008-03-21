@@ -65,7 +65,10 @@ public:
   virtual SurfpackModel* Build(const SurfData& sd);
   virtual SurfpackModel* Create(const SurfData& sd) = 0;
   virtual SurfpackModel* Create(const std::string& model_string) = 0;
+  /// the minimum number of points with which Surfpack will build a model
   virtual unsigned minPointsRequired();
+  /// the recommended default number of points
+  virtual unsigned recommendedNumPoints();
   virtual void config();
   const ParamMap& parameters() const;
   void add(const std::string& name, const std::string& value);

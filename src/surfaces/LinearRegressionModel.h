@@ -64,6 +64,7 @@ public:
   virtual SurfpackModel* Create(const std::string& model_string);
   virtual void config();
   virtual unsigned minPointsRequired();
+  virtual unsigned recommendedNumPoints();
   VecDbl lrmSolve(const LRMBasisSet& bs, const ScaledSurfData& ssd);
   static LRMBasisSet CreateLRM(unsigned order, unsigned dims);
 protected:

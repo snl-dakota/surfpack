@@ -103,7 +103,14 @@ unsigned SurfpackModelFactory::minPointsRequired()
 {
   SurfpackModelFactory::config();
   assert(ndims);
-  return (ndims+1)*(ndims+2)/2; 
+  return (ndims+1);
+}
+
+unsigned SurfpackModelFactory::recommendedNumPoints()
+{
+  SurfpackModelFactory::config();
+  assert(ndims);
+  return (5*ndims);
 }
 
 const ParamMap& SurfpackModelFactory::parameters() const
@@ -128,10 +135,11 @@ SurfpackModel* SurfpackModelFactory::Build(const SurfData& sd)
   //  }
   this->add("ndims",surfpack::toString<unsigned>(sd.xSize()));
   this->config();
-    for (ParamMap::iterator itr = params.begin();
-        itr != params.end(); itr++) {
-      std::cout << "     " << itr->first << ": " << itr->second << std::endl;
-    }
+  std::cout << "SurfpackModelFactory built with parameters:" << std::endl; 
+  for (ParamMap::iterator itr = params.begin();
+       itr != params.end(); itr++) {
+    std::cout << "     " << itr->first << ": " << itr->second << std::endl;
+  }
   sd.setDefaultIndex(this->response_index);
   if (sd.size() < minPointsRequired()) {
     throw string("Not enough Points");

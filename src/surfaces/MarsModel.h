@@ -62,7 +62,6 @@ public:
   virtual SurfpackModel* Create(const SurfData& sd);
   virtual SurfpackModel* Create(const std::string& model_string);
   virtual void config();
-  virtual unsigned minPointsRequired();
 protected:
   real* xMatrix;
   real* fm;

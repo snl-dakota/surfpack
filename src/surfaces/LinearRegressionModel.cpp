@@ -194,6 +194,11 @@ unsigned LinearRegressionModelFactory::minPointsRequired()
   return bs.size() - eqConRHS.size();
 }
 
+unsigned LinearRegressionModelFactory::recommendedNumPoints()
+{
+  return LinearRegressionModelFactory::minPointsRequired();
+}
+
 LinearRegressionModelFactory::LinearRegressionModelFactory()
   : SurfpackModelFactory(), order(2)
 {

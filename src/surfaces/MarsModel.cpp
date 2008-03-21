@@ -138,11 +138,6 @@ SurfpackModel* MarsModelFactory::Create(const SurfData& sd)
   return model;
 }
 
-unsigned MarsModelFactory::minPointsRequired()
-{
-  return SurfpackModelFactory::minPointsRequired();
-}
-
 MarsModelFactory::MarsModelFactory()
   : SurfpackModelFactory(),
   xMatrix(0), fm(0), im(0), max_interactions(2), max_bases(25)
