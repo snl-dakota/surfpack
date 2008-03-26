@@ -141,7 +141,9 @@ typedef std::pair<double,VecDbl> KMPair;
 SurfpackModel* DirectANNModelFactory::Create(const SurfData& sd)
 {
   // Scale the data (in hopes of improving numerical properties)
-  ModelScaler* ms = NormalizingScaler::Create(sd);
+  // BMA: Using set norm_factor 0.8 from old ANN code
+  const double norm_factor = 0.8;
+  ModelScaler* ms = NormalizingScaler::Create(sd, norm_factor);
   ScaledSurfData ssd(*ms,sd);
 
   // Fix the number of nodes

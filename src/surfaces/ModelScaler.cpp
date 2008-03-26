@@ -75,6 +75,28 @@ ModelScaler* NormalizingScaler::Create(const SurfData& data)
   return new NormalizingScaler(scalers,descaler);
 }
 
+ModelScaler* NormalizingScaler::Create(const SurfData& data,
+				       double norm_factor)
+{
+  double min_elem, max_elem;
+  assert(norm_factor >= 0.0);
+  vector<NormalizingScaler::Scaler> scalers(data.xSize());
+  for (unsigned i = 0; i < data.xSize(); i++) {
+    VecDbl predictor = data.getPredictor(i);
+    min_elem = *(std::min_element(predictor.begin(),predictor.end()));
+    max_elem = *(std::max_element(predictor.begin(),predictor.end()));
+    scalers[i].offset = (max_elem + min_elem)/2.0;
+    scalers[i].scaleFactor =  (max_elem - min_elem)/2.0/norm_factor;
+  }
+  NormalizingScaler::Scaler descaler;
+  VecDbl response = data.getResponses();
+  min_elem = *(std::min_element(response.begin(),response.end()));
+  max_elem = *(std::max_element(response.begin(),response.end()));
+  descaler.offset = (max_elem + min_elem)/2.0;
+  descaler.scaleFactor = (max_elem - min_elem)/2.0/norm_factor;
+  return new NormalizingScaler(scalers,descaler);
+}
+
 ModelScaler* NormalizingScaler::clone() const
 {
   return new NormalizingScaler(*this);

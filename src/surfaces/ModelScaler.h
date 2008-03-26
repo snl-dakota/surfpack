@@ -51,7 +51,10 @@ public:
   NormalizingScaler(const std::vector<Scaler>& s, const Scaler& d) 
     : scalers(s), descaler(d), result(s.size()) {}
   ~NormalizingScaler() {}
+  // constructor to normalize each var/resp to [ 0, 1 ]
   static ModelScaler* Create(const SurfData& data);
+  // constructor to normalize each var/resp to [ -norm_factor, norm_factor ]
+  static ModelScaler* Create(const SurfData& data, double norm_factor);
   virtual ModelScaler* clone() const;
 protected:
   std::vector<Scaler> scalers;
