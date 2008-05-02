@@ -1,6 +1,6 @@
-Load[name = times, file = '../perm_data/krigtimes_50to3000.spd',
+Load[name = times, file = 'krigtimes_50to3000.spd',
   n_responses = 2, n_predictors = 1]
-Load[name = test_times, file = '../perm_data/one_trial_3050to5000.spd',
+Load[name = test_times, file = 'one_trial_3050to5000.spd',
   n_responses = 2, n_predictors = 1]
 CreateSurface[name = poly3, data = times, type = polynomial, order = 3, scaling = uniform]
 Fitness[surface = poly3, metric = mean_squared]
