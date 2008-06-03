@@ -58,8 +58,8 @@ double StandardFitness::operator()(const VecDbl& obs, const VecDbl& pred) const
 
 double StandardFitness::operator()(const SurfpackModel& sm, const SurfData& sd) const
 {
-  VecDbl observed = sm(sd);
-  VecDbl predicted = sd.getResponses();
+  VecDbl predicted = sm(sd);
+  VecDbl observed = sd.getResponses();
   VecDbl residuals = getResiduals(resid,observed,predicted);
   return vecsumry(residuals);
 }
@@ -86,6 +86,8 @@ ModelFitness* ModelFitness::Create(const std::string& metric, unsigned n)
     return new StandardFitness(Residual(ABSOLUTE),VecSummary(MT_MAXIMUM));
   } else if (metric == "cv") {
     return new CrossValidationFitness(n);
+  } else if (metric == "rsquared") {
+    return new R2Fitness();
   }
   string msg = "Metric " + metric + " not supported";
   throw msg; 
@@ -181,3 +183,20 @@ double CrossValidationFitness::operator()(const SurfpackModel& sm, const SurfDat
   delete mf;
   return fitness;
 }
+
+R2Fitness::R2Fitness()
+{
+
+}
+
+double R2Fitness::operator()(const SurfpackModel& sm, const SurfData& sd) const
+{
+
+  VecDbl predicted = sm(sd);
+  VecDbl observed = sd.getResponses();
+  double obs_mean = surfpack::mean(observed);
+  VecDbl vec_mean = VecDbl(observed.size(),obs_mean);
+  StandardFitness sum_squares = StandardFitness(Residual(SQUARED),VecSummary(MT_SUM));
+  return sum_squares(predicted,vec_mean)/sum_squares(observed,vec_mean);
+}
+

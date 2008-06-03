@@ -98,4 +98,12 @@ public:
   virtual double operator()(const SurfpackModel& sm, const SurfData& sd) const;
   unsigned n;
 };
+
+class R2Fitness: public ModelFitness
+{
+public:
+  R2Fitness();
+  virtual double operator()(const SurfpackModel& sm, const SurfData& sd) const;
+};
+
 #endif
