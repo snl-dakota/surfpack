@@ -25,15 +25,17 @@
 #define _random_h
 
  /* MinGW [sd]rand48 workaround */
+#ifdef __MINGW32__
 #ifndef HAVE_DRAND48
 #define drand48()	((double)rand()/RAND_MAX)
 #else
-double drand48(void);
+extern "C" double drand48(void);
 #endif
 #ifndef HAVE_SRAND48
 #define srand48(n)	srand((n));
 #else
 extern "C" void srand48(long int);
+#endif
 #endif
 
 //#include "data_types.h"
