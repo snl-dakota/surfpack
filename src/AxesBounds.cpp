@@ -14,6 +14,7 @@
 #include "SurfPoint.h"
 #include "SurfData.h"
 #include "AxesBounds.h"
+#include <stdlib.h> // for atof, exit, rand
 
 using std::cerr;
 using std::cout;

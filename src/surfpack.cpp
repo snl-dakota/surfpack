@@ -10,6 +10,7 @@
 #include "surfpack_config.h"
 #endif
 #include "surfpack.h"
+#include <stdlib.h> // for rand
 
 using std::cerr;
 using std::endl;

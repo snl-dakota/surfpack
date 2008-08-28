@@ -12,6 +12,7 @@
 #include "surfpack.h"
 #include "SurfData.h"
 #include "MarsSurface.h"
+#include <string.h> // for memset
 
 using std::cerr;
 using std::endl;

@@ -37,7 +37,7 @@
 #include "surfpack_system_headers.h"
 #include "allocate.h"
 #include "dsvd2.h"
-#include <cstdio> // for printf
+#include <stdio.h> // for printf
 
 #ifdef HAVE_STD
 using std::fabs;

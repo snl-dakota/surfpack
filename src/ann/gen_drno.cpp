@@ -35,6 +35,8 @@
 */
 
 #include "surfpack_system_headers.h"
+#include <stdio.h> // for printf
+#include <stdlib.h> // for rand
 
 #define RCONST 32767.
 

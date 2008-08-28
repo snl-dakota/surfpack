@@ -11,6 +11,7 @@
 #endif
 #include "SurfpackParserArgs.h"
 #include <sstream>
+#include <stdlib.h> // for atof
 
 Triplet::Triplet() : min(0), max(0), numPts(0) {}
 

@@ -17,6 +17,7 @@
 #include "surfpack_system_headers.h"
 #include "utilities.h"
 #include "vector_enhancements.h"
+#include <stdlib.h> // for exit
 
 using std::cerr;
 using std::endl;

@@ -23,11 +23,7 @@
 #include "random.h" 
 #include "surfpack_system_headers.h"
 
-#ifdef HAVE_STD
-#include <cstdlib>
-#else
 #include <stdlib.h>
-#endif
 
 using std::vector;
 

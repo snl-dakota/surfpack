@@ -1,6 +1,7 @@
 #include "SurfpackModel.h"
 #include "SurfData.h"
 #include "surfpack.h"
+#include <stdlib.h> // for atoi
 
 using std::cout;
 using std::endl;
@@ -166,15 +167,18 @@ double SurfpackModel::rSquared(const SurfData& surf_data)
 
 double SurfpackModel::press(const SurfData& data)
 {
+return 0.;
 }
 
 double SurfpackModel::nFoldCrossValidation(const SurfData& data, unsigned n)
 {
+return 0.;
 }
 
 double SurfpackModel::genericMetric(std::vector<double>& observed,
     std::vector<double>& predicted, enum MetricType mt, enum DifferenceType dt)
 {
+return 0.;
 }
 
 void SurfpackModel::scaler(ModelScaler* ms)

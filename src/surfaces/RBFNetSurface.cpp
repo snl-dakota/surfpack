@@ -12,6 +12,7 @@
 #include "surfpack.h"
 #include "RBFNetSurface.h"
 #include "SurfData.h"
+#include <stdlib.h> // for rand
 
 using std::cerr;
 using std::cout;

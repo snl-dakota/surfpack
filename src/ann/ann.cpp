@@ -35,6 +35,7 @@
 #include "convert.h"
 #include "allocate.h"
 #include "dsvd2.h"
+#include <stdlib.h> // for rand
 
 extern "C" double atanh(double);
 

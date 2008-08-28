@@ -20,8 +20,8 @@
 
 #include "surfpack_system_headers.h"
 #include "allocate.h"
-#include <cstdio>	// for fprintf
-#include <cstdlib>	// for malloc and free
+#include <stdio.h>	// for fprintf
+#include <stdlib.h>	// for malloc and free
 
 /* nrutil.c */
 void nrerror(const char* error_text)

@@ -12,6 +12,7 @@
 #include "surfpack.h"
 #include "SurfData.h"
 #include "KrigingSurface.h"
+#include <string.h> // for memcpy
 
 //#define PRINT_DEBUG
 
