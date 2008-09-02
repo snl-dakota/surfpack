@@ -325,7 +325,7 @@ void surfpack::differences(vector<double>& results,
 /// Return the euclidean distance between pt1 and pt2.  Throw an exception if
 /// the dimensionality of the two vectors does not match.
 double surfpack::euclideanDistance(const vector<double>& pt1, 
-  const vector<double>& pt2)
+  const VecDbl& pt2)
 {
   double distance = 0.0;
   if (pt1.size() != pt2.size()) {
@@ -469,7 +469,7 @@ MtxDbl& surfpack::inverse(SurfpackMatrix< double>& matrix)
   return matrix;
 }
 
-MtxDbl& surfpack::LUFact(SurfpackMatrix< double>& matrix,
+MtxDbl& surfpack::LUFact(MtxDbl& matrix,
   vector<int>& ipvt)
 {
   int n_rows = static_cast<int>(matrix.getNRows());
