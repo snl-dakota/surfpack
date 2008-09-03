@@ -18,7 +18,6 @@
 #include "SurfpackParser.h"
 
 class Surface;
-class SurfScaler;
 
 /// Contains a set of SurfPoint objects.  May be associated with zero or more
 /// Surface objects, which it notifies when its data changes or when it goes 
@@ -128,9 +127,6 @@ public:
   /// Return the number of response functions in the data set
   unsigned fSize() const;
 
-  /// Returns true if the data has been scaled
-  bool isScaled() const;
-
   /// Return the set of excluded points (the indices)
   const std::set<unsigned>& getExcludedPoints() const ; 
 
@@ -173,9 +169,6 @@ public:
   /// surface
   void setResponse(unsigned index, double value);
 
-  /// Calculates parameters so that the data can be viewed as scaled
-  void setScaler(SurfScaler* scaler_in);
-  
   /// Add a point to the data set. The parameter point will be copied.
   void addPoint(const SurfPoint& sp);
 
@@ -200,12 +193,6 @@ public:
   /// pointers to the points in the data set which is used to check for 
   /// duplication when other points are added in the future
   void buildOrderedPoints();
-
-  /// Iterate through the points, setting the current scaler
-  void enableScaling();
-
-  /// Iterate through the points, clearing the scaler
-  void disableScaling();
 
   /// Set the labels for the predictor variables
   void setXLabels(const std::vector<std::string>& labels);
@@ -260,9 +247,6 @@ private:
 
   /// Number of response variables in the data set 
   unsigned fsize;
-
-  /// Controls how the data is scaled during processing
-  SurfScaler* scaler;
 
   /// The set of points in this data set
   std::vector<SurfPoint*> points; 

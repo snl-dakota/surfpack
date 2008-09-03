@@ -137,10 +137,8 @@ AM_CONDITIONAL(HAVE_CPPUNIT, test "$found_cppunit" = "yes")
 # the Makefiles from the Makefile.in files.
 AC_CONFIG_FILES([Makefile
 		 src/Makefile
-		 src/ann/Makefile
 		 src/conmin/Makefile
 		 src/interpreter/Makefile
-		 src/kriging/Makefile
 		 src/lapack/Makefile
 		 src/mars/Makefile
 		 src/surfaces/Makefile

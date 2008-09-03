@@ -12,7 +12,6 @@
 #include "surfpack.h"
 #include "SurfData.h"
 #include "Surface.h"
-#include "SurfScaler.h"
 
 using std::cerr;
 using std::cout;
@@ -50,7 +49,6 @@ const int SurfData::DATA_MODIFIED = 2;
 
 /// Vector of points will be copied and checked for duplicates
 SurfData::SurfData(const vector<SurfPoint>& points_) 
-  : scaler(0)
 {
   if (points_.empty()) {
     this->xsize = 0;
@@ -71,7 +69,6 @@ SurfData::SurfData(const vector<SurfPoint>& points_)
 
 /// Read a set of SurfPoints from a file
 SurfData::SurfData(const string filename) 
-: scaler(0)
 {
   init();
   read(filename);
@@ -83,7 +80,6 @@ SurfData::SurfData(const string filename)
 /// The stream reader processes data until eof, assuming one point per line.
 SurfData::SurfData(const string filename, unsigned n_vars, unsigned n_responses, 
   unsigned n_cols_to_skip)
-: scaler(0)
 {
   if (!surfpack::hasExtension(filename,".dat") 
     && !surfpack::hasExtension(filename,".spd")) {
@@ -104,7 +100,6 @@ SurfData::SurfData(const string filename, unsigned n_vars, unsigned n_responses,
 
 /// Read a set of SurfPoints from a istream
 SurfData::SurfData(istream& is, bool binary) 
-  : scaler(0)
 {
   init();
   if (binary) {
@@ -116,7 +111,7 @@ SurfData::SurfData(istream& is, bool binary)
 
 /// Makes a deep copy of the object 
 SurfData::SurfData(const SurfData& other) 
-  : xsize(other.xsize), fsize(other.fsize),scaler(other.scaler), 
+  : xsize(other.xsize), fsize(other.fsize),
   excludedPoints(other.excludedPoints), defaultIndex(other.defaultIndex),
   xLabels(other.xLabels), fLabels(other.fLabels)
 {
@@ -128,7 +123,7 @@ SurfData::SurfData(const SurfData& other)
 }
 
 /// First SurfPoint added will determine the dimensions of the data set 
-SurfData::SurfData() : scaler(0)
+SurfData::SurfData() 
 {
     this->xsize = 0;
     this->fsize = 0;
@@ -286,12 +281,6 @@ unsigned SurfData::fSize() const
   return fsize; 
 }
 
-/// Returns true if the data has been scaled
-bool SurfData::isScaled() const
-{
-  return scaler != 0;
-}
-
 /// Return the set of excluded points (the indices)
 const set<unsigned>& SurfData::getExcludedPoints() const 
 {
@@ -405,18 +394,6 @@ void SurfData::setResponse(unsigned index, double value)
   points[mapping[index]]->F(defaultIndex, value);
 }
   
-/// Calculates parameters so that the data can be viewed as scaled
-void SurfData::setScaler(SurfScaler* scaler_in)
-{
-  this->scaler = scaler_in;
-  if (scaler) {
-    assert(scaler->xSize() == xsize);
-    assert(scaler->fSize() == fsize);
-    enableScaling();
-  } else {
-    disableScaling();
-  }
-}
 /// Add a point to the data set. The parameter point will be copied.
 void SurfData::addPoint(const SurfPoint& sp) 
 {
@@ -553,22 +530,6 @@ void SurfData::buildOrderedPoints()
   orderedPoints.clear();
   for (unsigned i = 0; i < points.size(); i++) {
     orderedPoints.insert(points[i]);
-  }
-}
-
-/// Iterate through the points, setting the current scaler
-void SurfData::enableScaling()
-{
-  for (unsigned i = 0; i < points.size(); i++) {
-    points[i]->setScaler(scaler);
-  }
-}
-
-/// Iterate through the points, clearing the scaler
-void SurfData::disableScaling()
-{
-  for (unsigned i = 0; i < points.size(); i++) {
-    points[i]->setScaler(0);
   }
 }
 

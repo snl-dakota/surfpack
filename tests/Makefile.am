@@ -13,8 +13,6 @@ check_PROGRAMS = $(TESTS)
 ## These are the source files needed for the srftest target.
 srftest_SOURCES = SurfPointTest.h \
 		  SurfPointTest.cpp \
-		  SurfScalerTest.h \
-		  SurfScalerTest.cpp \
 		  ModelScalerTest.cpp \
 		  ModelScalerTest.h \
 		  ModelFactoryTest.cpp \
@@ -23,8 +21,6 @@ srftest_SOURCES = SurfPointTest.h \
 		  unittests.cpp \
 		  SurfDataTest.h \
 		  SurfDataTest.cpp \
-		  SurfaceTest.cpp \
-		  SurfaceTest.h \
 		  SurfpackCommonTest.cpp \
 		  SurfpackCommonTest.h \
 		  SurfpackModelTest.cpp \

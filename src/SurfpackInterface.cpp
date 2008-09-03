@@ -17,7 +17,7 @@
 #include "SurfpackInterpreter.h"
 #include "SurfData.h"
 #include "Surface.h"
-#include "SurfaceFactory.h"
+#include "ModelFactory.h"
 
 using std::cerr;
 using std::cout;
@@ -27,158 +27,52 @@ using std::runtime_error;
 using std::string;
 using std::vector;
 using std::ostringstream;
-using SurfpackInterface::CreateAxes;
-using SurfpackInterface::CreateSurface;
-using SurfpackInterface::Fitness;
-using SurfpackInterface::Load;
-using SurfpackInterface::Save;
 
-// New Interface
 #include "SurfpackModel.h"
 #include "ModelFitness.h"
-using NewInterface::CreateAxes;
-using NewInterface::CreateSurface;
-using NewInterface::LoadData;
-using NewInterface::LoadModel;
-using NewInterface::Evaluate;
-
-///////////////////////////////////////////////////////////////////////////////
-/////		SurfpackInterface namespace functions			  /////
-///////////////////////////////////////////////////////////////////////////////
-
-void SurfpackInterface::Load(SurfData*& data, const string filename)
-{
-  data = new SurfData(filename);
-  assert(data);
-}
-
-void SurfpackInterface::Load(SurfData*& data, const string filename,
-  unsigned n_vars, unsigned n_responses, unsigned skip_columns)
-{
-  data = new SurfData(filename,n_vars,n_responses,skip_columns);
-  assert(data);
-}
-
-void SurfpackInterface::Load(Surface*& surface, const string filename)
-{
-  surface = SurfaceFactory::createSurface(filename);
-}
-
-void SurfpackInterface::Save(SurfData* data, const string filename)
-{
-  assert(data);
-  data->write(filename);
-}
-
-void SurfpackInterface::Save(Surface* surface, const string filename)
-{
-  assert(surface);
-  surface->write(filename);
-}
-
-void SurfpackInterface::CreateSurface(Surface*& surface, SurfData* data, const string type, int response_index)
-{
-  assert(data);
-  data->setDefaultIndex(response_index);
-  surface = SurfaceFactory::createSurface(type, data);
-  surface->config(Arg::makeArg("xsize",data->xSize()));
-}
-
-void SurfpackInterface::Evaluate(Surface* surface, SurfData* data)
-{
-  surface->getValue(*data);
-}
-
-double SurfpackInterface::Fitness(Surface* surface, const string metric, 
- SurfData* data, int response_index)
-{
-  assert(surface);
-  if (data) {
-    data->setDefaultIndex(response_index);
-  }
-  return surface->goodnessOfFit(metric,data);
-}
-
-double SurfpackInterface::Fitness(Surface* surface, unsigned n, 
- SurfData* data, int response_index)
-{
-  assert(surface);
-  if (data) {
-    data->setDefaultIndex(response_index);
-  }
-  SurfData& valid_data = surface->checkData(data);
-  return surface->nFoldCrossValidation(valid_data,n);
-}
-
-void SurfpackInterface::CreateAxes(AxesBounds*& ab, const string bounds)
-{
-  ab = new AxesBounds(bounds);
-}
-
-void SurfpackInterface::CreateSample(SurfData*& data, const AxesBounds& axes, 
-  const vector<unsigned>& grid_points, const vector< string >& test_functions)
-{
-  data = axes.sampleGrid(grid_points,test_functions);
-}
-
-void SurfpackInterface::CreateSample(SurfData*& data, const AxesBounds& axes, 
-    const std::vector<unsigned>& grid_points)
-{
-  vector<string> no_functions;
-  data = axes.sampleGrid(grid_points,no_functions);
-}
-
-void SurfpackInterface::CreateSample(SurfData*& data, const AxesBounds& axes, 
-	unsigned size, const vector< string >& test_functions)
-{
-  data = axes.sampleMonteCarlo(size, test_functions);
-}
-
-SurfData* SurfpackInterface::CreateSample(const std::string& bounds, const std::string& grid, const std::string& functions)
-{
-  AxesBounds ab(bounds);
-  vector<unsigned> gridPts = surfpack::toVec<unsigned>(grid);
-  vector<string> testFunctions = surfpack::toVec<string>(functions);
-  return ab.sampleGrid(gridPts,testFunctions);
-}
+using SurfpackInterface::CreateAxes;
+using SurfpackInterface::CreateSurface;
+using SurfpackInterface::LoadData;
+using SurfpackInterface::LoadModel;
+using SurfpackInterface::Evaluate;
 
 ///////////////////////////////////////////////////////////////////////////////
 /////		SurfpackInterface namespace functions			  /////
 ///////////////////////////////////////////////////////////////////////////////
 
 
-SurfData* NewInterface::LoadData(const std::string& filename)
+SurfData* SurfpackInterface::LoadData(const std::string& filename)
 {
   SurfData* sd = new SurfData(filename);
   assert(sd);
   return sd;
 }
 
-SurfData* NewInterface::LoadData(const std::string& filename, unsigned n_predictors, unsigned n_responses, unsigned n_cols_to_skip)
+SurfData* SurfpackInterface::LoadData(const std::string& filename, unsigned n_predictors, unsigned n_responses, unsigned n_cols_to_skip)
 {
   SurfData* sd = new SurfData(filename,n_predictors,n_responses,n_cols_to_skip);
   assert(sd);
   return sd;
 }
 
-SurfpackModel* NewInterface::LoadModel(const std::string& filename)
+SurfpackModel* SurfpackInterface::LoadModel(const std::string& filename)
 {
   throw string("LoadModel is not currently supported");
   return 0;
 }
 
-void NewInterface::Save(const SurfpackModel* model, const std::string& filename)
+void SurfpackInterface::Save(const SurfpackModel* model, const std::string& filename)
 {
   ///\todo Add Write Method to Models
   //model->write(filename);
 }
 
-void NewInterface::Save(const SurfData* data, const std::string& filename)
+void SurfpackInterface::Save(const SurfData* data, const std::string& filename)
 {
   data->write(filename);
 }
 
-SurfpackModel* NewInterface::CreateSurface(const SurfData* sd, ParamMap& args)
+SurfpackModel* SurfpackInterface::CreateSurface(const SurfData* sd, ParamMap& args)
 {
   assert(sd);
   SurfpackModel* model = 0;
@@ -186,7 +80,7 @@ SurfpackModel* NewInterface::CreateSurface(const SurfData* sd, ParamMap& args)
   return model;
 }
 
-void NewInterface::Evaluate(const SurfpackModel* model, SurfData* sd, 
+void SurfpackInterface::Evaluate(const SurfpackModel* model, SurfData* sd, 
   const std::string& response_name)
 {
   assert(model);
@@ -195,7 +89,7 @@ void NewInterface::Evaluate(const SurfpackModel* model, SurfData* sd,
   sd->addResponse(responses, response_name);
 }
 
-void NewInterface::Evaluate(SurfData* sd, const VecStr test_functions)
+void SurfpackInterface::Evaluate(SurfData* sd, const VecStr test_functions)
 {
   assert(sd);
   for (VecStr::const_iterator itr = test_functions.begin();
@@ -208,22 +102,22 @@ void NewInterface::Evaluate(SurfData* sd, const VecStr test_functions)
   } 
 }
 
-AxesBounds* NewInterface::CreateAxes(const std::string axes)
+AxesBounds* SurfpackInterface::CreateAxes(const std::string axes)
 {
   return new AxesBounds(axes);
 }
 
-SurfData* NewInterface::CreateSample(const AxesBounds* axes, const VecUns grid_points)
+SurfData* SurfpackInterface::CreateSample(const AxesBounds* axes, const VecUns grid_points)
 {
   return axes->sampleGrid(grid_points);  
 }
 
-SurfData* NewInterface::CreateSample(const AxesBounds* axes, unsigned n_samples)
+SurfData* SurfpackInterface::CreateSample(const AxesBounds* axes, unsigned n_samples)
 {
   return axes->sampleMonteCarlo(n_samples);
 }
 
-double NewInterface::Fitness(const SurfpackModel* model, SurfData* sd, 
+double SurfpackInterface::Fitness(const SurfpackModel* model, SurfData* sd, 
 const std::string& metric, unsigned response, unsigned n)
 {
   assert(model);
@@ -236,7 +130,7 @@ const std::string& metric, unsigned response, unsigned n)
 }
 
 /// Doxygen comment
-double NewInterface::Fitness(const SurfpackModel*, const std::string& metric, 
+double SurfpackInterface::Fitness(const SurfpackModel*, const std::string& metric, 
 unsigned response, unsigned n)
 {
   throw string("Must pass data set to compute metric");

@@ -11,7 +11,6 @@
 #endif
 #include "surfpack.h"
 #include "SurfPoint.h"
-#include "SurfScaler.h"
 
 using std::cerr;
 using std::endl;
@@ -84,7 +83,6 @@ SurfPoint::SurfPoint() : x(1), f(0)
 /// at least one dimension.
 void SurfPoint::init()
 {
-  scaler = 0;
   if (x.empty()) {
     throw SurfPoint::null_point();
   }
@@ -141,9 +139,6 @@ bool SurfPoint::operator!=(const SurfPoint& other) const
 double SurfPoint::operator[](unsigned xindex) const
 {
   if (xindex >= x.size()) throw string("Out of range in SurfPoint");
-  if (scaler) {
-    return scaler->scale(xindex,x[xindex]);
-  }
   return x[xindex];
 }
   
@@ -196,16 +191,7 @@ unsigned SurfPoint::fSize() const
 /// Return point in the domain 
 const vector<double>& SurfPoint::X() const
 { 
-  static vector<double> scaledX;
-  scaledX.resize(x.size());
-  if (!scaler) {
-    return x; 
-  } 
-  for (unsigned i = 0; i < x.size(); i++) {
-    scaledX[i] = scaler->scale(i,x[i]);
-
-  }
-  return scaledX;
+  return x; 
 }
 
 /// Return response value at responseIndex
@@ -216,9 +202,6 @@ double SurfPoint::F(unsigned responseIndex) const
   );
   // Throw an exception if the responseIndex is out of range.
   checkRange(header, responseIndex);
-  if (scaler) {
-    return scaler->scaleResponse(responseIndex,f[responseIndex]);
-  }
   return f[responseIndex]; 
 }
 
@@ -257,13 +240,6 @@ void SurfPoint::setX(unsigned index, double value)
 void SurfPoint::resize(unsigned new_size)
 {
   x.resize(new_size);
-}
-
-/// Set (or clear) a scaling object for the data (e.g. to normalize the 
-/// point with respect to some other points
-void SurfPoint::setScaler(SurfScaler* new_scaler)
-{
-  scaler = new_scaler;
 }
 
 // ____________________________________________________________________________

@@ -13,7 +13,6 @@
 #include "AxesBounds.h"
 #include "SurfpackParser.h"
 class SurfData;
-class Surface;
 class ParsedCommand;
 class SurfpackParser;
 class SurfpackModel;
@@ -26,22 +25,6 @@ public:
   void execute(const std::string* input_string = 0, 
     const std::string* output_string = 0);
   void commandLoop(std::ostream& os = std::cout, std::ostream& es = std::cerr);
-  void commandLoopOld(std::ostream& os = std::cout, std::ostream& es = std::cerr);
-
-  // individual surfpack commands
-  void executeCreateAxes(const ParsedCommand& command);
-  void executeCreateSample(const ParsedCommand& command);
-  void executeCreateSurface(const ParsedCommand& command);
-  void executeEvaluate(const ParsedCommand& command);
-  void executeFitness(const ParsedCommand& command);
-  void executeLoad(const ParsedCommand& command);
-  void executeLoadData(const ParsedCommand& command);
-  void executeLoadSurface(const ParsedCommand& command);
-  void executeSave(const ParsedCommand& command);
-  void executeSaveData(const ParsedCommand& command);
-  void executeSaveSurface(const ParsedCommand& command);
-  void executeShellCommand(const ParsedCommand& command);
-
   void execCreateAxes(ParamMap& args);
   void execCreateSample(ParamMap& args);
   void execCreateSurface(ParamMap& args);

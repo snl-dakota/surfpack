@@ -9,8 +9,8 @@
 #include "SurfData.h"
 #include "SurfpackInterface.h"
 #include "AxesBounds.h"
-#include "KrigingSurface.h"
-#include "PolynomialSurface.h"
+#include "KrigingModel.h"
+#include "LinearRegressionModel.h"
 
 #if !defined(HAVE_GETTIMEOFDAY) && (defined(_MSC_VER) || defined(__MINGW32__))
 #include <windows.h>
@@ -53,8 +53,8 @@ double time_difference(struct timeval& starttime, struct timeval& endtime)
 
 int main(int argc, char** argv)
 {
-  AxesBounds* ab = 0;
-  CreateAxes(ab,string("-2 2 | -2 2"));
+  AxesBounds* ab = CreateAxes(string("-2 2 | -2 2"));
+  SurfpackModelFactory* smf = new KrigingModelFactory;
   vector<string> functions;
   vector<double> thetas(2,1.0);
   vector<unsigned> setsizes;
@@ -71,25 +71,20 @@ int main(int argc, char** argv)
   functions.push_back(string("rosenbrock"));
   struct timeval t1;
   struct timeval t2;
+  smf->add("correlations","1.0 1.0");
   for (unsigned setsize = 0; setsize < setsizes.size(); setsize++) {
     cout << setw(8) << setsizes[setsize] ;
     for (unsigned trial = 0; trial < num_trials; trial++) {
-      SurfData* sd = 0;
-      CreateSample(sd,*ab,setsizes[setsize],functions);
-      //SurfData* sd = ab.sampleMonteCarlo(setsizes[setsize],functions);
-      Surface* ks = 0;
-      CreateSurface(ks,sd,string("kriging"));
-      //KrigingSurface ks(sd);
-      dynamic_cast<KrigingSurface*>(ks)->usePreComputedCorrelationVector(thetas);
-      //ks.usePreComputedCorrelationVector(thetas);
+      SurfData* sd = CreateSample(ab,setsizes[setsize]);
+      SurfpackInterface::Evaluate(sd,functions);
       gettimeofday(&t1,NULL);
-      ks->createModel();
+      SurfpackModel* km = smf->Build(*sd); 
       gettimeofday(&t2,NULL);
       timeneeded = time_difference(t1,t2); 
       times_one_size[trial] = timeneeded;
       cout <<  setw(15) << timeneeded;
       delete sd; sd = 0;
-      delete ks; ks = 0;
+      delete km; km = 0;
     }
     sort(times_one_size.begin(),times_one_size.end());
     double avgtime = times_one_size[times_one_size.size()/2];
@@ -102,18 +97,13 @@ int main(int argc, char** argv)
          << avgtime << endl;
   }
   Save(&krigtimes,string("one_trial_3050to5000.spd"));
-  //krigtimes.write(string("one_trial_3050to5000.txt"));
-  Surface* ps = 0;
-  CreateSurface(ps,&krigtimes,string("polynomial"));
-  ///\todo configure to be order 3
-  //PolynomialSurface ps(&krigtimes,3);
+  SurfpackModelFactory* pmf = new LinearRegressionModelFactory;
+  pmf->add("order","3");
+  SurfpackModel* pm = pmf->Build(krigtimes); 
 
-  //SurfData trainingtimes("trainingtimes.txt");
-  //PolynomialSurface ps(&trainingtimes,3);
-  ps->createModel();
-  Save(ps,string("poly3_krigtimes.sps"));
-  //ps.write("poly3_krigtimes.txt");
+  Save(pm,string("poly3_krigtimes.sps"));
   // cleanup
   delete ab; ab = 0;
+  delete smf; smf = 0;
   return 0;
 }

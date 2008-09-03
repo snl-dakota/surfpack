@@ -14,7 +14,6 @@ endif
 endif
 
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src \
-	   -I$(top_srcdir)/src/ann \
 	   -I$(top_srcdir)/src/interpreter
 
 CLEANFILES = *.bb *.bbg *.da *.gcov *.ii *.s

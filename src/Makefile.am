@@ -1,13 +1,11 @@
 ## Process this file with automake to produce Makefile.in
 ##-- SUBDIRS = ann conmin interpreter kriging mars surfaces
-SUBDIRS = ann conmin kriging mars surfaces
+SUBDIRS = conmin mars surfaces
+#SUBDIRS = ann conmin kriging mars surfaces
 
-SUBLIBS = ann/libann.la \
-          conmin/libconmin.la \
-          kriging/libkriging.la \
+SUBLIBS = conmin/libconmin.la \
           mars/libmars.la \
           surfaces/libsurfaces.la
-##-- was in list interpreter/libinterpreter.la \
 
 if BUILD_STANDALONE
 SUBDIRS += interpreter 
@@ -36,13 +34,12 @@ libsurfpack_la_CPPFLAGS=
 ## the distribution, even though they may not need to be compiled. The
 ## _SOURCES part is automake's way of specifying which files need to
 ## be compiled in order to build the libsurfpack.la target.
+
 libsurfpack_la_SOURCES = AxesBounds.cpp \
 			 AxesBounds.h \
 			 MersenneTwister.h \
-			 Surface.cpp \
-			 SurfaceFactory.cpp \
-			 SurfaceFactory.h \
-			 Surface.h \
+			 ModelFactory.cpp \
+			 ModelFactory.h \
 			 SurfData.cpp \
 			 SurfData.h \
 			 surfpack.cpp \
@@ -56,8 +53,6 @@ libsurfpack_la_SOURCES = AxesBounds.cpp \
  			 SurfpackParserArgs.cpp \
 			 SurfPoint.cpp \
 			 SurfPoint.h \
-			 SurfScaler.cpp \
-			 SurfScaler.h \
 			 Conmin.cpp \
 			 Comin.h \
 			 ModelFitness.cpp \
@@ -72,7 +67,6 @@ libsurfpack_la_LIBADD = $(SUBLIBS)
 ## are requested via #include.
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src \
 	   -I$(top_srcdir)/src/interpreter \
-	   -I$(top_srcdir)/src/ann \
 	   -I$(top_srcdir)/src/surfaces
 
 ## The Makefiles produced by automake create a target named "clean"

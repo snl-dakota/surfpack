@@ -1,17 +1,34 @@
 ## Process this file with automake to produce Makefile.in
 noinst_LTLIBRARIES = libsurfaces.la
 
-libsurfaces_la_SOURCES = KrigingSurface.cpp \
-			 KrigingSurface.h \
-			 MarsSurface.cpp \
-			 MarsSurface.h \
-			 RBFNetSurface.cpp \
-			 RBFNetSurface.h \
-			 ANNSurface.cpp \
-			 ANNSurface.h \
-			 PolynomialSurface.cpp \
-			 PolynomialSurface.h \
-			 MovingLeastSquaresModel.cpp \
+#libsurfaces_la_SOURCES = KrigingSurface.cpp \
+#			 KrigingSurface.h \
+#			 MarsSurface.cpp \
+#			 MarsSurface.h \
+#			 RBFNetSurface.cpp \
+#			 RBFNetSurface.h \
+#			 ANNSurface.cpp \
+#			 ANNSurface.h \
+#			 PolynomialSurface.cpp \
+#			 PolynomialSurface.h \
+#			 MovingLeastSquaresModel.cpp \
+#			 MovingLeastSquarsModel.h \
+#			 LinearRegressionModel.cpp \
+#			 LinearRegressionModel.h \
+#			 RadialBasisFunctionModel.cpp \
+#			 RadialBasisFunctionModel.h \
+#			 DirectANNModel.cpp \
+#			 DirectANNModel.h \
+#		         KrigingModel.cpp \
+#			 KrigingModel.h \
+#		         MarsModel.cpp \
+#			 MarsModel.h \
+#			 SurfpackModel.cpp \
+#			 SurfpackModel.h \
+#			 ModelScaler.cpp \
+#			 ModelScaler.h
+
+libsurfaces_la_SOURCES =  MovingLeastSquaresModel.cpp \
 			 MovingLeastSquarsModel.h \
 			 LinearRegressionModel.cpp \
 			 LinearRegressionModel.h \

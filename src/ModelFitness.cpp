@@ -15,7 +15,7 @@
 #include "Surface.h"
 #include "SurfpackModel.h"
 #include "ModelFitness.h"
-#include "SurfaceFactory.h"
+#include "ModelFactory.h"
 
 using std::cout;
 using std::endl;
@@ -164,7 +164,7 @@ double CrossValidationFitness::operator()(const SurfpackModel& sm, const SurfDat
     for (unsigned k = low; k <= high; k++) excludedPoints.insert(indices[k]);
     my_data.setExcludedPoints(excludedPoints);
     //cout << " excludes: " << excludedPoints.size() << endl;
-    SurfpackModelFactory* factory = SurfaceFactory::createModelFactory(args);
+    SurfpackModelFactory* factory = ModelFactory::createModelFactory(args);
     assert(my_data.size() >= factory->minPointsRequired());
     SurfpackModel* model = factory->Build(my_data);
     my_data.setExcludedPoints(SetUns());
