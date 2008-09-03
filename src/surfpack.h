@@ -18,7 +18,6 @@
 #include "SurfpackMatrix.h"
 
 //class AbstractSurfDataIterator;
-class Surface;
 class SurfData;
 
 enum DifferenceType {

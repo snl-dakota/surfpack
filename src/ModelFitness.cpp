@@ -12,7 +12,6 @@
 
 #include "surfpack.h"
 #include "SurfData.h"
-#include "Surface.h"
 #include "SurfpackModel.h"
 #include "ModelFitness.h"
 #include "ModelFactory.h"

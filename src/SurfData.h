@@ -17,8 +17,6 @@
 #include "SurfPoint.h"
 #include "SurfpackParser.h"
 
-class Surface;
-
 /// Contains a set of SurfPoint objects.  May be associated with zero or more
 /// Surface objects, which it notifies when its data changes or when it goes 
 /// out of existence.  Contains support for exclusion of some of the SurfPoint
@@ -183,11 +181,11 @@ public:
 
   /// Inform this object that a Surface wants to be notified when this object
   /// changes
-  void addListener(Surface*);
+  //void addListener(Surface*);
  
   /// Remove the Surface from the list of surfaces that are notified when the
   /// data changes
-  void removeListener(Surface*);
+  //void removeListener(Surface*);
 
   /// For use with copy constructor and assignment operator-- creates a list of
   /// pointers to the points in the data set which is used to check for 
@@ -283,7 +281,7 @@ private:
 
   /// List of pointers to listening/observing Surface objects that need to be 
   /// notified when this object changes
-  std::list<Surface*> listeners;
+  //std::list<Surface*> listeners;
 
 // ____________________________________________________________________________
 // Constants 

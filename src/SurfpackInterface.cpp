@@ -16,7 +16,6 @@
 #include "SurfpackParserArgs.h"
 #include "SurfpackInterpreter.h"
 #include "SurfData.h"
-#include "Surface.h"
 #include "ModelFactory.h"
 
 using std::cerr;

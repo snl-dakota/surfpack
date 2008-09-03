@@ -36,7 +36,7 @@ AM_INIT_AUTOMAKE([1.9 foreign subdir-objects])
 # Check to make sure this file exists as a safety check.  This is
 # merely a sanity check to make sure you're not running autoconf
 # recklessly.
-AC_CONFIG_SRCDIR([src/Surface.cpp])
+AC_CONFIG_SRCDIR([src/surfpack.cpp])
 
 # Add all the necessary m4 directories to aclocal's search path.
 AC_CONFIG_MACRO_DIR([m4])

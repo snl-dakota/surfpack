@@ -11,7 +11,6 @@
 #endif
 #include "surfpack.h"
 #include "SurfData.h"
-#include "Surface.h"
 
 using std::cerr;
 using std::cout;
@@ -133,8 +132,8 @@ SurfData::SurfData()
 /// STL data members' resources automatically deallocated 
 SurfData::~SurfData() 
 {
-  notifyListeners(GOING_OUT_OF_EXISTENCE);
-  listeners.clear();
+  //notifyListeners(GOING_OUT_OF_EXISTENCE);
+  //listeners.clear();
   cleanup();
 }
 
@@ -431,7 +430,7 @@ void SurfData::addPoint(const SurfPoint& sp)
     SurfPoint* spPtr = *iter;
     *spPtr = sp;
   }
-  notifyListeners(SurfData::DATA_MODIFIED);
+  //notifyListeners(SurfData::DATA_MODIFIED);
 }
 
 /// Add a new response variable to each point. Return the index of the new 
@@ -505,22 +504,24 @@ void SurfData::setExcludedPoints(const set<unsigned>& excluded_points)
 
 /// Inform this object that a Surface wants to be notified when this object
 /// changes
-void SurfData::addListener(Surface* surface)
-{
-  /// only add the listener if its not already there
-  list<Surface*>::iterator itr = 
-    find(listeners.begin(),listeners.end(),surface);
-  if(itr ==listeners.end() ) {
-    listeners.push_back(surface);
-  }
-}
+// BMA: commenting post-Surface deprecation; may resurrect for Models
+// void SurfData::addListener(Surface* surface)
+// {
+//   /// only add the listener if its not already there
+//   list<Surface*>::iterator itr = 
+//     find(listeners.begin(),listeners.end(),surface);
+//   if(itr ==listeners.end() ) {
+//     listeners.push_back(surface);
+//   }
+// }
 
 /// Remove the Surface from the list of surfaces that are notified when the
 /// data changes
-void SurfData::removeListener(Surface* surface)
-{
-  listeners.remove(surface);
-}
+// BMA: commenting post-Surface deprecation; may resurrect for Models
+// void SurfData::removeListener(Surface* surface)
+// {
+//   listeners.remove(surface);
+// }
 
 /// For use with copy constructor and assignment operator-- creates a list of
 /// pointers to the points in the data set which is used to check for 
@@ -775,19 +776,20 @@ bool SurfData::hasBinaryFileExtension(const string& filename) const
 
 /// Notify listening surfaces whenever something of interest happens to this
 /// data set
-void SurfData::notifyListeners(int msg)
-{
-  if (listeners.size() != 0) {
-    // Do nothing
-  }
-  list<Surface*>::iterator itr = listeners.begin();
-  while (itr != listeners.end()) {
-    if (*itr) {
-      (*itr)->notify(msg);
-    }
-    ++itr;
-  }
-}
+// BMA: commenting post-Surface deprecation; may resurrect for Models
+// void SurfData::notifyListeners(int msg)
+// {
+//   if (listeners.size() != 0) {
+//     // Do nothing
+//   }
+//   list<Surface*>::iterator itr = listeners.begin();
+//   while (itr != listeners.end()) {
+//     if (*itr) {
+//       (*itr)->notify(msg);
+//     }
+//     ++itr;
+//   }
+// }
 
 /// Set x vars labels to x0 x1, etc.; resp. vars to f0 f1, etc.
 void SurfData::defaultLabels()
