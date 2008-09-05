@@ -40,8 +40,8 @@ enum MetricType {
 #ifdef __cplusplus
 extern "C"  /* prevent C++ name mangling */
 #endif
-void DGETRF_F77(int* m, int* n, double* a, int* lda, int* ipiv,
-  int* info);
+void DGETRF_F77(const int* m, const int* n, double* a, const int* lda,
+		int* ipiv, int* info);
 
 // Compute the inverse of a matrix expressed as an LU decomposition
 // (i.e., call dgetrf on the matrix first)
@@ -49,49 +49,54 @@ void DGETRF_F77(int* m, int* n, double* a, int* lda, int* ipiv,
 #ifdef __cplusplus
 extern "C"  /* prevent C++ name mangling */
 #endif
-void DGETRI_F77(int* n, double* a, int* lda, int* ipiv, double* work,
-  int* lwork, int* info);
+void DGETRI_F77(const int* n, double* a, const int* lda, const int* ipiv,
+		double* work, const int* lwork, int* info);
 
 // Matrix-vector multiplication
 #define DGEMV_F77 F77_FUNC(dgemv,DGEMV)
 #ifdef __cplusplus
 extern "C"  /* prevent C++ name mangling */
 #endif
-void DGEMV_F77(char* trans, int* m, int* n, double* alpha, 
-	       double* A, int* lda, double* x, int* incx, double* beta, double* y, int* incy);
+void DGEMV_F77(char* trans, const int* m, const int* n, const double* alpha, 
+	       const double* A, const int* lda, const double* x,
+	       const int* incx, const double* beta, double* y, const int* incy);
 
 // Matrix-matrix multiplication
 #define DGEMM_F77 F77_FUNC(dgemm,DGEMM)
 #ifdef __cplusplus
 extern "C"  /* prevent C++ name mangling */
 #endif
-void DGEMM_F77(char* transa, char* transb, int* m, int* n, int* k,
-             double* alpha, double* A, int* lda, double* B, int* ldb, 
-	     double* beta, double* C, int* ldc);
+void DGEMM_F77(char* transa, char* transb, const int* m, const int* n,
+	       const int* k, const double* alpha, const double* A,
+	       const int* lda, const double* B, const int* ldb, 
+	       const double* beta, double* C, const int* ldc);
 
 // Vector-vector inner product
 #define DDOT_F77 F77_FUNC(ddot, DDOT)
 #ifdef __cplusplus
 extern "C" /* prevents C++ name mangling */
 #endif
-double DDOT_F77(int* n, double* x, int* incx, double* y, int* incy);
+double DDOT_F77(const int* n, const double* x, const int* incx,
+		const double* y, const int* incy);
 
 // Least-squares solution to linear system of equations
 #define DGELS_F77 F77_FUNC(dgels,DGELS)
 #ifdef __cplusplus
 extern "C" /* prevent C++ name mangling */
 #endif
-void DGELS_F77(char* trans, int* nrows, int* ncols, int* nrhs, double* A,
-       int* lda, double* b, int* ldb, double* work, int* lwork, int* info);
+void DGELS_F77(const char* trans, const int* nrows, const int* ncols,
+	       const int* nrhs, double* A, const int* lda, double* b,
+	       const int* ldb, double* work, const int* lwork, int* info);
 
 // Performs least-squares solve subject to equality constraints
 #define DGGLSE_F77 F77_FUNC(dgglse,DGGLSE)
 #ifdef __cplusplus
 extern "C" /* prevent C++ name mangling */
 #endif
-void DGGLSE_F77(int* m, int* n, int* p , double* A, int* lda,
-	       double* B, int* ldb, double* c, double* d, double* x,
-	       double* work, int* lwork, int* info);
+void DGGLSE_F77(const int* m, const int* n, const int* p, double* A,
+		const int* lda, double* B, const int* ldb, double* c,
+		double* d, double* x, double* work, const int* lwork,
+		int* info);
 
 namespace surfpack {
 

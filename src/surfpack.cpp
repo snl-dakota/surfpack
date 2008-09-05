@@ -575,7 +575,7 @@ double surfpack::dot_product(const VecDbl& vector_a,
   int inc = 1;
   // ddot will not violate the constness
   return DDOT_F77(&size, const_cast<double*>( &vector_a[0] ), &inc,
-			 const_cast<double*>( &vector_b[0] ), &inc);
+		         const_cast<double*>( &vector_b[0] ), &inc);
 }
 
 VecDbl& surfpack::vectorShift(VecDbl& the_vector, double shift_value)
