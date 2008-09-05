@@ -12,7 +12,6 @@
 #include "surfpack_system_headers.h"
 #include "AxesBounds.h"
 class SurfData;
-class Surface;
 class ParsedCommand;
 class SurfpackParser;
 class SurfpackModel;

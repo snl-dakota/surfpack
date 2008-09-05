@@ -16,7 +16,6 @@
 #include "SurfpackInterface.h"
 #include "SurfpackInterpreter.h"
 #include "SurfData.h"
-#include "Surface.h"
 #include "ModelFactory.h"
 #include "SurfpackModel.h"
 
@@ -450,11 +449,12 @@ SurfpackInterpreter::SymbolTable::~SymbolTable()
         ++iter) {
     delete iter->second; 
   }
-  for (SurfaceMap::iterator siter = surfaceVars.begin();
-        siter != surfaceVars.end();
-        ++siter) {
-    delete siter->second; 
-  }
+  //BMA: commented pending determination of whether to maintain
+  //for (SurfaceMap::iterator siter = surfaceVars.begin();
+  //      siter != surfaceVars.end();
+  //      ++siter) {
+  //  delete siter->second; 
+  //}
   for (AxesBoundsMap::iterator pditer = axesVars.begin();
         pditer != axesVars.end();
         ++pditer) {
@@ -479,6 +479,7 @@ SurfpackInterpreter::SymbolTable::lookupModel(const std::string name)
   return result;
 }
 
+/* BMA: commented pending determination of whether to maintain
 Surface* SurfpackInterpreter::SymbolTable::lookupSurface(string name)
 {
   SurfaceMap::iterator iter = surfaceVars.find(name);
@@ -489,6 +490,7 @@ Surface* SurfpackInterpreter::SymbolTable::lookupSurface(string name)
   assert(iter->second);
   return iter->second;
 }
+*/
 
 SurfData* SurfpackInterpreter::SymbolTable::lookupData(string name)
 {
