@@ -400,8 +400,8 @@ void surfpack::linearSystemLeastSquares(MtxDbl& A,
   int info;
   int nrhs=1;
   char trans = 'N';
-  DGELS_F77(trans,n_rows,n_cols,nrhs,&A(0,0),n_rows,&b[0],
-    n_rows,&work[0],lwork,info);
+  DGELS_F77(&trans,&n_rows,&n_cols,&nrhs,&A(0,0),&n_rows,&b[0],
+	    &n_rows,&work[0],&lwork,&info);
   x = b;
   x.resize(n_cols);
   if (debug) {
@@ -444,7 +444,8 @@ void surfpack::leastSquaresWithEqualityConstraints(MtxDbl& A,
   //copy(d.begin(),d.end(),ostream_iterator<double>(cout,"\n"));
   //cout << "x before" << endl;
   //copy(x.begin(),x.end(),ostream_iterator<double>(cout,"\n"));
-  DGGLSE_F77(m,n,p,&A(0,0),m,&B(0,0),p,&c[0],&d[0],&x[0],&work[0],lwork,info);
+  DGGLSE_F77(&m,&n,&p,&A(0,0),&m,&B(0,0),&p,&c[0],&d[0],&x[0],&work[0],&lwork,
+	     &info);
   //cout << "x after" << endl;
   //copy(x.begin(),x.end(),ostream_iterator<double>(cout,"\n"));
   //vector<double> result;
@@ -464,8 +465,8 @@ MtxDbl& surfpack::inverse(SurfpackMatrix< double>& matrix)
   vector<double> work(lwork);
   int lda = n_cols;
   int info = 0;
-  DGETRF_F77(n_rows,n_cols,&matrix(0,0),lda,&ipvt[0],info);
-  DGETRI_F77(n_rows,&matrix(0,0),lda,&ipvt[0],&work[0],lwork,info);
+  DGETRF_F77(&n_rows,&n_cols,&matrix(0,0),&lda,&ipvt[0],&info);
+  DGETRI_F77(&n_rows,&matrix(0,0),&lda,&ipvt[0],&work[0],&lwork,&info);
   return matrix;
 }
 
@@ -480,7 +481,7 @@ MtxDbl& surfpack::LUFact(MtxDbl& matrix,
   int lda = n_cols;
   int info = 0;
   //std::cout << "Matrix size: " << n_rows << " " << n_cols << std::endl;
-  DGETRF_F77(n_rows,n_cols,&matrix(0,0),lda,&ipvt[0],info);
+  DGETRF_F77(&n_rows,&n_cols,&matrix(0,0),&lda,&ipvt[0],&info);
   //std::cout << "Done with dgetrf" << std::endl;
   return matrix;
 }
@@ -494,7 +495,7 @@ MtxDbl& surfpack::inverseAfterLUFact(MtxDbl& matrix, vector<int>& ipvt)
   int lda = n_rows;
   int info = 0;
   //std::cout << "Matrix size: " << n_rows << " " << n_cols << std::endl;
-  DGETRI_F77(n_rows,&matrix(0,0),lda,&ipvt[0],&work[0],lwork,info);
+  DGETRI_F77(&n_rows,&matrix(0,0),&lda,&ipvt[0],&work[0],&lwork,&info);
   //std::cout << "Done with getri" << std::endl;
   return matrix;
 }
@@ -513,8 +514,8 @@ VecDbl& surfpack::matrixVectorMult(VecDbl& result,
   int incy = 1;
   double alpha = 1.0;
   double beta = 0.0;
-  DGEMV_F77(trans,n_rows,n_cols,alpha,&matrix(0,0),n_rows,&the_vector[0],
-    incx, beta, &result[0], incy);
+  DGEMV_F77(&trans,&n_rows,&n_cols,&alpha,&matrix(0,0),&n_rows,&the_vector[0],
+	    &incx, &beta, &result[0], &incy);
   return result;
 }
 
@@ -531,7 +532,7 @@ MtxDbl& surfpack::matrixMatrixMult(MtxDbl& result, MtxDbl& matrixA,
   int ldc = result.getNRows(); // leading dimension irrespective of trans
   double alpha = 1.0; // coefficent of matrix multiply
   double beta = 0.0;  // coefficient of result matrix
-  DGEMM_F77(transA,transB,n_rows,n_cols,k,alpha,&matrixA(0,0),lda,&matrixB(0,0),ldb,beta,&result(0,0),ldc);
+  DGEMM_F77(&transA,&transB,&n_rows,&n_cols,&k,&alpha,&matrixA(0,0),&lda,&matrixB(0,0),&ldb,&beta,&result(0,0),&ldc);
   return result;
 }
   /// matrix-matrix addition
@@ -573,8 +574,8 @@ double surfpack::dot_product(const VecDbl& vector_a,
   int size = static_cast<int>(vector_a.size());
   int inc = 1;
   // ddot will not violate the constness
-  return DDOT_F77(size, const_cast<double*>( &vector_a[0] ), inc,
-			const_cast<double*>( &vector_b[0] ), inc);
+  return DDOT_F77(&size, const_cast<double*>( &vector_a[0] ), &inc,
+			 const_cast<double*>( &vector_b[0] ), &inc);
 }
 
 VecDbl& surfpack::vectorShift(VecDbl& the_vector, double shift_value)
