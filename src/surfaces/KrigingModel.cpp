@@ -58,7 +58,8 @@ std::string KrigingBasisSet::asString() const
 {
   std::ostringstream os;
   os << "correlations: ";
-  copy(correlations.begin(),correlations.end(),std::ostream_iterator<double>(cout," "));
+  copy(correlations.begin(),correlations.end(),
+       std::ostream_iterator<double>(os," "));
   os << "\npts:\n";
   for(VecVecDbl::const_iterator it = centers.begin(); it != centers.end(); ++it) {
     copy(it->begin(),it->end(),std::ostream_iterator<double>(os," "));

@@ -32,7 +32,8 @@ enum MetricType {
   MT_MINIMUM,
   MT_MAXIMUM,
   MT_SUM,
-  MT_MEAN
+  MT_MEAN,
+  MT_ROOT_MEAN
 };
 
 // Perform LU factorization

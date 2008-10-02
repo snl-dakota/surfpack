@@ -69,6 +69,8 @@ ModelFitness* ModelFitness::Create(const std::string& metric, unsigned n)
     return new StandardFitness(Residual(SQUARED),VecSummary(MT_SUM));
   } else if (metric == "mean_squared") {
     return new StandardFitness(Residual(SQUARED),VecSummary(MT_MEAN));
+  } else if (metric == "root_mean_squared") {
+    return new StandardFitness(Residual(SQUARED),VecSummary(MT_ROOT_MEAN));
   } else if (metric == "max_squared") {
     return new StandardFitness(Residual(SQUARED),VecSummary(MT_MAXIMUM));
   } else if (metric == "sum_scaled") {
@@ -83,6 +85,8 @@ ModelFitness* ModelFitness::Create(const std::string& metric, unsigned n)
     return new StandardFitness(Residual(ABSOLUTE),VecSummary(MT_MEAN));
   } else if (metric == "max_abs") {
     return new StandardFitness(Residual(ABSOLUTE),VecSummary(MT_MAXIMUM));
+  } else if (metric == "press") {
+    return new PRESSFitness();
   } else if (metric == "cv") {
     return new CrossValidationFitness(n);
   } else if (metric == "rsquared") {
@@ -121,6 +125,7 @@ double VecSummary::operator()(const VecDbl& resids) const
   switch (mt) {
     case MT_SUM: return std::accumulate(resids.begin(),resids.end(),0.0);
     case MT_MEAN: return surfpack::mean(resids);
+    case MT_ROOT_MEAN: return sqrt(surfpack::mean(resids));
     case MT_MAXIMUM: 
       VecDbl::const_iterator itr = max_element(resids.begin(),resids.end());
       return *itr;
@@ -180,6 +185,25 @@ double CrossValidationFitness::operator()(const SurfpackModel& sm, const SurfDat
   double fitness = (*mf)(estimates,responses);
   //cout << "CV vals: " << surfpack::fromVec<double>(estimates) << endl;
   delete mf;
+  return fitness;
+}
+
+PRESSFitness::PRESSFitness()
+{
+
+}
+
+double PRESSFitness::operator()(const SurfpackModel& sm, const SurfData& sd) const
+{
+  // create a leave one out cross-validation fitness operator here
+  // since the data size isn't available at construct time (number of
+  // partitions equals number of points) TODO: for efficiency, might
+  // want to just reimplement instead of calling CV fitness; for now,
+  // assume model construction dominates bookeeping arithmetic
+  // overhead
+  ModelFitness* cvmf = ModelFitness::Create("cv", sd.size());
+  double fitness = (*cvmf)(sm, sd);
+  delete cvmf;
   return fitness;
 }
 

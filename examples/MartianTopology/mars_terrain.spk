@@ -14,14 +14,14 @@ Evaluate[surface = topo_mars, data = dense_topo, response = 'mars_est']
 ! echo evaluated mars
 Save[data = dense_topo, file = 'n26e171dense_estimates.spd']
 ! echo saved
-Fitness[surface = topo_kriging, metric = mean_scaled]
-Fitness[surface = topo_mars, metric = mean_scaled]
+Fitness[surface = topo_kriging, data = topo, metric = mean_scaled]
+Fitness[surface = topo_mars, data = topo, metric = mean_scaled]
 ! echo fitness mean scaled
-Fitness[surface = topo_kriging, metric = max_scaled]
-Fitness[surface = topo_mars, metric = max_scaled]
+Fitness[surface = topo_kriging, data = topo, metric = max_scaled]
+Fitness[surface = topo_mars, data = topo, metric = max_scaled]
 ! echo fitness max scaled
-Fitness[surface = topo_kriging, metric = rsquared]
-Fitness[surface = topo_mars, metric = rsquared]
+Fitness[surface = topo_kriging, data = topo, metric = rsquared]
+Fitness[surface = topo_mars, data = topo, metric = rsquared]
 ! echo fitness rsquared 
 Fitness[surface = topo_kriging, metric = mean_scaled, data = dense_topo]
 Fitness[surface = topo_mars, metric = mean_scaled, data = dense_topo]

@@ -252,10 +252,13 @@ SurfpackModel* SurfpackModelFactory::Build(const SurfData& sd)
   //  }
   this->add("ndims",surfpack::toString<unsigned>(sd.xSize()));
   this->config();
-  std::cout << "SurfpackModelFactory built with parameters:" << std::endl; 
-  for (ParamMap::iterator itr = params.begin();
-       itr != params.end(); itr++) {
-    std::cout << "     " << itr->first << ": " << itr->second << std::endl;
+  // TODO: add verbosity control
+  if (false) {
+    std::cout << "SurfpackModelFactory built with parameters:" << std::endl; 
+    for (ParamMap::iterator itr = params.begin();
+	 itr != params.end(); itr++) {
+      std::cout << "     " << itr->first << ": " << itr->second << std::endl;
+    }
   }
   sd.setDefaultIndex(this->response_index);
   if (sd.size() < minPointsRequired()) {

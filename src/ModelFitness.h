@@ -99,6 +99,13 @@ public:
   unsigned n;
 };
 
+class PRESSFitness: public ModelFitness
+{
+public:
+  PRESSFitness();
+  virtual double operator()(const SurfpackModel& sm, const SurfData& sd) const;
+};
+
 class R2Fitness: public ModelFitness
 {
 public:

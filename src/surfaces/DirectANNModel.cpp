@@ -171,7 +171,7 @@ SurfpackModel* DirectANNModelFactory::Create(const SurfData& sd)
   }
   VecDbl x;
   //cout << "Ready to solve" << endl;
-  cout << "ssd size: " << ssd.size() << " nodes: " << nodes << " rows: " << A.getNRows() << "  cols: " << A.getNCols() << endl;
+  //cout << "ssd size: " << ssd.size() << " nodes: " << nodes << " rows: " << A.getNRows() << "  cols: " << A.getNCols() << endl;
   surfpack::linearSystemLeastSquares(A,x,b);
   //cout << "Solved" << endl;
   SurfpackModel* model = new DirectANNModel(bs,x);
