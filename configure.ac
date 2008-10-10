@@ -110,8 +110,9 @@ esac
 
 # Checks for library functions.
 AC_CHECK_FUNCS([gettimeofday drand48 srand48])
-AC_CHECK_LIB([gslcblas],[cblas_ddot])
-AC_CHECK_LIB([gsl],[gsl_ran_fdist_pdf])
+## GSL not presently needed (may restore in the future)
+#AC_CHECK_LIB([gslcblas],[cblas_ddot])
+#AC_CHECK_LIB([gsl],[gsl_ran_fdist_pdf])
 
 # Set up conditional make check target using CppUnit.
 AM_PATH_CPPUNIT([1.9.4], [

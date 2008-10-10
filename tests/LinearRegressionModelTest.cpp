@@ -349,7 +349,7 @@ void LinearRegressionModelTest::createModelTest()
   delete sd;
 }
 
-extern "C" double gsl_ran_fdist_pdf(double,double,double);
+//extern "C" double gsl_ran_fdist_pdf(double,double,double);
 //void LinearRegressionModelTest::FTest()
 //{
 //  // Make a set of data that is a full quadratic fit plus some random noise
