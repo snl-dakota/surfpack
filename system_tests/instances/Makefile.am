@@ -8,7 +8,7 @@ else
 krig_time_LDADD += $(LAPACK_LIBS) $(BLAS_LIBS) $(LIBS) $(FLIBS) $(LEXLIB)
 endif
 
-bin_PROGRAMS = $(krig_time_test)
+check_PROGRAMS = $(krig_time_test)
 
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src \
 	   -I$(top_srcdir)/src/interpreter \
