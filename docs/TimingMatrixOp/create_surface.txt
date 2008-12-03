@@ -1,2 +1,2 @@
-CreateSurface[name = timing_poly2, data = timing_data, type = polynomial,
-  order = 2]
+CreateSurface[name = timing_poly2, data = timing_data, response = 'median5',
+	 type = polynomial, order = 2]

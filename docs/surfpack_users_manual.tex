@@ -22,7 +22,7 @@
 
 
 \begin{center}
-$^1$Sandia National Laboratories*\\P.O. Box 5800, Mail Stop 0828\\Albuquerque, NM 87185-0828 USA \\
+$^1$Sandia National Laboratories*\\P.O. Box 5800, Mail Stop 1318\\Albuquerque, NM 87185-1318 USA \\
 Email: surfpack@scico.sandia.gov \\ Web: http://endo.sandia.gov/Surfpack
 \end{center}
 
@@ -58,7 +58,7 @@ contract DE-AC04-94AL85000.
 
 
 \section {Overview}\label{sec:overview}
-Surfpack is a collection of surface-fitting methods and accompanying metrics to evaluate or predict the quality of the generated surfaces.  The concept of creating a global approximation or ``fit'' from a collection of data samples is utilized in many scientific disciplines, but the nomenclature varies widely from field to field.  The results from the application of such methods are commonly called empirical models, response surfaces, surrogate models, function approximations, or neural networks.  Many different algorithms have been developed to generalize from a set of data; these algorithms have different strengths and weaknesses.  The goals of Surfpack are
+Surfpack is a collection of surface-fitting methods and accompanying metrics to evaluate or predict the quality of the generated surfaces.  The concept of creating a global approximation or ``fit'' from a collection of data samples is utilized in many scientific disciplines, but the nomenclature varies widely from field to field.  The results from the application of such methods are commonly called empirical models, response surfaces, surrogate models, function approximations, or meta-models.  Many different algorithms have been developed to generalize from a set of data; these algorithms have different strengths and weaknesses.  The goals of Surfpack are
 
 \begin{enumerate}
 \item to give users the option to use any of several methods, depending on the nature of the specific application; and
@@ -67,7 +67,7 @@ Surfpack is a collection of surface-fitting methods and accompanying metrics to 
 Surfpack's API includes a small set of commands, centered on the following general operations:
 \begin{itemize}
 \item {\bf Prepare a data set for use.}  This typically involves reading a formatted text file from disk.  Alternatively, the user may specify upper- and lower-bounds along one or more dimensions and generate a set of data points from those boundaries (either a grid or a set of Monte Carlo samples).
-\item {\bf Create an empirical model from a set of data.} The user may choose one of several algorithms to create the surface approximation: Least-squares regression using polynomials, Multivariate Adaptive Regression Splines (MARS), Kriging interpolation, Artificial Neural Networks, or Radial Basis Function Networks.
+\item {\bf Create an empirical model from a set of data.} The user may choose one of several algorithms to create the surface approximation: Least-squares regression using polynomials, Multivariate Adaptive Regression Splines (MARS), Kriging interpolation, Artificial Neural Networks, Moving Least Squares, or Radial Basis Function Networks.
 \item {\bf Evaluate an empirical model on a set of data.}  For the non-interpolating algorithms (e.g. polynomial regression), it may be of interest to evaluate the model at the same data sites that were used to generate it, to see how closely the model fits the data.  All of the algorithms all the user to evaluate the model at other data points where the true function value is not available.
 \item {\bf Obtain measures of the ``goodness of fit'' of the model.}  Surfpack supports metrics such as mean squared error or maximum absolute error for data sets where the true function values are known.  Cross-validation metrics (e.g. PRESS) are also available for situations where all of the known data points for the function that is being approximated were used to create the empirical model.
 \item {\bf Save the data and/or empirical models for future use.}  Data can be saved for later use, e.g., with a plotting package.  The approximating surfaces themselves may also be saved, so that a user can evaluate the model on a data set at a later time without having to recompute it.
@@ -104,12 +104,12 @@ the directory containing this file, execute the following commands:
 \item \texttt{make install}
 \end{enumerate}
 
-Users with access to Surfpack's CVS respository may checkout the source directly
+Users with access to Surfpack's SVN respository may checkout the source directly
 instead of downloading the gzipped distribution tar-file.  In this case, the
 user must manually run the GNU autotools to create the \texttt{configure} script and
 \texttt{Makefile.in} files.  The appropriate sequence of commands would be
 \begin{enumerate}
-\item \texttt{cvs checkout Surfpack}
+\item \texttt{svn checkout Surfpack}
 \item \texttt{cd Surfpack}
 \item \texttt{autoreconf --install}
 \item \texttt{items} 4--6 \texttt{above}
@@ -131,7 +131,7 @@ Most deviations from the standard build process involve special arguments to
 \subsubsection{Specifying a Compiler}
 By default, \texttt{configure} will use the first available C++ compiler from the
 following list: \texttt{xlC, CC, cxx, c++, g++}.  To override this selection process, use
-the \texttt{CXX} option ({\em i.e.}, \texttt{./configure CXX=g++}).  Use the \texttt{F77} to manually specify the Fortran 77 compiler.
+the \texttt{CXX} option ({\em i.e.}, \texttt{./configure CXX=g++}).  Use the \texttt{F77} option to manually specify the Fortran 77 compiler.
 
 \subsubsection{Specifying Non-standard Locations for Libraries}
 Surfpack requires the presence of libraries for BLAS and LAPACK, as well as the
@@ -405,7 +405,7 @@ response values of the data points from which it was constructed.  Thus, this AN
 
 \subsection{Multivariate Adaptive Regression Spline (MARS) Models}\label{models:surf:mars}
 
-The multivariate adaptive regression splines (MARS) function approximation method is based on a recursive partitioning algorithm involving truncated power spline basis functions\cite{friedman}.  The form of the MARS model is
+The multivariate adaptive regression splines (MARS) function approximation method is based on a recursive partitioning algorithm involving truncated power spline basis functions~\cite{friedman}.  The form of the MARS model is
 \begin{equation}
   \hat{f}(\mathbf{x})= a_0 + \sum_{m=1}^{M_1}a_{m}B_{m}(x_i) +  \sum_{m=1}^{M_2}a_{m}B_{m}(x_i,x_j)+\ldots
   \label{models:surf:equation10}  
@@ -426,6 +426,51 @@ MARS may take any of the following parameters:
 \item {\bf Integer \texttt{max\_interactions}}: the maximum number of variables that can be used in any single basis function.  This is analagous to the \texttt{order} parameter for polynomial regression.  The default is 2.
 \item {\bf Identifier \texttt{interpolation}}.  The argument value should be \texttt{linear} for first-order basis functions or \texttt{cubic} for third-order basis functions.  The default is \texttt{cubic}, and this causes MARS to create a $C^2$-continuous model.
 \end{itemize}
+
+\subsection{Radial Basis Functions}\label{models:surf:rbf}
+
+Radial basis functions are functions whose value typically depends on the 
+distance from a center point, called the centroid, ${\bf c}$. 
+The surrogate model approximation is then built up as the sum of K 
+weighted radial basis functions: 
+
+\begin{equation}
+  \hat{f}({\bf x})=\sum_{k=1}^{K}w_{k}\phi({\parallel {\bf x} - {\bf c_{k}} \parallel})
+  \label{models:surf:equation11}  
+\end{equation}
+
+where the $\phi$ are the individual radial basis functions.  
+These functions can be of any form, but often a Gaussian bell-shaped 
+function or splines are used.  
+Our implementation uses a Gaussian radial basis function. 
+The weights are determined via a linear least squares solution approach.
+See~\cite{orr} for more details.
+
+\subsection{Moving Least Squares}\label{models:surf:mls}
+
+Moving Least Squares can be considered a more specialized 
+version of linear regression models.  In linear regression, 
+one usually attempts to minimize the sum of the squared residuals, 
+where the residual is defined as the difference between the 
+surrogate model and the true model at a fixed number of points. 
+In weighted least squares, the residual terms are weighted so the 
+determination of the optimal coefficients governing the polynomial 
+regression function, denoted by $\hat{f}({\bf x})$, are obtained by 
+minimizing the weighted sum of squares at N data points: 
+
+\begin{equation}
+  \sum_{n=1}^{N}w_{n}({\parallel \hat{f}({\bf x_{n}})-f({\bf x_{n}})\parallel})
+  \label{models:surf:equation12}  
+\end{equation}
+
+Moving least squares is a further generalization of weighted least squares
+where the weighting is ``moved'' or recalculated for every new point where 
+a prediction is desired.~\cite{nealen}  The implementation of 
+moving least squares 
+is still under development.  We have found that it works well 
+in trust region methods where the surrogate model is constructed in 
+a constrained region over a few points.  It does not appear to be working 
+as well globally, at least at this point in time.
 
 \section{Fitness Metrics}
 Surfpack provides several error metrics which can be used to assess the quality of a function approximation and to predict how well the model might generalize to unseen data.  All of these metrics require a set of data for which the true function values are known.  The error measures summarize the differences between the true response values and the approximating model's estimates at the same points.
@@ -465,14 +510,17 @@ problem size on a particular computer is through the analysis of empirical data.
 Suppose we want to characterize the speed of inversion for matrices of various
 sizes on a particular machine.  What size of matrices can be handled in one
 second, one minute, one hour, etc?  Figure~\ref{fig:kriging_times} shows data for a Pentium IV machine.  
+
 \begin{figure}[htbp]
-\centering \includegraphics[width=8cm]{TimingMatrixOp/kriging_times_50to3000.png}
-\label{fig:kriging_times}
-\caption {Running times in seconds for the execution of the Kriging algorithm, which is dominated by a matrix inversion, for data sets of size 50 to 3000.} 
+  \centering 
+  \includegraphics[width=8cm]{TimingMatrixOp/kriging_times_50to3000.png}
+  \label{fig:kriging_times}
+  \caption {Running times in seconds for the execution of the Kriging algorithm, which is dominated by a matrix inversion, for data sets of size 50 to 3000.} 
 \end{figure}
+
 The Kriging algorithm used in Surfpack---for which the running time is
 dominated by a matrix inversion operation---was run using 50--3000 data points,
-with tests at invtervals of 50 points.  If the algorithm is run using $n$
+with tests at intervals of 50 points.  If the algorithm is run using $n$
 points, the inversion of an $n$-by-$n$ matrix is required.  For each matrix
 size, the median time for five runs of the algorithm is reported.  (The
 experiments were run when the machine was not heavily loaded with other
@@ -481,6 +529,7 @@ processes, but there is still some variation in running times.)
 We will use Surfpack to generate an empirical model from these data, which we
 can then use to predict running times on problem sizes for which we have not
 gathered actual data.  A portion of the data file is shown in Figure~\ref{fig:timing_data_extract}.
+
 \begin{figure}[htbp]
   \centering
   \begin{bigbox}
@@ -518,11 +567,14 @@ intervals.
   \caption{Timing predictions for quadratic polynomial fit.}
 \end{figure}
 A plot of the observed data and model predictions is shown in Figure~\ref{fig:timing_poly2}.
+
 \begin{figure}[htbp]
-\centering \includegraphics[width=8cm]{TimingMatrixOp/timing_poly2.png}
-\label{fig:timing_poly2}
-\caption{ Measured execution times and quadratic polynomial model predictions for Kriging timing study.}
+  \centering 
+  \includegraphics[width=8cm]{TimingMatrixOp/timing_poly2.png}
+  \label{fig:timing_poly2}
+  \caption{ Measured execution times and quadratic polynomial model predictions for Kriging timing study.}
 \end{figure}
+
 Figure~\ref{fig:timing_poly2_extract} shows an excerpt from quad\_poly\_snippet.txt, which shows the
 formula for the quadratic approximation.
 \begin{figure}[htbp]
@@ -533,6 +585,7 @@ formula for the quadratic approximation.
  	\end{small}
   \end{bigbox}
    \label{fig:timing_poly2_extract}
+   \caption{ Analytic form of quadratic polynomial model. }
 \end{figure}
 \[ time \approx \hat{f}(numpts) = 1.62x^2 - 0.02x + 5.14 \]
 The predictions appear to follow the general trend of the data fairly well.  The
@@ -610,7 +663,7 @@ The script shown in Figure~\ref{fig:test_scores} shows commands that construct s
   \centering
   \begin{bigbox}
 	\begin{small}
-	\verbatiminput{TestScores/sat_scores.spk}
+		\verbatimtabinput[8]{../examples/TestScores/sat_scores.spk}
  	\end{small}
   \end{bigbox}
    \label{fig:test_scores}
@@ -624,7 +677,7 @@ The data \texttt{what\_ifs.spd} include minor variations from the actual Wiscons
   \centering
   \begin{bigbox}
 	\begin{small}
-	\verbatiminput{TestScores/sat_scores2.spk}
+	\verbatiminput{../examples/TestScores/sat_scores2.spk}
  	\end{small}
   \end{bigbox}
    \label{fig:test_scores2}
@@ -639,7 +692,7 @@ Figure~\ref{fig:topology} shows a script that uses both MARS and Kriging to fit 
   \centering
   \begin{bigbox}
 	\begin{small}
-	\verbatiminput{MartianTopology/mars_terrain.spk}
+	\verbatiminput{../examples/MartianTopology/mars_terrain.spk}
  	\end{small}
   \end{bigbox}
    \label{fig:topology}
@@ -654,7 +707,7 @@ This example explores the interaction between sampling method (Monte Carlo, Lati
   \centering
   \begin{bigbox}
 	\begin{small}
-	\verbatiminput{SamplingTechniques/sampling.spk}
+	\verbatiminput{../examples/SamplingTechniques/sampling.spk}
  	\end{small}
   \end{bigbox}
    \label{fig:sampling}
@@ -667,7 +720,7 @@ This example explores the interaction between sampling method (Monte Carlo, Lati
   \centering
   \begin{bigbox}
 	\begin{small}
-	\verbatiminput{FluidDynamics/cfd.spk}
+	\verbatiminput{../examples/FluidDynamics/cfd.spk}
  	\end{small}
   \end{bigbox}
    \label{fig:cfd}
@@ -680,7 +733,7 @@ This example explores the interaction between sampling method (Monte Carlo, Lati
   \centering
   \begin{bigbox}
 	\begin{small}
-	\verbatiminput{MatlabPeaks/peaks.spk}
+	\verbatiminput{../examples/MatlabPeaks/peaks.spk}
  	\end{small}
   \end{bigbox}
    \label{fig:peaks}
@@ -693,7 +746,7 @@ This example explores the interaction between sampling method (Monte Carlo, Lati
   \centering
   \begin{bigbox}
 	\begin{small}
-	\verbatiminput{Engineering4D/ccd.spk}
+	\verbatiminput{../examples/Engineering4D/ccd.spk}
  	\end{small}
   \end{bigbox}
    \label{fig:ccd_lhs}
