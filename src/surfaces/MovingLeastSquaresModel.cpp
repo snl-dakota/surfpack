@@ -12,7 +12,8 @@ double weight(const VecDbl xi, const VecDbl x, unsigned continuity = 1, double r
   assert(continuity < 4);
   double rho = surfpack::euclideanDistance(xi,x)/radius;
   switch (continuity) {
-    case 1: return (rho > 1.0) ? 0.0 : 1.0-3.0*rho*rho+2.0*pow(rho,3.0);
+  case 1:  return exp(-1*(pow(rho,2.0)))/(pow(rho,2.0)+0.001);
+    //    case 1: return (rho > 1.0) ? 0.0 : 1.0-3.0*rho*rho+2.0*pow(rho,3.0);
     case 2: return (rho > 1.0) ? 0.0 : 1.0-10.0*pow(rho,3.0)+15.0*pow(rho,4.0)-6.0*pow(rho,5.0);
     case 3: return (rho > 1.0) ? 0.0 : 1.0-35.0*pow(rho,4.0)+84.0*pow(rho,5.0)-70.0*pow(rho,6.0)+20.0*pow(rho,7.0);
   }
@@ -42,12 +43,27 @@ double MovingLeastSquaresModel::evaluate(const VecDbl& x) const
       }
     }
   }
+  //  cout << "Amatrix" << "\n";  
+  //for (unsigned i = 0; i < nbases; i++) {
+  //  for (unsigned j = 0; j < nbases; j++) {
+  //    cout << A(i,j) << " " ;
+  //  }
+  //  cout << "\n";
+  //} 
+
+  //cout << "Bmatrix" << "\n";  
+  //for (unsigned i = 0; i < nbases; i++) 
+  // cout << By[i] << " " ;
+  //cout << "\n";
+
   //VecDbl temp;
   surfpack::linearSystemLeastSquares(A,coeffs,By);
   //coeffs = temp;
   double sum = 0.0;
   for(unsigned i = 0; i < nbases; i++) {
     sum += bs.eval(i,x)*coeffs[i];
+    //cout << "Coefficients " << i << "= " << coeffs[i];
+    //cout << "basis " << i << "= " << bs.eval(i,x);
   }
   return sum;
 }
