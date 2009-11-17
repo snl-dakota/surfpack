@@ -14,7 +14,7 @@
 #include "SurfPoint.h"
 #include "SurfData.h"
 #include "AxesBounds.h"
-#include <stdlib.h> // for atof, exit, rand
+#include <stdlib.h> // for atof, exit
 
 using std::cerr;
 using std::cout;
@@ -228,7 +228,7 @@ SurfData* AxesBounds::sampleMonteCarlo(unsigned size,
   for (unsigned i = 0; i < size; i++) {
       for (unsigned j = 0; j < m_axes.size(); j++) {
 	surfptx[j] = (m_axes[j].max - m_axes[j].min) * 
-          ((double)rand()/(double)INT_MAX)+ m_axes[j].min;
+          (surfpack::shared_rng().rand())+ m_axes[j].min;
       }
       SurfPoint sp(surfptx);
       for (unsigned k = 0; k < test_functions.size(); k++) {

@@ -37,6 +37,7 @@ using std::string;
 using std::vector;
 using std::ostream_iterator;
 using std::ostringstream;
+using surfpack::shared_rng;
 
 const int TESTDIMS = 2;
 const int GRIDSIZE = 50;
@@ -122,12 +123,12 @@ void SurfpackModelTest::plotTest1()
   MtxDbl weights(neurons,ndims+1,true);
   VecDbl oweights(neurons+1);
   for (unsigned i = 0; i < weights.getNRows(); i++) {
-    oweights[i] = (double)rand()/INT_MAX;
+    oweights[i] = shared_rng().rand();
     for (unsigned j = 0; j < weights.getNCols(); j++) {
-      weights(i,j) = (double)rand()/INT_MAX;
+      weights(i,j) = shared_rng().rand();
     }
   }
-  oweights.back() = (double)rand()/INT_MAX;
+  oweights.back() = shared_rng().rand();
   DirectANNBasisSet bsweights(weights);
   DirectANNModel lrm(bsweights,oweights);
 
@@ -239,12 +240,12 @@ void SurfpackModelTest::modelSampleTest()
   MtxDbl weights(neurons,ndims+1,true);
   VecDbl oweights(neurons+1);
   for (unsigned i = 0; i < weights.getNRows(); i++) {
-    oweights[i] = ((double)rand()/INT_MAX)*.1-.05;
+    oweights[i] = (shared_rng().rand())*.1-.05;
     for (unsigned j = 0; j < weights.getNCols(); j++) {
-      weights(i,j) = ((double)rand()/INT_MAX)*.1-.05;
+      weights(i,j) = (shared_rng().rand())*.1-.05;
     }
   }
-  oweights.back() = ((double)rand()/INT_MAX)*.1-.05;
+  oweights.back() = (shared_rng().rand())*.1-.05;
   DirectANNBasisSet bsweights(weights);
   DirectANNModel lrm(bsweights,oweights);
 

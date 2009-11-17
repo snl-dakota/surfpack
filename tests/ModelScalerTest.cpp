@@ -53,7 +53,10 @@ void ModelScalerTest::tearDown()
 
 void ModelScalerTest::nonScaleTest()
 {
-  SurfData* sd = SurfpackInterface::CreateSample("-2 2 | -2 2","11 11","sphere");
+  SurfData* sd = SurfpackInterface::CreateSample("-2 2 | -2 2","11 11","sphere");  
+  //AxesBounds* ab = new AxesBounds("-2 2 | -2 2");
+  //SurfData* sd = SurfpackInterface::CreateSample(ab, VecUns(11,11));
+  // TODO: sphere
   CPPUNIT_ASSERT(sd->size() == 121);
   VecDbl responses = sd->getResponses();
   delete sd;
@@ -66,6 +69,8 @@ void ModelScalerTest::nonScaleTest()
 void ModelScalerTest::NormalizingScalerDataTest()
 {
   SurfData* sd = SurfpackInterface::CreateSample("-2 2 | -2 2","11 11","sphere");
+  //AxesBounds* ab = new AxesBounds("-2 2 | -2 2");
+  //SurfData* sd = SurfpackInterface::CreateSample(ab, VecUns(11,11));
   CPPUNIT_ASSERT(sd->size() == 121);
   VecDbl pt(2,0.0);
   ModelScaler* ms = NormalizingScaler::Create(*sd);
@@ -86,8 +91,9 @@ void ModelScalerTest::NormalizingScalerDataTest()
 
 void ModelScalerTest::NormalizingScalerModelTest()
 {
-
-  SurfData* sd = SurfpackInterface::CreateSample("-10 10 | -10 10","11 11","sphere");
+  AxesBounds* ab = new AxesBounds("-10 10 | -10 10");
+  SurfData* sd = SurfpackInterface::CreateSample(ab, VecUns(11,11));
+  //  SurfData* sd = SurfpackInterface::CreateSample("-10 10 | -10 10","11 11","sphere");
   CPPUNIT_ASSERT(sd->size() == 121);
   VecDbl pt(2,0.0);
   LinearRegressionModelFactory lrmf;

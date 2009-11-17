@@ -121,8 +121,8 @@ void augment(VecRbf& rbfs)
   assert(rbfs.size());
   unsigned toAdd = rbfs.size(); 
   for (unsigned i = 0; i < toAdd; i++) {
-    unsigned first = rand() % rbfs.size();
-    unsigned second = rand() % rbfs.size();
+    unsigned first = shared_rng()(rbfs.size());
+    unsigned second = shared_rng()(rbfs.size());
     //cout << "new basis from " << first << " " << second << endl;
     VecDbl newRadius = rbfs[first].radius;
     if (first == second) { // new function with same center/double radius

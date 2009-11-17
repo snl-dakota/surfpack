@@ -10,7 +10,7 @@
 #include "surfpack_config.h"
 #endif
 #include "surfpack.h"
-#include <stdlib.h> // for rand
+#include <cstdlib> // for rand
 
 using std::cerr;
 using std::endl;
@@ -732,7 +732,14 @@ double surfpack::xplussinex(const vector<double>& pt)
 /// Random (different queries for the same point will give different results)
 double surfpack::noise(const vector<double>& pt)
 {
-  return static_cast<double>(rand());
+  // original
+  //return static_cast<double>(rand());
+
+  // intent of original?
+  //return static_cast<double>(surfpack::shared_rng().randInt());
+
+  // guaranteed same range as original -- may not be right
+  return static_cast<double>(surfpack::shared_rng().randInt(RAND_MAX));
 }
 
 void surfpack::stripQuotes(std::string& str) 

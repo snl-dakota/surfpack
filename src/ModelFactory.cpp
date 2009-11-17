@@ -23,7 +23,9 @@ class SurfData;
 using std::cerr;
 using std::endl;
 using std::ostringstream;
+using std::istringstream;
 using std::string;
+using surfpack::shared_rng;
 
 SurfpackModelFactory* ModelFactory::createModelFactory(ParamMap& args)
 {
@@ -44,6 +46,16 @@ SurfpackModelFactory* ModelFactory::createModelFactory(ParamMap& args)
     smf = new MarsModelFactory(args);
   } else {
     throw string("Model type requested not recognized");
+  }
+  // WARNING: the RNG is a static global object, so multiple calls
+  // will result in the last taking precedence
+  string seedstr = args["seed"];
+  if (seedstr != "" ) {
+    int seed;
+    if (!(istringstream(seedstr) >> seed))
+      throw string("Error converting seed to int");
+    else
+      shared_rng().seed(seed);
   }
   return smf;
 }

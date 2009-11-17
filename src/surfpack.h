@@ -131,6 +131,7 @@ class MyRandomNumberGenerator : std::unary_function<int,int>
 public:
   MyRandomNumberGenerator() {}
   MTRand mtrand;
+  // operator for std::random_shuffle; int in [0, n-1]
   int operator()(int n)
   {
     return mtrand.randInt(n-1);
@@ -139,10 +140,22 @@ public:
   {
     mtrand.seed(seeder);
   }
+  /// double in [0,1]
+  double rand()
+  {
+    return mtrand.rand();
+  }
+  /// double in [0,1)
   double randExc()
   {
     return mtrand.randExc();
   }
+  /// int in [0,n]
+  int randInt(int n)
+  {
+    return mtrand.randInt(n);
+  }
+
 };
                                                                                 
 MyRandomNumberGenerator& shared_rng();

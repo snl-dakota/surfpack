@@ -109,7 +109,7 @@ case "$ac_cv_cxx_compiler_vendor" in
 esac
 
 # Checks for library functions.
-AC_CHECK_FUNCS([gettimeofday drand48 srand48])
+AC_CHECK_FUNCS([gettimeofday])
 ## GSL not presently needed (may restore in the future)
 #AC_CHECK_LIB([gslcblas],[cblas_ddot])
 #AC_CHECK_LIB([gsl],[gsl_ran_fdist_pdf])

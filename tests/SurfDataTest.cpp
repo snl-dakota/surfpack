@@ -22,6 +22,7 @@
 #include "unittests.h"
 #include "SurfDataTest.h"
 #include "SurfScaler.h"
+//#include "ModelScaler.h"
 
 using std::cout;
 using std::endl;
@@ -433,14 +434,19 @@ void SurfDataTest::testOperatorIndexingScaled()
   s.normalizeAll(msd);
   msd.setScaler(&s);
   const SurfPoint& sp1 = msd[0];
+  //  ModelScaler* s = NormalizingScaler::Create(*sdPtr1);
+  //ScaledSurfData msd(*s, *sdPtr1);
+  //  const SurfPoint& sp1 = msd(0);
   CPPUNIT_ASSERT(matches(sp1[0],0));
   CPPUNIT_ASSERT(matches(sp1[1],0));
   CPPUNIT_ASSERT(matches(sp1[2],0));
   const SurfPoint& sp2 = msd[4];
+  //const SurfPoint& sp2 = msd(4);
   CPPUNIT_ASSERT(matches(sp2[0],1.0));
   CPPUNIT_ASSERT(matches(sp2[1],1.0));
   CPPUNIT_ASSERT(matches(sp2[2],1.0));
   const SurfPoint& sp3 = msd[2];
+  //const SurfPoint& sp3 = msd(2);
   CPPUNIT_ASSERT(matches(sp3[0],0.5));
   CPPUNIT_ASSERT(matches(sp3[1],0.5));
   CPPUNIT_ASSERT(matches(sp3[2],0.5));
@@ -765,6 +771,7 @@ void SurfDataTest::testSetScalerNull()
 void SurfDataTest::testSetScalerNotNull()
 {
   SurfScaler ss;
+  //ModelScaler ss;
   ss.normalizeAll(*sdPtr1);
   sdPtr1->setScaler(&ss);
   CPPUNIT_ASSERT( 3==ss.scalers.size() );
@@ -787,6 +794,7 @@ void SurfDataTest::testIsScaled()
   CPPUNIT_ASSERT( sdPtr1->scaler == 0 );
   CPPUNIT_ASSERT( !sdPtr1->isScaled() );
   SurfScaler s;
+  //ModelScaler s;
   s.normalizeAll(*sdPtr1);
   sdPtr1->setScaler(&s);
   CPPUNIT_ASSERT( sdPtr1->isScaled() );

@@ -40,6 +40,7 @@ using std::string;
 using std::vector;
 using std::ostream_iterator;
 using std::ostringstream;
+using surfpack::shared_rng;
 
 CPPUNIT_TEST_SUITE_REGISTRATION( RadialBasisFunctionTest );
 
@@ -86,12 +87,12 @@ void RadialBasisFunctionTest::eTest()
   VecDbl radius(2);
   VecDbl cfs;
   for (unsigned i = 0; i < 100; i++) {
-    center[0] = (double)rand()/INT_MAX*20.0-10.0;
-    center[1] = (double)rand()/INT_MAX*20.0-10.0;
-    radius[0] = (double)rand()/INT_MAX*10.0;
-    radius[1] = (double)rand()/INT_MAX*10.0;
+    center[0] = shared_rng().rand()*20.0-10.0;
+    center[1] = shared_rng().rand()*20.0-10.0;
+    radius[0] = shared_rng().rand()*10.0;
+    radius[1] = shared_rng().rand()*10.0;
     rbfs.push_back(RadialBasisFunction(center,radius));
-    cfs.push_back(rand()/INT_MAX*5.0-2.5);
+    cfs.push_back(shared_rng().rand()*5.0-2.5);
   }
   RadialBasisFunctionModel rbf_model(rbfs,cfs);
   AxesBounds ab("-30 30 | -30 30");

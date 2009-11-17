@@ -48,6 +48,8 @@ void ModelFactoryTest::tearDown()
 void ModelFactoryTest::simpleTest()
 {
   SurfData* sd = SurfpackInterface::CreateSample("-2 2 | -2 2","10 10","sphere");
+  //AxesBounds* ab = new AxesBounds("-2 2 | -2 2");
+  //SurfData* sd = SurfpackInterface::CreateSample(ab, VecUns(10,10));
   SurfpackModelFactory* mlsf = new MovingLeastSquaresModelFactory;
   SurfpackModel* mlsm = mlsf->Create(*sd);
   VecDbl vd = surfpack::toVec<double>("0.0 0.0");

@@ -35,6 +35,7 @@ using std::string;
 using std::vector;
 using std::ostream_iterator;
 using std::ostringstream;
+using surfpack::shared_rng;
 
 const int TESTDIMS = 2;
 const int GRIDSIZE = 50;
@@ -362,7 +363,7 @@ void LinearRegressionModelTest::createModelTest()
 //  VecDbl responses = lrmTemp(*sd);
 //  // Add some random noise to the data
 //  for (unsigned i = 0; i < responses.size(); i++) {
-//    responses[i] += ((double)rand()/INT_MAX-.5)/2.0;
+//    responses[i] += (shared_rng().rand()-0.5)/2.0;
 //  }
 //  unsigned new_index = sd->addResponse(responses);
 //  sd->setDefaultIndex(new_index);

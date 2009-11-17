@@ -31,6 +31,7 @@ using std::ostringstream;
 using std::set;
 using std::string;
 using std::vector;
+using surfpack::shared_rng;
 
 double ModelFitness::operator()(const VecDbl& obs, const VecDbl& pred) const
 {
@@ -157,7 +158,7 @@ double CrossValidationFitness::operator()(const SurfpackModel& sm, const SurfDat
   ParamMap args = sm.parameters();
   VecUns indices(my_data.size()); 
   for (unsigned i = 0; i < indices.size(); i++) indices[i] = i;
-  random_shuffle(indices.begin(),indices.end());
+  random_shuffle(indices.begin(),indices.end(),shared_rng());
   VecDbl estimates(my_data.size());
   for (unsigned partition = 0; partition < n; partition++) {
     //cout << "part: " << partition << endl;
