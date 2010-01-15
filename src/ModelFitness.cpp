@@ -153,6 +153,35 @@ CrossValidationFitness::CrossValidationFitness(unsigned n_in)
 
 double CrossValidationFitness::operator()(const SurfpackModel& sm, const SurfData& sd) const
 {
+  /*if you want cross validation leaving m out then n=sd.size()/m
+
+    low  = partition*my_data.size()/n
+    high = (partition+1)*my_data.size()/n-1
+
+    partition loops from 0 to n-1 
+
+    say partition=0   => low =0*(n+1)/n=0
+                         high=1*(n+1)/n-1=1+1/n-1 = 0
+    say partition=n-1 => low =(n-1)*(n+1)/n = (n^2-1)/n=n
+                         high =n*(n+1)/n-1= n+1-1 = n
+
+    if n=my_data.size()-2 then
+    say partition=0   => low =0*(n+2)/n  = 0
+                         high=1*(n+2)/n-1= 0
+
+    if n=my_data.size()/2 then
+    say partition=0   => low =0*2*n/n    = 0
+                         high=1*2*n/n-1  = 1
+    say partition=n-1 => low =(n-1)*2*n/n= 2*n-2
+                         high= n*2*n/n-1 = 2*n-1
+
+    if n=my_data.size()/3 then
+    say partition=0   => low =0
+                      => high=1*3*n/n-1=2
+    say partition=n-1 => low =(n-1)*3*n/n= 3*n-3
+                      => high=n*3*n/n-1  = 3*n-1
+  */
+
   //cout << "CV Fitness: " << n << endl;
   SurfData my_data = sd; // Get non const copy
   ParamMap args = sm.parameters();
@@ -174,7 +203,7 @@ double CrossValidationFitness::operator()(const SurfpackModel& sm, const SurfDat
     SurfpackModel* model = factory->Build(my_data);
     my_data.setExcludedPoints(SetUns());
     for (unsigned k = low; k <= high; k++) {
-      estimates[indices[k]] = (*model)(my_data(k));
+      estimates[indices[k]] = (*model)(my_data(indices[k]));
       //cout << "k: " << estimates[k] << endl;
     }
     delete model;
