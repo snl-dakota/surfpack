@@ -1,8 +1,8 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-# The version of autoconf must be 2.58 or later
-AC_PREREQ([2.58])
+# The version of autoconf must be 2.60 or later, due to CONMIN dependency
+AC_PREREQ([2.60])
 
 # This is Surfpack, version 1.0.  User will be invited to send email
 # to the address specified in the third argument when something goes
@@ -31,7 +31,7 @@ AC_INIT([Surfpack],[1.0],[surfpack@scico.sandia.gov])
 # using the autoheader utility.  Autoheader scans configure.ac to see
 # which symbols it may #define.
 AM_CONFIG_HEADER([surfpack_config.h])
-AM_INIT_AUTOMAKE([1.9 foreign subdir-objects])
+AM_INIT_AUTOMAKE([1.9.6 foreign subdir-objects])
 
 # Check to make sure this file exists as a safety check.  This is
 # merely a sanity check to make sure you're not running autoconf
@@ -114,6 +114,11 @@ AC_CHECK_FUNCS([gettimeofday])
 #AC_CHECK_LIB([gslcblas],[cblas_ddot])
 #AC_CHECK_LIB([gsl],[gsl_ran_fdist_pdf])
 
+
+# Surfpack-specific package checks.
+SURFPACK_PACKAGES
+
+
 # Set up conditional make check target using CppUnit.
 AM_PATH_CPPUNIT([1.9.4], [
   AC_MSG_RESULT(
@@ -138,15 +143,17 @@ AM_CONDITIONAL(HAVE_CPPUNIT, test "$found_cppunit" = "yes")
 # the Makefiles from the Makefile.in files.
 AC_CONFIG_FILES([Makefile
 		 src/Makefile
-		 src/conmin/Makefile
 		 src/interpreter/Makefile
 		 src/lapack/Makefile
 		 src/mars/Makefile
 		 src/surfaces/Makefile
 		 interface/Makefile
+		 packages/Makefile
 		 system_tests/Makefile
 		 system_tests/instances/Makefile
 		 tests/Makefile])
+
+### WJB		 src/conmin/Makefile  ##
 
 # Mandatory last line.  It tells autoconf to actually generate the
 # appropriate files.

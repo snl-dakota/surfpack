@@ -5,7 +5,7 @@ ACLOCAL_AMFLAGS = -I m4
 
 ## Specifies that make should also descend into these subdirectories
 ## during the build process.
-SUBDIRS = src interface system_tests tests
+SUBDIRS = packages src interface system_tests tests
 
 ## Specifies that the files in the examples subdirectory should be
 ## included in the distribution tarball, even though they are not
@@ -23,7 +23,7 @@ CLEANFILES = *.bb *.bbg *.da *.gcov *.ii *.s
 
 ## MAINTAINERCLEANFILES serves a similar purpose to CLEANFILES, but
 ## is only used for the maintainer-clean target.
-MAINTAINERCLEANFILES = Makefile.in src/Makefile.in tests/Makefile.in \
-		       aclocal.m4 compile config.guess config.sub \
-		       configure depcomp install-sh ltmain.sh missing \
-		       surfpack_config.h.in tests/badscale.txt
+MAINTAINERCLEANFILES = Makefile.in packages/Makefile.in src/Makefile.in \
+		       tests/Makefile.in aclocal.m4 compile config.guess \
+		       config.sub configure depcomp install-sh ltmain.sh \
+		       missing surfpack_config.h.in tests/badscale.txt
