@@ -1,9 +1,8 @@
 ## Process this file with automake to produce Makefile.in
-##-- SUBDIRS = ann conmin interpreter kriging mars surfaces
+##-- SUBDIRS = ann interpreter kriging mars surfaces
 SUBDIRS = mars surfaces
-#SUBDIRS = ann conmin kriging mars surfaces
+#SUBDIRS = ann kriging mars surfaces
 
-#SUBLIBS = conmin/libconmin.la BACKSLASH
 SUBLIBS = mars/libmars.la \
           surfaces/libsurfaces.la
 

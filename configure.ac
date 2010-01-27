@@ -115,7 +115,7 @@ AC_CHECK_FUNCS([gettimeofday])
 #AC_CHECK_LIB([gsl],[gsl_ran_fdist_pdf])
 
 
-# Surfpack-specific package checks.
+# Surfpack-specific package checks. (WJB: NOT needed if we do not use teuchos)
 SURFPACK_PACKAGES
 
 
@@ -152,8 +152,6 @@ AC_CONFIG_FILES([Makefile
 		 system_tests/Makefile
 		 system_tests/instances/Makefile
 		 tests/Makefile])
-
-### WJB		 src/conmin/Makefile  ##
 
 # Mandatory last line.  It tells autoconf to actually generate the
 # appropriate files.

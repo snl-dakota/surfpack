@@ -5,9 +5,10 @@ SUBDIRS =
 
 ## Package subdirectories to recurse into.
 
-if BUILD_CONMIN
+# WJB: advise from Brian Adams: conmin is small so build it - 2 copies is fine
+##if BUILD_CONMIN
 SUBDIRS += conmin
-endif
+##endif
 
 ## WJB - ToDo: add SVN external to teuchos
 #if BUILD_TEUCHOS
