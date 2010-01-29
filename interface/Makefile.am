@@ -6,11 +6,7 @@ if BUILD_STANDALONE
   bin_PROGRAMS = surfpack
   surfpack_SOURCES = main.cpp 
   surfpack_LDADD = $(top_builddir)/src/libsurfpack.la
-if NEEDS_EXTRA_LAPACK_ROUTINES
-  surfpack_LDADD += $(BLAS_LIBS) $(LIBS) $(FLIBS) $(LEXLIB)
-else
   surfpack_LDADD += $(LAPACK_LIBS) $(BLAS_LIBS) $(LIBS) $(FLIBS) $(LEXLIB)
-endif
 endif
 
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src \

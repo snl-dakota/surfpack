@@ -74,7 +74,9 @@ AC_DISABLE_SHARED
 # http://www.gnu.org/software/ac-archive (current as of August 2004).
 # It is included here in the m4 directory.
 ACX_LAPACK
-AM_CONDITIONAL([NEEDS_EXTRA_LAPACK_ROUTINES],[test "x$acx_lapack_ok" != xyes])
+
+# WJB (1/28/10): bogus?
+#AM_CONDITIONAL([NEEDS_EXTRA_LAPACK_ROUTINES],[test "x$acx_lapack_ok" != xyes])
 
 # Checks for the flex version and associated library (may not be -lfl)
 # that the parser/scanner code needs to link against.  Also check for
@@ -144,7 +146,6 @@ AM_CONDITIONAL(HAVE_CPPUNIT, test "$found_cppunit" = "yes")
 AC_CONFIG_FILES([Makefile
 		 src/Makefile
 		 src/interpreter/Makefile
-		 src/lapack/Makefile
 		 src/mars/Makefile
 		 src/surfaces/Makefile
 		 interface/Makefile
