@@ -14,7 +14,9 @@
 #include "surfpack.h"
 #include "AxesBounds.h"
 #include "SurfpackParserArgs.h"
+#ifndef DISABLE_STANDALONE_PARSER
 #include "SurfpackInterpreter.h"
+#endif
 #include "SurfData.h"
 #include "ModelFactory.h"
 

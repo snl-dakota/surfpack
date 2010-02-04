@@ -15,7 +15,9 @@
 #include "surfpack_system_headers.h"
 
 #include "SurfPoint.h"
+#ifndef DISABLE_STANDALONE_PARSER
 #include "SurfpackParser.h"
+#endif
 
 /// Contains a set of SurfPoint objects.  May be associated with zero or more
 /// Surface objects, which it notifies when its data changes or when it goes 
