@@ -75,9 +75,6 @@ AC_DISABLE_SHARED
 # It is included here in the m4 directory.
 ACX_LAPACK
 
-# WJB (1/28/10): bogus?
-#AM_CONDITIONAL([NEEDS_EXTRA_LAPACK_ROUTINES],[test "x$acx_lapack_ok" != xyes])
-
 # Checks for the flex version and associated library (may not be -lfl)
 # that the parser/scanner code needs to link against.  Also check for
 # bison.

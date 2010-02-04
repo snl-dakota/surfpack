@@ -11,13 +11,6 @@ SUBDIRS += interpreter
 SUBLIBS += interpreter/libinterpreter.la
 endif
 
-
-# WJB (1/28/2010): XTRA_LAP appears bogus, so comment-out while I investigate
-#if NEEDS_EXTRA_LAPACK_ROUTINES
-#SUBDIRS += lapack
-#SUBLIBS += lapack/liblapack.la
-#endif
-
 ## lib_LTLIBRARIES is automake's way of saying "libraries that should
 ## be created and installed in the lib subdirectory of the top-level
 ## install directory. The "LT" in "LTLIBRARIES" means that libtool
