@@ -30,6 +30,7 @@ AC_INIT([Surfpack],[1.0],[surfpack@scico.sandia.gov])
 # The file surfpack_config.h.in should be generated automatically
 # using the autoheader utility.  Autoheader scans configure.ac to see
 # which symbols it may #define.
+# WJB - not convinced that a configuration hdr is needed - need buy-in from team
 AM_CONFIG_HEADER([surfpack_config.h])
 AM_INIT_AUTOMAKE([1.9.6 foreign subdir-objects])
 
@@ -86,7 +87,7 @@ AC_ARG_ENABLE(standalone,AS_HELP_STRING([--enable-standalone],[build command-lin
 AM_CONDITIONAL([BUILD_STANDALONE], [test "x$enable_standalone" = xyes])
 
 # Checks for C++ ISO standard compliance.
-AC_CXX_HAVE_STD
+dnl WJB - request approval from team - Trilinos approach! AC_CXX_HAVE_STD
 
 # The AC_DEFINE macro causes its first argument to always be #defined
 # when source code is compiled.
@@ -96,20 +97,8 @@ AC_DEFINE([__TESTING_MODE__],[1],
 # Tells autoconf that libtool will be used.
 AC_PROG_LIBTOOL
 
-# The cxx compiler on OSF needs the __USE_STD_IOSTREAM flag since the
-# sstream classes are used.  We also need local template instantiation.
-AC_CXX_CPPFLAGS_STD_LANG([CXXFLAGS])
-case "$ac_cv_cxx_compiler_vendor" in
-    compaq)
-	AX_CXXFLAGS_OSF_OPTION([-tlocal])
-    ;;
-    *)
-    ;;
-esac
-
 # Checks for library functions.
-AC_CHECK_FUNCS([gettimeofday])
-## GSL not presently needed (may restore in the future)
+## GSL not presently needed (WJB: officially history now that migration to CMake is happening?)
 #AC_CHECK_LIB([gslcblas],[cblas_ddot])
 #AC_CHECK_LIB([gsl],[gsl_ran_fdist_pdf])
 
