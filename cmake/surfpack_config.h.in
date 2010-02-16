@@ -25,9 +25,6 @@
 // WJB - ToDo: seek advice on how to do this properly
 #define HAVE_BLAS @BLAS_FOUND@
 
-/* Define to 1 if you have the `gettimeofday' function. */
-#define HAVE_GETTIMEOFDAY 1
-
 /* Define if you have LAPACK library. */
 //      also: LAPACK_lapack_WORKS "1"
 #define HAVE_LAPACK @LAPACK_FOUND@

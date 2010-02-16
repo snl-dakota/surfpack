@@ -30,7 +30,6 @@ AC_INIT([Surfpack],[1.0],[surfpack@scico.sandia.gov])
 # The file surfpack_config.h.in should be generated automatically
 # using the autoheader utility.  Autoheader scans configure.ac to see
 # which symbols it may #define.
-# WJB - not convinced that a configuration hdr is needed - need buy-in from team
 AM_CONFIG_HEADER([surfpack_config.h])
 AM_INIT_AUTOMAKE([1.9.6 foreign subdir-objects])
 
@@ -86,9 +85,6 @@ AC_PROG_YACC
 AC_ARG_ENABLE(standalone,AS_HELP_STRING([--enable-standalone],[build command-line interpreter (needs lex, yacc)]),[enable_standalone=$enableval],[enable_standalone=no])
 AM_CONDITIONAL([BUILD_STANDALONE], [test "x$enable_standalone" = xyes])
 
-# Checks for C++ ISO standard compliance.
-dnl WJB - request approval from team - Trilinos approach! AC_CXX_HAVE_STD
-
 # The AC_DEFINE macro causes its first argument to always be #defined
 # when source code is compiled.
 AC_DEFINE([__TESTING_MODE__],[1],
@@ -98,7 +94,7 @@ AC_DEFINE([__TESTING_MODE__],[1],
 AC_PROG_LIBTOOL
 
 # Checks for library functions.
-## GSL not presently needed (WJB: officially history now that migration to CMake is happening?)
+## GSL not presently needed
 #AC_CHECK_LIB([gslcblas],[cblas_ddot])
 #AC_CHECK_LIB([gsl],[gsl_ran_fdist_pdf])
 
