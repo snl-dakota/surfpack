@@ -216,7 +216,7 @@ void LinearRegressionModelFactory::config()
   SurfpackModelFactory::config();
   string strarg;
   strarg = params["order"];
-  if (strarg != "") order = atoi(strarg.c_str());
+  if (strarg != "") order = std::atoi(strarg.c_str());
 }
 
 void LinearRegressionModelFactory::setEqualityConstraints(unsigned asv,const SurfPoint& sp,  double valuePtr, VecDbl* gradientPtr, MtxDbl* hessianPtr)

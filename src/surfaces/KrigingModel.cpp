@@ -454,7 +454,7 @@ void KrigingModelFactory::config()
   if (strarg != "") correlations = surfpack::toVec<double>(strarg); 
   strarg = params["max_iter"];
   if (strarg != "") {
-    max_iter = atoi(strarg.c_str()); 
+    max_iter = std::atoi(strarg.c_str()); 
     assert(max_iter >= 0);
   }
   strarg = params["conmin_seed"];

@@ -319,13 +319,13 @@ void RadialBasisFunctionModelFactory::config()
   SurfpackModelFactory::config();
   string strarg;
   strarg = params["centers"];
-  if (strarg != "") nCenters = atoi(strarg.c_str());
+  if (strarg != "") nCenters = std::atoi(strarg.c_str());
   strarg = params["cvt_pts"];
-  if (strarg != "") cvtPts = atoi(strarg.c_str());
+  if (strarg != "") cvtPts = std::atoi(strarg.c_str());
   strarg = params["max_subsets"];
-  if (strarg != "") maxSubsets = atoi(strarg.c_str());
+  if (strarg != "") maxSubsets = std::atoi(strarg.c_str());
   strarg = params["min_partition"];
-  if (strarg != "") minPartition = atoi(strarg.c_str());
+  if (strarg != "") minPartition = std::atoi(strarg.c_str());
 }
 
 SurfpackModel* RadialBasisFunctionModelFactory::Create(const SurfData& sd)

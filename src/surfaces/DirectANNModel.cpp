@@ -122,11 +122,11 @@ void DirectANNModelFactory::config()
   SurfpackModelFactory::config();
   string strarg;
   strarg = params["nodes"];
-  if (strarg != "") nodes = atoi(strarg.c_str()); 
+  if (strarg != "") nodes = std::atoi(strarg.c_str()); 
   strarg = params["range"];
-  if (strarg != "") range = atof(strarg.c_str()); 
+  if (strarg != "") range = std::atof(strarg.c_str()); 
   strarg = params["samples"];
-  if (strarg != "") samples = atoi(strarg.c_str()); 
+  if (strarg != "") samples = std::atoi(strarg.c_str()); 
 }
 
 SurfpackModel* DirectANNModelFactory::Create(const std::string& model_string)

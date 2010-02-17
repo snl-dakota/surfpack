@@ -122,9 +122,9 @@ void MovingLeastSquaresModelFactory::config()
   SurfpackModelFactory::config();
   string strarg;
   strarg = params["weight"];
-  if (strarg != "") weight = atoi(strarg.c_str());
+  if (strarg != "") weight = std::atoi(strarg.c_str());
   strarg = params["order"];
-  if (strarg != "") order = atoi(strarg.c_str());
+  if (strarg != "") order = std::atoi(strarg.c_str());
 }
 
 SurfpackModel* MovingLeastSquaresModelFactory::Create(const SurfData& sd)

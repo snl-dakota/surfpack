@@ -8,6 +8,8 @@ using std::cout;
 using std::endl;
 using std::string;
 using std::max;
+using std::memcpy;
+using std::memset;
 
 
 MarsModel::MarsModel(const unsigned dims, real* fm_in, int fmsize, int* im_in, 
@@ -157,9 +159,9 @@ void MarsModelFactory::config()
   SurfpackModelFactory::config();
   string strarg;
   strarg = params["max_bases"];
-  if (strarg != "") max_bases = atoi(strarg.c_str());
+  if (strarg != "") max_bases = std::atoi(strarg.c_str());
   strarg = params["max_interactions"];
-  if (strarg != "") max_interactions = atoi(strarg.c_str());
+  if (strarg != "") max_interactions = std::atoi(strarg.c_str());
   strarg = params["interpolation"];
   if (strarg == "linear") interpolation = 1;
   else if (strarg == "cubic") interpolation = 2;
