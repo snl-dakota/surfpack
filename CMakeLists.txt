@@ -1,28 +1,28 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 2.6)
 
 PROJECT("Surfpack" CXX C Fortran)
 
 INCLUDE(FortranCInterface)
-INCLUDE(CheckIncludeFiles)
 
 IF(WIN32)
   FIND_PACKAGE(CLAPACK REQUIRED)
 ELSE()
+  FIND_PACKAGE(BLAS REQUIRED)
   FIND_PACKAGE(LAPACK REQUIRED)
 ENDIF() 
-
-SET(Surfpack_ENABLE_CXX ON)
-SET(Surfpack_ENABLE_Fortran ON)
 
 INCLUDE_DIRECTORIES("${PROJECT_BINARY_DIR}")
 
 CONFIGURE_FILE("${PROJECT_SOURCE_DIR}/cmake/surfpack_config.h.in"
   "${PROJECT_BINARY_DIR}/surfpack_config.h"
+  @ONLY
 )
 
-SET(Surfpack_ENABLE_DEBUG OFF)
+ADD_DEFINITIONS("-DHAVE_CONFIG_H")
 
-LIST(APPEND CMAKE_CXX_FLAGS -DHAVE_CONFIG_H)
+#SET(Surfpack_ENABLE_CXX ON)
+#SET(Surfpack_ENABLE_Fortran ON)
+SET(Surfpack_ENABLE_DEBUG OFF)
 
 #INCLUDE(CTest)
 

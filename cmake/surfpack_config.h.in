@@ -1,7 +1,7 @@
 /* $Header: */
 
-/* Copy of the following file, edited to be used with CMake */
-/* surfpack_config.h.in.  Generated from configure.ac by autoheader.  */
+/* Copy of the following file, manually edited to be used with CMake */
+/* surfpack_config.h.in. Originally generated from configure.ac by autoheader.  */
 
 /* Define to dummy `main' function (if any) required to link to the Fortran
    libraries. */
@@ -20,12 +20,4 @@
 
 /* Define if F77 and FC dummy `main' functions are identical. */
 #cmakedefine FC_DUMMY_MAIN_EQ_F77
-
-/* Define if you have a BLAS library. */
-// WJB - ToDo: seek advice on how to do this properly
-#define HAVE_BLAS @BLAS_FOUND@
-
-/* Define if you have LAPACK library. */
-//      also: LAPACK_lapack_WORKS "1"
-#define HAVE_LAPACK @LAPACK_FOUND@
 
