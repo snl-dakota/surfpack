@@ -6,17 +6,35 @@ using std::cout;
 using std::endl;
 using std::string;
 
-double weight(const VecDbl xi, const VecDbl x, unsigned continuity = 1, double radius = 1.0)
+double weight(const VecDbl xi, const VecDbl x, unsigned continuity = 1, 
+	      double radius = 1.0)
 {
   assert(continuity > 0);
   assert(continuity < 4);
+  
+  double weight = 0.0;
   double rho = surfpack::euclideanDistance(xi,x)/radius;
+
   switch (continuity) {
-  case 1:  return exp(-1*(pow(rho,2.0)))/(pow(rho,2.0)+0.001);
-    //    case 1: return (rho > 1.0) ? 0.0 : 1.0-3.0*rho*rho+2.0*pow(rho,3.0);
-    case 2: return (rho > 1.0) ? 0.0 : 1.0-10.0*pow(rho,3.0)+15.0*pow(rho,4.0)-6.0*pow(rho,5.0);
-    case 3: return (rho > 1.0) ? 0.0 : 1.0-35.0*pow(rho,4.0)+84.0*pow(rho,5.0)-70.0*pow(rho,6.0)+20.0*pow(rho,7.0);
+
+  case 1:
+    weight = exp(-1*(pow(rho,2.0)))/(pow(rho,2.0)+0.001);
+    // weight = (rho > 1.0) ? 0.0 : 1.0-3.0*rho*rho+2.0*pow(rho,3.0);
+    break;
+
+  case 2:
+    weight = (rho > 1.0) ? 0.0
+      : 1.0-10.0*pow(rho,3.0)+15.0*pow(rho,4.0)-6.0*pow(rho,5.0);
+    break;
+
+  case 3:
+    weight = (rho > 1.0) ? 0.0 
+      : 1.0-35.0*pow(rho,4.0)+84.0*pow(rho,5.0)-70.0*pow(rho,6.0)+20.0*pow(rho,7.0);
+    break;
+
   }
+
+  return weight;
 }
 
 MovingLeastSquaresModel::MovingLeastSquaresModel(const SurfData& sd_in, const LRMBasisSet& bs_in, unsigned continuity_in)
