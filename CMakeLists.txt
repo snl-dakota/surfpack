@@ -34,5 +34,5 @@ SUBDIRS(packages src)
 SET(SUBLIBS surfpack)
 
 #Descend into source subdirectories
-SET(SUBLIBS ${SUBLIBS} mars surfaces conmin)
+SET(SUBLIBS ${SUBLIBS} mars surfaces sp_conmin)
 
