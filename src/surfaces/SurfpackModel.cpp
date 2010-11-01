@@ -55,6 +55,11 @@ SurfpackModel::~SurfpackModel()
   delete mScaler; mScaler = 0;
 }
 
+double SurfpackModel::variance(const VecDbl& x) const
+{
+  throw std::string("This model does not currently support variance eval");
+}
+
 VecDbl SurfpackModel::gradient(const VecDbl& x) const
 {
   throw std::string("This model does not currently support gradients");

@@ -37,6 +37,7 @@ public:
   SurfpackModel(const SurfpackModel& other);
   virtual VecDbl operator()(const SurfData& data) const;
   double operator()(const VecDbl& x) const;
+  virtual double variance(const VecDbl& x) const;
   virtual VecDbl gradient(const VecDbl& x) const;
   virtual MtxDbl hessian(const VecDbl& x) const;
   virtual std::string asString() const = 0;
