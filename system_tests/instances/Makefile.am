@@ -2,7 +2,7 @@
 krig_time_test = krig_time
 krig_time_SOURCES = time_krig_builds.cpp
 krig_time_LDADD = $(top_builddir)/src/libsurfpack.la
-krig_time_LDADD += $(top_builddir)/packages/conmin/src/libconmin.la
+krig_time_LDADD += $(top_builddir)/packages/CONMIN/src/libconmin.la
 krig_time_LDADD += $(LAPACK_LIBS) $(BLAS_LIBS) $(LIBS) $(FLIBS) $(LEXLIB)
 
 check_PROGRAMS = $(krig_time_test)

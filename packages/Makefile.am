@@ -7,7 +7,7 @@ SUBDIRS =
 
 # WJB: advise from Brian Adams: conmin is small so build it - 2 copies is fine
 ##if BUILD_CONMIN
-SUBDIRS += conmin
+SUBDIRS += CONMIN
 ##endif
 
 ## WJB - ToDo: add SVN external to teuchos
