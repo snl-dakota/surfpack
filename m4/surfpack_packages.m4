@@ -3,6 +3,7 @@ dnl Packages
 AC_DEFUN([SURFPACK_PACKAGES],[
 
   AC_CONFIG_SUBDIRS([packages/CONMIN])
+  AC_CONFIG_SUBDIRS([packages/NCSUOpt])
 
   dnl -------------------------
   dnl Teuchos include DIR check

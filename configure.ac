@@ -102,7 +102,6 @@ AC_PROG_LIBTOOL
 # Surfpack-specific package checks. (WJB: NOT needed if we do not use teuchos)
 SURFPACK_PACKAGES
 
-
 # Set up conditional make check target using CppUnit.
 AM_PATH_CPPUNIT([1.9.4], [
   AC_MSG_RESULT(
@@ -130,6 +129,7 @@ AC_CONFIG_FILES([Makefile
 		 src/interpreter/Makefile
 		 src/mars/Makefile
 		 src/surfaces/Makefile
+		 src/surfaces/nkm/Makefile
 		 interface/Makefile
 		 packages/Makefile
 		 system_tests/Makefile

@@ -9,6 +9,9 @@ SUBDIRS =
 ##if BUILD_CONMIN
 SUBDIRS += CONMIN
 ##endif
+##if BUILD_NCSUOPT
+SUBDIRS += NCSUOpt
+##endif
 
 ## WJB - ToDo: add SVN external to teuchos
 #if BUILD_TEUCHOS

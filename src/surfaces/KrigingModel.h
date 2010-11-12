@@ -16,49 +16,32 @@
 #include "SurfpackModel.h"
 #include "SurfpackMatrix.h"
 
+#include "nkm/NKM_KrigingModel.hpp"
 
-class KrigingBasisSet
-{
-public:
-  VecVecDbl centers;
-  VecDbl correlations;
-  KrigingBasisSet(const VecVecDbl& centers_in, const VecDbl& correlations_in);
-  double eval(unsigned index, const VecDbl& x) const;
-  double deriv(unsigned index, const VecDbl& x, const VecUns& vars) const;
-  std::string asString() const;
-};
 
+/// A thin wrapper around a NewKrigingModel
 class KrigingModel : public SurfpackModel
 {
 public:
-  KrigingModel(const KrigingBasisSet& bs_in, const VecDbl& rhs_in);
-  KrigingModel(const SurfData& sd, const VecDbl& correlations);
+  KrigingModel(const SurfData& sd, const ParamMap& args);
+  ~KrigingModel();
+  virtual double variance(const VecDbl& x) const;
   virtual VecDbl gradient(const VecDbl& x) const;
   virtual std::string asString() const;
-
-  double likelihood;
-  static MtxDbl corrMtx(const VecDbl& corr_vec, const SurfData& data);
 protected:
   MtxDbl getMatrix(const ScaledSurfData& ssd, const VecDbl& correlations);
   virtual double evaluate(const VecDbl& x) const;
-  KrigingBasisSet bs;
-  VecDbl rhs;
-  double betaHat;
 friend class KrigingModelTest;
+
+private:
+  // helper
+  void surfdata_to_nkm_surfdata(const SurfData& sd, nkm::SurfData& nkm_sd);
+
+  // use class data to keep in scope for wrapped model
+  nkm::KrigingModel* nkmKrigingModel;
+  nkm::SurfData nkmSurfData;
 };
 
-#include "Conmin.h"
-class ConminKriging : public Conmin
-{
-public:
-  ConminKriging(const SurfData& data_in);
-  virtual void optimize(VecDbl& x, double& final_val, unsigned max_iter);
-  virtual double objective(const VecDbl& x);
-  virtual VecDbl gradient(const VecDbl& x);
-protected:
-  const SurfData& data;
-  VecDbl rhs;
-};
 
 ///////////////////////////////////////////////////////////
 ///   Kriging Model Factory	
@@ -74,10 +57,5 @@ public:
   virtual SurfpackModel* Create(const std::string& model_string);
   virtual void config();
 protected:
-  VecDbl sampleCorrelations(const SurfData& sd);
-  VecDbl conminCorrelations(const SurfData& sd);
-  VecDbl correlations;
-  int max_iter;
-  VecDbl conmin_seed;
 };
 #endif
