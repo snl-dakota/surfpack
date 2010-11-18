@@ -1051,14 +1051,14 @@ void SurfData::scaleToDefault()
       mina=minmaxa(0,j);
       maxa=minmaxa(1,j);
     }
-    else {
+    else 
       mina=maxa=a(0,j);
     
-      for(i=1; i<nrowsa; i++) 
-	if(a(i,j)<mina) mina=a(i,j);
-	else if(a(i,j)>maxa) maxa=a(i,j);
-    }
-
+    for(i=0; i<nrowsa; i++) 
+      if(a(i,j)<mina) mina=a(i,j);
+      else if(a(i,j)>maxa) maxa=a(i,j);
+  
+    
     unscalea(0,j)=maxa-mina;
     unscalea(1,j)=0.5*(maxa+mina);
 
@@ -1097,13 +1097,13 @@ void SurfData::groupScale(MtxDbl& a, MtxDbl& unscalea, const MtxDbl& minmaxa, bo
       mina=minmaxa(0,j);
       maxa=minmaxa(1,j);
     }
-    else {
+    else 
       mina=maxa=a(0,j);
     
-      for(i=1; i<nrowsa; i++) 
-	if(a(i,j)<mina) mina=a(i,j);
-	else if(a(i,j)>maxa) maxa=a(i,j);
-    }
+    for(i=0; i<nrowsa; i++) 
+      if(a(i,j)<mina) mina=a(i,j);
+      else if(a(i,j)>maxa) maxa=a(i,j);
+    
 
     unscalea(0,j)=maxa-mina;
     unscalea(1,j)=0.5*(maxa+mina);

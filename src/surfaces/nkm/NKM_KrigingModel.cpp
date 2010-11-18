@@ -10,6 +10,7 @@ namespace nkm {
 
 using std::cout;
 using std::endl;
+using std::ostringstream;
 
 //#define __KRIGING_DER_TEST__
 
@@ -52,6 +53,7 @@ KrigingModel::KrigingModel(const SurfData& sd, const ParamMap& params)
   : SurfPackModel(sd,sd.getJOut()), numVarsr(sd.getNVarsr()), 
     numTheta(numVarsr), numPoints(sd.getNPts()), XR(sdBuild.xr), Y(sdBuild.y)
 {
+  //printf("calling the right KrigingModel constructor\n"); fflush(stdout);
 
   //if the SurfDataScaler class does what it's supposed to (the only private content in sdBuild that a Model can access are the scaling bits, and only the model can see inside the scaler) the next line will cause an error when you try to compile with it uncommented
   //printf("sd.scaler->mySd.jout=%d\n",scaler.mySd.jout);
@@ -64,151 +66,182 @@ KrigingModel::KrigingModel(const SurfData& sd, const ParamMap& params)
   // *************************************************************
   // this starts the input section about scaling the data
   // *************************************************************
-
+  
   MtxDbl min_max_xr(2,numVarsr);
   bool if_user_specified_lower_bounds=false;
   param_it = params.find("lower_bounds");
   if (param_it != params.end() && param_it->second.size() > 0) {
     if_user_specified_lower_bounds=true;
     assert(!(min_max_xr.putRows(param_it->second,0)));
-    //printf("nkm lower_bounds=[%12.6g",min_max_xr(0,0));
-    //for(int ivarsr=1; ivarsr<numVarsr; ++ivarsr)
-    //printf(", %12.6g",min_max_xr(0,ivarsr));
-    //printf("]\n");
   }
-
+  
   bool if_user_specified_upper_bounds=false;
   param_it = params.find("upper_bounds");
   if (param_it != params.end() && param_it->second.size() > 0) {
     if_user_specified_upper_bounds=true;
     assert(!(min_max_xr.putRows(param_it->second,1)));
-    assert(if_user_specified_lower_bounds);
-    //printf("setUnscaledDomainSize\n");
-    sdBuild.setUnscaledDomainSize(min_max_xr); //NOTE THAT THIS IS HERE
-    //printf("nkm upper_bounds=[%12.6g",min_max_xr(1,0));
-    //for(int ivarsr=1; ivarsr<numVarsr; ++ivarsr)
-    //printf(", %12.6g",min_max_xr(1,ivarsr));
-    //printf("]\n");
   }
-
+  
+  if(!(if_user_specified_lower_bounds==if_user_specified_upper_bounds)) {
+    cerr << "Your options are to\n(A) specify both the upper and lower, or\n(B) specify neither the upper nor lower,\nbounds of the domain of the Kriging Model\n";
+    assert(if_user_specified_lower_bounds==if_user_specified_upper_bounds);
+  }
+  
+  if(if_user_specified_lower_bounds==true) {
+    for(int ivarsr=0; ivarsr<numVarsr; ++ivarsr) 
+      if(!(min_max_xr(0,ivarsr)<=min_max_xr(1,ivarsr))) {
+	cerr << "The lower bound of the domain of the Kriging Model must be less than or equal to the upper bound of the domain of the Kriging Model\n";
+	assert(min_max_xr(0,ivarsr)<=min_max_xr(1,ivarsr));
+      }
+    sdBuild.setUnscaledDomainSize(min_max_xr);
+  }
+  
   //printf("KrigingModel constructor should have just written out domain bounds\n");
-
+  
   param_it = params.find("dimension_groups");
   if (param_it != params.end() && param_it->second.size() > 0) {
     MtxInt dim_groups(1,numVarsr);
     assert(!(dim_groups.putRows(param_it->second,0)));
     sdBuild.setDimGroups(dim_groups);
   }
-
+  
   scaler.scaleToDefault(); //scale outputs to -0.5<=Y<=0.5 and scale real inputs to volume 1 hyper-rectangle centered at 0 if real iputs dimensions are locked or the unit hypercube centered at 0 if no dimensions are locked.  The scaling is done to let us define the feasible region simply (done in create);
-
+  
   // *************************************************************
   // this starts the input section about optimizing or directly
   // scepcifying correlation lengths, it must come after the 
   // scaling section
   // *************************************************************
-
-  // current options are none (fixed correl) | sample (guess) | local | global
+  
+  // current options are none (fixed correl) | sampling (guess) | local | global
   optimizationMethod = "global";
   param_it = params.find("optimization_method");
   if (param_it != params.end() && param_it->second.size() > 0)
     optimizationMethod = param_it->second; 
-
-  if((optimizationMethod.compare("none")==0)||
-     (optimizationMethod.compare("local")==0))
+  
+  if(optimizationMethod.compare("none")==0)
     maxTrials=1;
-  else if(optimizationMethod.compare("sample")==0)
+  else if(optimizationMethod.compare("local")==0)
+    maxTrials=20;
+  else if(optimizationMethod.compare("sampling")==0)
     maxTrials=2*numVarsr+1;
   else if(optimizationMethod.compare("global")==0)
-    maxTrials = 50;
+    maxTrials = 10000;
   else{ //error checking the input
     cerr << "KrigingModel() unknown optimization_method [" << optimizationMethod << "]  aborting\n";
-      assert(0);
+    assert(0);
   }
   
-  //printf("KriginModel() maxTrials=%d\n",maxTrials);
+  //numStarts is the number of starting locations in a multi-start local search
+  numStarts=1;
+  param_it = params.find("num_starts");
+  if (param_it != params.end() && param_it->second.size() > 0) {
+    numStarts = std::atoi(param_it->second.c_str()); 
+    assert(numStarts>=1);
+  }
+  
+  if(!((numStarts==1)||(optimizationMethod.compare("local")==0))) {
+    cerr << "Local optimization is the only optimization method for Kriging that uses the \"num_starts\" key word. Check your input file for errors.\n";
+    assert((numStarts==1)||(optimizationMethod.compare("local")==0));
+  }
+  
+
+
+  // does the user want to specify correlation lengths directly?
+  ifUserSpecifiedCorrLengths=false; //the default is no
+  param_it = params.find("correlation_lengths");
+  if (param_it != params.end() && param_it->second.size() > 0) {
+    ifUserSpecifiedCorrLengths=true;
+    //printf("User specifying correlation lengths\n"); fflush(stdout);
+    
+    // make sure that the user didn't 
+    // * say they want to global optimize __AND__
+    // * specify correlation lengths  
+    if(optimizationMethod.compare("global")==0) {
+      cerr << "You can't both \n (A) use the global optimization method to choose, and \n (B) directly specify \n correlation lengths for the Kriging model.\n";
+      assert(optimizationMethod.compare("global")!=0);
+    }
+    else if(optimizationMethod.compare("sampling")==0) {
+      // this is only the default number of samples/maxTrials, the user can 
+      // still overide this below
+      maxTrials+=1;
+    }
+    
+    natLogCorrLen.newSize(1,numVarsr); //allocate space 
+    
+    //read the correlation lengths in from the string
+    assert(!(natLogCorrLen.putRows(param_it->second,0)));
+    // "natLogCorrLen" currently holds the unscaled correlation LENGTHS, not 
+    // the natural log of the scaled correlation length, we need to fix that
+    // but first we need to check the input for errors
+    for(int ivarsr=0; ivarsr<numVarsr; ++ivarsr) 
+      if(!(natLogCorrLen(ivarsr)>0.0)) {
+	cerr << "For the Kriging Model, correlation lengths must be strictly positive\n.";
+	assert(0);
+      }
+
+    //printf("unscaled corr lens = [%12.6g",natLogCorrLen(0)); 
+    //for(int ivarsr=1; ivarsr<numVarsr; ++ivarsr)
+    //printf(", %12.6g",natLogCorrLen(0,ivarsr));
+    //printf("]\n");    
+
+    scaler.scaleXrDist(natLogCorrLen); //scale the lengths
+    //scaler.scaleXrOther(natLogCorrLen); //error
+    //printf("scaled corr lens = [%12.6g",natLogCorrLen(0)); 
+    //for(int ivarsr=1; ivarsr<numVarsr; ++ivarsr)
+    // printf(", %12.6g",natLogCorrLen(0,ivarsr));
+    //printf("]\n");    
+    //fflush(stdout);
+    
+    //compute the natural log of the correlation lengths
+    for(int ivarsr=0; ivarsr<numVarsr; ++ivarsr) 
+      natLogCorrLen(0,ivarsr)=log(natLogCorrLen(0,ivarsr)); 
+    
+    //natLogCorrLen will be the first of the initial iterates (guesses), this happens in the create() function below
+  }
+  //printf("If user specified correlationlengths we should have just printed them\n");
 
   // maximum objective evals for optimization or guess
   param_it = params.find("max_trials");
   if (param_it != params.end() && param_it->second.size() > 0) {
     maxTrials = std::atoi(param_it->second.c_str()); 
-    assert (maxTrials > 0);
   }
 
-  //maxTrials=1000;
-  printf("maxTrials=%d\n",maxTrials);
+  assert (maxTrials > 0);
 
-  // does the usre want to specify correlation lengths directly?
-  ifUserSpecifiedCorrLengths=false; //the default is false 
-  param_it = params.find("correlation_lengths");
-  if (param_it != params.end() && param_it->second.size() > 0) {
+  //printf("maxTrials=%d\n",maxTrials);
 
-    // make sure that the user didn't 
-    // * say they want to optimize __AND__
-    // * specify correlation lenghts  
-    assert(optimizationMethod.compare("none")==0);
-
-    ifUserSpecifiedCorrLengths=true; //we need to know this during create()
-
-    correlations.newSize(1,numVarsr); //allocate space
-    natLogCorrLen.newSize(1,numVarsr); //allocate space 
-
-    //printf("correlations NRows=%d NCols=%d\n",correlations.getNRows(),correlations.getNCols());
-
-    //read the correlation lengths in from the string
-    assert(!(correlations.putRows(param_it->second,0)));
-    //printf("unscaled corr lens = [%12.6g",correlations(0)); 
-    //for(int ivarsr=1; ivarsr<numVarsr; ++ivarsr)
-    //printf(", (%d/%d) %12.6g",ivarsr,numVarsr,correlations(ivarsr));
-    //printf("]\n");
-
-    //"correlations" currently holds the unscaled correlation LENGTHS 
-    //not the scaled correlation parameters, we need to fix that
-
-    scaler.scaleXrOther(correlations); //scale the lengths
-    //printf("scaled corr lens = [%12.6g",correlations(0)); 
-    //for(int ivarsr=1; ivarsr<numVarsr; ++ivarsr)
-    //printf(", %12.6g",correlations(0,ivarsr));
-    //printf("]\n");    
-
-    //compute the correlation parameters from the correlation lengths
-    for(int ivarsr=0; ivarsr<numVarsr; ++ivarsr) {
-
-      //make sure natLogCorrLen is present in the final model regardless 
-      //of how it was created (optimized or ___SPECIFIED___ here)
-      natLogCorrLen(0,ivarsr)=log(correlations(0,ivarsr)); 
-
-      correlations(0,ivarsr)=1.0/(2.0*correlations(0,ivarsr)*correlations(0,ivarsr));
-    }
-  } 
   
   // *************************************************************
   // this starts the input section about the trend function 
   // *************************************************************
-  int poly_order = 1;
+  polyOrder = 1;
   param_it = params.find("order");
   if (param_it != params.end() && param_it->second.size() > 0) {
-    poly_order = std::atoi(param_it->second.c_str()); 
-    assert (poly_order >= 0);
+    polyOrder = std::atoi(param_it->second.c_str()); 
+    assert (polyOrder >= 0);
   }
 
-  //poly_order = 2; //for debug
-  main_effects_poly_power(Poly, numVarsr, poly_order); //for debug
+  //polyOrder = 2; //for debug
+  //main_effects_poly_power(Poly, numVarsr, polyOrder); //for debug
   //commented out for debug
+  ifReducedPoly=false;
   param_it = params.find("reduced_polynomial");
   if (param_it != params.end() && param_it->second.size() > 0) 
-    main_effects_poly_power(Poly, numVarsr, poly_order);
+    if((std::atoi(param_it->second.c_str()))!=0)
+      ifReducedPoly=true;
+
+  if(ifReducedPoly)
+    main_effects_poly_power(Poly, numVarsr, polyOrder);
   else
-    multi_dim_poly_power(Poly, numVarsr, poly_order);  
+    multi_dim_poly_power(Poly, numVarsr, polyOrder);  
 
   //check that we have enough data for the selected trend functions
   int needed_points = numVarsr + getNTrend(); 
   if( !(needed_points <= numPoints) ) {
-    printf("Error: with the selected set trend functions there are more unknown parameters (%d) than there are data points (%d). For the current set of trend functions, you need at least %d data points and twice that is strongly recommended.\n",
-	   needed_points, numPoints, needed_points);
+    cerr << "With the selected set of trend functions there are more unknown parameters (" <<  needed_points << ") than there are data points (" << numPoints << ") for the Kriging Model. For the current set of trend functions, you need at least " << needed_points << "data points and twice that is strongly recommended.\n";
     assert(needed_points <= numPoints);
   }
-
 
   // *************************************************************
   // this starts the input section HOW to bound the condition 
@@ -294,7 +327,7 @@ KrigingModel::KrigingModel(const SurfData& sd, const ParamMap& params)
   // initialize trend function (and rotations)
   // this initializes EulAng, Rot, Poly, G (trend), and Z (diff on XR)
 
-  //LinearRegressionProblem lrp(sd,poly_order);
+  //LinearRegressionProblem lrp(sd,polyOrder);
   //poly=lrp.poly;
   //lrp.getInitGuess(EulAng);
   //lrp.optimize_by_picking_best_guess(EulAng);
@@ -308,10 +341,13 @@ KrigingModel::KrigingModel(const SurfData& sd, const ParamMap& params)
   //LinearRegressionModel::evalBasis(G,poly,Rot,XR);
 
   gen_Z_matrix();  
+
+  //printf("completed the right KrigingModel constructor\n", stdout); fflush(stdout);
 }
 
 void KrigingModel::create()
 {
+  //printf("entered create()\n"); fflush(stdout);
 
   prevObjDerMode=prevConDerMode=0; //tells us not to reuse previous work used
   //to calculate the objective, constraints and their derivatives the first 
@@ -325,6 +361,7 @@ void KrigingModel::create()
   // solve the optimization problem for the correlations
   // -
 
+  //printf("numVarsr=%d\n",numVarsr); fflush(stdout);
   OptimizationProblem opt(*this, numVarsr, numConFunc);
 
   // set the bounds for the plausible region for correlation lengths
@@ -332,6 +369,11 @@ void KrigingModel::create()
   // uniformly distributed)
 
   aveDistBetweenPts=pow(numPoints,-1.0/numVarsr);
+
+  //  if(numPoints<=2*numVarsr)
+  //  aveDistBetweenPts=1.0;
+  //else
+  //  aveDistBetweenPts=pow(numPoints-2*numVarsr,-1.0/numVarsr);
 
   //printf("aveDistBetweenPts=%12.6g\n",aveDistBetweenPts);
   /* Gaussian Process error model has about ~5% confidence (2 std devs away) 
@@ -359,12 +401,38 @@ void KrigingModel::create()
   //default initial guess for the Gaussian Process error model, KRD  
   double init_guess=0.5*(maxNatLogCorrLen+minNatLogCorrLen);
 
-  // set bounds and only one initial iterate for now
-  for(int jvar=0; jvar< numVarsr; jvar++) {
-    opt.lower_bound(jvar, minNatLogCorrLen);
-    opt.upper_bound(jvar, maxNatLogCorrLen);
-    opt.initial_iterate(jvar, init_guess);
+  //printf("got to yada yada\n"); fflush(stdout);
+  ///set the bounds and the initial iterates
+  if(ifUserSpecifiedCorrLengths==true) {
+    //printf("says that the user specified correlation lengths\n"); fflush(stdout);
+    // the first guess is what the user told us he/she wanted to use
+    for(int jvar=0; jvar<numVarsr; ++jvar) {
+      opt.lower_bound(jvar, minNatLogCorrLen);
+      opt.upper_bound(jvar, maxNatLogCorrLen);
+      //double temp_double=natLogCorrLen(0,jvar);
+      //printf("KrigingModel::create() jvar=%d temp_double=%g\n",jvar,temp_double);
+      //fflush(stdout);
+      opt.initial_iterate(jvar, natLogCorrLen(0,jvar));
+    }
+    // the second guess is the center of the small feasible region
+    MtxDbl the_second_guess(1,numVarsr);
+    for(int jvar=0; jvar<numVarsr; ++jvar) 
+      the_second_guess(0,jvar)=init_guess;
+    opt.add_initial_iterates(the_second_guess);
+  } else {
+    
+    //printf("about to set bounds and initial iterate\n"); fflush(stdout);
+    // since the user didn't specify an initial guess we will use the center
+    // of the small feasible region as our first initial guess
+    for(int jvar=0; jvar< numVarsr; ++jvar) {
+      opt.lower_bound(jvar, minNatLogCorrLen);
+      opt.upper_bound(jvar, maxNatLogCorrLen);
+      opt.initial_iterate(jvar, init_guess);
+    }
   }
+
+  //printf("just set bounds and initial iterate\n"); fflush(stdout);
+
 
   //add a bin opt random design with 2*numVars more guesses, 
   //bins are the endpoints of a randomly rotated axis
@@ -380,32 +448,39 @@ void KrigingModel::create()
   }
   opt.add_initial_iterates(axes_of_guesses);
 
-
-  if(ifUserSpecifiedCorrLengths==false) {
-    //const int num_guesses = 2*numVarsr+1; 
-    
-    //choose the optimizer you want to use
-    if(optimizationMethod.compare("local")==0)
-      opt.conmin_optimize();
+  //choose the optimizer you want to use
+  if(optimizationMethod.compare("none")==0) {
+    natLogCorrLen.resize(1,numVarsr);
+    opt.retrieve_initial_iterate(0,natLogCorrLen);
+  } 
+  else{
+    if(optimizationMethod.compare("local")==0) {
+      if(numStarts==1)
+	opt.conmin_optimize();
+      else{
+	//printf("doing multi-start local optimization\n");
+	opt.multistart_conmin_optimize(numStarts);
+      }
+    }
     else if(optimizationMethod.compare("global")==0)
       opt.direct_optimize();
-    else if(optimizationMethod.compare("sample")==0)
+    else if(optimizationMethod.compare("sampling")==0)
       opt.best_guess_optimize(maxTrials);
     else{
       cerr << "KrigingModel:create() unknown optimization_method [" << optimizationMethod << "]  aborting\n";
       assert(0);
     }
-    //opt.multistart_conmin_optimize(maxTrials);
-    
-    correlations.newSize(1,numVarsr);
     natLogCorrLen = opt.best_point();
-    correlations(0)=0.5*exp(-2.0*natLogCorrLen(0));
-    //printf("theta={%g",correlations(0));
-    for(int k=1; k<numVarsr; ++k) {
-      correlations(k)=0.5*exp(-2.0*natLogCorrLen(k));
-      //printf(", %g",correlations(k));
-    }
   }
+
+  correlations.newSize(1,numVarsr);
+  correlations(0)=0.5*exp(-2.0*natLogCorrLen(0));
+  //printf("theta={%g",correlations(0));
+  for(int k=1; k<numVarsr; ++k) {
+    correlations(k)=0.5*exp(-2.0*natLogCorrLen(k));
+    //printf(", %g",correlations(k));
+  }
+
   //printf("}\n");
 
   //printf("scaled correlations=[%12.6g",correlations(0));
@@ -414,7 +489,7 @@ void KrigingModel::create()
   //printf("]\n");
 
   masterObjectiveAndConstraints(correlations, 1, 0);
-
+  //cout << model_summary_string();
   //deallocate matrices we no longer need after emulator has been created
 
   //temporary variables used by masterObjectiveAndConstraints
@@ -450,7 +525,26 @@ void KrigingModel::create()
   hessObj.clear(); //matrix used to compute hessObj
 }
 
-
+std::string KrigingModel::model_summary_string() const {
+  MtxDbl temp_out_corr_lengths(1,numVarsr);
+  for(int i=0; i<numVarsr; ++i) 
+    temp_out_corr_lengths(i)=sqrt(0.5/correlations(i));
+  scaler.unScaleXrDist(temp_out_corr_lengths);
+  
+  std::ostringstream oss;
+  oss << "Correlation lengths=(" << temp_out_corr_lengths(0);
+  for(int i=1; i<numVarsr; ++i)
+    oss << ", " << temp_out_corr_lengths(i);
+  oss << "); unadjusted variance=" << estVarianceMLE * scaler.unScaleFactorVarY() << "; the trend is a ";
+  if(polyOrder>1) {
+    if(ifReducedPoly==true)
+      oss << "reduced_";
+    else oss <<"full ";
+  }
+  oss << "polynomial of order=" << polyOrder << ".\n";
+	
+  return (oss.str());  
+}
 
 // BMA TODO: combine these two functions?
 
@@ -2271,7 +2365,7 @@ void KrigingModel::set_conmin_parameters(OptimizationProblem& opt) const
     assert(0);
 
   opt.conminData.iprint = 0; //ammount of to screen output from Conmin
-  opt.conminData.itmax  = 50; //maximum # of Conmin iterations
+  opt.conminData.itmax  = maxTrials; //maximum # of Conmin iterations
   opt.conminData.fdch   = 1.0e-2; //Relative finite difference step size.
   opt.conminData.fdchm  = 1.0e-2; //Absolute finite difference step size.
   opt.conminData.ct     = -0.1; // Constraint thickness parameter, The absolute value of CT decreases in magnitude during optimization. 
@@ -2285,7 +2379,6 @@ void KrigingModel::set_conmin_parameters(OptimizationProblem& opt) const
   opt.conminData.icndir = numTheta+1; //conjugate direction restart parameter
 }
 
-
 void KrigingModel::set_direct_parameters(OptimizationProblem& opt) const
 {
   opt.directData.minBoxSize = -1.0;
@@ -2294,8 +2387,8 @@ void KrigingModel::set_direct_parameters(OptimizationProblem& opt) const
   //opt.directData.volBoxSize = 1.0e-15;
   opt.directData.solutionTarget = -DBL_MAX;
   opt.directData.convergenceTol = 1.0e-4;
-  opt.directData.maxFunctionEvals = 10000;
-  opt.directData.maxIterations = maxTrials;
+  opt.directData.maxFunctionEvals = maxTrials;
+  opt.directData.maxIterations = 1000; 
   opt.directData.verboseOutput = false;
   opt.directData.constraintsPresent = true;
 }

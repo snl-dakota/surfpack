@@ -154,15 +154,17 @@ public:
   
   //matrix style retrieve of a single element from the matrix by reference
   inline T& operator()(int i, int j) {
-  //T& operator()(int i, int j) {
+    //T& operator()(int i, int j) {
 #ifdef __SURFMAT_ERR_CHECK__
     if(!((0<=i)&&(i<NRows)&&(0<=j)&&(j<NCols))){
-      printf("i=%d NRows=%d j=%d NCols=%d\n",i,NRows,j,NCols);
+      printf("i=%d NRows=%d j=%d NCols=%d",i,NRows,j,NCols);
+      printf("\n"); //so can breakpoint on this line in debugger
       assert((0<=i)&&(i<NRows)&&(0<=j)&&(j<NCols));
     }
 #endif
     return data2D[j][i];
   };
+
   
   //vector style retrieve of pointer to element, for passing to BLAS & LAPACK convenience
   inline T* ptr(int k){

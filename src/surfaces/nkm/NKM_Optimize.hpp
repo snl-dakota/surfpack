@@ -242,6 +242,8 @@ public:
 		      int num_constraints = 0)
     :theModel(model), numDesignVar(num_vars), numConFunc(num_constraints)
   { 
+    //printf("calling the OptProb constructor num_vars=%d numDesignVar=%d\n",
+    //num_vars,numDesignVar); fflush(stdout);
     lowerBounds.newSize(numDesignVar);
     upperBounds.newSize(numDesignVar);
     initialIterates.newSize(1, numDesignVar);
@@ -292,17 +294,14 @@ public:
   // TODO: allow models to override?  Not sure why one would need to...
   void getRandGuess(MtxDbl& guess) const;
 
+  /// get either an specified initial iterate or randomly generated
+  /// one from list
+  void retrieve_initial_iterate(int index, MtxDbl& iterate);
 
 private:
 
   // helper functions
   
-  /// get either an specified initial iterate or randomly generated
-  /// one from list
-  void retrieve_initial_iterate(int index, MtxDbl& iterate);
-
-
-
 
   // underlying optimizer implementations
 

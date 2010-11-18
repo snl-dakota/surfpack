@@ -203,7 +203,29 @@ private:
   ///unscale this SurfData object but retain all information needed to scale it if the user later asks us to
   SurfData& unScale();
 
-  MtxDbl& scaleXrOther(MtxDbl& xr_other){
+  ///performs (in place) only multiplicative scaling of real input variables
+  inline MtxDbl& scaleXrDist(MtxDbl& xr_dist) const {
+#ifdef __SURFDATA_ERR_CHECK__
+    assert((xr_dist.getNRows()==1)&&(xr_dist.getNCols()==nvarsr));
+#endif 
+    for(int j=0; j<nvarsr; ++j) 
+      xr_dist(j)/=unscalexr(0,j);
+
+    return xr_dist;
+  };
+
+  ///performs (in place) only multiplicative unscaling of real input variables
+  inline MtxDbl& unScaleXrDist(MtxDbl& xr_dist) const {
+#ifdef __SURFDATA_ERR_CHECK__
+    assert((xr_dist.getNRows()==1)&&(xr_dist.getNCols()==nvarsr));
+#endif 
+    for(int j=0; j<nvarsr; ++j) 
+      xr_dist(j)*=unscalexr(0,j);
+
+    return xr_dist;
+  };
+
+  MtxDbl& scaleXrOther(MtxDbl& xr_other) const{
 #ifdef __SURFDATA_ERR_CHECK__
     assert(xr_other.getNCols()==nvarsr);
 #endif 
@@ -567,6 +589,9 @@ private:
   inline void scaleToFactors(MtxDbl& unscale_xr, MtxDbl& unscale_y){mySd.scaleToFactors(unscale_xr,unscale_y);};
   inline SurfData& unScaleCopy(SurfData& result){return (mySd.unScaleCopy(result));};
   inline SurfData& unScale(){return (mySd.unScale());};
+
+  inline MtxDbl& scaleXrDist(MtxDbl& xr_dist) const {return (mySd.scaleXrDist(xr_dist));};
+  inline MtxDbl& unScaleXrDist(MtxDbl& xr_dist) const {return (mySd.unScaleXrDist(xr_dist));};  
   inline MtxDbl& scaleXrOther(MtxDbl& xr_other) const {return (mySd.scaleXrOther(xr_other));};
   inline MtxDbl& unScaleXrOther(MtxDbl& xr_other) const {return (mySd.unScaleXrOther(xr_other));};
   inline double scaleYOther(double y, int j=-99999) const {return (mySd.scaleYOther(y,j));};

@@ -92,8 +92,9 @@ VecDbl KrigingModel::gradient(const VecDbl& x) const
 
 std::string KrigingModel::asString() const
 {
+  return (nkmKrigingModel->model_summary_string());
   // TODO: be able to write NKM_KrigingModel as a string
-  assert(false);
+  //assert(false);
 }
 
 

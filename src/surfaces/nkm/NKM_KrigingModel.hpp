@@ -43,6 +43,8 @@ class KrigingModel: public SurfPackModel
 
 public:
 
+  std::string model_summary_string() const;
+
   // BMA TODO: can we redesign so these need not be public?
   void set_conmin_parameters(OptimizationProblem& opt) const;
 
@@ -87,8 +89,10 @@ public:
   /// evaluate the KrigingModel's adjusted variance at a collection of points xr, one per row
   MtxDbl& eval_variance(MtxDbl& adj_var, const MtxDbl& xr);
 
+  /// evaluate the partial first derivatives with respect to xr of the models adjusted mean
   MtxDbl& evaluate_d1y(MtxDbl& d1y, const MtxDbl& xr);
 
+  /// evaluate the partial second derivatives with respect to xr of the models adjusted mean... this gives you the lower triangular, including diagonal, part of the Hessian(s), with each evaluation point being a row in both xr (input) and d2y(output)
   MtxDbl& evaluate_d2y(MtxDbl& d2y, const MtxDbl& xr);
 
   // Helpers for solving correlation optimization problems
@@ -101,7 +105,6 @@ public:
   /// the objective function, i.e. the negative log(likelihood);
   /// minimizing this produces a "good" KrigingModel)
   
-  
   inline double objective(const MtxDbl& nat_log_corr_len) {
     correlations.newSize(1,numTheta);
     //MtxDbl theta(1,numTheta);
@@ -113,7 +116,7 @@ public:
   };
   
   
-  /*
+  /* //useful because it shows how to convert the Hessian of the objective function from being with respect to theta to being with respect to natLogCorrLen, but the different (mountain) objective function didn't result a better model for the test cases and was considerably more expensive
   inline double objective(const MtxDbl& nat_log_corr_len) {
     //testing using "the volume of the mountain" (probability) rather than "the height of the mountain's peak" (likelihood=probability density) as the objective... it seems to work identically to maximum likelihood but require evaluation of higher derivatives so don't use should still print out hess_ob_out during model construction (ValidateMain tests) to verify that the hessian is working correctly 
     //the volume of an ellitpical paraboloid =(height/2)*prod(ellipse_radii)*volume of the unit hypersphere; each radius=1/(second derivative at endpoint of axis) (sign indicates direction), and those are the eigenvalues of the Hessian of the objective function. the 1/2 and volume of the hypersphere are constant with respect to theta, so they drop out.
@@ -329,6 +332,9 @@ private:
   
   std::string optimizationMethod;
 
+  /// number of starting locations for (possibly multistart) local optimization to try
+  int numStarts;
+
   /// maximum number of sets of roughness parameters to try
   int maxTrials;
 
@@ -399,12 +405,14 @@ private:
       function" (for now the only choice of polynomial basis functions are
       multidimensional monomials) in a multidimensional polynomial of 
       arbitrary order */
-  MtxInt Poly;
-  
+  MtxInt Poly;  
+  bool ifReducedPoly; /// only use main effects (no interaction/mixed terms) in the polynomial basis
+  int polyOrder; /// highest total order of any term in the polynomial basis
+
   /** the Euler angles to generate the input dimensions' Rotation matrix */
   MtxDbl EulAng; 
 
-  MtxDbl Rot; //the input dimensions' Rotation matrix
+  MtxDbl Rot; ///the input dimensions' Rotation matrix
 
   /** The lower triangular part of the Cholesky decomposition of R (the 
       correlation matrix after possible modification by the inclusion of 

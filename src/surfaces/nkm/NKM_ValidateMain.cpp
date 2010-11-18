@@ -2,7 +2,7 @@
 #include "NKM_KrigingModel.hpp"
 #include <iostream>
 
-#define __TIMING_BENCH__
+//#define __TIMING_BENCH__
 using std::cout;
 using std::endl;
 
@@ -53,7 +53,8 @@ void validate()
   std::map< std::string, std::string> km_params;
   km_params["constraint_type"] = "r";
   //km_params["order"] = "linear";
-  km_params["order"] = "1";
+  km_params["order"] = "2";
+  km_params["reduced_polynomial"]=toString<bool>(true);
 
 
 #ifndef __TIMING_BENCH__  
@@ -252,6 +253,7 @@ void validate()
   KrigingModel kmpav500(sdpav500, km_params); kmpav500.create();
 #endif
   KrigingModel kmpav2500(sdpav2500, km_params); kmpav2500.create();
+  cout << kmpav2500.model_summary_string();
 
 #ifndef __TIMING_BENCH__
   MtxDbl yeval50(50);

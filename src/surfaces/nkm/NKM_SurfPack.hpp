@@ -84,6 +84,25 @@ std::vector<T>& toVec(std::vector<T>& result, const std::string& s)
 }
 
 
+template<typename T>
+std::string toString(const T arg)
+{
+  std::ostringstream os;
+  os << arg;
+  return os.str();
+}
+
+template<typename T>
+std::string fromVec(const std::vector<T>& vec)
+{
+  std::ostringstream os;
+  for (typename std::vector<T>::const_iterator itr = vec.begin();
+	itr != vec.end(); ++itr) {
+    if (itr != vec.begin()) os << " ";
+    os << *itr;
+  }
+  return os.str();
+}
 
 namespace surfpack {
   ///should have variable # of sig figs (precision) control for output
