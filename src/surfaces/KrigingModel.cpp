@@ -89,6 +89,31 @@ VecDbl KrigingModel::gradient(const VecDbl& x) const
   return d1y;
 }
 
+MtxDbl KrigingModel::hessian(const VecDbl& x) const
+{
+  nkm::MtxDbl nkm_x(1, ndims);
+  for(int i=0; i<ndims; ++i)
+    nkm_x(0, i) = x[i];
+
+  int num_lower_elem=(ndims+1)*ndims/2;
+  nkm::MtxDbl nkm_d2y(1, num_lower_elem);
+  nkmKrigingModel->evaluate_d2y(nkm_d2y, nkm_x);
+
+  MtxDbl d2y(ndims, ndims, 0.0); 
+  int k=0;
+  for(int j=0; j<ndims; ++j) {
+    d2y(j,j)=nkm_d2y(k);
+    k++;
+    for(int i=j+1; i<ndims; ++i) {
+      d2y(i,j) = nkm_d2y(k);
+      d2y(j,i) = d2y(i,j);
+      k++;
+    }
+  }
+
+  return d2y;
+}
+
 
 std::string KrigingModel::asString() const
 {

@@ -27,6 +27,7 @@ public:
   ~KrigingModel();
   virtual double variance(const VecDbl& x) const;
   virtual VecDbl gradient(const VecDbl& x) const;
+  virtual MtxDbl hessian(const VecDbl& x) const;
   virtual std::string asString() const;
 protected:
   MtxDbl getMatrix(const ScaledSurfData& ssd, const VecDbl& correlations);
