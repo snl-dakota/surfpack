@@ -79,6 +79,7 @@ public:
   MtxDbl& evalBasis(MtxDbl& g, MtxInt& poly, MtxDbl& xr)
   {
     evaluate_poly_basis(g,poly,xr);
+    return g;
   }
 
   /** evaluates g from a rotated xr (xr is preserved), this function
@@ -116,6 +117,7 @@ public:
     MtxDbl g;
     evalBasis(g,xr);
     matrix_mult(y,g,betaHat,0.0,1.0);
+    return y;
   }
 
   /** evaluates a polynomial fit at a single point AFTER rotating xr

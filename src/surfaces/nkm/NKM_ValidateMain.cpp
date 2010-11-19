@@ -5,6 +5,7 @@
 //#define __TIMING_BENCH__
 using std::cout;
 using std::endl;
+using std::string;
 
 using namespace nkm;
 
@@ -253,7 +254,7 @@ void validate()
   KrigingModel kmpav500(sdpav500, km_params); kmpav500.create();
 #endif
   KrigingModel kmpav2500(sdpav2500, km_params); kmpav2500.create();
-  cout << kmpav2500.model_summary_string();
+  //cout << kmpav2500.model_summary_string();
 
 #ifndef __TIMING_BENCH__
   MtxDbl yeval50(50);

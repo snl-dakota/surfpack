@@ -130,7 +130,6 @@ LinearRegressionModel(const SurfData& sd_in)
   }
   
   // code common to constructors (regardless of euler angle spec)
-  MtxDbl G;
   evalBasis(G, XR);
   least_squares(G, betaHat, Y);
 
@@ -158,14 +157,13 @@ double LinearRegressionModel::objective(const MtxDbl& euler_angle) {
   MtxDbl xr; 
   matrix_mult(xr,XR,Rot,0.0,1.0);
   LinearRegressionModel::evalBasis(G,Poly,xr);
-  MtxDbl betaHat;
   //do an unconstrained least squares, add constrainment in later
   least_squares(G, betaHat, Y);
 
   //calculate the error
   MtxDbl eps = Y;
   matrix_mult(eps, G, betaHat, 1.0, -1.0); //eps_new=eps_old-G*betaHat;
-  double rms = eps(0)*eps(0);
+  rms = eps(0)*eps(0);
   for(int i=1; i<numPoints; ++i)
     rms += eps(i)*eps(i);
   rms = sqrt(rms);

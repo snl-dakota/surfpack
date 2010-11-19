@@ -8,9 +8,6 @@
 
 namespace nkm {
 
-using std::cerr;
-using std::endl;
-
 class SurfPackModel 
 {
 protected:
@@ -29,6 +26,7 @@ public:
 				    OptimizationProblem *opt)
   {
     // default at base class is no-op
+    return correlations;
   }
 
   virtual void getRandGuess(MtxDbl& guess) const{
@@ -47,7 +45,7 @@ public:
   /// minimizing this produces a "good" KrigingModel)
   virtual double objective(const MtxDbl& correlations)
   {
-    cerr << "Derived class does not implement objective" << endl;
+    std::cerr << "Derived class does not implement objective" << std::endl;
     throw(std::string("Derived does not implement"));
   }
 
@@ -57,7 +55,7 @@ public:
   virtual void objectiveAndGradient(double& Obj, MtxDbl& GradObj,
 				    const MtxDbl& correlations)
   {
-    cerr << "Derived class does not implement objectiveAndGradient" << endl;
+    std::cerr << "Derived class does not implement objectiveAndGradient" << std::endl;
     throw(std::string("Derived does not implement"));
   }  
 
@@ -66,7 +64,7 @@ public:
   virtual void objectiveAndConstraints(double& Obj, MtxDbl& Con, 
 				       const MtxDbl& correlations)
   {
-    cerr << "Derived class does not implement objectiveAndConstraints" << endl;
+    std::cerr << "Derived class does not implement objectiveAndConstraints" << std::endl;
     throw(std::string("Derived does not implement"));
   }
 
@@ -77,7 +75,7 @@ public:
 						   MtxDbl& GradCon, 
 						   const MtxDbl& correlations)
   {
-    cerr << "Derived class does not implement objectiveAndConstraintsAndGradients" << endl;
+    std::cerr << "Derived class does not implement objectiveAndConstraintsAndGradients" << std::endl;
     throw(std::string("Derived does not implement"));
   }
 

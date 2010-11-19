@@ -9,6 +9,7 @@
 namespace nkm {
 
 using std::cout;
+using std::cerr;
 using std::endl;
 using std::ostringstream;
 
@@ -293,8 +294,8 @@ KrigingModel::KrigingModel(const SurfData& sd, const ParamMap& params)
 	   (constraintType.compare("rcond")==0)); 
   
   //convert to the Dakota bitflag convention for derivative orders
-  maxObjDerMode=((int) pow(2,num_analytic_obj_ders_in+1))-1; //analytical gradients of objective function
-  maxConDerMode=((int) pow(2,num_analytic_con_ders_in+1))-1; //analytical gradients of constraint function(s)
+  maxObjDerMode=((int) pow(2.0,num_analytic_obj_ders_in+1))-1; //analytical gradients of objective function
+  maxConDerMode=((int) pow(2.0,num_analytic_con_ders_in+1))-1; //analytical gradients of constraint function(s)
 
   // *************************************************************
   // this starts the input section about the nugget which can be
@@ -705,7 +706,7 @@ MtxDbl& KrigingModel::evaluate_d1y(MtxDbl& d1y, const MtxDbl& xr)
   correlation_matrix(r, xr_scaled);
   apply_nugget_eval(r);
   MtxDbl d1r(nrowsxr,numPoints);
-  MtxDbl temp(nrowsxr);
+  MtxDbl temp_vec(nrowsxr);
 
 
   int ivar;
@@ -721,10 +722,10 @@ MtxDbl& KrigingModel::evaluate_d1y(MtxDbl& d1y, const MtxDbl& xr)
     //printf("d1y_usf=%g\n",d1y_unscale_factor);
 
     dcorrelation_matrix_dxk(d1r, r, xr_scaled, ivar);
-    matrix_mult(temp,d1r,rhs);
+    matrix_mult(temp_vec,d1r,rhs);
 
     for(int ipt=0; ipt<nrowsxr; ++ipt)
-      d1y(ipt,ider)=(d1y(ipt,ider)+temp(ipt))*d1y_unscale_factor;
+      d1y(ipt,ider)=(d1y(ipt,ider)+temp_vec(ipt))*d1y_unscale_factor;
   }
   /*
   printf("d1y(0,:)=[%g",d1y(0,0));
@@ -782,7 +783,7 @@ MtxDbl& KrigingModel::evaluate_d2y(MtxDbl& d2y, const MtxDbl& xr)
   apply_nugget_eval(r);
   MtxDbl d1r(nrowsxr,numPoints);
   MtxDbl d2r(nrowsxr,numPoints);
-  MtxDbl temp(nrowsxr);
+  MtxDbl temp_vec(nrowsxr);
 
   int ivar, ivarold=-1, jvar;
   for(int ider=0; ider<nder; ++ider) {
@@ -810,10 +811,10 @@ MtxDbl& KrigingModel::evaluate_d2y(MtxDbl& d2y, const MtxDbl& xr)
     
     dcorrelation_matrix_dxk(d2r, d1r, xr_scaled, jvar);
     
-    matrix_mult(temp,d2r,rhs);
+    matrix_mult(temp_vec,d2r,rhs);
 
     for(int ipt=0; ipt<nrowsxr; ++ipt)
-      d2y(ipt,ider)=(d2y(ipt,ider)+temp(ipt))*d2y_unscale_factor;
+      d2y(ipt,ider)=(d2y(ipt,ider)+temp_vec(ipt))*d2y_unscale_factor;
   }
 
   return d2y;
@@ -993,10 +994,10 @@ MtxDbl& KrigingModel::apply_nugget_eval(MtxDbl& r) const {
   //printf("apply_nugget_eval\n");
 
   int nelem=r.getNElems();
-  double temp=1.0/(1.0+nug);
+  double temp_dbl=1.0/(1.0+nug);
 
   for(int ij=0; ij<nelem; ++ij) 
-    r(ij)*=temp;
+    r(ij)*=temp_dbl;
 
   //printf("apply_nugget_eval temp=%g\n",temp);
 
@@ -1018,17 +1019,17 @@ void KrigingModel::apply_nugget_build() {
   //assert(nrowsR==R.getNCols());
   int nelemsR=nrowsR*nrowsR;
 
-  double temp=1.0/(1.0+nug);
+  double temp_dbl=1.0/(1.0+nug);
   int ij;
   for(ij=0; ij<nelemsR; ++ij)
-    R(ij)*=temp;
+    R(ij)*=temp_dbl;
   
   //the "paranoid" part of my mind wonders if there would be less round off
   //error if I added the nugget to the diagonal BEFORE scaling, the pragmatic
   //part of my mind says it shouldn't matter and doing it this way is faster
-  temp*=nug;
+  temp_dbl*=nug;
   for(ij=0; ij<nrowsR; ++ij)
-    R(ij,ij)+=temp; 
+    R(ij,ij)+=temp_dbl; 
     
   return;
 }
@@ -1135,10 +1136,10 @@ MtxDbl& KrigingModel::dcorrelation_matrix_dxk(MtxDbl& dr, const MtxDbl& r,
 	 (xr.getNCols()==numVarsr)&&(0<=k)&&(k<numVarsr));
   dr.newSize(nrowsxr,numPoints);
 
-  double temp=-2.0*correlations(k);
+  double temp_dbl=-2.0*correlations(k);
   for(int jpt=0; jpt<numPoints; ++jpt)
     for(int ipt=0; ipt<nrowsxr; ++ipt)
-      dr(ipt,jpt)=temp*r(ipt,jpt)*(xr(ipt,k)-XR(jpt,k));
+      dr(ipt,jpt)=temp_dbl*r(ipt,jpt)*(xr(ipt,k)-XR(jpt,k));
 
   return dr;
 }
@@ -1228,18 +1229,18 @@ MtxDbl& KrigingModel::gen_Z_matrix()
     need to be passed in, R needs to be passed in so we can evaluate 
     second derivatives with the same function... dR_dthetak=-Z(:,k).*R(:) 
     (MATLAB notation), and d2R_dthetai_dthetaj=-Z(:,j).*dR_dthetai;*/
-MtxDbl& KrigingModel::dcorrMtx_dthetak(MtxDbl& dR_dthetak, const MtxDbl& R, 
+MtxDbl& KrigingModel::dcorrMtx_dthetak(MtxDbl& dR_dthetak, const MtxDbl& R_local, 
 				       const int k)
 {
   dR_dthetak.newSize(numPoints,numPoints);
   double dRij_dthetak_temp;
   int nrowsZ=Z.getNRows();
-  const double *Zk_ptr=Z.ptr(0,k); //do this to avoid one extra dereference per element of R
+  const double *Zk_ptr=Z.ptr(0,k); //do this to avoid one extra dereference per element of R_local
   int ij=0;
   for(int j=0; j<numPoints-1; ++j) {
     dR_dthetak(j,j)=0.0;
     for(int i=j+1; i<numPoints; ++i) {
-      dRij_dthetak_temp=Zk_ptr[ij]*R(i,j);
+      dRij_dthetak_temp=Zk_ptr[ij]*R_local(i,j);
       dR_dthetak(i,j)=dRij_dthetak_temp;
       dR_dthetak(j,i)=dRij_dthetak_temp;
       ++ij;

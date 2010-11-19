@@ -16,12 +16,6 @@
 
 namespace nkm {
 
-using std::istream;
-using std::ios;
-using std::ostream;
-using std::istringstream;
-using std::string;
-
 class SurfPackModel;
 class SurfData;
 class SurfDataScaler;
@@ -357,21 +351,21 @@ public:
   //SurfDataScaler *scaler;
 
   /* //design decision: do we keep labels locked inside SurfData?
-  inline const string& getXrLabel(int j) { 
+  inline const std::string& getXrLabel(int j) { 
     if((nvarsr<=j) ||  (xrLabel.size()<=j)) 
       assert(0); //need to replace this with a throw
 
     return xrLabel[j];
   };
 
-  inline const string& getXiLabel(int j) { 
+  inline const std::string& getXiLabel(int j) { 
     if((nvarsi<=j) ||  (xiLabel.size()<=j)) 
       assert(0); //need to replace this with a throw
 
     return xiLabel[j];
   };
 
-  inline const string& getYLabel(int j) { 
+  inline const std::string& getYLabel(int j) { 
     if((nout<=j) ||  (yLabel.size()<=j)) 
       assert(0); //need to replace this with a throw
 
@@ -472,10 +466,10 @@ public:
   SurfData(const MtxInt& LOCKXR, const MtxDbl& XR, const MtxInt& XI, const MtxDbl& Y, int jout_set=0);
 
   ///a constructor that reads data from a file for when you don't want the model to group scale the real input variables, models that use the default scaling will scale the real input variables and output variable(s) to a hypercube of volume 1, it doesn't scale the integer input variables  
-  SurfData(const string& filename, int nvarsr_in, int nvarsi_in, int nout_in, int jout_in, int skip_columns);
+  SurfData(const std::string& filename, int nvarsr_in, int nvarsi_in, int nout_in, int jout_in, int skip_columns);
 
   ///a constructor that reads data from a file for when you DO want the model to group scale the real input variables if it is appropriate for the model to do so. models that use the default scaling will scale the real input variables to a hyper-rectangle of volume 1 and the output variable(s) to a hypercube of volume 1, it doesn't scale the integer input variables
-  SurfData(const string& filename, int nvarsr_in, int nvarsi_in, int nout_in, int jout_in, int skip_columns, const MtxInt& LOCKXR);
+  SurfData(const std::string& filename, int nvarsr_in, int nvarsi_in, int nout_in, int jout_in, int skip_columns, const MtxInt& LOCKXR);
 
   ///copy constructor, performs a deep copy
   SurfData(const SurfData& other);
@@ -547,30 +541,30 @@ public:
   bool hasBinaryFileExtension(const std::string& filename) const;
 
   /// Read a set of points into SurfData from either a text or binary file.  Opens file and calls either readText() or readBinary(), currently it only reads text
-  void read(const string& filename);
+  void read(const std::string& filename);
 
   /// Write a set of points in SurfData to either a text or binary file.  Opens file and calls either writeText() or writeBinary(), currently it only writes text
-  void write(const string& filename) const;
+  void write(const std::string& filename) const;
 
   ///Set real input variable, xr, labels to xr0 xr1, etc.; integer input variable, xi, labels to xi0, xi1, etc.; output variable, y, labels to y0 y1, etc.
   void defaultLabels();
   
-  bool readLabelsIfPresent(string single_line, int skip_columns=0);
+  bool readLabelsIfPresent(std::string single_line, int skip_columns=0);
 
   ///read one point into SurfData from a single_line taken from the text .spd file, skip_columns defaults to zero
-  void readPointText(int ipt, const string& single_line, int skip_columns=0);
+  void readPointText(int ipt, const std::string& single_line, int skip_columns=0);
  
   ///Read a set of points into SurfData from an input stream of a text file "*.spd". At this point nvarsr, nvarsi, nout, and optionally lockxr and skip_columns must have already been set by the user. skip_columns defaults to zero
-  void readText(istream& is, int skip_columns=0);
+  void readText(std::istream& is, int skip_columns=0);
 
   /// Write a set of SurfPoints to an output stream
-  void writeText(ostream& os, bool write_labels) const;
+  void writeText(std::ostream& os, bool write_labels) const;
 
   ///Read a set of points into SurfData from an input stream of a binary file "*.bspd". At this point nvarsr, nvarsi, nout, and optionally lockxr and skip_columns must have already been set by the user. skip_columns defaults to zero (need to do something better for variable labels (there should be a way to read them from the binary file)
-  void readBinary(istream& is, int skip_columns=0);
+  void readBinary(std::istream& is, int skip_columns=0);
 
   ///read one point into SurfData from a binary .bspd file, skip_columns defaults to zero
-  void readPointBinary(int ipt, istream& is, int skip_columns=0);
+  void readPointBinary(int ipt, std::istream& is, int skip_columns=0);
 
 };
 
