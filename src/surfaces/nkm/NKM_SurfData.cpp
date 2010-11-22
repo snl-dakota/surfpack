@@ -504,14 +504,14 @@ SurfData& SurfData::copy(const SurfData& other) {
 /// Returns true if file has .bspd extension, false if it has .spd extension. Otherwise, an exception is thrown.
 bool SurfData::hasBinaryFileExtension(const string& filename) const
 {
-  if (surfpack::hasExtension(filename,".bspd")) {
+  if (nkm::surfpack::hasExtension(filename,".bspd")) {
     return true;
-  } else if (surfpack::hasExtension(filename,".spd")) {
+  } else if (nkm::surfpack::hasExtension(filename,".spd")) {
     return false;
-  } else if (surfpack::hasExtension(filename,".dat")) {
+  } else if (nkm::surfpack::hasExtension(filename,".dat")) {
     return false;
   } else {
-    throw surfpack::io_exception(
+    throw nkm::surfpack::io_exception(
       "Unrecognized filename extension.  Use .bspd or .spd"
     );
   }
@@ -526,7 +526,7 @@ void SurfData::read(const string& filename)
   ifstream infile(filename.c_str(), (binary ? ios::in|ios::binary : ios::in));
   if (!infile) {
     //cout << "couldn't open file" << endl;
-    throw surfpack::file_open_failure(filename);
+    throw nkm::surfpack::file_open_failure(filename);
   } else if (binary) {
     cout << "attempting to open a binary file" << endl;
     assert(0);
@@ -552,14 +552,14 @@ void SurfData::write(const string& filename) const
   ofstream outfile(filename.c_str(), 
     (binary ? ios::out|ios::binary : ios::out));
   if (!outfile) {
-    throw surfpack::file_open_failure(filename);
+    throw nkm::surfpack::file_open_failure(filename);
   } else if (binary) {
     cout << "attempting to write a binary file" <<endl;
     assert(0);
     //writeBinary(outfile);
   } else {
     // Write the header and label info for .spd, not for .dat
-    bool write_labels = surfpack::hasExtension(filename,".spd");
+    bool write_labels = nkm::surfpack::hasExtension(filename,".spd");
     writeText(outfile, write_labels);
   }
   outfile.close();
@@ -672,7 +672,7 @@ void SurfData::readPointText(int ipt, const string& single_line,
     for(nskip_read=0; nskip_read<skip_columns; ++nskip_read) {
       // Throw an exception if there are fewer values on this line that
       // expected.
-      surfpack::checkForEOF(streamline);
+      nkm::surfpack::checkForEOF(streamline);
       streamline >> dummy;
     }
 
@@ -680,7 +680,7 @@ void SurfData::readPointText(int ipt, const string& single_line,
     for(nvarsr_read=0; nvarsr_read<nvarsr; ++nvarsr_read) {
       // Throw an exception if there are fewer values on this line that
       // expected.
-      surfpack::checkForEOF(streamline);
+      nkm::surfpack::checkForEOF(streamline);
       streamline >> xr(ipt,nvarsr_read);
     }
 
@@ -688,7 +688,7 @@ void SurfData::readPointText(int ipt, const string& single_line,
     for(nvarsi_read=0; nvarsi_read<nvarsi; ++nvarsi_read) {
       // Throw an exception if there are fewer values on this line that
       // expected.
-      surfpack::checkForEOF(streamline);
+      nkm::surfpack::checkForEOF(streamline);
       streamline >> xi(ipt,nvarsi_read);
     } 
 
@@ -696,10 +696,10 @@ void SurfData::readPointText(int ipt, const string& single_line,
     for(nout_read=0; nout_read<nout; ++nout_read) {
       // Throw an exception if there are fewer values on this line that
       // expected.
-      surfpack::checkForEOF(streamline);
+      nkm::surfpack::checkForEOF(streamline);
       streamline >> y(ipt,nout_read);
     } 
-  } catch(surfpack::io_exception&) {
+  } catch(nkm::surfpack::io_exception&) {
     cerr << "Bad SurfPoint: " << single_line 
 	 << "\nExpected on this line: " 
          << "\n  " << skip_columns << " leading columns to skip and"
@@ -734,16 +734,16 @@ void SurfData::readPointBinary(int ipt, istream& is, int skip_columns)
     for (nvarsr_read=0; nvarsr_read<nvarsr; ++nvarsr_read) {
        // Throw an exception if there are fewer values on this line that
        // expected.
-       surfpack::checkForEOF(is);
+       nkm::surfpack::checkForEOF(is);
        is.read(reinterpret_cast<char*>(xr.ptr(ipt,nvarsr_read)),sizeof(xr(ipt,nvarsr_read)));
     }
     for (nout_read=0; nout_read<nout; ++nout_read) {
        // Throw an exception if there are fewer values on this line that
        // expected.
-       surfpack::checkForEOF(is);
+       nkm::surfpack::checkForEOF(is);
        is.read(reinterpret_cast<char*>(y.ptr(ipt,nout_read)),sizeof(y(ipt,nout_read)));
     }
-  } catch (surfpack::io_exception&) {
+  } catch (nkm::surfpack::io_exception&) {
     cerr << "Bad SurfPoint: binary file"  
 	 << "\nExpected on this line: " 
          << "\n  " << skip_columns << " leading columns to skip and"
@@ -826,7 +826,7 @@ void SurfData::readText(istream& is, int skip_columns)
 	++npts; //only increase npts when we add a new point
       }
     }
-  } catch(surfpack::io_exception& exception) {
+  } catch(nkm::surfpack::io_exception& exception) {
     //cout << "encountered an exception in readText()\n";
     cerr << exception.what() << endl;
     throw;
@@ -860,17 +860,17 @@ void SurfData::writeText(ostream& os, bool write_labels) const
       ss << '#';
       int correction = 1;      
       for(ivarsr=0; ivarsr<nvarsr; ++ivarsr) {
-        ss << setw(surfpack::field_width - correction) << xrLabels[ivarsr] 
+        ss << setw(nkm::surfpack::field_width - correction) << xrLabels[ivarsr] 
 	   << " ";
         correction=0;
       }
       for(ivarsi=0; ivarsi<nvarsi; ++ivarsi) {
-        ss << setw(surfpack::field_width - correction) << xiLabels[ivarsi]
+        ss << setw(nkm::surfpack::field_width - correction) << xiLabels[ivarsi]
 	   << " ";
         correction=0;
       }
       for(iout=0; iout<nout-1; ++iout) {
-        ss << setw(surfpack::field_width) << yLabels[iout] << " ";
+        ss << setw(nkm::surfpack::field_width) << yLabels[iout] << " ";
       }
       ss << yLabels[nout-1];
       os << ss.str() << endl;
@@ -880,18 +880,18 @@ void SurfData::writeText(ostream& os, bool write_labels) const
   // like that.
   // Save the stream flags.  The output precision may be modified, but it 
   // will be restored to its old value before the method exits. 
-    ss.precision(surfpack::output_precision);
+    ss.precision(nkm::surfpack::output_precision);
     ss.setf(ios::scientific);
-    //ss.width(surfpack::field_width);
-    //ss.setw(surfpack::field_width);
+    //ss.width(nkm::surfpack::field_width);
+    //ss.setw(nkm::surfpack::field_width);
     for(int ipt=0; ipt<npts; ++ipt) {
       ss.str("");
       for(ivarsr=0; ivarsr<nvarsr; ++ivarsr) 
-	ss << setw(surfpack::field_width) << xr(ipt,ivarsr) << " ";
+	ss << setw(nkm::surfpack::field_width) << xr(ipt,ivarsr) << " ";
       for(ivarsi=0; ivarsi<nvarsi; ++ivarsi)
-	ss << setw(surfpack::field_width) << xi(ipt,ivarsi) << " ";
+	ss << setw(nkm::surfpack::field_width) << xi(ipt,ivarsi) << " ";
       for(iout=0; iout<nout-1; ++iout)
-	ss << setw(surfpack::field_width)<< y(ipt,iout) << " ";
+	ss << setw(nkm::surfpack::field_width)<< y(ipt,iout) << " ";
       ss << y(ipt,nout-1);
       os << ss.str() << endl;
     }
@@ -920,12 +920,12 @@ void SurfData::readBinary(istream& is, int skip_columns)
     for (npts_read=0; npts_read < npts; ++npts_read) {
       // Throw an exception if we hit the end-of-file before we've
       // read the number of points that were supposed to be there.
-      surfpack::checkForEOF(is);
+      nkm::surfpack::checkForEOF(is);
       // True for fourth argument signals a binary read
       readPointBinary(npts_read, is, skip_columns);
     }
 
-  } catch(surfpack::io_exception&) {
+  } catch(nkm::surfpack::io_exception&) {
     cerr << "Expected: " << npts << " points.  "
          << "Read: " << npts_read << " points." << endl;
     throw;

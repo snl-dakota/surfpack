@@ -40,7 +40,6 @@ KrigingModel::KrigingModel(const SurfData& sd, const ParamMap& args)
   : SurfpackModel(sd.xSize())
 {
   surfdata_to_nkm_surfdata(sd, nkmSurfData);
-
   nkmKrigingModel = new nkm::KrigingModel(nkmSurfData, args);
   nkmKrigingModel->create();
 }

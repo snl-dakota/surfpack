@@ -242,7 +242,7 @@ const ParamMap& SurfpackModelFactory::parameters() const
 
 void SurfpackModelFactory::add(const std::string& name, const std::string& value)
 {
-  params.insert(ModelParam(name,value));
+  params[name]=value;
 }
 
 SurfpackModel* SurfpackModelFactory::Build(const SurfData& sd)

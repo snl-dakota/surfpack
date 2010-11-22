@@ -108,10 +108,10 @@ namespace surfpack {
   ///should have variable # of sig figs (precision) control for output
 
   /// Precision of output for double precision numbers
-  const unsigned output_precision = 3;
+  const unsigned output_precision = 16;
 
   /// Length of the field for double-precision number stream output
-  const unsigned field_width = output_precision + 8;
+  const unsigned field_width = output_precision + 3;
 
 
   /// Thrown when an attempt to open a file for reading or writing fails

@@ -719,20 +719,23 @@ direct_objective_eval(int *n, double c[], double l[], double u[], int point[],
 
       // set flag to 1 if infeasible w.r.t. ANY constraint
       int infeasible = 0;
+      //std::cout << "numConFunc=" << optimizationProblemInstance->numConFunc;
       for(int k=0; k<optimizationProblemInstance->numConFunc; k++) 
-	if (con(k) > 0.0) {
+	if (!(con(k) < 0.0)) {
 	  infeasible = 1;
-	  //	  std::cout << "constraint violated" << std::endl;
+	  //std::cout << "constraint violated" << std::endl;
 	  break;
 	}
-      fvec[cnt+(*maxfunc)-1+j] = infeasible;
+      //if(infeasible==0)
+      //std::cout << "a feasible solution exists" << std::endl;
+      fvec[cnt+(*maxfunc)+j] = infeasible;
 
     }
     else {
       // return function values
       fvec[cnt+j] = optimizationProblemInstance->theModel.objective(curr_vars);
       // flag: successful eval
-      fvec[cnt+(*maxfunc)-1+j] = 0; 
+      fvec[cnt+(*maxfunc)+j] = 0; 
     }
 
 

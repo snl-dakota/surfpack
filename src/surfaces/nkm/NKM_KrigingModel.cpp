@@ -94,6 +94,13 @@ KrigingModel::KrigingModel(const SurfData& sd, const ParamMap& params)
 	cerr << "The lower bound of the domain of the Kriging Model must be less than or equal to the upper bound of the domain of the Kriging Model\n";
 	assert(min_max_xr(0,ivarsr)<=min_max_xr(1,ivarsr));
       }
+    //printf("lower_bounds = (%g",min_max_xr(0,0));
+    //for(int ivarsr=1; ivarsr<numVarsr; ++ivarsr)
+    //printf(", %g",min_max_xr(0,ivarsr));
+    //printf("), upper_bounds = (%g",min_max_xr(1,0));
+    //for(int ivarsr=1; ivarsr<numVarsr; ++ivarsr)
+    //printf(", %g",min_max_xr(1,ivarsr));    
+    //printf(")\n");
     sdBuild.setUnscaledDomainSize(min_max_xr);
   }
   
@@ -132,7 +139,9 @@ KrigingModel::KrigingModel(const SurfData& sd, const ParamMap& params)
     cerr << "KrigingModel() unknown optimization_method [" << optimizationMethod << "]  aborting\n";
     assert(0);
   }
-  
+
+  //cout << "optimization_method=\"" << optimizationMethod << "\"\n";
+
   //numStarts is the number of starting locations in a multi-start local search
   numStarts=1;
   param_it = params.find("num_starts");
@@ -146,6 +155,7 @@ KrigingModel::KrigingModel(const SurfData& sd, const ParamMap& params)
     assert((numStarts==1)||(optimizationMethod.compare("local")==0));
   }
   
+  //cout << "num_starts=" << numStarts << "\n";
 
 
   // does the user want to specify correlation lengths directly?
@@ -222,6 +232,8 @@ KrigingModel::KrigingModel(const SurfData& sd, const ParamMap& params)
     polyOrder = std::atoi(param_it->second.c_str()); 
     assert (polyOrder >= 0);
   }
+  
+  //cout << "order=" << polyOrder << "\n";
 
   //polyOrder = 2; //for debug
   //main_effects_poly_power(Poly, numVarsr, polyOrder); //for debug
@@ -229,8 +241,10 @@ KrigingModel::KrigingModel(const SurfData& sd, const ParamMap& params)
   ifReducedPoly=false;
   param_it = params.find("reduced_polynomial");
   if (param_it != params.end() && param_it->second.size() > 0) 
-    if((std::atoi(param_it->second.c_str()))!=0)
+    if((std::atoi(param_it->second.c_str()))!=0) 
       ifReducedPoly=true;
+      
+  //cout << "ifReducedPoly=" << ifReducedPoly << "\n";
 
   if(ifReducedPoly)
     main_effects_poly_power(Poly, numVarsr, polyOrder);
@@ -254,6 +268,8 @@ KrigingModel::KrigingModel(const SurfData& sd, const ParamMap& params)
   if (param_it != params.end() && param_it->second.size() > 0)
     if(tolower(param_it->second[0])=='e') //should I use better (whole word) error checking?
       constraintType="eig"; 
+
+  //cout << "contraintType=\"" << constraintType << "\"\n";
 
   //default orders of analytical derivatives of objective and constraint 
   //functions, eventually (Surfpack release) we will expose this to the
@@ -307,6 +323,8 @@ KrigingModel::KrigingModel(const SurfData& sd, const ParamMap& params)
   param_it = params.find("find_nugget");
   if (param_it != params.end() && param_it->second.size() > 0)
     ifChooseNug = true; 
+
+  //cout << "ifChooseNug=" << ifChooseNug << "\n";
 
   // fixed value for now
   maxChooseNug = 0.1;
@@ -384,7 +402,7 @@ void KrigingModel::create()
      * you shouldn't be using a Gaussian process error model
      KRD */
   //double max_corr_length = (aveDistBetweenPts+(sqrt(numVarsr)-1.0)*exp(2.0-numPoints/(4*numVarsr)))*2.0; //aveDistBetweenPts*2.0; was tradditional but the modified form above works better for very small numbers of points
-  double max_corr_length = aveDistBetweenPts*2.0; 
+  double max_corr_length = aveDistBetweenPts*4.0; 
 
   maxNatLogCorrLen=log(max_corr_length);
   //double min_correlation = 1.0/(2.0*max_corr_length*max_corr_length); 
@@ -490,7 +508,7 @@ void KrigingModel::create()
   //printf("]\n");
 
   masterObjectiveAndConstraints(correlations, 1, 0);
-  //cout << model_summary_string();
+  cout << model_summary_string();
   //deallocate matrices we no longer need after emulator has been created
 
   //temporary variables used by masterObjectiveAndConstraints
@@ -542,7 +560,9 @@ std::string KrigingModel::model_summary_string() const {
       oss << "reduced_";
     else oss <<"full ";
   }
-  oss << "polynomial of order=" << polyOrder << ".\n";
+  oss << "polynomial of order=" << polyOrder << 
+    ", rcondR=" << rcondR <<
+    ".\n";
 	
   return (oss.str());  
 }
@@ -1381,7 +1401,7 @@ void KrigingModel::masterObjectiveAndConstraints(const MtxDbl& theta, int obj_de
     apply_nugget_build(); //modify R by nug in place
   }
 
-  if((prevObjDerMode==0)&&(1<=obj_der_mode)) {
+  if((prevObjDerMode==0)&&((1<=obj_der_mode)||(1<=con_der_mode))) {
 
 
     //perform LU decomposition of R and calculate the determinant of R
@@ -2384,8 +2404,10 @@ void KrigingModel::set_direct_parameters(OptimizationProblem& opt) const
 {
   opt.directData.minBoxSize = -1.0;
   opt.directData.volBoxSize = -1.0;
-  //  opt.directData.minBoxSize = 1.0e-15;
+  //opt.directData.minBoxSize = 1.0e-15;
   //opt.directData.volBoxSize = 1.0e-15;
+  //opt.directData.minBoxSize = 1.0e-3;
+  //opt.directData.volBoxSize = 1.0e-5;
   opt.directData.solutionTarget = -DBL_MAX;
   opt.directData.convergenceTol = 1.0e-4;
   opt.directData.maxFunctionEvals = maxTrials;
