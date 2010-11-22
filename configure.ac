@@ -70,9 +70,13 @@ AC_F77_WRAPPERS
 # In other words, this macro only sets the DEFAULT.
 AC_DISABLE_SHARED
 
+# Surfpack is a C++ code.
+AC_LANG([C++])
+
 # Checks for the LAPACK library.  This macro was downloaded from
 # http://www.gnu.org/software/ac-archive (current as of August 2004).
 # It is included here in the m4 directory.
+ACX_BLAS
 ACX_LAPACK
 
 # Checks for the flex version and associated library (may not be -lfl)
