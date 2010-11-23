@@ -313,11 +313,19 @@ KrigingModel::KrigingModel(const SurfData& sd, const ParamMap& params)
   maxObjDerMode=((int) pow(2.0,num_analytic_obj_ders_in+1))-1; //analytical gradients of objective function
   maxConDerMode=((int) pow(2.0,num_analytic_con_ders_in+1))-1; //analytical gradients of constraint function(s)
 
+  //maxCondNum=pow(1024.0,5); 
+  maxCondNum=pow(1024.0,4); 
+  //maxCondNum=pow(1024.0,5)/32.0;
+
   // *************************************************************
   // this starts the input section about the nugget which can be
   // used to smooth the data and also decrease the condition 
   // number
   // *************************************************************
+
+  nug=(2*getNTrend()+1.0)/maxCondNum;
+  //nug=2*numPoints/maxCondNum;
+
 
   ifChooseNug = false;
   param_it = params.find("find_nugget");
@@ -328,12 +336,42 @@ KrigingModel::KrigingModel(const SurfData& sd, const ParamMap& params)
 
   // fixed value for now
   maxChooseNug = 0.1;
-
   nug = 0.0; //default
+
+  nuggetFormula=0;
+  param_it = params.find("nugget_formula");
+  if (param_it != params.end() && param_it->second.size() > 0) {
+    if(ifChooseNug==true) {
+      cerr << "You can't both auto-select a nugget and use a preset formula" << endl;
+      assert(ifChooseNug==false);
+    }
+    nuggetFormula=std::atoi(param_it->second.c_str()); 
+    if(nuggetFormula!=0) {
+      switch(nuggetFormula) {
+      case 1:
+	nug=(2*getNTrend()+1.0)/maxCondNum;
+	break;
+      case 2:
+	nug=2*numPoints/maxCondNum;
+	break;
+      default:
+	cerr << "nugget_formula =" << nuggetFormula << " is not one of the available preset nugget formulas." << endl;
+	assert(0);
+      }
+    }
+  }
+
   param_it = params.find("nugget");
   if (param_it != params.end() && param_it->second.size() > 0) {
+    if(!((nuggetFormula==0)&&(ifChooseNug==false))) {
+      cerr << "You can do at most 1 of the following (A) auto-select the nugget (minimum needed to satisfy the condition number bound) (B) use one of the preset nugget formulas (C) directly specify a nugget.  The default is not to use a nugget at all (i.e. use a nugget of zero)." << endl;
+      assert((nuggetFormula==0)&&(ifChooseNug==false));
+    }
     nug = std::atof(param_it->second.c_str()); 
-    assert (nug >= 0.0);
+    if(!(nug >= 0.0)) {
+      cerr << "The nugget must be greater than or equal to zero." << endl;
+      assert (nug >= 0.0);
+    }
   }
 
   // *************************************************************
@@ -353,11 +391,6 @@ KrigingModel::KrigingModel(const SurfData& sd, const ParamMap& params)
   EulAng.newSize(1, nchoosek(numVarsr, 2)); 
   EulAng.zero();
   gen_rot_mat(Rot, EulAng, numVarsr);
-  //maxCondNum=pow(1024.0,5); 
-  maxCondNum=pow(1024.0,4); 
-  //maxCondNum=pow(1024.0,5)/32.0;
-  nug=(2*getNTrend()+1.0)/maxCondNum;
-  //nug=2*numPoints/maxCondNum;
   eval_trend_fn(G, Poly, Rot, XR);
   //LinearRegressionModel::evalBasis(G,poly,Rot,XR);
 
@@ -508,7 +541,7 @@ void KrigingModel::create()
   //printf("]\n");
 
   masterObjectiveAndConstraints(correlations, 1, 0);
-  cout << model_summary_string();
+  //cout << model_summary_string();
   //deallocate matrices we no longer need after emulator has been created
 
   //temporary variables used by masterObjectiveAndConstraints
@@ -561,7 +594,7 @@ std::string KrigingModel::model_summary_string() const {
     else oss <<"full ";
   }
   oss << "polynomial of order=" << polyOrder << 
-    ", rcondR=" << rcondR <<
+    "; rcond(R)=" << rcondR << "; nugget=" << nug <<
     ".\n";
 	
   return (oss.str());  

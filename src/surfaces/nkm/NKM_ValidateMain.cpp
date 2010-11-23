@@ -74,6 +74,7 @@ void validate()
 
   km_params["lower_bounds"]="-2.0 -2.0";
   km_params["upper_bounds"]="2.0 2.0";
+  //km_params["nugget_formula"]="2";
 
   KrigingModel kmros10( sd2d10 , km_params); kmros10.create();
   KrigingModel kmros100(sd2d100, km_params); kmros100.create();

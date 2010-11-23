@@ -348,6 +348,9 @@ private:
       a positive number */
   bool ifChooseNug; 
 
+  /// which if any preset nugget formula should be used to calculate a nugget size.
+  int nuggetFormula;
+
   bool ifUserSpecifiedCorrLengths;
   
   int numVarsr;
