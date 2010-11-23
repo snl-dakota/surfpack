@@ -3,6 +3,7 @@
 #include <iostream>
 
 //#define __TIMING_BENCH__
+//#define __FAST_TEST__
 using std::cout;
 using std::endl;
 using std::string;
@@ -247,19 +248,25 @@ void validate()
   SurfData sdpav50( paviani10d_50 , 10, 0, 1, 0, 0);
   SurfData sdpav500(paviani10d_500, 10, 0, 1, 0, 0);
 #endif
+#ifndef __FAST_TEST__
   SurfData sdpav2500(paviani10d_2500, 10, 0, 1, 0, 0);
+#endif
   SurfData sdpav10K(paviani10d_10K, 10, 0, 1, 0, 0);
 #ifndef __TIMING_BENCH__
   KrigingModel kmpav50( sdpav50 , km_params); kmpav50.create();
   KrigingModel kmpav500(sdpav500, km_params); kmpav500.create();
 #endif
+#ifndef __FAST_TEST__
   KrigingModel kmpav2500(sdpav2500, km_params); kmpav2500.create();
   //cout << kmpav2500.model_summary_string();
+#endif
 
 #ifndef __TIMING_BENCH__
   MtxDbl yeval50(50);
 #endif
+#ifndef __FAST_TEST__
   MtxDbl yeval2500(2500);
+#endif
 
 #ifndef __TIMING_BENCH__
   //evaluate error the 10 pt paviani10d kriging model at 10K points
@@ -274,12 +281,14 @@ void validate()
     paverror(1,2)+=pow(yeval10K(i)-sdpav10K.y(i),2);
   paverror(1,3)=sqrt(paverror(1,2)/10000.0);
 #endif
-      
+
+#ifndef __FAST_TEST__      
   //evaluate error the 2500 pt paviani10d kriging model at 10K points
   kmpav2500.evaluate(yeval10K,sdpav10K.xr);
   for(int i=0; i<10000; ++i)
     paverror(2,2)+=pow(yeval10K(i)-sdpav10K.y(i),2);
   paverror(2,3)=sqrt(paverror(2,2)/10000.0);
+#endif
 
 #ifdef __TIMING_BENCH__  
   sdpav10K.y.copy(yeval10K);
@@ -290,6 +299,7 @@ void validate()
   sdpav10K.clear();
 
 #ifndef __TIMING_BENCH__  
+#ifndef __FAST_TEST__
   //evaluate error the 2500 pt paviani10d kriging model at build points
   kmpav2500.evaluate(yeval2500,sdpav2500.xr);
   for(int i=0; i<2500; ++i)
@@ -298,6 +308,7 @@ void validate()
   
   sdpav2500.clear();
   yeval2500.clear();
+#endif
   
   //evaluate error the 500 pt paviani10d kriging model at build points
   kmpav500.evaluate(yeval500,sdpav500.xr);

@@ -354,8 +354,10 @@ KrigingModel::KrigingModel(const SurfData& sd, const ParamMap& params)
   EulAng.zero();
   gen_rot_mat(Rot, EulAng, numVarsr);
   //maxCondNum=pow(1024.0,5); 
-  maxCondNum=pow(1024.0,3); 
+  maxCondNum=pow(1024.0,4); 
   //maxCondNum=pow(1024.0,5)/32.0;
+  nug=(2*getNTrend()+1.0)/maxCondNum;
+  //nug=2*numPoints/maxCondNum;
   eval_trend_fn(G, Poly, Rot, XR);
   //LinearRegressionModel::evalBasis(G,poly,Rot,XR);
 
@@ -401,11 +403,9 @@ void KrigingModel::create()
      * that same information will be contained in nearby points OR
      * you shouldn't be using a Gaussian process error model
      KRD */
-  //double max_corr_length = (aveDistBetweenPts+(sqrt(numVarsr)-1.0)*exp(2.0-numPoints/(4*numVarsr)))*2.0; //aveDistBetweenPts*2.0; was tradditional but the modified form above works better for very small numbers of points
-  double max_corr_length = aveDistBetweenPts*4.0; 
+  double max_corr_length = aveDistBetweenPts*8.0; //*2.0; 
 
   maxNatLogCorrLen=log(max_corr_length);
-  //double min_correlation = 1.0/(2.0*max_corr_length*max_corr_length); 
 
   /* Gaussian Process error model has about ~5% confidence (2 std devs) midway
      between neighboring points... i.e. you're 4 std devs away from your 
