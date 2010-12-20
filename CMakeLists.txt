@@ -19,6 +19,7 @@ CONFIGURE_FILE("${PROJECT_SOURCE_DIR}/cmake/surfpack_config.h.in"
 )
 
 ADD_DEFINITIONS("-DHAVE_CONFIG_H")
+#add_definitions("-DF77_FUNC_=@FortranCInterface_GLOBAL_MACRO@")
 
 #SET(Surfpack_ENABLE_CXX ON)
 #SET(Surfpack_ENABLE_Fortran ON)
@@ -49,5 +50,5 @@ SET(SUBLIBS ${SUBLIBS} surfpack)
 
 #Descend into source subdirectories
 ##SET(SUBLIBS ${SUBLIBS} mars surfaces conmin)
-SET(SUBLIBS ${SUBLIBS} mars surfaces)
+SET(SUBLIBS ${SUBLIBS} mars surfaces nkm)
 

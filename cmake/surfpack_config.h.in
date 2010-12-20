@@ -13,10 +13,10 @@
 #define F77_FUNC@FortranCInterface_GLOBAL_MACRO@
 
 /* As F77_FUNC, but for C identifiers containing underscores. */
-#define F77_FUNC_@F77_FUNC@_
+#define F77_FUNC_@FortranCInterface_GLOBAL_MACRO@
 
 /* Define if F77_FUNC and F77_FUNC_ are equivalent. */
-#cmakedefine F77_FUNC_EQUIV
+//#cmakedefine F77_FUNC_EQUIV
 
 /* Define if F77 and FC dummy `main' functions are identical. */
 #cmakedefine FC_DUMMY_MAIN_EQ_F77
