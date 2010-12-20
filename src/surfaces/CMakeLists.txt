@@ -1,8 +1,10 @@
 
-INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/src)
+include_directories(${PROJECT_SOURCE_DIR}/src)
+
+subdirs(nkm)
 
 ## surfaces library sources.
-SET(surfaces_src
+set(surfaces_src
    MovingLeastSquaresModel.cpp
    MovingLeastSquaresModel.h
    LinearRegressionModel.cpp
@@ -21,6 +23,6 @@ SET(surfaces_src
    ModelScaler.h
 )
 
-ADD_LIBRARY(surfaces ${surfaces_src})
+add_library(surfaces ${surfaces_src})
 #TARGET_LINK_LIBRARIES(surfaces ${LAPACK_LIBRARIES})
 
