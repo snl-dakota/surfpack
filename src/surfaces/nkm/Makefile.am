@@ -16,7 +16,7 @@ libnkm_la_SOURCES =  NKM_KrigingModel.cpp \
 	NKM_SurfPackModel.hpp
 #	NKM_SurfMat_Teuchos.hpp
 
-bin_PROGRAMS = TestMain ValidateMain
+noinst_PROGRAMS = TestMain ValidateMain
 
 TestMain_SOURCES = NKM_TestMain.cpp
 TestMain_LDADD = libnkm.la
