@@ -11,11 +11,28 @@ using std::string;
 using namespace nkm;
 
 void validate();
+void hack();
 
 int main(int argc, char* argv[])
 {
+  //hack();
   validate();
   return 0;
+}
+
+void hack()
+{
+  string filename="ORIG_DATA.spd";
+  SurfData orig_data( filename , 6, 0, 10, 0, 1);
+  
+  std::map< std::string, std::string> km_params;
+  km_params["order"] = "2";
+
+  for(int jout=0; jout<10; ++jout) {
+    orig_data.setJOut(jout);
+    KrigingModel km(orig_data , km_params); km.create();
+  }
+  return;
 }
 
 

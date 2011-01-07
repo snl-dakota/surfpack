@@ -386,7 +386,7 @@ SurfData::SurfData(const MtxDbl& XR, const MtxInt& XI, const MtxDbl& Y, int jout
 
   //lockxr is an empy matrix
   dontScale(); //set the initial scaling to identity
-  read(filename);
+  read(filename,skip_columns);
 
   return;
 }
@@ -518,7 +518,7 @@ bool SurfData::hasBinaryFileExtension(const string& filename) const
 }
 
 /// Read a set of points into SurfData from either a text or binary file.  Opens file and calls either readText() or readBinary()
-void SurfData::read(const string& filename)
+void SurfData::read(const string& filename, int skip_columns)
 {
   // Open file in binary or text mode based on filename extension (.bspd or .spd)
   bool binary = hasBinaryFileExtension(filename);
@@ -530,10 +530,10 @@ void SurfData::read(const string& filename)
   } else if (binary) {
     cout << "attempting to open a binary file" << endl;
     assert(0);
-    readBinary(infile);
+    readBinary(infile,skip_columns);
   } else {
     //cout << "attempting to open a text file" << endl;
-    readText(infile);
+    readText(infile,skip_columns);
   }
   //cout << "done reading from file\n";
   // Object may have already been created
@@ -668,12 +668,15 @@ void SurfData::readPointText(int ipt, const string& single_line,
     // read the point as text
     istringstream streamline(single_line);
 
+    //cout << "skip_columns=" << skip_columns << endl;
+
     //skip leading columns
     for(nskip_read=0; nskip_read<skip_columns; ++nskip_read) {
       // Throw an exception if there are fewer values on this line that
       // expected.
       nkm::surfpack::checkForEOF(streamline);
       streamline >> dummy;
+      //cout << "dummy=" << dummy << endl;
     }
 
     //read in real input variables "xr"
@@ -682,6 +685,7 @@ void SurfData::readPointText(int ipt, const string& single_line,
       // expected.
       nkm::surfpack::checkForEOF(streamline);
       streamline >> xr(ipt,nvarsr_read);
+      //cout << "xr(" << ipt << "," << nvarsr_read << ")=" << xr(ipt,nvarsr_read) << endl;
     }
 
     //read in integer input variables "xi"
@@ -776,6 +780,8 @@ void SurfData::readPointBinary(int ipt, istream& is, int skip_columns)
 */
 void SurfData::readText(istream& is, int skip_columns) 
 {
+  //cout << "readText skip_columns=" << skip_columns << endl;
+
   string single_line;
   int nlines=0;
   npts=0;

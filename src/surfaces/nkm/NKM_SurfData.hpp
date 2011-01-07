@@ -466,7 +466,7 @@ public:
   SurfData(const MtxInt& LOCKXR, const MtxDbl& XR, const MtxInt& XI, const MtxDbl& Y, int jout_set=0);
 
   ///a constructor that reads data from a file for when you don't want the model to group scale the real input variables, models that use the default scaling will scale the real input variables and output variable(s) to a hypercube of volume 1, it doesn't scale the integer input variables  
-  SurfData(const std::string& filename, int nvarsr_in, int nvarsi_in, int nout_in, int jout_in, int skip_columns);
+  SurfData(const std::string& filename, int nvarsr_in, int nvarsi_in, int nout_in, int jout_in, int skip_columns=0);
 
   ///a constructor that reads data from a file for when you DO want the model to group scale the real input variables if it is appropriate for the model to do so. models that use the default scaling will scale the real input variables to a hyper-rectangle of volume 1 and the output variable(s) to a hypercube of volume 1, it doesn't scale the integer input variables
   SurfData(const std::string& filename, int nvarsr_in, int nvarsi_in, int nout_in, int jout_in, int skip_columns, const MtxInt& LOCKXR);
@@ -541,10 +541,16 @@ public:
   bool hasBinaryFileExtension(const std::string& filename) const;
 
   /// Read a set of points into SurfData from either a text or binary file.  Opens file and calls either readText() or readBinary(), currently it only reads text
-  void read(const std::string& filename);
+  void read(const std::string& filename, int skip_columns=0);
 
   /// Write a set of points in SurfData to either a text or binary file.  Opens file and calls either writeText() or writeBinary(), currently it only writes text
   void write(const std::string& filename) const;
+
+  int getJOutOfYLabel(const std::string& findme) const {
+    for(int j=0; j<nout; ++j)
+      if(yLabels[j].compare(findme)==0) return(j);
+    return -1;
+  }
 
   ///Set real input variable, xr, labels to xr0 xr1, etc.; integer input variable, xi, labels to xi0, xi1, etc.; output variable, y, labels to y0 y1, etc.
   void defaultLabels();
