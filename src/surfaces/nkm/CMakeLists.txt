@@ -12,4 +12,5 @@ set(nkm_src
 
 add_library(nkm ${nkm_src})
 #TARGET_LINK_LIBRARIES(surfaces ${LAPACK_LIBRARIES})
+INSTALL(TARGETS nkm DESTINATION lib)
 

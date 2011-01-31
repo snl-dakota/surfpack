@@ -25,4 +25,5 @@ set(surfaces_src
 
 add_library(surfaces ${surfaces_src})
 #TARGET_LINK_LIBRARIES(surfaces ${LAPACK_LIBRARIES})
+INSTALL(TARGETS surfaces DESTINATION lib)
 

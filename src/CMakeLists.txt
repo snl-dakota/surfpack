@@ -39,4 +39,5 @@ SET(Surfpack_src
 
 ADD_LIBRARY(surfpack ${Surfpack_src})
 #TARGET_LINK_LIBRARIES(surfpack_src mars teuchos conmin ${LAPACK_LIBRARIES})
+INSTALL(TARGETS surfpack DESTINATION lib)
 
