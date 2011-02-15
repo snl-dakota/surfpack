@@ -1,5 +1,5 @@
 
-INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/src
+include_directories(${PROJECT_SOURCE_DIR}/src
                     ${PROJECT_SOURCE_DIR}/src/surfaces)
 # WJB - ToDo: introduce interpreter dependency when I am ready for LEX/YACC
 #                    ${PROJECT_SOURCE_DIR}/src/interpreter
@@ -8,10 +8,11 @@ INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/src
 #INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/packages/teuchos/src
 #                    ${PROJECT_BINARY_DIR}/packages/teuchos/src)
 
-SUBDIRS(mars surfaces)
+add_subdirectory(mars)
+add_subdirectory(surfaces)
 
 ## Surfpack library sources.
-SET(Surfpack_src
+set(Surfpack_src
    AxesBounds.cpp
    AxesBounds.h
    MersenneTwister.h
@@ -37,7 +38,7 @@ SET(Surfpack_src
 
 # WJB - ToDo: look into CMake template support features: SurfpackMatrix.tpl
 
-ADD_LIBRARY(surfpack ${Surfpack_src})
+add_library(surfpack ${Surfpack_src})
 #TARGET_LINK_LIBRARIES(surfpack_src mars teuchos conmin ${LAPACK_LIBRARIES})
 INSTALL(TARGETS surfpack DESTINATION lib)
 
