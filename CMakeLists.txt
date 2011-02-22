@@ -38,14 +38,6 @@ set(Surfpack_ENABLE_DEBUG OFF)
 
 #INCLUDE(CTest)
 
-if ( NOT CONMIN_DIR )
-  set( CONMIN_DIR ${CMAKE_CURRENT_BINARY_DIR}/packages/CONMIN )
-  message( "Setting CONMIN_DIR to ${CONMIN_DIR}" )
-  set(SUBLIBS ${SUBLIBS} conmin)
-else()
-  message( "in ${CMAKE_CURRENT_BINARY_DIR} CONMIN_DIR already set to ${CONMIN_DIR}" )
-endif()
-
 add_subdirectory(packages)
 add_subdirectory(src)
 #add_subdirectory(tests)
