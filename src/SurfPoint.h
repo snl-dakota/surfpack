@@ -13,6 +13,11 @@
 #include "surfpack_config.h"
 #endif
 #include "surfpack_system_headers.h"
+#include "SurfpackMatrix.h"
+
+// Functions incomplete or broken with addition of gradient/Hessian information:
+//   read/write Binary/Text
+//   range check not working for grad / Hessians
 
 /// Holds a data point in a space of arbitrary dimension.  A SurfPoint object
 /// contains an n-tuple representing the location of the point in the space, 
@@ -42,6 +47,19 @@ public:
 
   /// Initialize with one response value
   SurfPoint(const std::vector<double>& x, double f0);
+
+  // The following two interfaces imply that the client has to creat
+  // an extra copy of these data; could instead pass a pointer and let
+  // the constructor copy it.  Or better, move Surfpack to Teuchos
+  // matrices.
+
+  /// Initialize with one response value and corresponding gradient
+  SurfPoint(const std::vector<double>& x, double f0, 
+    const std::vector<double> gradient0);
+
+  /// Initialize with one response value and corresponding gradient and Hessian
+  SurfPoint(const std::vector<double>& x, double f0, 
+    const std::vector<double> gradient0, const SurfpackMatrix<double> hessian0);
   
   /// Initialize with zero or more response values
   SurfPoint(const std::vector<double>& x, const std::vector<double>& f);
@@ -109,11 +127,26 @@ public:
   /// Return number of response variables
   unsigned fSize() const;
 
+  /// Return number of response variables having gradients (should be
+  /// 0 or fSize())
+  unsigned fGradientsSize() const;
+
+  /// Return number of response variables having Hessians (should be 0
+  /// or fSize())
+  unsigned fHessiansSize() const;
+
   /// Return point in the domain
   const std::vector<double>& X() const;
 
   /// Return response value at responseIndex
   double F(unsigned responseIndex = 0) const;
+
+  /// Return gradient vector for response value at responseIndex
+  const std::vector<double>& fGradient(unsigned responseIndex = 0) const;
+
+  /// Return response value at responseIndex
+  const SurfpackMatrix<double>& fHessian(unsigned responseIndex = 0) const;
+
 
 // ____________________________________________________________________________
 // Commands 
@@ -156,9 +189,21 @@ protected:
   /// space. 
   std::vector<double> x;          
 
+  // For now, with responses, maintaining convention of a vector to
+  // index responses f1, f2, ...  May later adopt continguous memory
+  // data structures
+
   /// Zero or more response values at x (i.e., f1(x), f2(x) ... )
   std::vector<double> f;      
 
+  /// Zero or more gradient vectors at x; indexed fGradient[k][i] =
+  /// df_k/dx_i, i.e., k indexes f and i indexes x
+  std::vector<std::vector<double> > fGradients;
+
+  /// Zero or more Hessian matrices at x; 
+  std::vector<SurfpackMatrix<double> > fHessians;
+
+  
 // ____________________________________________________________________________
 // Testing 
 // ____________________________________________________________________________

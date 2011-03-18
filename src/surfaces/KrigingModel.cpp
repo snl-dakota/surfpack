@@ -28,10 +28,49 @@ surfdata_to_nkm_surfdata(const SurfData& sd, nkm::SurfData& nkm_sd)
     const VecDbl x = point.X();
     for (unsigned x_index=0; x_index<x_size; ++x_index)
       XR(point_index, x_index) = x[x_index];
-    for (unsigned f_index=0; f_index<f_size; ++f_index)
+    for (unsigned f_index=0; f_index<f_size; ++f_index) 
       Y(point_index, f_index) = point.F(f_index);
+
+
+    // given NKM ordering of derY, probably need to loop differently
+    // to populate the matrices; this just for demo
+
+    // example of mapping first derivatives
+    // there should be 0 or f_size gradients (could throw error)
+    if (point.fGradientsSize() > 0) {
+      for (unsigned f_index=0; f_index < f_size; ++f_index) {
+	const vector<double>& sd_gradient = point.fGradient(f_index);
+	cout << "Surfpack gradient for point " << point_index << ", function "
+	     << f_index << ": [ ";
+	for (unsigned x_index=0; x_index < x_size; ++x_index) {
+	  // accessing each gradient element
+	  cout << sd_gradient[x_index] << " ";
+	}
+	cout << "]" << endl;
+      }
+    }
+
+    // example of mapping second derivatives
+    // there should be 0 or f_size Hessians (could throw error)
+    if (point.fHessiansSize() > 0) {
+      for (unsigned f_index=0; f_index<f_size; ++f_index) {
+	const SurfpackMatrix<double>& sd_hessian = point.fHessian(f_index);
+	cout << "Surfpack Hessian for point " << point_index << ", function "
+	     << f_index << " is:\n";
+	for (unsigned xj_index=0; xj_index < x_size; ++xj_index) {
+	  for (unsigned xk_index=0; xk_index < x_size; ++xk_index) {
+	    // accessing each Hessian element
+	    cout << sd_hessian(xj_index, xk_index) << " ";
+	  }
+	  cout << "\n";
+	}
+	cout << endl;
+      }
+    }
+
   }
 
+  // TODO: populate with derY as well
   nkm_sd = nkm::SurfData(XR, Y);
 }
 

@@ -130,6 +130,12 @@ public:
   /// Get the response value of the (index)th point
   double getResponse(unsigned index) const;
 
+  /// Get the vector of gradients for the (index)th point
+  //  const std::vector<double>& getGradient(unsigned index) const;
+
+  /// Get the full symmetric matrix of Hessians for the (index)th point
+  //  const SurfpackMatrix<double>& getHessian(unsigned index) const;
+
   /// Get the responses for all of the points as a vector
   std::vector< double > getResponses() const;
   

@@ -41,6 +41,27 @@ SurfPoint::SurfPoint(const vector<double>& x, double f0) : x(x), f(1)
   init();
 }
 
+/// Initialize with one response value and corresponding gradient
+SurfPoint::SurfPoint(const std::vector<double>& x, double f0, 
+  const std::vector<double> gradient0) 
+  : x(x), f(1), fGradients(1)
+{
+  f[0] = f0;
+  fGradients[0] = gradient0;
+  init();
+}
+
+/// Initialize with one response value and corresponding gradient and Hessian
+SurfPoint::SurfPoint(const std::vector<double>& x, double f0, 
+  const std::vector<double> gradient0, const SurfpackMatrix<double> hessian0)
+: x(x), f(1), fGradients(1), fHessians(1)
+{
+  f[0] = f0;
+  fGradients[0] = gradient0;
+  fHessians[0] = hessian0;
+  init();
+}
+
 /// Initialize with zero or more response values
 SurfPoint::SurfPoint(const vector<double>& x, const vector<double>& f)
   : x(x), f(f)
@@ -66,13 +87,15 @@ SurfPoint::SurfPoint(unsigned xsize, unsigned fsize, const string& single_line,
 }
 
 /// Copy constructor performs a deep copy
-SurfPoint::SurfPoint(const SurfPoint& sp) : x(sp.x), f(sp.f)
+SurfPoint::SurfPoint(const SurfPoint& sp) 
+  : x(sp.x), f(sp.f), fGradients(sp.fGradients), fHessians(sp.fHessians)
 {
   init();
 }
 
 
 /// Default constructor creates a one dimensional point at the origin 
+/// with no function value (empty)
 SurfPoint::SurfPoint() : x(1), f(0)
 {
   x[0] = 0;
@@ -86,6 +109,17 @@ void SurfPoint::init()
   if (x.empty()) {
     throw SurfPoint::null_point();
   }
+  // if any gradient data, must have for all functions
+  if (!fGradients.empty() && f.size() != fGradients.size()) {
+    std::cerr << "Surfpack Error: if provided, must have gradient data for exactly number of functions present" << std::endl;
+    throw("SurfPoint: bad gradients");
+  }
+  // if any Hessian data, must have for all functions
+  if (!fHessians.empty() && f.size() != fHessians.size()) {
+    std::cerr << "Surfpack Error: if provided, must have Hessian data for exactly number of functions present" << std::endl;
+    throw("SurfPoint: bad Hessians");
+  }
+
 }
 
 SurfPoint::~SurfPoint() 
@@ -103,6 +137,8 @@ SurfPoint& SurfPoint::operator=(const SurfPoint& other)
   if (*this != other) {
     x = other.x;
     f = other.f;
+    fGradients = other.fGradients;
+    fHessians = other.fHessians;
   }
   return (*this);
 }
@@ -125,6 +161,22 @@ bool SurfPoint::operator==(const SurfPoint& other) const
   }
   for (unsigned i = 0; i < f.size(); i++) {
     if (!doubles_match(f[i],other.f[i])) return false;
+  }
+  // gradients
+  for (unsigned fi = 0; fi < fGradients.size(); ++fi) {
+    for (unsigned xj = 0; xj < xSize(); ++xj) {
+      if (!doubles_match(fGradients[fi][xj], other.fGradients[fi][xj])) 
+	return false;
+    }
+  }
+  // Hessians
+  for (unsigned fi = 0; fi < fHessians.size(); ++fi) {
+    for (unsigned xj = 0; xj < xSize(); ++xj) {
+      for (unsigned xk = 0; xk < xSize(); ++xk) {
+	if (!doubles_match(fHessians[fi](xj,xk), other.fHessians[fi](xj,xk)))
+	  return false;
+      }
+    }
   }
   return true;
 }
@@ -188,6 +240,18 @@ unsigned SurfPoint::fSize() const
   return f.size(); 
 }
 
+/// Return number of response variables having gradients
+unsigned SurfPoint::fGradientsSize() const
+{ 
+  return fGradients.size(); 
+}
+
+/// Return number of response variables
+unsigned SurfPoint::fHessiansSize() const
+{ 
+  return fHessians.size(); 
+}
+
 /// Return point in the domain 
 const vector<double>& SurfPoint::X() const
 { 
@@ -204,6 +268,21 @@ double SurfPoint::F(unsigned responseIndex) const
   checkRange(header, responseIndex);
   return f[responseIndex]; 
 }
+
+/// Return gradient vector for response value at responseIndex
+const std::vector<double>& SurfPoint::fGradient(unsigned responseIndex) const
+{
+  // TODO: range check
+  return fGradients[responseIndex];
+}
+
+/// Return response value at responseIndex
+const SurfpackMatrix<double>& SurfPoint::fHessian(unsigned responseIndex) const
+{
+  // TODO: range check
+  return fHessians[responseIndex];
+}
+
 
 // ____________________________________________________________________________
 // Commands 
@@ -273,6 +352,21 @@ void SurfPoint::writeText(ostream& os) const
   for (unsigned i = 0; i < f.size(); i++) {
     os << setw(surfpack::field_width) << f[i];
   }
+
+  // TODO: make I/O include gradients/Hessians
+//   for (unsigned i = 0; i < fGradients.size(); i++) {
+//     for (unsigned j = 0; j < x.size(); j++) {
+//       os << setw(surfpack::field_width) << fGradients[i][j];
+//     }
+//   }
+//   for (unsigned i = 0; i < fHessians.size(); i++) {
+//     for (unsigned j = 0; j < x.size(); j++) {
+//       for (unsigned k = 0; k < x.size(); k++) {
+// 	os << setw(surfpack::field_width) << fHessians[i](j, k);
+//       }
+//     }
+//   }
+
   os << endl;
   // Restore output flags to what they were before this method was called.
   os.flags(old_flags);

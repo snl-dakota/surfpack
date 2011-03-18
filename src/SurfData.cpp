@@ -295,6 +295,20 @@ double SurfData::getResponse(unsigned index) const
   return points[mapping[index]]->F(defaultIndex);
 }
 
+// const std::vector<double>& SurfData::getGradient(unsigned index) const
+// {
+//   static string header("Indexing error in SurfData::getResponse.");
+//   checkRangeNumPoints(header, index);
+//   return points[mapping[index]]->fGradient(defaultIndex);
+// }
+
+// const SurfpackMatrix<double>& SurfData::getHessian(unsigned index) const
+// {
+//   static string header("Indexing error in SurfData::getResponse.");
+//   checkRangeNumPoints(header, index);
+//   return points[mapping[index]]->fHessian(defaultIndex);
+// }
+
 /// Get the responses for all of the points as a vector
 std::vector< double > SurfData::getResponses() const
 {
