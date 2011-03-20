@@ -6,8 +6,8 @@
     For more information, see the README file in the top Surfpack directory.
     _______________________________________________________________________ */
 
-#ifndef __KRIGING_MODEL_HPP__
-#define __KRIGING_MODEL_HPP__
+#ifndef __GRADKRIGING_MODEL_HPP__
+#define __GRADKRIGING_MODEL_HPP__
 //#ifdef HAVE_CONFIG_H
 //#include "surfpack_config.h"
 //#endif
@@ -29,7 +29,7 @@ typedef std::map< std::string, std::string> ParamMap;
 // BMA TODO: Use more descriptive names for variables?
 
 /** 
-    KrigingModel: a class for creating and evaluating Gaussian process
+    GradKrigingModel: a class for creating and evaluating Gaussian process
     emulators with constant, linear, or quadratic trend function.
     Options for:
 
@@ -38,7 +38,7 @@ typedef std::map< std::string, std::string> ParamMap;
     * evaluation with gradients
     * nugget to control ill-conditioning.
 */
-class KrigingModel: public SurfPackModel
+class GradKrigingModel: public SurfPackModel
 {
 
 public:
@@ -50,24 +50,24 @@ public:
 
   void set_direct_parameters(OptimizationProblem& opt) const;
 
-  // Creating KrigingModels
+  // Creating GradKrigingModels
 
   /// Default constructor
-  KrigingModel() : XR(sdBuild.xr), Y(sdBuild.y), ifChooseNug(false), nug(0.0), maxChooseNug(0.2)
+  GradKrigingModel() : XR(sdBuild.xr), Y(sdBuild.y), ifChooseNug(false), nug(0.0), maxChooseNug(0.2)
   { /* empty constructor */ };
   
-  /// Standard KrigingModel constructor
-  KrigingModel(const SurfData& sd, const ParamMap& params);
+  /// Standard GradKrigingModel constructor
+  GradKrigingModel(const SurfData& sd, const ParamMap& params);
 
   // BMA: in theory shouldn't need copy or assignment, given data
   // members below?!?
 
 //   /// Copy constructor 
-//   KrigingModel(const KrigingModel& other)
+//   GradKrigingModel(const GradKrigingModel& other)
 //   {  *this=other; assert(0);  } //effective C++ says not to use class assignment opperator in copy constructor
 
 //   /// Assignment operator
-//   KrigingModel& operator=(const KrigingModel& other)
+//   GradKrigingModel& operator=(const GradKrigingModel& other)
 //   { XR=other.XR; Y=other.Y; numVarsr=other.numVarsr; RLU=other.RLU; ipvt_RLU=other.ipvt_RLU; likelihood=other.likelihood; rhs=other.rhs; betaHat=other.betaHat; correlations=other.correlations; Poly=other.Poly; Rot=other.Rot; EulAng=other.EulAng; return *this; }
 
   /// After construction a Kriging model must be created with this
@@ -83,10 +83,10 @@ public:
   /// evaluate (y) the Kriging Model at a collection of points xr, one per row
   virtual MtxDbl& evaluate(MtxDbl& y, const MtxDbl& xr);
 
-  /// evaluate the KrigingModel's adjusted variance at a single point
+  /// evaluate the GradKrigingModel's adjusted variance at a single point
   double eval_variance(const MtxDbl& xr);
 
-  /// evaluate the KrigingModel's adjusted variance at a collection of points xr, one per row
+  /// evaluate the GradKrigingModel's adjusted variance at a collection of points xr, one per row
   MtxDbl& eval_variance(MtxDbl& adj_var, const MtxDbl& xr);
 
   /// evaluate the partial first derivatives with respect to xr of the models adjusted mean
@@ -103,7 +103,7 @@ public:
 			    OptimizationProblem *opt);
 
   /// the objective function, i.e. the negative log(likelihood);
-  /// minimizing this produces a "good" KrigingModel)
+  /// minimizing this produces a "good" GradKrigingModel)
   
   inline double objective(const MtxDbl& nat_log_corr_len) {
     correlations.newSize(1,numTheta);
@@ -146,7 +146,7 @@ public:
 
   /// the objective function, i.e. the negative log(likelihood), and
   /// its gradient; minimizing the objective function produces a good
-  /// KrigingModel
+  /// GradKrigingModel
   inline void objectiveAndGradient(double& obj_out, MtxDbl& grad_obj_out,
 				   const MtxDbl& nat_log_corr_len) {
 
@@ -232,8 +232,17 @@ public:
   /// arbitrary order multidimensional polynomial, individual trend functions
   /// are the separate additive terms in that multidimensional polynomial
   inline int getNTrend() const
-  { return (Poly.getNRows()); //XR.getNCols()+1); 
-	    } 
+  { return (Poly.getNRows()); 
+  } 
+
+  /// return the Number of mixed partial derivatives, for gradient enhanced
+  /// kriging this is (1+numVarsr) where the "1" is the zeroth order 
+  /// derivative (the function itself) and the "mixed" part doesn't actually
+  /// apply for first order derivatives, but the code is general and ready
+  /// for expansion to (gradient + hessian) enhanced Kriging
+  inline int getNDer() const
+  { return (Der.getNRows());
+  } 
 
   // return the likelihood of this model
   inline double getLikelihood()
@@ -265,7 +274,7 @@ private:
   //void set_conmin_parameters(OptimizationProblem& opt) const;
 
   /// evaluate the trend function g(xr), using specified {Poly, Rot}
-  MtxDbl& eval_trend_fn(MtxDbl& g, const MtxInt& poly, 
+  MtxDbl& eval_trend_fn(MtxDbl& g, const MtxInt& poly, const MtxInt& der,  
 			const MtxDbl& rot_or_eul_ang, const MtxDbl& xr) const;
 
   /// evaluate the trend function g(xr), using class members {Poly, Rot}
@@ -273,16 +282,36 @@ private:
 
   // BMA TODO: these docs need updating
 
-  /** r(i,j)=exp(-sum_k theta(k) *(xr(i,k)-XR(j,k))^2); The convention is
-      that capital matrices are for the data the model is built from, 
-      lower case matrices are for arbitrary points to evaluate the model at */
+  /** MtxDbl& r contains the evaluations of the correlation function r(xr,XR) 
+      and it's dervatives (with respect to XR) needed to evaluate the value
+      (but not derivatives) of the response surface
+      r(i, j)=r(xr(i,:),XR(j,:))=exp(-sum_k theta(k) *(xr(i,k)-XR(j,k))^2); 
+      r(i,Jj)=d[r(xr(i,:),XR(j,:))]/dXR(j,Jder) where Jj=(Jder+1)*numPoints+j 
+      where numPoints = size(XR,1) (MATLAB notation) is the number of points 
+      used to BUILD the emulator. The convention is that capital matrices
+      (e.g. XR) are for the data the model is built from, and lower case 
+      matrices (e.g. r,xr)are for arbitrary points to evaluate the model at */
   MtxDbl& correlation_matrix(MtxDbl& r, const MtxDbl& xr) const;
 
-  /** dr(i,j)=d(r(i,j))/d(xr(i,k)) combining repeated calls can be used to 
+  /** The first derivative of MtxDbl& r with respect to xr(:,Ider), in other words
+      MtxDbl& dr is what is needed to evaluate the derivative (with respect to 
+      xr(i,Ider)) of the response surface
+      dr(i,Jj)=d[r(i,Jj)]/dxr(i,Ider)=d[r(xr(i,:),XR(j,:))]/dxr(i,Ider)dXR(j,Jder)
+      where Jj=(Jder+1)*numPoints+j where numPoints = size(XR,1) (MATLAB notation)
+      is the number of points used to BUILD the emulator
+  */
+  MtxDbl& dcorrelation_matrix_dxI(MtxDbl& dr, const MtxDbl& r, 
+				  const MtxDbl& xr, MtxDbl& workI, int Ider);
+
+  MtxDbl& d2correlation_matrix_dxIdxK(MtxDbl& d2r, const MtxDbl& drI, 
+				      const MtxDbl& r, const MtxDbl& xr, 
+				      MtxDbl& workK, int Ider, int Kder);
+
+  /** remove this it is for the KrigingModel not the GradKrigingModel
+      dr(i,j)=d(r(i,j))/d(xr(i,k)) combining repeated calls can be used to 
       get arbitrary (mixed) higher order derivatives */
   MtxDbl& dcorrelation_matrix_dxk(MtxDbl& dr, const MtxDbl& r, 
-				  const MtxDbl& xr, int k);
-  MtxDbl& d2correlation_matrix_dxIdxK(MtxDbl& d2r, const MtxDbl& drI, const MtxDbl& r, const MtxDbl& xr, int Ider, int Kder);
+				  const MtxDbl& xr, const int k);
 
   /** this function applies the nugget to an r matrix (not a member variable)
       in place (i.e. it changes r to p). i.e. it scales r by 1.0/(1.0+nug). 
@@ -318,16 +347,6 @@ private:
       they don't need to be passed in */
   MtxDbl& gen_Z_matrix();
 
-  /** dR_dthetak=-Z(:,k).*R(:) (MATLAB notation), and 
-      d2R_dthetai_dthetaj=-Z(:,j).*dR_dthetai; The convention is that
-      capital matrices are for the data the model is built from, lower
-      case matrices are for arbitrary points to evaluate the model at. 
-      Z is a member variables so it doesn't need to be passed in, R needs 
-      to be passed in so we can evaluate second derivatives with the same
-      function
-  */
-  MtxDbl& dcorrMtx_dthetak(MtxDbl& dR_dthetak, const MtxDbl& R, const int k);
-
   // data
 
   
@@ -342,8 +361,8 @@ private:
   /// should contain either "eig" or "rcond"
   std::string constraintType;
 
-  /** ifChooseNug=1 tells KrigingModel to choose the smallest nugget it 
-      needs to fix ill conditioning, ifChooseNug=0 tells KrigingModel not 
+  /** ifChooseNug=1 tells GradKrigingModel to choose the smallest nugget it 
+      needs to fix ill conditioning, ifChooseNug=0 tells GradKrigingModel not 
       to choose one (the default value for the nugget is zero) but the 
       user still has the option to prescribe a nugget the Nugget must be 
       a positive number */
@@ -366,18 +385,20 @@ private:
 
   int numPoints; 
   
+  int numRowsR; //for gradient enhanced Kriging this is numPoints*(1+numVarsr)
+  
   /** the number of constraint FUNTIONS (typically these are nonlinear), 
       this number does NOT include box edge constraints for the inputs,
       those are handled separately */
   int numConFunc; 
 
   /** the nugget value sets the ammount of smoothing (approximation instead
-      of interpolation) that the KrigingModel will use, it can also be used
-      to fix ill conditioning, setting ifChooseNug=1 tells KrigingModel to 
+      of interpolation) that the GradKrigingModel will use, it can also be used
+      to fix ill conditioning, setting ifChooseNug=1 tells GradKrigingModel to 
       choose the smallest nugget needed to fix ill conditioning */
   double nug;
 
-  /** the maximum value the KrigingModel is allowed to choose to fix ill
+  /** the maximum value the GradKrigingModel is allowed to choose to fix ill
       conditioning, however the user can prescribe a larger value to nug.
       if nug=maxChooseNug is not sufficient to decrease the condtion number
       of the correlation matrix below maxCondNum, then the correlation 
@@ -387,7 +408,7 @@ private:
 
   /** the correlation matrix R is considered to be "ill-conditioned" if
       if it's condition number exceeds this value.  We are using the term
-      "ill-conditioned" loosely, because the qualtity of a KrigingModel
+      "ill-conditioned" loosely, because the qualtity of a GradKrigingModel
       is frequently improved when the condition number is restricted to be 
       less than the number of points (yes that is a heuristic and we're 
       looking for a better one) */
@@ -403,7 +424,7 @@ private:
   /** the output the model was constructed from; convention is capital
       matrices are data model is built from, lower case matrices are
       arbitrary points to evaluate model at */
-  MtxDbl& Y;   
+  MtxDbl Y;   
 
   /** the polynomial powers for individual dimensions in each "basis 
       function" (for now the only choice of polynomial basis functions are
@@ -412,6 +433,16 @@ private:
   MtxInt Poly;  
   bool ifReducedPoly; /// only use main effects (no interaction/mixed terms) in the polynomial basis
   int polyOrder; /// highest total order of any term in the polynomial basis
+
+  /** the derivative orders for individual dimensions in a 
+      multidimensional mixed partial derivatives of arbitrary order.
+      for gradient enhanced kriging it will only be total derivative 
+      orders of zero or one, so there won't be any _mixed_ partial 
+      derivatives, but the code is general / ready for expansion to
+      (gradient + hessian) enhanced kriging */
+  MtxInt Der;
+  int nDer; //number of rows in nchoosek(numVarsr+derOrder,numVarsr)
+  //const int derOrder=1;
 
   /** the Euler angles to generate the input dimensions' Rotation matrix */
   MtxDbl EulAng; 
@@ -477,11 +508,19 @@ private:
       arbitrary points to evaluate model at */
   MtxDbl Z;
   MtxDbl Ztheta;
+  
+  /** 2*(XR - XR^T) is needed to evaluate the derivative parts of 
+      the gradient enhanced R matrix, this will be precomputed and 
+      stored in the gen_Z_matrix() function, a 3D array would be
+      useful for this but we will make do with a matrix, since this
+      is anti-symmetric we only store the lower triangular part to save 
+      space */
+  MtxDbl twoXRminusXRtran;
 
   /// misc members moved from KrigingProblem?!?
 
   /** the correlation matrix, after possible inclusion of a
-      nugget, use of a nugget causes the KrigingModel to smooth i.e.
+      nugget, use of a nugget causes the GradKrigingModel to smooth i.e.
       approximate rather than interpolate and can be used to fix 
       ill-conditioning. */
   MtxDbl R;

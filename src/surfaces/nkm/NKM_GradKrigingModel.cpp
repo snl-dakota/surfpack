@@ -1,5 +1,5 @@
 #include "NKM_SurfPack.hpp"
-#include "NKM_KrigingModel.hpp"
+#include "NKM_GradKrigingModel.hpp"
 //#include "Accel.hpp"
 #include "NKM_LinearRegressionModel.hpp"
 #include <math.h>
@@ -13,7 +13,7 @@ using std::cerr;
 using std::endl;
 using std::ostringstream;
 
-//#define __KRIGING_DER_TEST__
+//#define __GRADKRIGING_DER_TEST__
 
 /***********************************************************************/
 /***********************************************************************/
@@ -50,11 +50,18 @@ using std::ostringstream;
 /***********************************************************************/
 
 // typical constructor
-KrigingModel::KrigingModel(const SurfData& sd, const ParamMap& params)
+GradKrigingModel::GradKrigingModel(const SurfData& sd, const ParamMap& params)
   : SurfPackModel(sd,sd.getJOut()), numVarsr(sd.getNVarsr()), 
-    numTheta(numVarsr), numPoints(sd.getNPts()), XR(sdBuild.xr), Y(sdBuild.y)
+    numTheta(numVarsr), numPoints(sd.getNPts()), XR(sdBuild.xr)
 {
-  //printf("calling the right KrigingModel constructor\n"); fflush(stdout);
+  multi_dim_poly_power(Der, numVarsr, 1);  //use all mixed partial 
+  //derivatives, up to first order, of the basis functions
+  nDer=Der.getNRows(); //for GradKrigingModel nDer=(1+numVarsr);
+
+  numRowsR=numPoints*nDer;
+  //printf("calling the right GradKrigingModel constructor\n"); fflush(stdout);
+
+
 
   //if the SurfDataScaler class does what it's supposed to (the only private content in sdBuild that a Model can access are the scaling bits, and only the model can see inside the scaler) the next line will cause an error when you try to compile with it uncommented
   //printf("sd.scaler->mySd.jout=%d\n",scaler.mySd.jout);
@@ -104,7 +111,7 @@ KrigingModel::KrigingModel(const SurfData& sd, const ParamMap& params)
     sdBuild.setUnscaledDomainSize(min_max_xr);
   }
   
-  //printf("KrigingModel constructor should have just written out domain bounds\n");
+  //printf("GradKrigingModel constructor should have just written out domain bounds\n");
   
   param_it = params.find("dimension_groups");
   if (param_it != params.end() && param_it->second.size() > 0) {
@@ -115,6 +122,16 @@ KrigingModel::KrigingModel(const SurfData& sd, const ParamMap& params)
   
   scaler.scaleToDefault(); //scale outputs to -0.5<=Y<=0.5 and scale real inputs to volume 1 hyper-rectangle centered at 0 if real iputs dimensions are locked or the unit hypercube centered at 0 if no dimensions are locked.  The scaling is done to let us define the feasible region simply (done in create);
   
+  std::string debug_filename = "GradRos10sdBuildScaled.spd";
+  sdBuild.write(debug_filename);
+
+
+  sdBuild.getUpToDerY(Y,1); //Y contains [ sdBuild.y(:,jout) sdBuild.derY[jout][1] ] (the notation of this comment mixes MATLAB commands with SurfData variables)
+  Y.reshape(numRowsR,1);
+
+  //printf("size(Y)=[%d %d]\n",Y.getNRows(),Y.getNCols());
+
+
   // *************************************************************
   // this starts the input section about optimizing or directly
   // scepcifying correlation lengths, it must come after the 
@@ -136,7 +153,7 @@ KrigingModel::KrigingModel(const SurfData& sd, const ParamMap& params)
   else if(optimizationMethod.compare("global")==0)
     maxTrials = 10000;
   else{ //error checking the input
-    cerr << "KrigingModel() unknown optimization_method [" << optimizationMethod << "]  aborting\n";
+    cerr << "GradKrigingModel() unknown optimization_method [" << optimizationMethod << "]  aborting\n";
     assert(0);
   }
 
@@ -179,6 +196,8 @@ KrigingModel::KrigingModel(const SurfData& sd, const ParamMap& params)
     }
     
     natLogCorrLen.newSize(1,numVarsr); //allocate space 
+
+    //printf("numVarsr=%d\n",numVarsr); fflush(stdout);
     
     //read the correlation lengths in from the string
     assert(!(natLogCorrLen.putRows(param_it->second,0)));
@@ -252,10 +271,10 @@ KrigingModel::KrigingModel(const SurfData& sd, const ParamMap& params)
     multi_dim_poly_power(Poly, numVarsr, polyOrder);  
 
   //check that we have enough data for the selected trend functions
-  int needed_points = numVarsr + getNTrend(); 
-  if( !(needed_points <= numPoints) ) {
-    cerr << "With the selected set of trend functions there are more unknown parameters (" <<  needed_points << ") than there are data points (" << numPoints << ") for the Kriging Model. For the current set of trend functions, you need at least " << needed_points << "data points and twice that is strongly recommended.\n";
-    assert(needed_points <= numPoints);
+  int needed_eqns = numVarsr + getNTrend(); 
+  if( !(needed_eqns <= numRowsR) ) {
+    cerr << "With the selected set of trend functions there are more unknown parameters (" <<  needed_eqns << ") than there are pieces of data (" << numRowsR << ") for the GradKrigingModel. For the current set of trend functions, you need at least " << ceil(needed_eqns/nDer) << " data points and having at least " << ceil(2.0*needed_eqns/nDer) << " is _strongly_ recommended.\n";
+    assert(needed_eqns <= numRowsR);
   }
 
   // *************************************************************
@@ -264,12 +283,7 @@ KrigingModel::KrigingModel(const SurfData& sd, const ParamMap& params)
   // function can be computed analytically so handle that here too
   // *************************************************************
   constraintType="rcond";
-  param_it = params.find("constraint_type");
-  if (param_it != params.end() && param_it->second.size() > 0)
-    if(tolower(param_it->second[0])=='e') //should I use better (whole word) error checking?
-      constraintType="eig"; 
 
-  //cout << "contraintType=\"" << constraintType << "\"\n";
 
   //default orders of analytical derivatives of objective and constraint 
   //functions, eventually (Surfpack release) we will expose this to the
@@ -285,29 +299,9 @@ KrigingModel::KrigingModel(const SurfData& sd, const ParamMap& params)
   //eigen values = 1st order analytic derivatives
   //rcond=0th order (values only) analytical derivatives
 
-  assert((0<=num_analytic_obj_ders_in)&&(num_analytic_obj_ders_in<=2)
-	 &&(0<=num_analytic_con_ders_in));
-
-  //upper limit to order of analytic derivatives for constraints depends
-  //on HOW you want to bound the condition number
-  if(constraintType.compare("eig")==0) { //eigenvalue constraint type
-
-    //have implemented analytical first derivatives of eigenvalues
-    assert(num_analytic_con_ders_in<=1); 
-
-    numConFunc=numPoints/2; 
-    if (numConFunc > 10)
-      numConFunc=10;
-  }
-  else if(constraintType.compare("rcond")==0) { //rcond constraint type    
-
-    //can't do any analytical derivatives (only function values) of rcond
-    assert(num_analytic_con_ders_in==0); 
-    numConFunc=1;
-  }
-  else //catch bogus constraint type
-    assert((constraintType.compare("eig")==0)||
-	   (constraintType.compare("rcond")==0)); 
+  //can't do any analytical derivatives (only function values) of rcond
+  assert(num_analytic_con_ders_in==0); 
+  numConFunc=1;
   
   //convert to the Dakota bitflag convention for derivative orders
   maxObjDerMode=((int) pow(2.0,num_analytic_obj_ders_in+1))-1; //analytical gradients of objective function
@@ -352,7 +346,7 @@ KrigingModel::KrigingModel(const SurfData& sd, const ParamMap& params)
 	nug=(2*getNTrend()+1.0)/maxCondNum;
 	break;
       case 2:
-	nug=2*numPoints/maxCondNum;
+	nug=2*numPoints/maxCondNum; //bob; may want to change this numPoints to numRowsr
 	break;
       default:
 	cerr << "nugget_formula =" << nuggetFormula << " is not one of the available preset nugget formulas." << endl;
@@ -391,15 +385,30 @@ KrigingModel::KrigingModel(const SurfData& sd, const ParamMap& params)
   EulAng.newSize(1, nchoosek(numVarsr, 2)); 
   EulAng.zero();
   gen_rot_mat(Rot, EulAng, numVarsr);
-  eval_trend_fn(G, Poly, Rot, XR);
+  eval_trend_fn(G, Poly, Der, Rot, XR);
+
+  /*
+  FILE* fp=fopen("GradRos10GMat.txt","w");
+  int ntrend=getNTrend();
+  for(int i=0; i<numRowsR; ++i) {
+    fprintf(fp,"%-12.6g",G(i,0));
+    for(int j=1; j<ntrend; ++j)
+      fprintf(fp," %-12.6g",G(i,j));
+    fprintf(fp,"\n");
+  }
+  fclose(fp);
+  */
+  //  assert(0);
+    
+
   //LinearRegressionModel::evalBasis(G,poly,Rot,XR);
 
   gen_Z_matrix();  
 
-  //printf("completed the right KrigingModel constructor\n", stdout); fflush(stdout);
+  //printf("completed the right GradKrigingModel constructor\n", stdout); fflush(stdout);
 }
 
-void KrigingModel::create()
+void GradKrigingModel::create()
 {
   //printf("entered create()\n"); fflush(stdout);
 
@@ -422,21 +431,23 @@ void KrigingModel::create()
   // (assumes input space has a volume of 1, and data points are
   // uniformly distributed)
 
-  aveDistBetweenPts=pow(numPoints,-1.0/numVarsr);
+  //aveDistBetweenPts=pow(numPoints,-1.0/numVarsr);
+  aveDistBetweenPts=pow(numRowsR,-1.0/numVarsr); //count each derivative as 
+  //another point when determining the "average distance between points"
+  //this is used to determine the "reach" of each data point...
+  //on second thought should I shorten the correlation lengths because I 
+  //added derivative information, it might help with conditioning but 
+  //should the data points have any less reach because of it?  need to 
+  //think about this
+  //bob  "bob" is how I flag a section of code that I want to find easily
 
-  //  if(numPoints<=2*numVarsr)
-  //  aveDistBetweenPts=1.0;
-  //else
-  //  aveDistBetweenPts=pow(numPoints-2*numVarsr,-1.0/numVarsr);
-
-  //printf("aveDistBetweenPts=%12.6g\n",aveDistBetweenPts);
   /* Gaussian Process error model has about ~5% confidence (2 std devs away) 
-     in what points 4 neighbors away have to say. If points are correlated 
+     in what points 16 neighbors away have to say. If points are correlated 
      well at even greater distances then either 
      * that same information will be contained in nearby points OR
-     * you shouldn't be using a Gaussian process error model
+     * you shouldn't be using a Gaussian correlation function
      KRD */
-  double max_corr_length = aveDistBetweenPts*8.0; //*2.0; 
+  double max_corr_length = aveDistBetweenPts*8.0; 
 
   maxNatLogCorrLen=log(max_corr_length);
 
@@ -451,7 +462,8 @@ void KrigingModel::create()
 
   //Choose dead center (in log(correlation length)) of feasible region as the 
   //default initial guess for the Gaussian Process error model, KRD  
-  double init_guess=0.5*(maxNatLogCorrLen+minNatLogCorrLen);
+  //double init_guess=0.5*(maxNatLogCorrLen+minNatLogCorrLen);
+  double init_guess=minNatLogCorrLen;
 
   //printf("got to yada yada\n"); fflush(stdout);
   ///set the bounds and the initial iterates
@@ -462,7 +474,7 @@ void KrigingModel::create()
       opt.lower_bound(jvar, minNatLogCorrLen);
       opt.upper_bound(jvar, maxNatLogCorrLen);
       //double temp_double=natLogCorrLen(0,jvar);
-      //printf("KrigingModel::create() jvar=%d temp_double=%g\n",jvar,temp_double);
+      //printf("GradKrigingModel::create() jvar=%d temp_double=%g\n",jvar,temp_double);
       //fflush(stdout);
       opt.initial_iterate(jvar, natLogCorrLen(0,jvar));
     }
@@ -487,7 +499,7 @@ void KrigingModel::create()
 
 
   //add a bin opt random design with 2*numVars more guesses, 
-  //bins are the endpoints of a randomly rotated axis
+  //bins are the endpoints of a randomly rotated orthogonal axes
   MtxDbl axes_of_guesses(2*numVarsr,numVarsr);
   gen_rand_axis_bin_opt_samples_0to1(axes_of_guesses,numVarsr);
   for(int i=0; i<2*numVarsr; ++i) {
@@ -519,7 +531,7 @@ void KrigingModel::create()
     else if(optimizationMethod.compare("sampling")==0)
       opt.best_guess_optimize(maxTrials);
     else{
-      cerr << "KrigingModel:create() unknown optimization_method [" << optimizationMethod << "]  aborting\n";
+      cerr << "GradKrigingModel:create() unknown optimization_method [" << optimizationMethod << "]  aborting\n";
       assert(0);
     }
     natLogCorrLen = opt.best_point();
@@ -545,49 +557,34 @@ void KrigingModel::create()
   //deallocate matrices we no longer need after emulator has been created
 
   //temporary variables used by masterObjectiveAndConstraints
-  dNbetaHat_dthetaN.clear(); //vector
   temp.clear(); //vector
   temp2.clear(); //vector
   temp3.clear(); //vector
   temp4.clear(); //vector
-  temp5.clear(); //vector used to compute hessObj
-  d2eps_dthetai_dthetaj.clear(); //vector
-  dR_dthetai.clear(); //matrix
-  dR_dthetaj.clear(); //matrix used to compute hessObj
-  Rinv_dR_dthetai.clear(); //matrix used to compute hessObj
-  Rinv_dR_dthetaj.clear(); //matrix used to compute hessObj
-  d2R_dthetai_dthetaj.clear(); //matrix used to compute hessObj
-  dR_dthetai_Rinv_eps_minus_deps_dthetai.clear(); //matrix used to compute hessObj
-  Rinv_dR_dthetai_Rinv_eps_minus_deps_dthetai.clear(); //matrix used to compute hessObj
-  Gtran_Rinv_G_inv.clear(); //need this for derivatives of log(det(Gtran_Rinv_G)) but could use it to replace the permanent copy of Gtran_Rinv_G_Chol
-  Gtran_Rinv_dR_thetai.clear(); //need this for derivatives of log(det(Gtran_Rinv_G))
-  Gtran_Rinv_dR_thetai_Rinv_G.clear(); //need this for derivatives of log(det(Gtran_Rinv_G))
+
+  //Gtran_Rinv_G_inv.clear(); //need this for derivatives of log(det(Gtran_Rinv_G)) but could use it to replace the permanent copy of Gtran_Rinv_G_Chol
 
   //variables whose values needed to be retained between sequential call to masterObjectiveAndConstraints for precompute and store strategy to work
   prevObjDerMode=prevConDerMode=0;
   prevTheta.clear(); //row vector 
-  allEigVect.clear(); //matrix 
-  allEigVal.clear(); //vector
   Z.clear(); //matrix
   R.clear(); //matrix
   G.clear(); //matrix
-  deps_dtheta.clear(); //matrix used to compute hessObj
-  dR_dtheta_Rinv_eps.clear(); //matrix used to compute hessObj
-  destVarianceMLE_dtheta.clear(); //vector
+
   con.clear(); //vector
   gradObj.clear(); //vector
   gradCon.clear(); //matrix
   hessObj.clear(); //matrix used to compute hessObj
 }
 
-std::string KrigingModel::model_summary_string() const {
+std::string GradKrigingModel::model_summary_string() const {
   MtxDbl temp_out_corr_lengths(1,numVarsr);
   for(int i=0; i<numVarsr; ++i) 
     temp_out_corr_lengths(i)=sqrt(0.5/correlations(i));
   scaler.unScaleXrDist(temp_out_corr_lengths);
   
   std::ostringstream oss;
-  oss << "KM: #pts=" << numPoints <<"; Correlation lengths=(" << temp_out_corr_lengths(0);
+  oss << "GKM: #pts="<< numPoints <<"; Correlation lengths=(" << temp_out_corr_lengths(0);
   for(int i=1; i<numVarsr; ++i)
     oss << ", " << temp_out_corr_lengths(i);
   oss << "); unadjusted variance=" << estVarianceMLE * scaler.unScaleFactorVarY() << "; log(likelihood)=" << likelihood << "; the trend is a ";
@@ -599,7 +596,7 @@ std::string KrigingModel::model_summary_string() const {
   oss << "polynomial of order=" << polyOrder << 
     "; rcond(R)=" << rcondR << "; rcondGtran_Rinv_G=" << rcondGtran_Rinv_G 
       << "; nugget=" << nug << ".\n";
-	
+  
   oss << "Beta= (" << betaHat(0);
   int ntrend=getNTrend(); 
   for(int i=1; i<ntrend; ++i)
@@ -612,18 +609,20 @@ std::string KrigingModel::model_summary_string() const {
 // BMA TODO: combine these two functions?
 
 /// evaluate (y) the Kriging Model at a single point (xr)
-double KrigingModel::evaluate(const MtxDbl& xr) const
+double GradKrigingModel::evaluate(const MtxDbl& xr) const
 {
+  /*
   double singular_y;
   if(scaler.isYSingular(0,singular_y)) {
     //you wouldn't want to do this for gradient based Kriging
     //if gradients of y were used as inputs
     return singular_y;
   }
+  */
 
   //assert( (numVarsr == xr.getNCols()) && (xr.getNRows() == 1) );
   int ntrend = getNTrend(); 
-  MtxDbl g(1, ntrend), r(1, numPoints);
+  MtxDbl g(1, ntrend), r(1, numRowsR);
 
   /*
   printf("double evaluate()\n");
@@ -659,12 +658,13 @@ double KrigingModel::evaluate(const MtxDbl& xr) const
 
 
 /// evaluate (y) the Kriging Model at a collection of points (xr)
-MtxDbl& KrigingModel::evaluate(MtxDbl& y, const MtxDbl& xr)
+MtxDbl& GradKrigingModel::evaluate(MtxDbl& y, const MtxDbl& xr)
 {
   int nrowsxr = xr.getNRows();
   //printf("nrowsxr=%d nvarsrxr=%d",nrowsxr,xr.getNCols());
 
   y.newSize(nrowsxr, 1);
+  /*
   double singular_y;
   if(scaler.isYSingular(0,singular_y)) {
     //you wouldn't want to do this for gradient based Kriging
@@ -673,10 +673,11 @@ MtxDbl& KrigingModel::evaluate(MtxDbl& y, const MtxDbl& xr)
       y(i)=singular_y;
     return y;
   }
-  
+  */  
+
   //assert( (numVarsr == xr.getNCols()) && (xr.getNRows() == 1) );
   int ntrend = getNTrend(); 
-  MtxDbl g(nrowsxr, ntrend), r(nrowsxr, numPoints);
+  MtxDbl g(nrowsxr, ntrend), r(nrowsxr, numRowsR);
 
   if(scaler.isUnScaled()) {
     eval_trend_fn(g, xr);
@@ -704,10 +705,11 @@ MtxDbl& KrigingModel::evaluate(MtxDbl& y, const MtxDbl& xr)
   return y;
 }
 
-MtxDbl& KrigingModel::evaluate_d1y(MtxDbl& d1y, const MtxDbl& xr)
+MtxDbl& GradKrigingModel::evaluate_d1y(MtxDbl& d1y, const MtxDbl& xr)
 {
   int nrowsxr = xr.getNRows();
   d1y.newSize(nrowsxr, numVarsr);
+  /*
   double singular_y;
   if(scaler.isYSingular(0,singular_y)) {
     //you wouldn't want to do this for gradient based Kriging
@@ -715,6 +717,7 @@ MtxDbl& KrigingModel::evaluate_d1y(MtxDbl& d1y, const MtxDbl& xr)
     d1y.zero();
     return d1y;
   }
+  */
 
   /*
   printf("evaluate_d1y()\n");
@@ -764,10 +767,11 @@ MtxDbl& KrigingModel::evaluate_d1y(MtxDbl& d1y, const MtxDbl& xr)
   printf("\n");
 #endif
   
-  MtxDbl r(nrowsxr,numPoints);
+  MtxDbl r(nrowsxr,numRowsR);
   correlation_matrix(r, xr_scaled);
   apply_nugget_eval(r);
-  MtxDbl d1r(nrowsxr,numPoints);
+  MtxDbl d1r(nrowsxr,numRowsR);
+  MtxDbl work(nrowsxr,numPoints);
   MtxDbl temp_vec(nrowsxr);
 
 
@@ -783,7 +787,7 @@ MtxDbl& KrigingModel::evaluate_d1y(MtxDbl& d1y, const MtxDbl& xr)
     double d1y_unscale_factor=scaler.unScaleFactorDerY(ivar);
     //printf("d1y_usf=%g\n",d1y_unscale_factor);
 
-    dcorrelation_matrix_dxk(d1r, r, xr_scaled, ivar);
+    dcorrelation_matrix_dxI(d1r, r, xr_scaled, work, ider);
     matrix_mult(temp_vec,d1r,rhs);
 
     for(int ipt=0; ipt<nrowsxr; ++ipt)
@@ -798,11 +802,12 @@ MtxDbl& KrigingModel::evaluate_d1y(MtxDbl& d1y, const MtxDbl& xr)
   return d1y;
 }
 
-MtxDbl& KrigingModel::evaluate_d2y(MtxDbl& d2y, const MtxDbl& xr)
+MtxDbl& GradKrigingModel::evaluate_d2y(MtxDbl& d2y, const MtxDbl& xr)
 {
   int nrowsxr=xr.getNRows();
   int nder=num_multi_dim_poly_coef(numVarsr,-2);
   d2y.newSize(nrowsxr,nder);
+  /*
   double singular_y;
   if(scaler.isYSingular(0,singular_y)) {
     //you wouldn't want to do this for gradient based Kriging
@@ -810,6 +815,7 @@ MtxDbl& KrigingModel::evaluate_d2y(MtxDbl& d2y, const MtxDbl& xr)
     d2y.zero();
     return d2y;
   }
+  */
 
   MtxDbl xr_scaled(xr);  
   if(~(scaler.isUnScaled())) 
@@ -840,12 +846,13 @@ MtxDbl& KrigingModel::evaluate_d2y(MtxDbl& d2y, const MtxDbl& xr)
   printf("\n");
 #endif
 
-  MtxDbl r(nrowsxr,numPoints);
+  MtxDbl r(nrowsxr,numRowsR);
   correlation_matrix(r, xr);
   apply_nugget_eval(r);
-  MtxDbl d1r(nrowsxr,numPoints);
-  MtxDbl d2r(nrowsxr,numPoints);
+  MtxDbl d1r(nrowsxr,numRowsR);
+  MtxDbl d2r(nrowsxr,numRowsR);
   MtxDbl temp_vec(nrowsxr);
+  MtxDbl work(nrowsxr,numPoints);
 
   int ivar, ivarold=-1, jvar;
   for(int ider=0; ider<nder; ++ider) {
@@ -860,7 +867,7 @@ MtxDbl& KrigingModel::evaluate_d2y(MtxDbl& d2y, const MtxDbl& xr)
 
     if(ivar!=ivarold) {
       ivarold=ivar;
-      dcorrelation_matrix_dxk(d1r, r, xr_scaled, ivar);
+      dcorrelation_matrix_dxI(d1r, r, xr_scaled, work, ivar);
     }
 
     //find the second dimension we are taking a first derivative of
@@ -871,8 +878,7 @@ MtxDbl& KrigingModel::evaluate_d2y(MtxDbl& d2y, const MtxDbl& xr)
 	if(der(ider,jvar)>0)
 	  break;
     
-    //dcorrelation_matrix_dxk(d2r, d1r, xr_scaled, jvar);
-    d2correlation_matrix_dxIdxK(d2r, d1r, r, xr_scaled, ivar, jvar);
+    d2correlation_matrix_dxIdxK(d2r, d1r, r, xr_scaled, work, ivar, jvar);
     
     matrix_mult(temp_vec,d2r,rhs);
 
@@ -886,8 +892,9 @@ MtxDbl& KrigingModel::evaluate_d2y(MtxDbl& d2y, const MtxDbl& xr)
 
 
 /// matrix Ops evaluation of adjusted variance at a single point
-double KrigingModel::eval_variance(const MtxDbl& xr) 
+double GradKrigingModel::eval_variance(const MtxDbl& xr) 
 {
+  /*
   double singular_y;
   if(scaler.isYSingular(0,singular_y)) {
     //you wouldn't want to do this for gradient based Kriging
@@ -895,10 +902,11 @@ double KrigingModel::eval_variance(const MtxDbl& xr)
     //printf("NKM eval_variance: y is singular\n");
     return 0;
   }
+  */
 
   //assert( (numVarsr == xr.getNCols()) && (xr.getNRows() == 1) );
   int ntrend = getNTrend(); 
-  MtxDbl g_minus_r_Rinv_G(1, ntrend), r(1, numPoints);
+  MtxDbl g_minus_r_Rinv_G(1, ntrend), r(1, numRowsR);
 
   if(scaler.isUnScaled()) {
     eval_trend_fn(g_minus_r_Rinv_G, xr);
@@ -911,7 +919,7 @@ double KrigingModel::eval_variance(const MtxDbl& xr)
     correlation_matrix(r, xr_scaled);
   }
 
-  MtxDbl tempa(numPoints);
+  MtxDbl tempa(numRowsR);
   MtxDbl tempb(ntrend);
 
   if(nug>0.0) 
@@ -936,17 +944,18 @@ double KrigingModel::eval_variance(const MtxDbl& xr)
   else if(adj_var==0.0)
     printf("NKM adj_var is zero =%g\n",adj_var);
   else if(!(adj_var>=0.0))
-    printf("double NKM_KrigingModel::eval_variance(...) adj_var=nan rcondR=%g\n",rcondR);
+    printf("double NKM_GradKrigingModel::eval_variance(...) adj_var=nan rcondR=%g\n",rcondR);
 
   return adj_var;
 }
 
 /// matrix Ops (as much as possible with BLAS and LAPACK) evaluation of adjusted variance for a collection of points... The MATLAB would be estVarianceMLE*(1-sum((r/R).*r,2)+sum((g_minus_r_Rinv_G/(Gtran_Rinv_G)).*g_minus_r_Rinv_G,2) unfortunately there's not a convenient way to do it with BLAS & LAPACK
-MtxDbl& KrigingModel:: eval_variance(MtxDbl& adj_var, const MtxDbl& xr) 
+MtxDbl& GradKrigingModel:: eval_variance(MtxDbl& adj_var, const MtxDbl& xr) 
 {
   int nrowsxr=xr.getNRows();
   adj_var.newSize(nrowsxr,1);
 
+  /*
   double singular_y;
   if(scaler.isYSingular(0,singular_y)) {
     //you wouldn't want to do this for gradient based Kriging
@@ -954,10 +963,11 @@ MtxDbl& KrigingModel:: eval_variance(MtxDbl& adj_var, const MtxDbl& xr)
     adj_var.zero();
     return adj_var;
   }
+  */
 
   //assert( (numVarsr == xr.getNCols()) && (xr.getNRows() == 1) );
   int ntrend = getNTrend(); 
-  MtxDbl g_minus_r_Rinv_G(nrowsxr, ntrend), r(nrowsxr, numPoints);
+  MtxDbl g_minus_r_Rinv_G(nrowsxr, ntrend), r(nrowsxr, numRowsR);
 
   if(scaler.isUnScaled()) {
     eval_trend_fn(g_minus_r_Rinv_G, xr);
@@ -971,7 +981,7 @@ MtxDbl& KrigingModel:: eval_variance(MtxDbl& adj_var, const MtxDbl& xr)
   }
 
   int i,j;
-  MtxDbl tempa(numPoints,nrowsxr); 
+  MtxDbl tempa(numRowsR,nrowsxr); 
   MtxDbl tempb(ntrend,nrowsxr);
   double var_unscale_factor=scaler.unScaleFactorVarY();
 
@@ -987,7 +997,7 @@ MtxDbl& KrigingModel:: eval_variance(MtxDbl& adj_var, const MtxDbl& xr)
     //saved 2*nrowsxr loops
     adj_var(i)=1.0-r(i,0)*tempa(0,i)+g_minus_r_Rinv_G(i,0)*tempb(0,i);
 
-    for(j=1; j<numPoints; ++j)
+    for(j=1; j<numRowsR; ++j)
       adj_var(i)-=r(i,j)*tempa(j,i); //looks a lot like matrix mult but only N^2 ops
 
     for(j=1; j<ntrend; ++j)
@@ -1000,7 +1010,7 @@ MtxDbl& KrigingModel:: eval_variance(MtxDbl& adj_var, const MtxDbl& xr)
     if(adj_var(i)<0.0)
       adj_var(i)=0.0;
     else if(!(adj_var(i)>=0.0))
-      printf("MtxDbl& NKM_KrigingModel::eval_variance(...) adj_var(%d)=nan rcondR=%g\n",i,rcondR);
+      printf("MtxDbl& NKM_GradKrigingModel::eval_variance(...) adj_var(%d)=nan rcondR=%g\n",i,rcondR);
 	
 
   return adj_var;
@@ -1008,7 +1018,7 @@ MtxDbl& KrigingModel:: eval_variance(MtxDbl& adj_var, const MtxDbl& xr)
 
 
 /*
-VecDbl KrigingModel::gradient(const VecDbl& x) const
+VecDbl GradKrigingModel::gradient(const VecDbl& x) const
 {
   assert(!x.empty());
   assert(x.size()+1==betaHat.size()); //true for linear trend function; KRD added
@@ -1026,7 +1036,7 @@ VecDbl KrigingModel::gradient(const VecDbl& x) const
   return result;
 }
 
-std::string KrigingModel::asString() const
+std::string GradKrigingModel::asString() const
 {
   std::ostringstream os;
   os << "\ncenters:\n" << bs.asString() << "rhs: ";
@@ -1039,7 +1049,7 @@ std::string KrigingModel::asString() const
 
 /** this function scales the input matrix, r, in place by 1.0/(1.0+nug), 
     where nug is the nugget (modifying the correlation matrix by the 
-    inclusion of a nugget causes the KrigingModel to smooth data, i.e. 
+    inclusion of a nugget causes the GradKrigingModel to smooth data, i.e. 
     approximate, rather than interpolate, it can also be used to fix a 
     poorly conditioned correlation matrix).  Typically the input matrix 
     will be the correlation matrix, r, for arbitrary points at which to 
@@ -1050,7 +1060,7 @@ std::string KrigingModel::asString() const
     matrix R drops out of its derivative).  The convention is that capital
     matrices are for the data the model is built from, lower case matrices 
     are for arbitrary points to evaluate the model at. */
-MtxDbl& KrigingModel::apply_nugget_eval(MtxDbl& r) const {
+MtxDbl& GradKrigingModel::apply_nugget_eval(MtxDbl& r) const {
   if(!(nug>0.0))
     return r;
 
@@ -1070,17 +1080,17 @@ MtxDbl& KrigingModel::apply_nugget_eval(MtxDbl& r) const {
 /** set R=(1.0+nug)^-1*(R+nug*I), where R is the correlation matrix for the
     data that the model is built from.  This function preserved the original 
     R.  Modifying the correlation matrix by the inclusion of a nugget causes 
-    the KrigingModel to smooth the data, i.e. approximate it rather than 
+    the GradKrigingModel to smooth the data, i.e. approximate it rather than 
     interpolate it, it can also be used to fix an ill conditioned correlation 
     matrix.  The convention is that capital matrices are for data the model 
     is built from, lower case matrices are for arbitrary points to evaluate 
     the model at */
-void KrigingModel::apply_nugget_build() {
+void GradKrigingModel::apply_nugget_build() {
   if(!(nug>0.0)) return;
   
-  int nrowsR=R.getNRows();
+  //int nrowsR=R.getNRows();
   //assert(nrowsR==R.getNCols());
-  int nelemsR=nrowsR*nrowsR;
+  int nelemsR=numRowsR*numRowsR;
 
   double temp_dbl=1.0/(1.0+nug);
   int ij;
@@ -1091,8 +1101,9 @@ void KrigingModel::apply_nugget_build() {
   //error if I added the nugget to the diagonal BEFORE scaling, the pragmatic
   //part of my mind says it shouldn't matter and doing it this way is faster
   temp_dbl*=nug;
-  for(ij=0; ij<nrowsR; ++ij)
-    R(ij,ij)+=temp_dbl; 
+  for(int j=0; j<numPoints; ++j) //numPoints is correct because derivatives 
+    //(i.e. j >= numPoints) of a constant is zero so don't add it there
+    R(j,j)+=temp_dbl; 
     
   return;
 }
@@ -1104,96 +1115,353 @@ void KrigingModel::apply_nugget_build() {
     eps=(Y-G(XR)*betaHat), to be more specific
     r(i,j)=r(xr(i),XR(j))=exp(sum_k -theta(k)*(xr(i,k)-XR(j,k))^2) KRD
     wrote this */
-MtxDbl& KrigingModel::correlation_matrix(MtxDbl& r, const MtxDbl& xr) const
+MtxDbl& GradKrigingModel::correlation_matrix(MtxDbl& r, const MtxDbl& xr) const
 {
   int nrowsXR=XR.getNRows(); //data points used to build model
   int nrowsxr=xr.getNRows(); //points at which we are evalutating the model
   //assert(xr.getNCols()==numVarsr);
-  r.newSize(nrowsxr,nrowsXR);
-  int nelemr=nrowsxr*nrowsXR;
-  int i,j,k, ij;
+  r.newSize(nrowsxr,nrowsXR*(1+numVarsr));
+  int i,j,k, Jj, Jder;
   double temp_double;
 
-  //REVACC_F77(r.ptr(0),xr.ptr(0),XR.ptr(0),correlations.ptr(0),
-  //     &nrowsxr,&nrowsXR,&numVarsr);
+  //the convention is that the second index into r has 2 characters r(__,__) 
+  //eg r(i,Jj), the second charater is lower case and indicates the index
+  //INTO a derivative submatrix, the first character is upper case and 
+  //indicates the derivative submatrix, more specifically which component of
+  //the second (XR) input variable the derivative is with respect to, for 
+  //example r(i,Jj) indicates the ith row and jth column of the (_,J_) 
+  //submatrix which means dr(xr(i,:),XR(j,:))/dXR(j,J), a blank space for 
+  //the first character of an index means NO derivative was taken with 
+  //respect to that input, for example r(i, j)=r(xr(i,:),XR(j,:)) and 
+  //r(i,Jj)=dr(xr(i,:),XR(j,:))/dXR(j,J)
 
-  /*
-  printf("**********************************************************\n");
-  printf("**********************************************************\n");
-  for(i=0; i<nrowsXR; i++) {
-    printf("XR(%d,:)={",i);
-    for(j=0; j<numVarsr; j++) printf(" %g",XR(i,j));
-    printf(" }; Y(%d)=%g\n",i,Y(i));
-  }
-  printf("**********************************************************\n");
-  printf("**********************************************************\n");
-  */
-  
-  if(numVarsr==1) {
-    //optimized for when there is only 1 output variable
-    for(j=0; j<nrowsXR; j++)
-      for(i=0; i<nrowsxr; i++){
-	temp_double=xr(i,0)-XR(j,0);
-	r(i,j)=exp(-correlations(0)*temp_double*temp_double); 
+  for(j=0; j<nrowsXR; ++j)
+    for(i=0; i<nrowsxr; ++i) {
+      temp_double=xr(i,0)-XR(j,0);
+      r( i, j)=-correlations(0)*temp_double*temp_double; //=- is correct
     }
-  } else if(nrowsxr==1) {
-    //"optimized" for when there is only 1 evaluation point (Save loops, save dereferences)
-    
-    //k=0 was pulled out from below to avoid doing an extra loop just to 
-    //initialize all of r to zero
-    for(j=0; j<nrowsXR; j++) {
-      temp_double=xr(0)-XR(j,0);
-      r(j)=-correlations(0)*temp_double*temp_double; //=- is correct
-    }
-  
-    //all but first and last k
-    for(k=1;k<numVarsr-1;k++)
-      for(j=0; j<nrowsXR; j++) {
-	temp_double=xr(k)-XR(j,k);
-	r(j)-=correlations(k)*temp_double*temp_double; //-= is correct
-      }
-  
-    //this value of k was pulled out of above to save doing an extra loop 
-    //for just the exp() operation
-    k=numVarsr-1; 
-    for(j=0; j<nrowsXR; j++) {
-      temp_double=xr(k)-XR(j,k);
-      r(j)=exp(r(j)-correlations(k)*temp_double*temp_double); 
-    }
-  } else {
-    //"optimized" for when there is more than 1 output variable
-    
-    //k=0 was pulled out from below to avoid doing an extra loop just to 
-    //initialize all of r to zero
-    for(j=0; j<nrowsXR; j++)
-      for(i=0; i<nrowsxr; i++){
-	temp_double=xr(i,0)-XR(j,0);
-	r(i,j)=-correlations(0)*temp_double*temp_double; //=- is correct
-      }
-  
-    //all but first and last k
-    for(k=1;k<numVarsr-1;k++)
-      for(j=0; j<nrowsXR; j++)
-	for(i=0; i<nrowsxr; i++){
-	  temp_double=xr(i,k)-XR(j,k);
-	  r(i,j)-=correlations(k)*temp_double*temp_double; //-= is correct
-	}
-  
-    //this value of k was pulled out of above to save doing an extra loop 
-    //for just the exp() operation
-    k=numVarsr-1; 
-    for(j=0; j<nrowsXR; j++)
-      for(i=0; i<nrowsxr; i++){
+  for(k=1; k<numVarsr-1; ++k)
+    for(j=0; j<nrowsXR; ++j)
+      for(i=0; i<nrowsxr; ++i) {
 	temp_double=xr(i,k)-XR(j,k);
-	r(i,j)=exp(r(i,j)-correlations(k)*temp_double*temp_double); 
+	r( i, j)-=correlations(k)*temp_double*temp_double; //-= is correct
       }
+  k=numVarsr-1;
+  for(j=0; j<nrowsXR; ++j)
+    for(i=0; i<nrowsxr; ++i) {
+      temp_double=xr(i,k)-XR(j,k);
+      r( i, j)=exp(r( i, j)-correlations(k)*temp_double*temp_double);
+    }
+
+  //first derivative with respect to second input (XR)
+  for(Jder=0; Jder<numVarsr; ++Jder)
+    for(j=0; j<nrowsXR; ++j) {
+      Jj=(Jder+1)*nrowsXR+j;
+      for(i=0; i<nrowsxr; ++i) {
+	r( i,Jj)= 2.0*correlations(Jder)*(xr(i,Jder)-XR(j,Jder))*r( i, j);
+	//no negative sign here because used xr-XR instead of -(XR-xr)
+      }
+    }
+
+  FILE *fp=fopen("gkm_rmat_check.txt","w");
+  for(i=0; i<nrowsxr; ++i) {
+    fprintf(fp,"%-12.6g", r(i,0));
+    for(j=1; j<numRowsR; ++j) 
+      fprintf(fp," %-12.6g", r(i,j));     
+    fprintf(fp,"\n");
   }
+  fclose(fp);
+
+
   return r;
 }
 
+
+MtxDbl& GradKrigingModel::dcorrelation_matrix_dxI(MtxDbl& dr, const MtxDbl& r, 
+						  const MtxDbl& xr, 
+						  MtxDbl& workI, int Ider)
+{
+  int nrowsXR=XR.getNRows(); //data points used to build model
+  int nrowsxr=xr.getNRows(); //points at which we are evalutating the model
+  //assert(xr.getNCols()==numVarsr);
+  dr.newSize(nrowsxr,nrowsXR*(1+numVarsr));
+  workI.newSize(nrowsxr,nrowsXR);
+  int i, j, k, Ij, Jj, Jder;
+  //the convention is that the second index into r and dr has 2 characters 
+  //eg r(i,Jj) and dr(i,Jj). The second charater is lower case and 
+  //indicates the "point" index INTO a derivative (with respect to XR) 
+  //submatrix.  The first character is upper case and indicates the 
+  //derivative (with respect to XR) submatrix itself, more specifically 
+  //which component of the second (XR) input variable the derivative is 
+  //with respect to.  Derivatives with respect to the first (xr) input 
+  //are implied by the variables name.  For example 
+  //r(i,Jj)=d[r(xr(i,:),XR(j,:)]/dXR(j,Jder)
+  //dr(i,Jj)=d^2[r(xr(i,:),XR(j,:))]/dXR(j,Jder)dxr(i,Ider)
+  //in this function all derivatives with respect to the first (xr) input
+  //are with respect to the Ider-th component, i.e. xr(:,Ider), this is 
+  //indicated by the name of the function dcorrelation_matrix_dxI (note the
+  //trailing "I" in the name) the portion of r or dr that does not have a 
+  //derivative taken with respect to XR is indicated by a " j" (space "j") 
+  //for example 
+  //r(i, j)=r(xr(i,:),XR(j,:)) 
+  //dr(i, j)=d[r(xr(i,:),XR(j,:))]/dxr(i,Ider)
+
+  double twoThetaI=2.0*correlations(Ider);
+  //now I don't need to touch correlations for the rest of the function call
+
+  //first derivative with respect to Ider component (variable) of first 
+  //input, xr(:,Ider)
+  for(j=0; j<nrowsXR; ++j) 
+    for(i=0; i<nrowsxr; ++i) {
+      workI(i,j)=-twoThetaI*(xr(i,Ider)-XR(j,Ider));
+      dr(i, j)=workI(i,j)*r(i, j);
+    }
+  //now I don't need to touch xr or XR for the rest of the function call 
+  //(because I have workI) it's possible that adding workI slowed things down,
+  //we now need only 1 memory access instead of 2 but need nrowsxr*nrowsXR 
+  //memory instead of nrowsxr+nrowsXR the good news that the nrowsxr*nrowsXR 
+  //is laid out linearly in memory in the order it will be needed so the
+  //compiler should be able to optimize that pretty well
+
+  //now do the mixed second derivatives submatrices
+  //dr(i,Jj)=
+  //        =d^2[r(xr(i,:).XR(j,Jder))]/dxr(i,Ider)dXR(j,Jder)=
+  //        =d[r(i,Jj)]/dxr(i,Ider)
+  for(Jder=0; Jder<numVarsr; ++Jder) {
+    if(Jder==Ider)
+      for(j=0; j<nrowsXR; ++j) {
+	Ij=(Ider+1)*nrowsXR+j;
+	for(i=0; i<nrowsxr; ++i) 
+	  dr(i,Ij)=workI(i,j)*r(i,Ij)+twoThetaI*r(i, j);
+      }
+    else
+      for(j=0; j<nrowsXR; ++j) {
+	Jj=(Jder+1)*nrowsXR+j;
+	for(i=0; i<nrowsxr; ++i) 
+	  dr(i,Jj)=workI(i,j)*r(i,Jj);
+      }    
+  }
+
+  return dr;
+}
+
+MtxDbl& GradKrigingModel::d2correlation_matrix_dxIdxK(MtxDbl& d2r, const MtxDbl& drI, const MtxDbl& r, const MtxDbl& xr, MtxDbl& workK, int Ider, int Kder)
+{
+  int nrowsXR=XR.getNRows(); //data points used to build model
+  int nrowsxr=xr.getNRows(); //points at which we are evalutating the model
+  d2r.newSize(nrowsxr,nrowsXR*(1+numVarsr));
+  workK.newSize(nrowsxr,nrowsXR);
+  int i, j, K, Jj, Kj, Jder;
+  //the convention is that the second index into r and drI and d2r has 2 
+  //characters, eg r(i,Jj), dr(i,Jj), and d2r(i,Jj).  The second charater 
+  //is lower case and indicates the "point" index INTO a derivative (with 
+  //respect to XR) submatrix.  The first character is upper case and indicates
+  //the derivative (with respect to XR) submatrix itself, more specifically 
+  //which component of the second (XR) input variable the derivative is with 
+  //respect to.  Derivatives with respect to the first (xr) input are 
+  //implied by the variable's name for example 
+  //r(i,Jj)=d[r(xr(i,:),XR(j,:)]/dXR(j,Jder) 
+  //drI(i,Jj)=d^2[r(xr(i,:),XR(j,:))]/dXR(j,Jder)dxr(i,Ider)
+  //d2r(i,Jj)=d^3[r(xr(i,:),XR(j,:))]/dXR(j,Jder)dxr(i,Ider)dxr(i,Kder)
+  //in this function d2r contains derivatives with respect to the Ider and
+  //Kder components (variables) of the first (xr) input, i.e. xr(:,Ider)
+  //and xr(:,Kder).  This is indicated by the name of the function 
+  //d2correlation_matrix_dxIdxK (note the trailing "dxIdxK" in the name) 
+  //the portion of r, drI, and d2r that does not have a derivative taken 
+  //with respect to XR is indicated by a " j" (space "j") 
+  //for example r(i, j)=r(xr(i,:),XR(j,:))
+  //drI(i, j)=d[r(xr(i,:),XR(j,:))]/dxr(i,Ider)
+  //d2r(i, j)=d^2[r(xr(i,:),XR(j,:))]/dxr(i,Ider)dxr(i,Kder)
+
+  double twoThetaK=2.0*correlations(Kder);
+  //now I don't need to touch correlations for the remainder of the function 
+  //call
+
+  for(j=0; j<nrowsXR; ++j)
+    for(i=0; i<nrowsxr; ++i)
+      workK(i,j)=-twoThetaK*(xr(i,Kder)-XR(j,Kder));
+  //now I don't need to touch xr or XR for the remainder of the function call
+
+  if(Ider==Kder) {
+
+    //this is the first submatrix (no derivatives with respect to XR) so
+    //d^2[r(xr(i,:),XR(j,:))]/dxr(i,Ider)dxr(i,Kder) & Ider==Kder
+    for(j=0; j<nrowsXR; ++j)
+      for(i=0; i<nrowsxr; ++i)
+	d2r(i, j)=workK(i,j)*drI(i, j)-twoThetaK*r(i, j);
+
+    //for rest of the submatrices (with derivatives with respect to XR) so
+    //d^3[r(xr(i,:),XR(j,:))]/dXR(j,Jder)dxr(i,Ider)dxr(i,Kder) & Ider==Kder
+    for(Jder=0; Jder<numVarsr; ++Jder) {
+      if(Jder==Kder)
+	for(j=0; j<nrowsXR; ++j){
+	  Kj=(Kder+1)*nrowsXR+j;
+	  for(i=0; i<nrowsxr; ++i)
+	    d2r(i,Kj)=workK(i,j)*drI(i,Kj)-twoThetaK*r(i,Kj)
+	      +twoThetaK*drI(i, j);
+	}
+      else
+	for(j=0; j<nrowsXR; ++j){
+	  Jj=(Jder+1)*nrowsXR+j;
+	  for(i=0; i<nrowsxr; ++i)
+	    d2r(i,Jj)=workK(i,j)*drI(i,Jj)-twoThetaK*r(i,Jj);
+	}    
+    }
+  }
+  else{
+
+    //this is the first submatrix (no derivatives with respect to XR) so
+    //d^2[r(xr(i,:),XR(j,:))]/dxr(i,Ider)dxr(i,Kder) & Ider =/= Kder
+    for(j=0; j<nrowsXR; ++j)
+      for(i=0; i<nrowsxr; ++i)
+	d2r(i, j)=workK(i,j)*drI(i, j);
+
+
+    //for rest of the submatrices (with derivatives with respect to XR) so
+    //d^3[r(xr(i,:),XR(j,:))]/dXR(j,Jder)dxr(i,Ider)dxr(i,Kder) & Ider =/= Kder
+    for(Jder=0; Jder<numVarsr; ++Jder) {
+      if(Jder==Kder) 
+	for(j=0; j<nrowsXR; ++j) {
+	  Kj=(Kder+1)*nrowsXR+j;
+	  for(i=0; i<nrowsxr; ++i)
+	    d2r(i,Kj)=workK(i,j)*drI(i,Kj)
+	      +twoThetaK*drI(i, j);
+	}
+      else
+	for(j=0; j<nrowsXR; ++j) {
+	  Jj=(Jder+1)*nrowsXR+j;
+	  for(i=0; i<nrowsxr; ++i)
+	    d2r(i,Jj)=workK(i,j)*drI(i,Jj);
+	}  
+    }
+  }
+  
+  return d2r;
+}
+
+#ifdef __DONTDEFINE__
+MtxDbl& GradKrigingModel::correlation_matrix(MtxDbl& r, const MtxDbl& xr) const
+{
+  int nrowsXR=XR.getNRows(); //data points used to build model
+  int nrowsxr=xr.getNRows(); //points at which we are evalutating the model
+  //assert(xr.getNCols()==numVarsr);
+  r.newSize(nrowsxr*(1+numVarsr),nrowsXR*(1+numVarsr));
+  int i,j,k, Ii, Jj, Ji, Ider, Jder;
+  double temp_double;
+
+  //the convention is that each index into R has 2 characters R(__,__) 
+  //eg R(Ii,Jj). The second charater is lower case and indicates the "point"
+  //index INTO a derivative submatrix.  The first character in each index is 
+  //upper case and indicates the derivative submatrix itself, more 
+  //specifically which input variable the derivative is with respect to. 
+  //For example R(Ii,Jj) indicates the ith row (point) and jth column (point) 
+  //of the (I_,J_) submatrix which means 
+  //d^2[r(xr(i,:),XR(j,:))]/r(i,I)dXR(j,J), a blank space for the first 
+  //character of an index means NO derivative was taken with respect to that
+  //input, for example r( i, j)=r(xr(i,:),XR(j,:)) and 
+  //r(Ii, j)=dr(xr(i,:),XR(j,:))/dxr(i,I);  r(Ji,Jj) indicates this is a 
+  //diagonal submatrix (i.e. it's a mixed second derivative with respect to
+  //the same component of the first, xr, and second, XR, input variables)
+  //r(Ji,Jj)=d^2r(xr(i,:),XR(j,:))/dxr(i,J)dXR(j,J) which has an extra 
+  //additive term, +2*theta(J)*r( i, j) relative to other mixed second 
+  //derivatives
+
+  for(j=0; j<nrowsXR; ++j)
+    for(i=0; i<nrowsxr; ++i) {
+      temp_double=xr(i,0)-XR(j,0);
+      r( i, j)=-correlations(0)*temp_double*temp_double; //=- is correct
+    }
+  for(k=1; k<numVarsr-1; ++k)
+    for(j=0; j<nrowsXR; ++j)
+      for(i=0; i<nrowsxr; ++i) {
+	temp_double=xr(i,k)-XR(j,k);
+	r( i, j)-=correlations(k)*temp_double*temp_double; //-= is correct
+      }
+  k=numVarsr-1;
+  for(j=0; j<nrowsXR; ++j)
+    for(i=0; i<nrowsxr; ++i) {
+      temp_double=xr(i,k)-XR(j,k);
+      r( i, j)=exp(r( i, j)-correlations(k)*temp_double*temp_double);
+    }
+  //above this line is needed to evaluate both the function values and as a 
+  //"precompute, store, and reuse" quantity to compute the portion of r 
+  //needed for gradient evaluations
+
+
+  //first derivative with respect to second input (XR)
+  for(Jder=0; Jder<numVarsr; ++Jder)
+    for(j=0; j<nrowsXR; ++j) {
+      Jj=(Jder+1)*nrowsXR+j;
+      for(i=0; i<nrowsxr; ++i) {
+	r( i,Jj)= 2.0*correlations(Jder)*(xr(i,Jder)-XR(j,Jder))*r( i, j);
+	//no negative sign here because used xr-XR instead of -(XR-xr)
+      }
+    }
+  //only the stuff above this line is needed for evaluating function values
+
+
+
+  //the base "r( i, j)" matrix/submatrix and the stuff below this line is 
+  //needed to calculate derivatives
+
+  //first derivative with respect to first input (xr)
+  for(Ider=0; Ider<numVarsr; ++Ider)
+    for(j=0; j<nrowsXR; ++j) 
+      for(i=0; i<nrowsxr; ++i) {
+	Ii=(Ider+1)*nrowsxr+i;
+	r(Ii, j)=-2.0*correlations(Ider)*(xr(i,Ider)-XR(j,Ider))*r( i, j);
+      }
+
+  //now do the mixed second derivative submatrices
+  for(Jder=0; Jder<numVarsr; ++Jder) {
+
+    //derivatives with respect to different components (variables) in the 
+    //first (xr) and second (XR) input
+    for(Ider=0; Ider<Jder; ++Ider) 
+      for(j=0; j<nrowsXR; ++j) {
+	Jj=(Jder+1)*nrowsXR+j;
+	for(i=0; i<nrowsxr; ++i) {
+	  Ii=(Ider+1)*nrowsxr+i;	  
+	  r(Ii,Jj)=-4.0*r( i, j)*
+	    correlations(Ider)*(xr(i,Ider)-XR(j,Ider))*
+	    correlations(Jder)*(xr(i,Jder)-XR(j,Jder));
+	}
+      }
+  
+    //Ider=Jder; derivatives with respect to the same component (variable) in 
+    //the first (xr) and second (XR) inputs, there is an extra term here...
+    //+2.0*theta(Jder)*r( i, j) compared to other mixed 2nd derivatives
+    for(j=0; j<nrowsXR; ++j) {
+      Jj=(Jder+1)*nrowsXR+j;
+      for(i=0; i<nrowsxr; ++i) {
+	Ji=(Jder+1)*nrowsxr+i;
+	temp_double=2.0*correlations(Jder)*(xr(i,Jder)-XR(j,Jder));
+	r(Ji,Jj)=(2.0*correlations(Jder)-temp_double*temp_double)*r( i, j);
+      }
+    }
+
+    //derivatives with respect to different components (variables) in the 
+    //first (xr) and second (XR) input
+    for(Ider=Jder+1; Ider<numVarsr; ++Ider) 
+      for(j=0; j<nrowsXR; ++j) {
+	Jj=(Jder+1)*nrowsXR+j;
+	for(i=0; i<nrowsxr; ++i) {
+	  Ii=(Ider+1)*nrowsxr+i;	  
+	  r(Ii,Jj)=-4.0*r( i, j)*
+	    correlations(Ider)*(xr(i,Ider)-XR(j,Ider))*
+	    correlations(Jder)*(xr(i,Jder)-XR(j,Jder));
+	}
+      }
+  }
+
+  return r;
+}
+#endif
+
+
 ///k is the variable/dimension not the point
-MtxDbl& KrigingModel::dcorrelation_matrix_dxk(MtxDbl& dr, const MtxDbl& r, 
-					      const MtxDbl& xr, int k){
+MtxDbl& GradKrigingModel::dcorrelation_matrix_dxk(MtxDbl& dr, const MtxDbl& r, 
+					      const MtxDbl& xr, const int k){
   int nrowsxr=xr.getNRows();
   assert((r.getNRows()==nrowsxr)&&(r.getNCols()==numPoints)&&
 	 (xr.getNCols()==numVarsr)&&(0<=k)&&(k<numVarsr));
@@ -1207,30 +1475,6 @@ MtxDbl& KrigingModel::dcorrelation_matrix_dxk(MtxDbl& dr, const MtxDbl& r,
   return dr;
 }
 
-MtxDbl& KrigingModel::d2correlation_matrix_dxIdxK(MtxDbl& d2r, const MtxDbl& drI, const MtxDbl& r, const MtxDbl& xr, int Ider, int Kder)
-{
-  int nrowsXR=XR.getNRows(); //data points used to build model
-  int nrowsxr=xr.getNRows(); //points at which we are evalutating the model
-  d2r.newSize(nrowsxr,nrowsXR);
-///k is the variable/dimension not the point
-
-  assert((r.getNRows()==nrowsxr)&&(r.getNCols()==numPoints)&&
-	 (xr.getNCols()==numVarsr)&&(0<=Kder)&&(Kder<numVarsr));
-
-  double neg_two_theta_K=-2.0*correlations(Kder);
-  if(Ider==Kder) 
-    for(int jpt=0; jpt<numPoints; ++jpt)
-      for(int ipt=0; ipt<nrowsxr; ++ipt)
-	d2r(ipt,jpt)=neg_two_theta_K*((xr(ipt,Kder)-XR(jpt,Kder))*drI(ipt,jpt)+r(ipt,jpt));
-  else
-    for(int jpt=0; jpt<numPoints; ++jpt)
-      for(int ipt=0; ipt<nrowsxr; ++ipt)
-	d2r(ipt,jpt)=neg_two_theta_K*(xr(ipt,Kder)-XR(jpt,Kder))*drI(ipt,jpt);
-
-  return d2r;
-}
-
-
 
 /** this function is typically used during emulator construction, the below
     the diagonal portion of R = exp(Z*theta), where R is symmetric with 1's 
@@ -1240,8 +1484,8 @@ MtxDbl& KrigingModel::d2correlation_matrix_dxIdxK(MtxDbl& d2r, const MtxDbl& drI
     next, Z*theta is matrix vector multiplication to be performed efficiently 
     by BLAS, V=Z*theta is a vector with nchoosek(numPoints,2) elements.  We 
     need to copy exp(V(ij)) to R(i,j) and R(j,i) to produce R. The Z matrix 
-    is produced by KrigingModel::gen_Z_matrix()     KRD wrote this */
-void KrigingModel::correlation_matrix(const MtxDbl& theta)
+    is produced by GradKrigingModel::gen_Z_matrix()     KRD wrote this */
+void GradKrigingModel::correlation_matrix(const MtxDbl& theta)
 {
   int nrowsZ=Z.getNRows();
   //printf("nrowsZ=%d; numPoints=%d; ''half'' numPoints^2=%d; numVarsr=%d; theta.getNCols()=%d\n",
@@ -1249,33 +1493,229 @@ void KrigingModel::correlation_matrix(const MtxDbl& theta)
   //fflush(stdout);
   //assert((nrowsZ==nchoosek(numPoints,2))&&(numVarsr==theta.getNCols()));
 
+  //printf("Z(0,0)=%g\n",Z(0,0));
+
   Ztheta.newSize(nrowsZ,1);
   matrix_mult(Ztheta,Z,theta,0.0,1.0,'N','T');
-  R.newSize(numPoints,numPoints);
-  double *R_ptr=R.ptr(0);
 
-  double Rij_temp;
-  int ij=0;
-  for(int j=0; j<numPoints-1; ++j) {
-    R(j,j)=1.0;
+  R.newSize(numRowsR,numRowsR); 
+  //the convention is that each index into R has 2 characters R(__,__) 
+  //eg R(Ii,Jj). The second charater is lower case and indicates the "point"
+  //index INTO a derivative submatrix.  The first character in each index is 
+  //upper case and indicates the derivative submatrix itself, more 
+  //specifically which input variable the derivative is with respect to. 
+  //For example R(Ii,Jj) indicates the ith row (point) and jth column (point) 
+  //of the (I_,J_) submatrix which means 
+  //d^2[r(xr(i,:),XR(j,:))]/dXR(i,I)dXR(j,J), 
+  //A blank space for the first character of an index means NO 
+  //derivative was taken with respect to that input, for example 
+  //R( i, j)=r(xr(i,:),XR(j,:))  
+  //R(Ii, j)=dr(xr(i,:),XR(j,:))/dXR(i,I)
+  //R(Ji,Jj) indicates this is a diagonal submatrix (i.e. it's a mixed 
+  //second derivative with respect to the same component of the first 
+  //and second input variables)
+  //R(Ji,Jj)=d^2[r(xr(i,:),XR(j,:))]/dXR(i,J)dXR(j,J) 
+  //which has the extra /additive term, +2*theta(J)*r( i, j) 
+  //relative to other mixed second derivatives
+
+  double temp_double; //a temporary variable from which the matrix is filled
+  //so I don't occur a read-access performance loss due to copying from one 
+  //ELEMENT of the matrix to another, the compiler should know enough to 
+  //make "temp_double" a register variable
+  int zij=0; //index into Z and twoXRminusXRtran (only the lower 
+  //triangular part of these matrices were stored to save space)
+  int j; //j "point" index into a submatrix
+  //int i; //i "point" index into a submatrix
+
+  //the zeroth order derivative (function value itself) submatrix equals 
+  //the correlation matrix without derivatives and is symmetric
+  for(j=0; j<numPoints-1; ++j) {
+    R( j, j)=1.0;  
     for(int i=j+1; i<numPoints; ++i) {
-      Rij_temp=exp(Ztheta(ij));
-      R(i,j)=Rij_temp;
-      R(j,i)=Rij_temp;
-      ++ij;
+      temp_double=exp(Ztheta(zij));
+      R( i, j)=temp_double;
+      R( j, i)=temp_double;
+      //printf("i=%d j=%d zij=%d Ztheta=%g R=%g\n",i,j,zij,Ztheta(zij),R(i,j));
+      ++zij;
     }
   }
-  R(numPoints-1,numPoints-1)=1.0;
+  j=numPoints-1;
+  R( j, j)=1.0;
 
-  FILE *fp=fopen("km_Rmat_check.txt","w");
+  //now handle the first order derivative submatrices, indiviually the first
+  //order derivative SUBmatrices are anti-symmetric but the whole matrix is
+  //symmetric
+  int Ii, Ij, Jj, Ji; //first letter identifies index OF derivative submatrix 
+  //second letter identifies index INTO derivative SUBmatrix
+  for(int Ider=0; Ider<numVarsr; ++Ider) {
+    zij=0;
+    for(j=0; j<numPoints-1; ++j) {//j<numPoints-1 avoids an i loop of length 0
+      //diagonal (_j,_j) of off diagonal (I_, _) submatrix 
+      Ij=(Ider+1)*numPoints+j;
+      R(Ij, j)=0.0;
+      R( j,Ij)=0.0;
+      //Ij=(Ider+1)*numPoints+j;
+      for(int i=j+1; i<numPoints; ++i) {
+	//off diagonal (_i,_j) of off-diagonal (I_, _) submatrix 
+	Ii=(Ider+1)*numPoints+i;
+	temp_double=-theta(Ider)*twoXRminusXRtran(zij,Ider)*R( i, j);
+	R(Ii, j)= temp_double; 
+	R( j,Ii)= temp_double; //whole R matrix is symmetric
+	R(Ij, i)=-temp_double; 
+	R( i,Ij)=-temp_double; //off-diagonal 1st order (actually all odd 
+	//order) derivative SUBmatrices are anti-symmetric
+	++zij;
+      }
+    }
+    //diagonal (_j,_j) of off diagonal (I_, _) submatrix 
+    j=numPoints-1; //avoids an i loop of length 0
+    Ij=(Ider+1)*numPoints+j;
+    R(Ij,j)=0.0;
+    R(j,Ij)=0.0;    
+  }
+
+  //note that all 2nd order (actually all even order) derivative SUBmatrices 
+  //are symmetric because the hadamard product of 2 (actually any even 
+  //number of) anti-symmetric matrices is a symmetric matrix
+  double two_theta_Jder;
+  for(int Jder=0; Jder<numVarsr; ++Jder) {
+    //do the on diagonal (J_,J_) submatrix 
+    two_theta_Jder=2.0*theta(Jder);
+    zij=0;
+    for(j=0; j<numPoints-1; ++j) { //j<numPoints-1 avoids an i loop of length 0
+      //diagonal (_j,_j) of on diagonal (J_,J_) submatrix
+      Jj=(Jder+1)*numPoints+j; 
+      R(Jj,Jj)=two_theta_Jder; //R(Jj,Jj)=2*theta(Jder)*R(j,j); R(j,j)=1; 
+      for(int i=j+1; i<numPoints; ++i) {
+	//off diagonal (_i,_j) of on-diagonal (J_,J_) submatrix
+	Ji=(Jder+1)*numPoints+i;
+	temp_double=theta(Jder)*twoXRminusXRtran(zij,Jder)*R(Ji, j)+
+	  two_theta_Jder*R( i, j);
+	R(Ji,Jj)=temp_double;
+	R(Jj,Ji)=temp_double;
+	++zij;
+      }
+    }
+    //diagonal (_j,_j) of on diagonal (J_,J_) submatrix 
+    j=numPoints-1; //avoids an i loop of length 0
+    Jj=(Jder+1)*numPoints+j;
+    R(Jj,Jj)=two_theta_Jder; //R(j,j)=1 R(jj,jj)=2*theta(Jder)*R(j,j)
+
+
+    //do the off diagonal (I_,J_) submatrices
+    for(int Ider=Jder+1; Ider<numVarsr; ++Ider) {
+      //off diagonal (I_,J_) submatrix
+      zij=0;
+      for(j=0; j<numPoints-1; ++j) {//j<numPoints-1 avoids an i loop of length 0
+	//diagonal (_j,_j) of off-diagonal (I_,J_) submatrix
+	Jj=(Jder+1)*numPoints+j; 
+	Ij=(Ider+1)*numPoints+j;
+	R(Ij,Jj)=0.0;
+	R(Jj,Ij)=0.0;
+
+
+	for(int i=j+1; i<numPoints; ++i) {
+	  //off diagonal (_i,_j) of off-diagonal (I_,J_) submatrix 
+	  Ii=(Ider+1)*numPoints+i;
+	  Ji=(Jder+1)*numPoints+i;
+	  temp_double=theta(Jder)*twoXRminusXRtran(zij,Jder)*R(Ii, j);
+	  R(Ii,Jj)= temp_double; 
+	  R(Ij,Ji)= temp_double; 
+	  R(Ji,Ij)= temp_double; 
+	  R(Jj,Ii)= temp_double; 
+	  ++zij;
+	}
+      }
+      //diagonal (_j,_j) of off-diagonal (I_,J_) submatrix
+      j=numPoints-1; //avoids an i loop of length 0
+      Ij=(Ider+1)*numPoints+j;
+      Jj=(Jder+1)*numPoints+j;
+      R(Ij,Jj)=0.0;
+      R(Jj,Ij)=0.0;
+    }
+  }
+
+
+  FILE *fp=fopen("gkm_Rmat_check.txt","w");
   for(int i=0; i<numPoints; ++i) {
     fprintf(fp,"%-12.6g", R(i,0));
-    for(int j=1; j<numPoints; ++j) 
+    for(int j=1; j<numRowsR; ++j) 
       fprintf(fp," %-12.6g", R(i,j));     
     fprintf(fp,"\n");
   }
   fclose(fp);
 
+
+
+#ifdef _FOR_DEBUG_DEVEL_ONLY_
+  //for debug only
+  MtxDbl rr(numRowsR,numRowsR);
+  MtxDbl r(numPoints,numRowsR);
+  MtxDbl dr(numPoints,numRowsR);
+  MtxInt irows(numPoints);
+  MtxDbl work(numPoints,numPoints);
+
+  correlations.copy(theta);
+  correlation_matrix(r, XR)
+;
+  for(int i=0; i<numPoints; ++i)
+    irows(i)=i;
+  rr.putRows(r,irows);
+
+  for(int Ider=0; Ider<numVarsr; ++Ider) {
+    irows(0)=(Ider+1)*numPoints;
+    for(int i=1; i<numPoints; ++i)
+      irows(i)=irows(i-1)+1;
+    dcorrelation_matrix_dxI(dr,r,XR,work,Ider);
+    rr.putRows(dr,irows);
+  }
+
+  FILE* fp=fopen("CheckGKE_Rmat.txt","w");
+  fprintf(fp,"%d\n%d\n\n",numPoints,numVarsr);
+  for(int i; i<numVarsr; ++i)
+    fprintf(fp,"%.16g ",theta(i));
+  fprintf(fp,"\n");
+  
+
+  for(int i=0; i<numPoints; ++i) {
+    fprintf(fp,"\n%.16g",XR(i,0));
+    for(j=1; j<numVarsr; ++j)
+      fprintf(fp," %.16g",XR(i,j));
+  }
+  fprintf(fp,"\n");
+
+  for(j=0; j<numVarsr; ++j) {
+    fprintf(fp,"\n%.16g",Z(0,j));
+    for(int zij=1; zij<nrowsZ; ++zij) 
+      fprintf(fp,"\n%.16g",Z(zij,j));
+  }
+  fprintf(fp,"\n");
+
+  for(j=0; j<numVarsr; ++j) {
+    fprintf(fp,"\n%.16g",twoXRminusXRtran(0,j));
+    for(int zij=1; zij<nrowsZ; ++zij) 
+      fprintf(fp,"\n%.16g",twoXRminusXRtran(zij,j));
+  }
+  fprintf(fp,"\n");
+
+  for(int i=0; i<numRowsR; ++i) {
+    fprintf(fp,"\n%.16g",R(i,0)); 
+    for(j=1; j<numRowsR; ++j) {
+          fprintf(fp," %.16g",R(i,j)); 
+    }
+  }
+  fprintf(fp,"\n");
+
+  for(int i=0; i<numRowsR; ++i) {
+    fprintf(fp,"\n%.16g",rr(i,0)); 
+    for(j=1; j<numRowsR; ++j) {
+          fprintf(fp," %.16g",rr(i,j)); 
+    }
+  }
+  fflush(fp);
+  fclose(fp);
+  assert(0);
+#endif  
   return; 
 }
 
@@ -1290,16 +1730,19 @@ void KrigingModel::correlation_matrix(const MtxDbl& theta)
     performed efficiently (for each member of the set of candidate
     theta vectors) by calling BLAS. Z and XR are member variables so  
     they don't need to be passed in, KRD wrote this,  */
-MtxDbl& KrigingModel::gen_Z_matrix()
+MtxDbl& GradKrigingModel::gen_Z_matrix()
 {
   int nrowsXR=XR.getNRows();
   int ncolsXR=XR.getNCols();
   int nrowsZ=nchoosek(nrowsXR,2);
 
+  twoXRminusXRtran.newSize(nrowsZ,ncolsXR);
   Z.newSize(nrowsZ,ncolsXR);
+
 
   register double mult_term;
   register int ijk=0;
+  double *twoXRminusXRtran_ptr=twoXRminusXRtran.ptr(0);
   double *Z_ptr=Z.ptr(0); //done for speed
   const double *XR_k_ptr; //done for speed
   for(int k=0; k<ncolsXR; k++) {
@@ -1307,47 +1750,13 @@ MtxDbl& KrigingModel::gen_Z_matrix()
     for(int j=0; j<nrowsXR-1; j++)
       for(int i=j+1; i<nrowsXR; i++) {
 	mult_term=XR_k_ptr[i]-XR_k_ptr[j];
+	twoXRminusXRtran_ptr[ijk]=2*mult_term;
 	Z_ptr[ijk++]=-mult_term*mult_term;
       }
   }
   
   return Z;
 }
-
-/** Warning it's up to the person calling this function to ensure that
-    R is the correlation Matrix generated as R=exp(Z*theta) where
-    theta is the correlation vector and Z(ij,k)=-(XR(i,k)-XR(j,k))^2. I
-    (KRD) did it this way because it is faster and the only place it
-    is currently being used is in void
-    KrigingProblem::objectiveAndGradient().  the Z matrix is produced
-    by KrigingModel::gen_Z_matrix() and R is produced by MtxDbl
-    KrigingModel::corrMtx(const int nrowsXR, const MtxDbl& Z, const
-    VecDbl& theta) KRD wrote this. Z is a member variables so it doesn't 
-    need to be passed in, R needs to be passed in so we can evaluate 
-    second derivatives with the same function... dR_dthetak=-Z(:,k).*R(:) 
-    (MATLAB notation), and d2R_dthetai_dthetaj=-Z(:,j).*dR_dthetai;*/
-MtxDbl& KrigingModel::dcorrMtx_dthetak(MtxDbl& dR_dthetak, const MtxDbl& R_local, 
-				       const int k)
-{
-  dR_dthetak.newSize(numPoints,numPoints);
-  double dRij_dthetak_temp;
-  int nrowsZ=Z.getNRows();
-  const double *Zk_ptr=Z.ptr(0,k); //do this to avoid one extra dereference per element of R_local
-  int ij=0;
-  for(int j=0; j<numPoints-1; ++j) {
-    dR_dthetak(j,j)=0.0;
-    for(int i=j+1; i<numPoints; ++i) {
-      dRij_dthetak_temp=Zk_ptr[ij]*R_local(i,j);
-      dR_dthetak(i,j)=dRij_dthetak_temp;
-      dR_dthetak(j,i)=dRij_dthetak_temp;
-      ++ij;
-    }      
-  }
-  dR_dthetak(numPoints-1,numPoints-1)=0.0;
-
-  return dR_dthetak;
-}
-
 
 // BMA TODO: combine shared code from these various functions?
 // (consider initializing class members R1 and R2 or something once
@@ -1363,7 +1772,7 @@ MtxDbl& KrigingModel::dcorrMtx_dthetak(MtxDbl& dR_dthetak, const MtxDbl& R_local
     precompute and store (store across sequential calls to this function) 
     strategy to reduce the computational cost KRD 2010.05.13
 */
-void KrigingModel::masterObjectiveAndConstraints(const MtxDbl& theta, int obj_der_mode, int con_der_mode)
+void GradKrigingModel::masterObjectiveAndConstraints(const MtxDbl& theta, int obj_der_mode, int con_der_mode)
 {
   // if(obj_der_mode>=1) (1=2^0=> 0th derivative) calculate objective function
   // if(obj_der_mode>=2) (2=2^1=> 1st derivative) calculate objective function and its gradient
@@ -1379,7 +1788,8 @@ void KrigingModel::masterObjectiveAndConstraints(const MtxDbl& theta, int obj_de
   //constraintType,maxConDerMode,con_der_mode,maxObjDerMode,obj_der_mode);
 
   //might want to replace this with a thrown exception
-  assert((maxObjDerMode<=7)&&(maxConDerMode<=3)&&
+  assert(//(maxObjDerMode<=7)&&(maxConDerMode<=3)&& ///I've yanked out the analytical derivatives because something in them wasn't working I need to go back and fix this but for now don't let the user use this
+	 (maxObjDerMode<=1)&&(maxConDerMode<=1)&&
 	 (0<=obj_der_mode)&&(obj_der_mode<=maxObjDerMode)&&
 	 (0<=con_der_mode)&&(con_der_mode<=maxConDerMode)&&
 	 ((1<=obj_der_mode)||(1<=con_der_mode)));
@@ -1400,21 +1810,11 @@ void KrigingModel::masterObjectiveAndConstraints(const MtxDbl& theta, int obj_de
   //these are temporary variables that we keep around during emulator 
   //creation so we don't have to constantly allocate and deallocate them, 
   //these get deallocated at the end of create
-  //member variable: MtxDbl dNbetaHat_dthetaN(ntrend)
   //member variable: MtxDbl temp(ntrend)
   //member variable: MtxDbl temp2(numPoints)
   //member variable: MtxDbl temp3(numPoints)
   //member variable: MtxDbl temp4(numPoints)
   //member variable: MtxDbl temp5(numPoints)
-  //member variable: MtxDbl d2eps_dthetai_dthetaj(numPoints)
-  //member variable: MtxDbl dR_dthetai(numPoints,numPoints)
-  //member variable: MtxDbl dR_dthetaj(numPoints,numPoints)
-  //member variable: MtxDbl Rinv_dR_dthetai(numPoints,numPoints)
-  //member variable: MtxDbl Rinv_dR_dthetaj(numPoints,numPoints)  
-  //member variable: MtxDbl d2R_dthetai_dthetaj(numPoints,numPoints)
-  //member variable: MtxDbl dR_dthetai_Rinv_eps_minus_deps_dthetai(numPoints,numTheta)
-  //member variable: MtxDbl Rinv_dR_dthetai_Rinv_eps_minus_deps_dthetai(numPoints,numTheta)
-  
 
 
   //these are private and their values need to be retained between sequential calls to masterObjectiveAndConstraints, that is no other function (other than the create) can access them, these get deallocated at the end of create
@@ -1426,9 +1826,6 @@ void KrigingModel::masterObjectiveAndConstraints(const MtxDbl& theta, int obj_de
   //member variable: MtxDbl Z(numPoints*numPoints,numTheta)
   //member variable: MtxDbl R(numPoints,numPoints)
   //member variable: MtxDbl G(numPoints,ntrend)
-  //member variable: MtxDbl deps_dtheta(numPoints,numTheta)
-  //member variable: MtxDbl dR_dtheta_Rinv_eps(numPoints,numTheta)
-  //member variable: MtxDbl destVarianceMLE_dtheta(numTheta)
 
 
   //keep these around after emulator creation so we can evaluate the emulator
@@ -1443,6 +1840,16 @@ void KrigingModel::masterObjectiveAndConstraints(const MtxDbl& theta, int obj_de
   //if theta was the same as the last time we called this function than we can reuse some of the things we calculated last time
   
   int i, j;
+
+  //MtxDbl temp_row_vec_to_print_corrlen(1,numVarsr);
+  //for(i=0; i<numTheta; ++i)
+  //temp_row_vec_to_print_corrlen(i)=1.0/sqrt(2.0*theta(i));
+  //scaler.unScaleXrDist(temp_row_vec_to_print_corrlen);
+  //printf("L=(%g",temp_row_vec_to_print_corrlen(0));
+  //for(i=1; i<numTheta; ++i)
+  //printf(",%g",temp_row_vec_to_print_corrlen(i));
+  //printf(")\n");
+
 
   if(prevTheta.getNElems()!=numTheta) {
     prevTheta.newSize(1,numTheta);
@@ -1463,38 +1870,58 @@ void KrigingModel::masterObjectiveAndConstraints(const MtxDbl& theta, int obj_de
 
   //record the current theta as the previous theta so we can tell if we
   //should reuse the stuff we calculate this time
-  if((prevObjDerMode==0)&&(prevConDerMode==0))
-    for(i=0; i<numTheta; ++i) 
+  //MtxDbl temp_row_vec_to_print_corrlen(1,numVarsr);
+  if((prevObjDerMode==0)&&(prevConDerMode==0)) {
+    //printf("Changing correlati0n lengths: "); 
+    for(i=0; i<numTheta; ++i) {
+      //temp_row_vec_to_print_corrlen(i)=1.0/sqrt(2.0*theta(i));
       prevTheta(i)=theta(i); 
-
+    }}
+  //scaler.unScaleXrDist(temp_row_vec_to_print_corrlen);
+  //printf("L=(%g",temp_row_vec_to_print_corrlen(0));
+  //for(i=1; i<numTheta; ++i)
+  //printf(",%g",temp_row_vec_to_print_corrlen(i));
+  //printf(")\n");
 
   int k;
   int ntrend=Poly.getNRows();
   int chol_info;
 
   if((prevObjDerMode==0)&&(prevConDerMode==0)) {
-    R.newSize(numPoints,numPoints);
-    correlation_matrix(theta); //fills member variable R as exp(Z*theta) where Z is a member variable
+    R.newSize(numRowsR,numRowsR);
+    correlation_matrix(theta); //fills member variable R with exp(Z*theta) 
+    //where Z is a member variable calculated from XR, plus derivatives 
+    //with respect to XR 
+
     apply_nugget_build(); //modify R by nug in place
   }
 
   if((prevObjDerMode==0)&&((1<=obj_der_mode)||(1<=con_der_mode))) {
 
 
-    //perform LU decomposition of R and calculate the determinant of R, replaced LU with Cholesky
+    //perform LU (replaced with Cholesky) decomposition of R and calculate the determinant of R 
     //http://en.wikipedia.org/wiki/Determinant#Determinant_from_LU_decomposition
+    //the difference is that det(L) isn't one for Cholesky, instead det(L)=det(U)
+
     RChol.copy(R);
     chol_info=0;
-    Chol_fact(RChol,chol_info,rcondR); //preconditioned Cholesky, when Kriging is not gradient enhaced R won't need preconditiong since it has all 1's on the diagonals
+    Chol_fact(RChol,chol_info,rcondR); //preconditioned Cholesky, when Kriging
+    //is not gradient enhaced R won't need/benefit preconditiong since it has 
+    //all 1's on the diagonals
     //printf("Chol\n");
     //assert(chol_info==0);  //here for debug, decide what to do about it later
 
-    double log_determinant_R = 0.0; //need to do this to avoid underflow error for large numbers of points, log(0)=-inf
-    for (int ipt = 0; ipt < numPoints; ++ipt) 
-      log_determinant_R += log(RChol(ipt,ipt)); 
-    log_determinant_R *= 2.0; //only for Cholesky factorization of R 
+    double log_determinant_R = 0.0; //need to do this to avoid underflow error
+    //for large numbers of points (read as large number of Rows in R), 
+    //log(0)=-inf
+    for (int i = 0; i < numRowsR; ++i) 
+      log_determinant_R += log(RChol(i,i)); 
+    log_determinant_R *= 2.0; //only multiply by 2 for Cholesky factorization 
+    //of R because det(L)=det(U) and det(R)=det(L)*det(U)=det(L)^2
+    //so log(det(R))=2*log(det(L))
 
-    //determinant_R=fabs(determinant_R); //KRD added fabs because "The determinant of a positive definite matrix is always positive" http://mathworld.wolfram.com/PositiveDefiniteMatrix.html and det(R)=det(pivot Mtx)*det(L)*det(U); det(L)=1, det(U) is what we calculated above and det(pivot Mtx)=+/- 1
+    //determinant_R=fabs(determinant_R); //KRD added fabs for LU factorization
+    //because "The determinant of a positive definite matrix is always positive" http://mathworld.wolfram.com/PositiveDefiniteMatrix.html and det(R)=det(pivot Mtx)*det(L)*det(U); det(L)=1, det(U) is what we calculated above and det(pivot Mtx)=+/- 1, left this comment in, in case someone decides to switch back to LU decomposition
 
     // precompute, O(M^3) ops, and store quantities so(when give the 
     // derivative of the correlation matrix, R, with respect to a scalar 
@@ -1523,20 +1950,20 @@ void KrigingModel::masterObjectiveAndConstraints(const MtxDbl& theta, int obj_de
     //  will loop over k to fill up the gradient of the objective function
     
     //Do the generalized (by R^-1) least squares using min # of ops
-    Rinv_G.newSize(numPoints,ntrend); //precompute and store
+    Rinv_G.newSize(numRowsR,ntrend); //precompute and store
     solve_after_Chol_fact(Rinv_G,RChol,G);
-    //solve_after_LU_fact(Rinv_G,RLU,ipvt_RLU,G,'N','N'); //O(N^3) ops
     Gtran_Rinv_G_Chol.newSize(ntrend,ntrend);
     matrix_mult(Gtran_Rinv_G_Chol,G,Rinv_G,0.0,1.0,'T','N');
     //double rcondGtran_Rinv_G;
     Chol_fact(Gtran_Rinv_G_Chol,chol_info,rcondGtran_Rinv_G);
+    //printf("rcondGtran_Rinv_G = %g\n",rcondGtran_Rinv_G);
 
-    double log_determinant_Gtran_Rinv_G=0.0;
+    //if(~(chol_info==0)) assert(chol_info==0);  //for debug, do something else for production
+
+    double log_determinant_Gtran_Rinv_G=0.0; //need this for the Rassmussen & Williams formulation of likelihood
     for (int itrend = 0; itrend < ntrend; ++itrend)
       log_determinant_Gtran_Rinv_G += log(Gtran_Rinv_G_Chol(itrend,itrend)); 
     log_determinant_Gtran_Rinv_G *= 2.0; //only for Cholesky factorization of R 
-    //if(~(chol_info==0)) assert(chol_info==0);  //for debug, do something else for production
-
     temp.newSize(ntrend);
     matrix_mult(temp, Rinv_G, Y, 0.0, 1.0, 'T', 'N');
     betaHat.newSize(ntrend);
@@ -1547,19 +1974,19 @@ void KrigingModel::masterObjectiveAndConstraints(const MtxDbl& theta, int obj_de
     //5 lines of code (not counting comments) and we want to save space, 
     //afterwards we will only need R^-1*eps which is stored in "rhs"
     matrix_mult(temp2, G, betaHat, 1.0, -1.0, 'N', 'N'); //eps=Y-G(XR)*betaHat
-    rhs.newSize(numPoints);
+    rhs.newSize(numRowsR);
     solve_after_Chol_fact(rhs,RChol,temp2);
 
-    //estVarianceMLE = dot_product(temp2,rhs)/numPoints; //the "Koehler and Owen" way
-    estVarianceMLE = dot_product(temp2,rhs)/(numPoints-ntrend); //following Rasmussen and Williams (2006) we assume a "vague prior" (i.e. that we don't know anything) for betaHat, then like "Koehler and Owen" we replace the covariance matrix K with (unadjusted variance)*R (where R is the correlation matrix) and find unadjusted variance through maximum likelihood.
+    //estVarianceMLE = dot_product(temp2,rhs)/numRowsR; //the "Koehler and Owen" way
+    estVarianceMLE = dot_product(temp2,rhs)/(numRowsR-ntrend); //following Rasmussen and Williams (2006) we assume a "vague prior" (i.e. that we don't know anything) for betaHat, then like "Koehler and Owen" we replace the covariance matrix K with (unadjusted variance)*R (where R is the correlation matrix) and find unadjusted variance through maximum likelihood.
 
     //it's actually the log likelihood, which we want to maximize
-    //likelihood = -0.5*(numPoints*(log(4.0*acos(0.0))+log(estVarianceMLE)+1)
+    //likelihood = -0.5*(numRowsR*(log(4.0*acos(0.0))+log(estVarianceMLE)+1)
     //		       +log(determinant_R)); //from Koehler and Owen 
 
-    //likelihood = -0.5*(log(estVarianceMLE)+log_determinant_R/numPoints); //the "Koehler and Owen" way but dropping constant terms and on a per point basis
+    //likelihood = -0.5*(log(estVarianceMLE)+log_determinant_R/numRowsR); //the "Koehler and Owen" way but dropping constant terms and on a per point basis
 
-    likelihood = -0.5*(log(estVarianceMLE)+(log_determinant_R+log_determinant_Gtran_Rinv_G)/(numPoints-ntrend)); //derived following: C. E. Rasmussen & C. K. I. Williams, Gaussian Processes for Machine Learning, the MIT Press, 2006, ISBN 026218253X. c 2006 Massachusetts Institute of Technology. www.GaussianProcess.org/gpml... where we assume a "vague prior" (i.e. assume we don't know anything about it) for the least squares fit, then replacing covariance matrix K with unadjvar*R and following "Koehler and Owen" by using maximum likelihood for unadjvar and betaHat
+    likelihood = -0.5*(log(estVarianceMLE)+(log_determinant_R+log_determinant_Gtran_Rinv_G)/(numRowsR-ntrend)); //derived following: C. E. Rasmussen & C. K. I. Williams, Gaussian Processes for Machine Learning, the MIT Press, 2006, ISBN 026218253X. c 2006 Massachusetts Institute of Technology. www.GaussianProcess.org/gpml... where we assume a "vague prior" (i.e. assume we don't know anything about it) for the least squares fit, then replacing covariance matrix K with unadjvar*R and following "Koehler and Owen" by using maximum likelihood for unadjvar and betaHat
 
     //if(likelihood>=DBL_MAX)
     //printf("[estVarianceMLE=%g determinant_R=%g]",estVarianceMLE,determinant_R);
@@ -1568,6 +1995,7 @@ void KrigingModel::masterObjectiveAndConstraints(const MtxDbl& theta, int obj_de
     //likelihood (on a per point basis so numbers will be comparable 
     //regardless of how many points there are)
     obj=-likelihood;  
+    //obj=likelihood;  
     //printf("[obj=%g]",obj);
 
     prevObjDerMode=1; //increase prevObjDerMode to the current value
@@ -1594,6 +2022,7 @@ void KrigingModel::masterObjectiveAndConstraints(const MtxDbl& theta, int obj_de
       //con(0)=1.0-rcondR*3.0*maxCondNum;  //have seen rcond as low as about 1/3 of the true value
       con(0)=1.0-rcondR*maxCondNum;  //have seen rcond as low as about 1/3 of the true value
     }
+    /*
     else if(constraintType.compare("eig")==0) { //use eigenvalues (and maybe their analytical derivatives) to
       //bound the condition number
       allEigVect.newSize(numPoints,numPoints);
@@ -1607,7 +2036,11 @@ void KrigingModel::masterObjectiveAndConstraints(const MtxDbl& theta, int obj_de
     }
     else
       assert((constraintType.compare("eig")==0)||(constraintType.compare("rcond")==0));
+    */
+    else
+      assert(constraintType.compare("rcond")==0);
     
+
     prevConDerMode=1; //increase prevConDerMode to current value
     if((con_der_mode==1)&&(obj_der_mode<=prevObjDerMode)) {
       //we have everything we need so exit early
@@ -1615,9 +2048,6 @@ void KrigingModel::masterObjectiveAndConstraints(const MtxDbl& theta, int obj_de
     }
   }
   
-
-
-
   
   //******************************************************************
   //******************************************************************
@@ -1627,75 +2057,7 @@ void KrigingModel::masterObjectiveAndConstraints(const MtxDbl& theta, int obj_de
   //******************************************************************
   if(((obj_der_mode<2)||(2<=prevObjDerMode))&&
      ((prevConDerMode<2)&&(2<=con_der_mode))) {
-    //if you want gradients of the objective AND constraint functions 
-    //do them together below, so they can share the calculation of 
-    //dR_thethai.  However if you want gradients of the contraint 
-    //functions BUT DO NOT WANT the gradient of the objective function 
-    //THEN calculate the gradients of the constraints here
-    assert(constraintType.compare("eig")==0); //we can compute analytical 
-    //derivatives of only the eigenvalues (we can't compute analytical
-    //derivatives of rcondR)
-
-    gradCon.newSize(numConFunc,numTheta);
-    dR_dthetai.newSize(numPoints,numPoints);
-    temp2.newSize(numPoints);
-    temp3.newSize(numPoints);
-    temp4.newSize(numPoints); //FOR CALCULATION OF THE GRADIENTS OF THE 
-    //CONSTRAINT FUNCTIONS this holds the eigenvector corresponding to the
-    //the largest eigenvalue    
-    allEigVect.getCols(temp4,numPoints-1); 
-
-    double temp_con;
-    //caclulate the gradient of the constraints...
-    //constraint(i)=(largest_eigenvalue/Condition_number_bound - 
-    //               the_ith_smallest_eigenvalue) < 0 
-    //obviously if this holds true for the first smallest eigenvalue 
-    //it will hold true for the 2nd, 3rd, etc smallest eigenvalues 
-    //but I use i=1->numConFunc in case any of the small eigenvalues 
-    //trade positions (note that C arrays start at 0 instead of 1)
-    //where numConFunc=min(numPoints/2,10) (a heuristic).  Of course we 
-    //need the analytical derivatives of the eigenvalues.  The formula 
-    //for exact arbitray order derivatives is found in 
-    //  Jankovic, Exact nth Derivatives of Eigenvalues and Eigenvectors.
-    //     Journal of Guidance, Control, and Dynamics, Vol 17. No 1,
-    //     January-February 1994 pp 136-144
-    //I (KRD) found this paper to be difficult to read but highly useful 
-    //once it is deciphered.  To help with the deciphering, Eqns {1, 
-    //20, and 22->24} are the only ones you will typically need for 
-    //_linear_ algebra (example 1 is useful too), if your eigenvectors 
-    //are normalized, then the denominator in equation 24 is -1 for 
-    //linear algebra
-    double dlarge_eigval_dthetai, dsmall_eigval_dthetai;
-    for(i=0; i<numTheta; ++i) {
-      dcorrMtx_dthetak(dR_dthetai, R, i);
-      apply_nugget_eval(dR_dthetai); //apply nugget EVAL is correct, the additive term is constant with respect to theta so drops out
-
-      dlarge_eigval_dthetai=
-	dot_product(temp4,matrix_mult(temp2,dR_dthetai,temp4,0.0,1.0));
-      
-      temp_con=	dot_product(temp4,
-      	    matrix_mult(temp2,dR_dthetai,temp4,0.0,1.0))/
-      maxCondNum;
-      for(int icon=0; icon<numConFunc; icon++) {
-	allEigVect.getCols(temp3,icon);
-	//dsmall_eigval_dthetai=
-	//dot_product(temp3,matrix_mult(temp2,dR_dthetai,temp3,0.0,1.0));
-	//gradCon(icon,i)=-dsmall_eigval_dthetai;
-	//gradCon(icon,i)=-maxCondNum*
-	//(dsmall_eigval_dthetai*(allEigVal(numPoints-1)+nug)-
-	// dlarge_eigval_dthetai*(allEigVal(icon)+nug))/
-	//((allEigVal(numPoints-1)+nug)*(allEigVal(numPoints-1)+nug));
-		gradCon(icon,i)=temp_con-
-	dot_product(temp3,
-	      matrix_mult(temp2,dR_dthetai,temp3,0.0,1.0));
-      }
-    }
-
-    prevConDerMode=2; //increase prevConDerMode to current value
-    if((obj_der_mode<=prevObjDerMode)&&(con_der_mode==2)) {
-      //early exit because we have everything we need
-      return;
-    }
+    assert(0);
   }
 
   //******************************************************************
@@ -1705,217 +2067,7 @@ void KrigingModel::masterObjectiveAndConstraints(const MtxDbl& theta, int obj_de
   //******************************************************************
   //******************************************************************
   if((prevObjDerMode<2)&&(2<=obj_der_mode)) {
-    gradObj.newSize(numTheta); 
-
-    if(2<=con_der_mode) 
-      gradCon.newSize(numConFunc,numTheta);
-
-    dR_dthetai.newSize(numPoints,numPoints);
-
-    destVarianceMLE_dtheta.newSize(numTheta);
-    //since we only need the TRACE of the product of R^-1*dR_dthetai we 
-    //can reshape R^-1 and dR_dtheta into vectors and take their dot 
-    //product consting a N^3+numTheta*N^2 ops (this N^3 comes from 
-    //inverting R) instead of numTheta*N^3 ops (these N^3 comes from 
-    //LU_solve(R\dR_dthetai) for each i=0->numTheta)    
-    //Rinv.copy(RLU); //Rinv=R^-1, NOT a pseudo inverse
-    //inverse_after_LU_fact(Rinv, ipvt_RLU); //the only O(N^3) operarion
-    Rinv.copy(RChol);
-    inverse_after_Chol_fact(Rinv);
-    Gtran_Rinv_G_inv.copy(Gtran_Rinv_G_Chol);
-    inverse_after_Chol_fact(Gtran_Rinv_G_inv);
-    //needed to calculate the gradients of the objective function
-    
-    assert(ntrend>0); //for debug
-    temp.newSize(ntrend); //FOR CALCULATION OF THE GRADIENT OF THE OBJECTIVE 
-    //FUNCTION this holds -G^T*R^-1*dR_dthetai*R^-1*(Y-G*betaHat)
-    //for calculation of the hessian of the objective function it holds 
-    //something different.  To avoid the cost of constantly allocating and 
-    //deallocating memory, it should ALWAYS be a vector with numPoints elements
-
-    temp2.newSize(numPoints); //FOR CALCULATION OF THE GRADIENT OF THE 
-    //CONSTRAINT functions this holds dR_dthetai times the largest eigenvector
-    //FOR CALCULATION OF THE GRADIENT OF THE OBJECTIVE FUNCTION this holds 
-    //dR_dthetai*R^-1*eps where eps=Y-G*betaHat. For calculation of the 
-    //hessian of the objective function this holds something different.  To 
-    //avoid the cost of constantly allocating and deallocating memory, it 
-    //should ALWAYS be a vector with numPoints elements
-    
-    temp3.newSize(numPoints); //FOR CALCULATION OF THE GRADIENT OF THE 
-    //CONSTRAINT FUNCTION this holds the eigen vector corresponding to
-    //a small eigenvalue (ratio of largest to smallest eigenvalue is 
-    //constrained but small eigenvalues can swap places) FOR CALCULATION OF 
-    //THE GRADIENT OF THE OBJECTIVE FUNCTION temp3 holds a column of 
-    //deps_dtheta. FOR CALCULATION OF THE HESSIAN OF THE OBJECTIVE FUNCTION 
-    //temp3 holds something else.  To avoid the cost of constantly allocating 
-    //and deallocating memory, it should ALWAYS be a vector with numPoints 
-    //elements
-
-    if((prevConDerMode<2)&&(2<=con_der_mode)) {
-      temp4.newSize(numPoints); //FOR CALCULATION OF THE GRADIENTS OF THE 
-      //CONSTRAINT FUNCTIONS this holds the eigenvector corresponding to the
-      //the largest eigenvalue
-    }
-
-    dNbetaHat_dthetaN.newSize(ntrend); //This is another temporary variable 
-    //(we do not need to retain its state between sequential calls to this 
-    //function) but I gave it a name reflecting its contents. FOR CALCULATION 
-    //OF THE GRADIENT OF THE OBJECTIVE FUNCTION dNbetaHat_dthetaN holds the 
-    //first derivative of the vector of least squares coefficients with 
-    //respect to theta(i). FOR CALCULATION OF THE HESSIAN OF THE OBJECTIVE 
-    //FUNCTION it holds the mixed second derivative of the least squares 
-    //coefficients with respect to theta(i) and theta(j).  
-
-    dR_dthetai.newSize(numPoints,numPoints); //you can consider this a temp 
-    //matrix, newSize()-ing is either cheap (if it's already the right size)
-    //or necessary, we declared this MtxDbl to be a member variable because
-    //we will often needed it and that let's us avoid constantly allocating 
-    //and deallocating memory.
-
-    if(4<=maxObjDerMode) {
-      //if we are eventually going to calculate hessian of the objective 
-      //function then I want to save some gradient information for use in
-      //calculating the hessian, and I need to allocate space for it
-      dR_dtheta_Rinv_eps.newSize(numPoints,numTheta);
-      deps_dtheta.newSize(numPoints,numTheta);
-    }
-
-    double trace_Rinv_dR_dthetai;
-    double trace_Gtran_Rinv_G_inv_Gtran_Rinv_dR_dthetai_Rinv_G;
-    double temp_con;
-    double dlarge_eigval_dthetai, dsmall_eigval_dthetai;
-    if((prevConDerMode<2)&&(2<=con_der_mode)) {
-      //only do this if we also need the gradients of the constraint functions
-      allEigVect.getCols(temp4,numPoints-1); //temp4 is the eigenvector with 
-      //the largest eigenvalue, hereafter refered to as the largest eigenvector
-    }
-
-    //use the precomputed and stored quantities to quickly calculate the 
-    //gradient of the objective and constraint functions
-    for (i = 0; i<numTheta; i++) {
-      dcorrMtx_dthetak(dR_dthetai, R, i); //dR_dthetai and R are correct, at this point dR_dthetai is dR_dthetai
-      apply_nugget_eval(dR_dthetai); //apply nugget EVAL is correct, the additive term is constant with respect to theta so drops out
-      
-      if((prevConDerMode<2)&&(2<=con_der_mode)) {
-	assert(constraintType.compare("eig")==0); //we can compute analytical 
-	//derivatives of only the eigenvalues (we can't compute analytical
-	//derivatives of rcondR)
-
-	//caclulate the gradient of the constraints...
-	//constraint(i)=(largest_eigenvalue/Condition_number_bound - 
-	//               the_ith_smallest_eigenvalue) < 0 
-	//obviously if this holds true for the first smallest eigenvalue 
-	//it will hold true for the 2nd, 3rd, etc smallest eigenvalues 
-	//but I use i=1->numConFunc in case any of the small eigenvalues 
-	//trade positions (note that C arrays start at 0 instead of 1)
-	//where numConFunc=min(numPoints/2,10) (a heuristic).  Of course we 
-	//need the analytical derivatives of the eigenvalues.  The formula 
-	//for exact arbitray order derivatives is found in 
-	//  Jankovic, Exact nth Derivatives of Eigenvalues and Eigenvectors.
-	//     Journal of Guidance, Control, and Dynamics, Vol 17. No 1,
-	//     January-February 1994 pp 136-144
-	//I (KRD) found this paper to be difficult to read but highly useful 
-	//once it is deciphered.  To help with the deciphering, Eqns {1, 
-	//20, and 22->24} are the only ones you will typically need for 
-	//_linear_ algebra (example 1 is useful too), if your eigenvectors 
-	//are normalized, then the denominator in equation 24 is -1 for 
-	//linear algebra
-
-	//dlarge_eigval_dthetai=
-	//dot_product(temp4,matrix_mult(temp2,dR_dthetai,temp4,0.0,1.0));
-	//	for(int icon=0; icon<numConFunc; icon++) {
-	//allEigVect.getCols(temp3,icon);
-	//dsmall_eigval_dthetai=
-	//  dot_product(temp3,matrix_mult(temp2,dR_dthetai,temp3,0.0,1.0));
-	//gradCon(icon,i)=-dsmall_eigval_dthetai;
-	  //gradCon(icon,i)=-maxCondNum*
-	  //(dsmall_eigval_dthetai*(allEigVal(numPoints-1)+nug)-
-	  // dlarge_eigval_dthetai*(allEigVal(icon)+nug))/
-	  //((allEigVal(numPoints-1)+nug)*(allEigVal(numPoints-1)+nug));
-	//}
-
-	temp_con=
-	dot_product(temp4,
-	      matrix_mult(temp2,dR_dthetai,temp4,0.0,1.0))/
-	maxCondNum;
-	for(int icon=0; icon<numConFunc; icon++) {
-	allEigVect.getCols(temp3,icon); //temp3 is a "small eigen vector"
-	gradCon(icon,i)=temp_con-
-	  dot_product(temp3,
-		matrix_mult(temp2,dR_dthetai,temp3,0.0,1.0));
-	}
-      }
-
-      //  the math
-      //  R=(1+nug)^-1*(R+nug*I), typically nug=0
-      //  betaHat=(G^T*R^-1*G)^-1*(G^T*R^-1*Y)
-      //  d(A^-1)_dthetai=-A^-1*dA_dthetai*A^-1 (where A is either R or G^T*R^-1*G)
-      //  dbetaHat_dthetai=-(G^T*R^-1*G)^-1*G^T*R^-1*dR_dthetai*R^-1*eps
-      //  eps=Y-G*betaHat
-      //  deps_dthetai=-G*dbetaHat_dthetai
-      //  estVarMLE=1/N*eps^T*R^-1*eps
-      //  destVarMLE_dthetai=1/N*[2*deps_dthetai^T*R^-1*eps-eps^T*R^-1*dR_dthetai*R^-1*eps]
-      //  ddetR_dthetai=det(R)*Trace[R^-1*dR_dthetai]
-      //  dlogdetR_dthetai=Trace[R^-1*dR_dthetai] (store R^-1 so can evaluate this in O(N^2) instead of O(N^3) ops)
-      //  obj=0.5*[N*(log(2*pi)+log(estVarMLE)+1)+log(det(R))]
-      //  dobj_dthetai=0.5*[N*destVarMLE_dthetai/estVarMLE+dlogdetR_dthetai]
-      //
-      //  we have already precomputed and stored
-      //  G^T*R^-1
-      //  (G^T*R^-1*G)^-1
-      //  R^-1*G*betaHat-R^-1*Y
-      //  R^-1*eps
-      //  R^-1
-      //
-      //  will loop over i to fill up the gradient of the objective function
-
-      //dR_dthetai*R^-1*(Y-G*betaHat)
-      matrix_mult(temp2, dR_dthetai, rhs, 0.0, 1.0); 
-      if(4<=maxObjDerMode) {
-	//only store this if we're going to calculate the objective 
-	//function's hessian
-	dR_dtheta_Rinv_eps.putCols(temp2,i);
-      }
-      
-      //-G^T*R^-1*dR_dthetai*R^-1*(Y-G*betaHat)
-      matrix_mult(temp, Rinv_G, temp2, 0.0, -1.0, 'T', 'N');  
-      
-      //-(G^T*R^-1*G)^-1*G^T*R^-1*dR_dthetai*R^-1*(Y-G*betaHat)
-      //temp is a vector so solve only costs O(ntrend^2) ops
-      solve_after_Chol_fact(dNbetaHat_dthetaN, Gtran_Rinv_G_Chol,temp);
-
-      //temp3 is deps_dthetai
-      matrix_mult(temp3, G, dNbetaHat_dthetaN, 0.0, -1.0);
-      if(4<=maxObjDerMode) {
-	//only store this if we're going to calculate the objective 
-	//function's hessian
-	deps_dtheta.putCols(temp3,i);
-      }
-      
-      destVarianceMLE_dtheta(i)=(2.0*dot_product(rhs,temp3)-
-                  		 dot_product(rhs,temp2))/numPoints;
-
-      //this is correct _BECAUSE_ R^-1 and/or (and) dR_dthetai is/are _SYMMETRIC_
-      trace_Rinv_dR_dthetai=dot_product(Rinv,dR_dthetai);
-
-      matrix_mult(Gtran_Rinv_dR_thetai,Rinv_G,dR_dthetai,0.0,1.0,'T','N');
-      matrix_mult(Gtran_Rinv_dR_thetai_Rinv_G,Gtran_Rinv_dR_thetai,Rinv_G,0.0,1.0,'N','N');
-      trace_Gtran_Rinv_G_inv_Gtran_Rinv_dR_dthetai_Rinv_G=
-	dot_product(Gtran_Rinv_G_inv,Gtran_Rinv_dR_thetai_Rinv_G);
-
-
-      //We want the gradient of the negative of the log likelihood
-      //gradObj(i)=0.5*(numPoints*destVarianceMLE_dtheta/estVarianceMLE+
-      //	        trace_Rinv_dR_dthetai); 
-      gradObj(i)=0.5*(destVarianceMLE_dtheta(i)/estVarianceMLE+
-		      trace_Rinv_dR_dthetai/numPoints); //on a per point basis
-    }
-
-    prevObjDerMode=2;  //increase prevObjDerMode to the current value
-    if((obj_der_mode==2)&&(con_der_mode<=prevConDerMode)) {
-      //early exit because we have everything we need
-      return;
-    }
+    assert(0);
   }
   
 
@@ -1925,265 +2077,14 @@ void KrigingModel::masterObjectiveAndConstraints(const MtxDbl& theta, int obj_de
   //******************************************************************
   //******************************************************************
   if((prevObjDerMode<4)&&(4<=obj_der_mode)) {
-    hessObj.newSize(numTheta,numTheta);
-    dR_dthetai.newSize(numPoints,numPoints);
-
-    if(numTheta>1) {
-      //consider this to be a temp variable, we do not need to retain its state
-      //between sequential calls to this function only needed for j!=i
-      dR_dthetaj.newSize(numPoints,numPoints);
-    }
-
-    dNbetaHat_dthetaN.newSize(ntrend); //This is another temporary variable 
-    //(we do not need to retain its state between sequential calls to this 
-    //function) but I gave it a name reflecting its contents. FOR 
-    //CALCULATION OF THE HESSIAN OF THE OBJECTIVE FUNCTION it holds the 
-    //mixed second derivative of the least squares coefficients with respect 
-    //to theta(i) and theta(j).  FOR CALCULATION OF THE GRADIENT OF THE 
-    //OBJECTIVE FUNCTION dNbetaHat_dthetaN holds the first derivative of the
-    //vector of least squares coefficients with respect to theta(i)
-
-    //consider this to be a temp variable, we do not need to retain its state
-    //between sequential calls to this function
-    d2eps_dthetai_dthetaj.newSize(numPoints);
-
-    //consider this to be a temp variable, we do not need to retain its state
-    //between sequential calls to this function
-    d2R_dthetai_dthetaj.newSize(numPoints,numPoints);
-
-    //consider this to be a temp variable, we do not need to retain its state
-    //between sequential calls to this function
-    dR_dthetai_Rinv_eps_minus_deps_dthetai.newSize(numPoints,numTheta);
-
-    //consider this to be a temp variable, we do not need to retain its state
-    //between sequential calls to this function
-    Rinv_dR_dthetai_Rinv_eps_minus_deps_dthetai.newSize(numPoints,numTheta);
-
-    temp.newSize(ntrend); //FOR THE OBJECTIVE'S HESSIAN this holds
-    //G^T*R^-1*(-d2R/dtidtj*Rinv*eps
-    //          +dR/dtj*R^-1*(dR/dti*R^-1*eps-deps/dti)
-    //          +dR/dti*R^-1*(dR/dtj*R^-1*eps-deps/dtj))
-    //it is something else for the objective's gradient. temp should always
-    //be a vector of ntrend elements to avoid allocation and deallocation costs
-
-    temp2.newSize(numPoints); //FOR THE OBJECTIVE'S HESSIAN this always holds
-    //the j column of Rinv_dR_dthetai_Rinv_eps_minus_deps_dthetai, if we had 
-    //data slicing we wouldn't have to copy this out, it is something else for
-    //the objective's gradient. temp2 should already be the correct size
-
-    temp3.newSize(numPoints);//FOR THE OBJECTIVE'S HESSIAN this holds
-    //the j column of Rinv_dR_dthetai_Rinv_eps_minus_deps_dthetai, if we had 
-    //data slicing we wouldn't have to copy this out, it is something else for
-    //the objective's gradient
-
-    temp4.newSize(numPoints);//always holds the j column of 
-    //dR_dthetai_Rinv_eps_minus_deps_dthetai, if had data slicing we wouldn't
-    //have to copy this out
-
-    temp5.newSize(numPoints); //an honest to goodness temporary variable 
-    //starts as temp5=-d2R/dtidtj*Rinv*eps and progresses to
-    //temp5=-d2R/dtidtj*Rinv*eps
-    //      +dR/dtj*R^-1*(dR/dti*R^-1*eps-deps/dti)
-    //      +dR/dti*R^-1*(dR/dtj*R^-1*eps-deps/dtj)
-
-    //a single loop over numPoints*numTheta elements should be slightly 
-    //faster than nested loops over numTheta and numPoints
-    int nk=numPoints*numTheta;
-    for(int k=0; k<nk; ++k) {
-      dR_dthetai_Rinv_eps_minus_deps_dthetai(k)=
-	dR_dtheta_Rinv_eps(k)-deps_dtheta(k); //stored these when computed 
-      //the gradient of the objective function
-    }
-    //precompute and store O(numPoints^2*numTheta) ops
-    solve_after_Chol_fact(Rinv_dR_dthetai_Rinv_eps_minus_deps_dthetai,RChol,
-			  dR_dthetai_Rinv_eps_minus_deps_dthetai);
-    //solve_after_LU_fact(Rinv_dR_dthetai_Rinv_eps_minus_deps_dthetai,RLU,
-    //		ipvt_RLU,dR_dthetai_Rinv_eps_minus_deps_dthetai);
-
-    double d2est_variance_mle_dthetai_dthetaj;
-    double inv_est_variance_mle=1.0/estVarianceMLE;
-    
-    //******************************************************************
-    //by doing j in reverse order, these quantities for next i can be 
-    //reused from previous j, but since we haven't looped over j yet we
-    //have to set them for the first i (i=0);
-    //do the diagonal separate, a few simplifcations to save work
-    j=i=0; 
-    dcorrMtx_dthetak(dR_dthetai, R, i);
-    apply_nugget_eval(dR_dthetai); //apply nugget EVAL is correct, the additive term is constant with respect to theta so drops out
-    Rinv_dR_dthetai_Rinv_eps_minus_deps_dthetai.getCols(temp2,i);
-    dR_dthetai_Rinv_eps_minus_deps_dthetai.getCols(temp4,j);
-
-    //the reasons I'm multiplying Rinv*dR_dthetai instead of doing 
-    //LUsolve(R\dR_dthetai) are
-    //1) we are only going to use this as part of a trace (in hessObj) so 
-    //   there is less danger from round off error in the scalar quantity
-    //2) it's significantly faster
-    matrix_mult(Rinv_dR_dthetai,Rinv,dR_dthetai,0.0,1.0);
-    //******************************************************************
-    for(i=0; i<numTheta; ++i) {
-      j=i; //do the diagonal separate, why 2 simplifcations to save work plus 
-      //by doing j in reverse order can reuse some quanties from previous j 
-      //(which was previous i+1, current i = previous i+1)
-
-      //dcorrMtx_dthetak(dR_dthetaj, R, j); //don't need because of i=j simplification
-      //apply_nugget_eval(dR_dthetai); //apply nugget EVAL is correct, the additive term is constant with respect to theta so drops out
-
-      dcorrMtx_dthetak(d2R_dthetai_dthetaj, dR_dthetai, j); //nugget applied to dR_dthetai carries over to d2R_dthetai_dthetaj
-      //Rinv_dR_dthetai_Rinv_eps_minus_deps_dthetai.getCols(temp3,j); //for i!=j
-
-      //set temp5=-d2R/dtidtj*Rinv*eps
-      matrix_mult(temp5,d2R_dthetai_dthetaj,rhs,0.0,-1.0);
-
-      //set d2est_variance_mle_dthetai_dthetaj=
-      //                         -eps^T*R^-1*d2R/dtidtj*R^-1*eps 
-      //will have additional terms added below
-      d2est_variance_mle_dthetai_dthetaj=dot_product(rhs,temp5);
-
-      //before this line temp5=-d2R/dtidtj*Rinv*eps
-      //set temp5=-d2R/dtidtj*Rinv*eps
-      //          +dR/dtj*R^-1*(dR/dti*R^-1*eps-deps/dti)
-      //          +dR/dti*R^-1*(dR/dtj*R^-1*eps-deps/dtj)
-      //matrix_mult(temp5,dR_dthetai,temp3,1.0,1.0); //for i!=j
-      //matrix_mult(temp5,dR_dthetaj,temp2,1.0,1.0); //for i!=j
-      matrix_mult(temp5,dR_dthetai,temp2,1.0,2.0); //i=j simplification 
-
-      //set temp=G^T*R^-1*(-d2R/dtidtj*Rinv*eps
-      //                   +dR/dtj*R^-1*(dR/dti*R^-1*eps-deps/dti)
-      //                   +dR/dti*R^-1*(dR/dtj*R^-1*eps-deps/dtj))
-      matrix_mult(temp,Rinv_G,temp5,0.0,1.0,'T','N');
-
-      //set d2betaHat/dtidtj=(G^T*R^-1*G)^-1*G^T*R^-1* 
-      //                     (-d2R/dtidtj*Rinv*eps
-      //                      +dR/dtj*R^-1*(dR/dti*R^-1*eps-deps/dti)
-      //                      +dR/dti*R^-1*(dR/dtj*R^-1*eps-deps/dtj))
-      //O(numPoints^2) ops
-      solve_after_Chol_fact(dNbetaHat_dthetaN,Gtran_Rinv_G_Chol,temp);
-
-      //set d2eps/dtidtj=-G*d2betaHat/dtidtj
-      matrix_mult(d2eps_dthetai_dthetaj,G,dNbetaHat_dthetaN,0.0,-1.0);
-
-      //before this line ...
-      //d2estVarianceMLE_dthetai_dthetaj(i,j)=-eps^T*R^-1*d2R/dtidtj*R^-1*eps 
-      //now set d2estVarianceMLE_dthetai_dthetaj(i,j) equal to
-      //=(-eps^T*R^-1*d2R/dtidtj*R^-1*eps 
-      //  +2.0*d2eps/dtidtj*R^-1*eps
-      //  +2.0*(dR/dtj*p^-1*eps-deps/dtj)^T*R^-1*(dR/dti*p^-1*eps-deps/dti)
-      // )/numPoints
-      d2est_variance_mle_dthetai_dthetaj=
-	(d2est_variance_mle_dthetai_dthetaj
-	 +2.0*(dot_product(d2eps_dthetai_dthetaj,rhs)+
-	       dot_product(temp4,temp2))
-	 )/numPoints;
-
-      //the sum of the dot products is the trace I was talking about above
-      hessObj(i,j)=0.5*
-	(-destVarianceMLE_dtheta(i)*inv_est_variance_mle
-	 *destVarianceMLE_dtheta(j)*inv_est_variance_mle
-	 +d2est_variance_mle_dthetai_dthetaj*inv_est_variance_mle
-	 +(-dot_product(Rinv_dR_dthetai,Rinv_dR_dthetai) //i=j simplification
-	   +dot_product(Rinv,d2R_dthetai_dthetaj)
-	   )/numPoints); //on a per point basis
-
-
-      //******************************************************************
-      //do reverse order j so can reuse lowest j work for next i
-      //******************************************************************
-      for(j=numTheta-1; i<j; --j) {
-	dcorrMtx_dthetak(dR_dthetaj, R, j);
-	apply_nugget_eval(dR_dthetai); //apply nugget EVAL is correct, the additive term is constant with respect to theta so drops out
-
-	dcorrMtx_dthetak(d2R_dthetai_dthetaj, dR_dthetai, j); //nugget applied to dR_dthetai carries over to d2R_dthetai_dthetaj
-	Rinv_dR_dthetai_Rinv_eps_minus_deps_dthetai.getCols(temp3,j); //for i!=j
-
-	//the reasons I'm multiplying Rinv*dR_dthetaj instead of doing 
-	//LUsolve(R\dR_dthetaj) are
-	//1) we are only going to use this as part of a trace (in hessObj) so 
-	//   there is less danger from round off error in the scalar quantity
-	//2) it's significantly faster
-	matrix_mult(Rinv_dR_dthetaj,Rinv,dR_dthetaj,0.0,1.0);
-	
-	//set temp5=-d2R/dtidtj*Rinv*eps
-	matrix_mult(temp5,d2R_dthetai_dthetaj,rhs,0.0,-1.0);
-
-	//set d2est_variance_mle_dthetai_dthetaj=
-	//                         -eps^T*R^-1*d2R/dtidtj*R^-1*eps 
-        //will have additional terms added below
-	d2est_variance_mle_dthetai_dthetaj=dot_product(rhs,temp5);
-
-	//before this line temp5=-d2R/dtidtj*Rinv*eps
-	//set temp5=-d2R/dtidtj*Rinv*eps
-	//          +dR/dtj*R^-1*(dR/dti*R^-1*eps-deps/dti)
-	//          +dR/dti*R^-1*(dR/dtj*R^-1*eps-deps/dtj)
-	matrix_mult(temp5,dR_dthetai,temp3,1.0,1.0); //for i!=j
-	matrix_mult(temp5,dR_dthetaj,temp2,1.0,1.0); //for i!=j
-
-	//set temp=G^T*R^-1*(-d2R/dtidtj*Rinv*eps
-	//                   +dR/dtj*R^-1*(dR/dti*R^-1*eps-deps/dti)
-	//                   +dR/dti*R^-1*(dR/dtj*R^-1*eps-deps/dtj))
-	matrix_mult(temp,Rinv_G,temp5,0.0,1.0,'T','N');
-
-	//set d2betaHat/dtidtj=(G^T*R^-1*G)^-1*G^T*R^-1* 
-	//                     (-d2R/dtidtj*Rinv*eps
-	//                      +dR/dtj*R^-1*(dR/dti*R^-1*eps-deps/dti)
-	//                      +dR/dti*R^-1*(dR/dtj*R^-1*eps-deps/dtj))
-	//O(numPoints^2) ops
-	solve_after_Chol_fact(dNbetaHat_dthetaN, Gtran_Rinv_G_Chol,temp);
-
-	//set d2eps/dtidtj=-G*d2betaHat/dtidtj
-	matrix_mult(d2eps_dthetai_dthetaj,G,dNbetaHat_dthetaN,0.0,-1.0);
-	dR_dthetai_Rinv_eps_minus_deps_dthetai.getCols(temp4,j);
-	//before this line ...
-	//d2estVarianceMLE_dthetai_dthetaj=-eps^T*R^-1*d2R/dtidtj*R^-1*eps
-	//now set d2estVarianceMLE_dthetai_dthetaj(i,j) equal to
-	//=(-eps^T*R^-1*d2R/dtidtj*R^-1*eps 
-	//  +2.0*d2eps/dtidtj*R^-1*eps
-	//  +2.0*(dR/dtj*p^-1*eps-deps/dtj)^T*R^-1*(dR/dti*p^-1*eps-deps/dti)
-	// )/numPoints
-	d2est_variance_mle_dthetai_dthetaj=
-	  (d2est_variance_mle_dthetai_dthetaj 
-	   +2.0*(dot_product(d2eps_dthetai_dthetaj,rhs)+
-		 dot_product(temp4,temp2))
-	   )/numPoints;
-
-	//the sum of the dot products is the trace I was talking about above
-	hessObj(i,j)=0.5*
-	  (-destVarianceMLE_dtheta(i)*inv_est_variance_mle
-	   *destVarianceMLE_dtheta(j)*inv_est_variance_mle
-	   +d2est_variance_mle_dthetai_dthetaj*inv_est_variance_mle
-	   +(-dot_product(Rinv_dR_dthetai,Rinv_dR_dthetaj) //for i!=j 
-	     +dot_product(Rinv,d2R_dthetai_dthetaj)
-	     )/numPoints); //on a per point basis
-	hessObj(j,i)=hessObj(i,j);
-      } //for(j=numTheta-1; i<j; --j)
-
-      if(i<numTheta-1) {
-	//by doing j in reverse order, these quantities for next i (that is 
-	//current i+1) can be reused from previous j (which is current i+1) 
-	j=i+1;
-	dR_dthetai.copy(dR_dthetaj); //nugget was already applied
-	temp2.copy(temp3);
-	Rinv_dR_dthetai_Rinv_eps_minus_deps_dthetai.getCols(temp2,i);
-	Rinv_dR_dthetai.copy(Rinv_dR_dthetaj);
-	//want next i=j temp4 to equal current i+1=j temp4 which, and since 
-	//next i=currenty i+1 it already has the right value
-      } //if(i<numTheta-1)
-    } //for(i=0; i<numTheta; ++i)
-   
-    prevObjDerMode=2; 
-    if((obj_der_mode==4)&&(con_der_mode<=prevConDerMode)) {
-      //"early" exit because we have everything we need 
-      //note that this should be the last loop but have this here to 
-      //accomodate future expansion
-      return;
-    }
+    assert(0);
   }//if((prevObjDerMode<4)&&(4<=obj_der_mode))
 
   return;
 }
 
 
-void KrigingModel::getRandGuess(MtxDbl& guess) const
+void GradKrigingModel::getRandGuess(MtxDbl& guess) const
 {
   int mymod = 1048576; //2^20 instead of 10^6 to be kind to the computer
   guess.newSize(1,numVarsr);
@@ -2216,16 +2117,16 @@ void KrigingModel::getRandGuess(MtxDbl& guess) const
     were a linear function, R really is R in this function, it determines
     the needed/desired nugget so R can be modified to R OUTSIDE of this 
     function */
-MtxDbl& KrigingModel::makeGuessFeasible(MtxDbl& nat_log_corr_len, OptimizationProblem *opt) {
+MtxDbl& GradKrigingModel::makeGuessFeasible(MtxDbl& nat_log_corr_len, OptimizationProblem *opt) {
   int k;
   int chol_info;
   MtxDbl theta(1,numTheta);
   for(k=0; k<numTheta; ++k)
     theta(k)=0.5*exp(-2.0*nat_log_corr_len(k));
 
-  R.newSize(numPoints,numPoints);
+  R.newSize(numRowsR,numRowsR);
   
-  temp.newSize(numPoints);
+  temp.newSize(numRowsR);
   correlation_matrix(theta); //assigns to member variable R
 
   if((ifChooseNug==true)||(nug<0.0))
@@ -2236,16 +2137,12 @@ MtxDbl& KrigingModel::makeGuessFeasible(MtxDbl& nat_log_corr_len, OptimizationPr
   double best_rcond;
   Chol_fact(RChol,chol_info,best_rcond);
   //if(~(chol_info==0)) assert(chol_info==0); //for debug, do something different for production
-  //RLU.copy(R);
-  //LU_fact(RLU,ipvt_RLU);
-  //double best_rcond=rcond_after_LU_fact(R,RLU);
-  //double best_rcond=rcond_after_Chol_fact(R,RChol);
+
   double rcond;
   MtxDbl guess(1,numTheta);
   MtxDbl guess_theta(1,numTheta);
   int iguess=0;
   while((1.0-best_rcond*maxCondNum>0.0)&&(iguess<50)) {
-    //while((1.0-best_rcond*3.0*maxCondNum<0.0)&&(iguess<50)) {
     iguess++;
     getRandGuess(guess);
 
@@ -2258,137 +2155,19 @@ MtxDbl& KrigingModel::makeGuessFeasible(MtxDbl& nat_log_corr_len, OptimizationPr
     RChol.copy(R);
     Chol_fact(RChol,chol_info,rcond);
     //if(~(chol_info==0)) assert(chol_info==0); //for debug, do something else for production
-    //rcond=rcond_after_Chol_fact(R,RChol);
-    //RLU.copy(R);
-    //LU_fact(RLU,ipvt_RLU);
-    //rcond=rcond_after_LU_fact(R,RLU);
+
     if(rcond>best_rcond) {
+      
       best_rcond=rcond;
       theta.copy(guess_theta);
       nat_log_corr_len.copy(guess);
     }
   }
-  if(constraintType.compare("rcond")==0) { //enforce the condition number bound using rcond
-    
-    return nat_log_corr_len; //we can't compute analytical derivatives of rcond only the eigenvalues
-  }
-
-  if(best_rcond>rcond) {
-    correlation_matrix(theta); //assigns to member variable R
-    rcond=best_rcond;
-  }
-
-  MtxDbl best_theta(theta);
-
-  //calculate the constraint that ensures that the correlation matrix is well conditioned
-  //conceputally: condition_number < maxCondNum  
-  //implemented as: largest_eigenvalue / maxCondNum - smallest_eigenvalue(s) < 0 (so we don't have to worry about dividing by zero when the smallest eigenvalue is zero and the scaling should be roughly consistant regardless of the number of points)
-  MtxDbl all_eigvect(numPoints,numPoints), all_eigval(numPoints);
-
-  eig_sym(all_eigvect, all_eigval, R);
-  double small_eigval     = all_eigval(0); //smallest
-  double large_eigval     = all_eigval(numPoints-1); //largest
-  double constraint_value = (large_eigval+nug)/maxCondNum - (small_eigval+nug);
-
-  if(constraint_value<=0){
-    //printf("\n"); //for debug only
-    return nat_log_corr_len;
-  }
   
-  MtxDbl small_eigvect(numPoints), large_eigvect(numPoints);
-  MtxDbl dR_dthetak(numPoints,numPoints);
-  MtxDbl grad_con(numTheta);
-  double grad_con_dot_grad_con;
-
-
-  double small_diff=0.00001;
-  double prev_constraint_value=9999.9;
-  int loopcount=0;
-  int num_times_same_constraint=0;
-  
-  for(loopcount=0; loopcount<15; ++loopcount){
+  if(constraintType.compare("rcond")!=0) 
+    assert(0);
     
-    if(fabs(constraint_value/prev_constraint_value-1.0)<small_diff)
-      num_times_same_constraint++;
-    else
-      num_times_same_constraint=0;
-
-    if((constraint_value<=0.0)||(num_times_same_constraint>=4))
-	break;
-
-    prev_constraint_value=constraint_value;
-    //iteratively improve the condition number of the correlation matrix by taking a step in the opposite direction of the gradient of the constraint function with a step size that WOULD take the constraint to zero IF the constraint function was a linear function
-    all_eigvect.getCols(small_eigvect,0);
-    all_eigvect.getCols(large_eigvect,numPoints-1);
-    grad_con_dot_grad_con=0.0;
-    double dlarge_eigval_dthetak,dsmall_eigval_dthetak;
-    double dlarge_eigval_dnat_log_corr_lenk, dsmall_eigval_dnat_log_corr_lenk;
-    for(k=0; k<numTheta; k++) {
-      dcorrMtx_dthetak(dR_dthetak, R, k);
-    
-      //caclulate the gradient of the constraint... 
-      //using analytical derivatives of eigenvalues, the formula for 
-      //exact arbitray order derivatives is found in 
-      //  Jankovic, Exact nth Derivatives of Eigenvalues and Eigenvectors.
-      //     Journal of Guidance, Control, and Dynamics, Vol 17. No 1,
-      //     January-February 1994 pp 136-144
-      //I (KRD) found this paper difficult to read but highly useful 
-      //once it is deciphered.  To help with the deciphering, Eqns {1, 
-      //20, and 22-24} are the only ones you will typically need for 
-      //_linear_ algebra (example 1 is useful too).
-      dlarge_eigval_dthetak=
-	dot_product(large_eigvect,matrix_mult(temp,dR_dthetak,large_eigvect,0.0,1.0));
-      dsmall_eigval_dthetak=
-	dot_product(small_eigvect,matrix_mult(temp,dR_dthetak,small_eigvect,0.0,1.0));
-      
-      //grad_con(k)=dlarge_eigval_dthetak/maxCondNum-dsmall_eigval_dthetak;
-      
-      dlarge_eigval_dnat_log_corr_lenk=dlarge_eigval_dthetak*-2.0*theta(k);
-      dsmall_eigval_dnat_log_corr_lenk=dsmall_eigval_dthetak*-2.0*theta(k);
-      grad_con(k)=dlarge_eigval_dnat_log_corr_lenk/maxCondNum-dsmall_eigval_dnat_log_corr_lenk;
-
-      if((nat_log_corr_len(k)<=minNatLogCorrLen)&&(grad_con(k)>0))
-	grad_con(k)=0.0;
-  
-      grad_con_dot_grad_con+=grad_con(k)*grad_con(k);
-    }
-    
-    
-
-    double fraction=1.0, temp_double;
-    for(k=0;k<numTheta;k++) {
-      temp_double=(nat_log_corr_len(k)-minNatLogCorrLen)/(constraint_value/grad_con_dot_grad_con*grad_con(k));
-      if(temp_double<0.0) {
-	printf("temp_double=%g\n",temp_double);
-	assert(!(temp_double<0.0));
-      }
-      if(temp_double<fraction)
-	fraction=temp_double;
-    }
-
-    for(k=0;k<numTheta;k++) {
-      //theta(k)-=constraint_value/grad_con_dot_grad_con*grad_con(k);
-      nat_log_corr_len(k)-=fraction*constraint_value/grad_con_dot_grad_con*grad_con(k);
-      theta(k)=0.5*exp(-2.0*nat_log_corr_len(k));
-    }
-
-    correlation_matrix(theta); //fills member variable R
-    eig_sym(all_eigvect, all_eigval, R);
-    small_eigval     = all_eigval(0);
-    large_eigval     = all_eigval(numPoints-1);
-    constraint_value = (large_eigval+nug)/maxCondNum - (small_eigval+nug);
-  }
-
-  if((constraint_value>0.0)&&(ifChooseNug==true)){
-    nug=(large_eigval-maxCondNum*small_eigval)/(maxCondNum-1.0);
-    //nug=constraint_value*maxCondNum/(maxCondNum-1.0); //would also work but is less clear
-    if(nug>maxChooseNug)
-      nug=maxChooseNug;      
-  }
-
-  //printf("makeGuessFeasible loopcount=%d constraint_value=%g nug=%g\n",loopcount,constraint_value,nug);
-  
-  return nat_log_corr_len;
+  return nat_log_corr_len; //we can't compute analytical derivatives of rcond only the eigenvalues
 }
 
 /** evaluate the trend function g(x), using specified {Poly, Rot}
@@ -2397,54 +2176,50 @@ g(x)) or data points (elsewhere represented by G(X)).  The trend
 function (unadjusted mean) is dot(g(x),betHat), this returns (matrix)
 g(x) for collection of points x. KRD originally implemented this with
 a linear trend function */
-MtxDbl& KrigingModel::
-eval_trend_fn(MtxDbl& g, const MtxInt& poly, 
+MtxDbl& GradKrigingModel::
+eval_trend_fn(MtxDbl& g, const MtxInt& poly, const MtxInt& der,  
 	      const MtxDbl& rot_or_eul_ang, const MtxDbl& x) const
 {
-    //static MtxDbl& evalTrendFunc(MtxDbl& g, MtxInt& poly, MtxDbl& rot_or_eul_ang, MtxDbl& x){
-    //printf(" you called me ");
-    MtxDbl xx;
-    rotate_xr(xx, rot_or_eul_ang, x);
-    //int numVars=x.getNCols(); int npts=x.getNRows();
-    //for(int i=0; i<npts; i++) {
-    //printf("x(%d,:)=[ ",i);
-    //for(int j=0; j<numVars; j++)
-    //printf("%8f ",x(i,j));
-    //printf("];  xx(%d,:)=[ ",i);
-    //for(int j=0; j<numVars; j++)
-    //printf("%8f ",xx(i,j));
-    //printf("]\n");
-    //}
-    return (evaluate_poly_basis(g, poly, xx));
-    ///return (LinearRegressionModel::evalBasis(g,poly,rot_or_eul_ang,x));
+  //printf(" you called me ");
+  MtxDbl xx;
+  rotate_xr(xx, rot_or_eul_ang, x);
+  //int numVars=x.getNCols(); int npts=x.getNRows();
+  //for(int i=0; i<npts; i++) {
+  //printf("x(%d,:)=[ ",i);
+  //for(int j=0; j<numVars; j++)
+  //printf("%8f ",x(i,j));
+  //printf("];  xx(%d,:)=[ ",i);
+  //for(int j=0; j<numVars; j++)
+  //printf("%8f ",xx(i,j));
+  //printf("]\n");
+  //}
+  return (evaluate_poly_der_basis(g, poly, der, xx));
+  ///return (LinearRegressionModel::evalBasis(g,poly,rot_or_eul_ang,x));
 }
 
 
-/// evaluate the trend function g(xr), using class members {Poly, Rot}
-MtxDbl& KrigingModel::eval_trend_fn(MtxDbl& g, const MtxDbl& xr) const
+/// evaluate the trend function g(xr), using class members {Poly, Rot} and only the zeroth order derivative
+MtxDbl& GradKrigingModel::eval_trend_fn(MtxDbl& g, const MtxDbl& xr) const
 {
-    //MtxDbl& evalTrendFunc(MtxDbl& g, MtxDbl& xr) {
-    //printf("KMeTF <");
-    eval_trend_fn(g, Poly, Rot, xr);
-    //printf("<KMeTF\n");
-    return (g);
-    
+  //MtxDbl& evalTrendFunc(MtxDbl& g, MtxDbl& xr) {
+  //printf("KMeTF <");
+  
+  MtxInt der(1,numVarsr); der.zero();
+  eval_trend_fn(g, Poly, der, Rot, xr);
+  //printf("<KMeTF\n");
+  return (g);
     //return (LinearRegressionModel::evalBasis(g,Poly,Rot,xr));
 }
 
 // BMA TODO: These need to be moved to optimizer and then any defauls
 // overridden here
 
-void KrigingModel::set_conmin_parameters(OptimizationProblem& opt) const
+void GradKrigingModel::set_conmin_parameters(OptimizationProblem& opt) const
 {
   //set conmin specific parameters for this problem
   //in dot 4.2 the analytical derivative order of objective and constraints must be the same
-  if(constraintType.compare("eig")==0) //eigenvalue constraints can do analytical 1st derivatives
-    assert(((maxObjDerMode==1)||(maxObjDerMode==3))&&((maxConDerMode==1)||(maxConDerMode==3))&&(maxConDerMode<=maxObjDerMode));
-  else if(constraintType.compare("rcond")==0) //rcond constraint can NOT do analytical 1st derivatives
-    assert(((maxObjDerMode==1)||(maxObjDerMode==3))&&(maxConDerMode==1));
-  else
-    assert((constraintType.compare("eig")==0)||(constraintType.compare("rcond")==0));
+
+  assert((maxObjDerMode==1)&&(maxConDerMode==1)); //no analytical gradients
 
   if((maxObjDerMode==1)&&(maxConDerMode==1))
     opt.conminData.nfdg = 0; //use numerical  gradients of objective and constraints
@@ -2470,7 +2245,7 @@ void KrigingModel::set_conmin_parameters(OptimizationProblem& opt) const
   opt.conminData.icndir = numTheta+1; //conjugate direction restart parameter
 }
 
-void KrigingModel::set_direct_parameters(OptimizationProblem& opt) const
+void GradKrigingModel::set_direct_parameters(OptimizationProblem& opt) const
 {
   opt.directData.minBoxSize = -1.0;
   opt.directData.volBoxSize = -1.0;

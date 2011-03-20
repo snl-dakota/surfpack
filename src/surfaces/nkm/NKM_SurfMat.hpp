@@ -259,23 +259,73 @@ inline MtxDbl& matrix_mult(MtxDbl& C, const MtxDbl& A, const MtxDbl& B,
 /**** The LAPACK wrappers start here                                    ****/ 
 /***************************************************************************/
 
-/// perform a Cholesky factorization of a real symmetric positive semi-definite matrix, wraps DPOTRF, returns the lower triangular portion, if info>0 then the matrix is singular 
-inline MtxDbl& Chol_fact(MtxDbl& matrix, int& info)
+/// perform a numerically optimally preconditioned Cholesky factorization of a real symmetric positive semi-definite matrix, wraps DPOTRF, returns the lower triangular portion, the preconditioning is "undone" so the L matrix is the same (minus some rounding error due to poor conditioning) as it would be without precondtioning, if info>0 then the preconditined matrix is singular, rcondprecond is the standard fast estimate of the reciprocal of the condition number of the numerically optimally preconditioned real symmetric positive definite matrix (that's what affects the round off error)
+inline MtxDbl& Chol_fact(MtxDbl& matrix, int& info, double& rcondprecond)
 {
   int nrows = static_cast<int>(matrix.getNRows());
   int ncols = static_cast<int>(matrix.getNCols());
 #ifdef __SURFMAT_ERR_CHECK__
   assert(nrows==ncols);
 #endif
-  
+  //printf("Cholf_fact() nrows=%d ncols=%d\n",nrows,ncols);
   char uplo='L';
   int lda=nrows;
   int info_local=0;
+
+  MtxDbl work(3*nrows);
+  MtxInt iwork(nrows);
+
+  int abspower;
+  int minabspower;
+  int maxabspower;
+  MtxDbl scalefactor(nrows);
+  abspower=floor(0.5+log2(sqrt(matrix(0,0))));
+  scalefactor(0)=pow(2.0,-abspower);
+  //abspower=log2(sqrt(matrix(0,0)));
+  //scalefactor(0)=1.0/sqrt(matrix(0,0));
+  minabspower=maxabspower=abspower;
+  for(int i=1; i<nrows; ++i) {
+    abspower=floor(0.5+log2(sqrt(matrix(i,i))));
+    scalefactor(i)=pow(2.0,-abspower); //this is the "numerically optimal" preconditioning of a real symmetric positive definite matrix by "numerically optimal" I meant the analytically optimal (for reducing condition number) scaling has been rounded to the nearest power of 2 so that we don't lose any bits of accuracy due to rounding error due to preconditioning
+    //abspower=log2(sqrt(matrix(i,i)));
+    //scalefactor(i)=1.0/sqrt(matrix(i,i));
+    minabspower=(abspower<minabspower)?abspower:minabspower;
+    maxabspower=(abspower>maxabspower)?abspower:maxabspower;   
+  }
+  
+  if(maxabspower!=minabspower) {
+    //only do the preconditioning if the maximum and minimum numerically optimal scaling factors are different (by a factor of 2 or more) because otherwise the real symmetric positive definite matrix is already numerically optimally preconditioned.
+    for(int j=0; j<nrows; ++j)
+      for(int i=0; i<nrows; ++i)
+	matrix(i,j)*=scalefactor(i)*scalefactor(j);
+  }
+
+  //calculate orignorm now so we don't have to store a copy of the unfactored matrix
+  char whichnorm='1';
+  double orignorm=DLANGE_F77(&whichnorm,&nrows,&ncols,matrix.ptr(0),&lda,work.ptr(0));
+
   DPOTRF_F77(&uplo,&nrows,matrix.ptr(0),&lda,&info_local);
 #ifdef __SURFMAT_ERR_CHECK__
   assert(info_local>=0);
 #endif
   info=info_local;
+
+  //the rcond of the "numerically optimally" preconditioned real symmetric positive definte matrix, feed it orignorm
+  DPOCON_F77(&uplo,&nrows,matrix.ptr(0),&lda,&orignorm,&rcondprecond,work.ptr(0),iwork.ptr(0),&info_local);
+#ifdef __SURFMAT_ERR_CHECK__
+  assert(info_local==0);
+#endif
+
+  if(maxabspower!=minabspower) {
+    //undo the "numerically optimal" preconditioning of the real symmetric positive definite matrix, that is other than possibly avoiding rounding error due to poorly condition matrix this function produces the same cholesky "L" matrix that you would get without preconditiong.
+    for(int i=0; i<nrows; ++i)
+      scalefactor(i)=1.0/scalefactor(i); //multiplication can be faster than division
+
+    for(int j=0; j<nrows; ++j)
+      for(int i=j; i<nrows; ++i)  //it's lower triangular
+	matrix(i,j)*=scalefactor(i);
+  }
+
   return matrix;
 }
 

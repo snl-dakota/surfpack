@@ -173,7 +173,7 @@ unsigned block_owner(unsigned j, unsigned p, unsigned n);
 // Constants 
 // _____________________________________________________________________________
   // Precision of output for double precision numbers
-  const unsigned output_precision = 3;
+  const unsigned output_precision = 6;
 
   // Length of the field for double-precision number stream output
   const unsigned field_width = output_precision + 9;
