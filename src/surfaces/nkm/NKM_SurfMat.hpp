@@ -88,7 +88,8 @@ void DPOTRI_F77(const char* uplo, const int* n, double* ACholInv, const int* lda
 #ifdef __cplusplus
 extern "C"  /* prevent C++ name mangling */
 #endif
-void DPOTRS_F77(const char* uplo, const int* n, const int* nRHS, double* AChol,
+void DPOTRS_F77(const char* uplo, const int* n, const int* nRHS, 
+		const double* AChol,
 		const int* ldAChol , double* RHS, 
 		const int* ldRHS, int* info);
 
@@ -128,9 +129,9 @@ void DGETRI_F77(const int* n, double* a, const int* lda, const int* ipiv,
 #ifdef __cplusplus
 extern "C"  /* prevent C++ name mangling */
 #endif
-void DGETRS_F77(char* transLU, const int* n, const int* nRHS, double* LU, 
-		const int* ldLU , int* ipiv, double* RHS, 
-		const int* ldRHS, int* info);
+void DGETRS_F77(char* transLU, const int* n, const int* nRHS, 
+		const double* LU, const int* ldLU , const int* ipiv, 
+		double* RHS, const int* ldRHS, int* info);
 
 //function to compute the norm of a matrix A, choices are
 //M max(abs(A(i,j))) this is not a consistent matrix norm, 
@@ -280,13 +281,13 @@ inline MtxDbl& Chol_fact(MtxDbl& matrix, int& info, double& rcondprecond)
   int maxabspower;
   MtxDbl scalefactor(nrows);
   abspower=floor(0.5+log2(sqrt(matrix(0,0))));
-  scalefactor(0)=pow(2.0,-abspower);
+  scalefactor(0)=pow(2.0,(double) -abspower);
   //abspower=log2(sqrt(matrix(0,0)));
   //scalefactor(0)=1.0/sqrt(matrix(0,0));
   minabspower=maxabspower=abspower;
   for(int i=1; i<nrows; ++i) {
     abspower=floor(0.5+log2(sqrt(matrix(i,i))));
-    scalefactor(i)=pow(2.0,-abspower); //this is the "numerically optimal" preconditioning of a real symmetric positive definite matrix by "numerically optimal" I meant the analytically optimal (for reducing condition number) scaling has been rounded to the nearest power of 2 so that we don't lose any bits of accuracy due to rounding error due to preconditioning
+    scalefactor(i)=pow(2.0,(double) -abspower); //this is the "numerically optimal" preconditioning of a real symmetric positive definite matrix by "numerically optimal" I meant the analytically optimal (for reducing condition number) scaling has been rounded to the nearest power of 2 so that we don't lose any bits of accuracy due to rounding error due to preconditioning
     //abspower=log2(sqrt(matrix(i,i)));
     //scalefactor(i)=1.0/sqrt(matrix(i,i));
     minabspower=(abspower<minabspower)?abspower:minabspower;
@@ -377,7 +378,7 @@ inline double rcond_after_Chol_fact(const MtxDbl& A, const MtxDbl& AChol)
 }
 
 /// solves A*X=B for X, where A is symmetric positive definite and B={B || B^T}, without changing the contents of B, after A has been Cholesky factorized, AChol must contain the lower triangular portion of the factorization of A, wraps DPOTRS 
-inline MtxDbl& solve_after_Chol_fact(MtxDbl& result, MtxDbl& AChol, MtxDbl& BRHS,char transB='N')
+inline MtxDbl& solve_after_Chol_fact(MtxDbl& result, const MtxDbl& AChol, const MtxDbl& BRHS,char transB='N')
 {
   int n   = static_cast<int>(AChol.getNRows());
 #ifdef __SURFMAT_ERR_CHECK__
@@ -474,8 +475,8 @@ inline double rcond_after_LU_fact(const MtxDbl& A, const MtxDbl& ALU) {
 }
 
 /// solves A*X=B for X, where A={A || A^T} and B={B || B^T}, without changing the contents of B, after A has been LU factorized, wraps DGETRS 
-inline MtxDbl& solve_after_LU_fact(MtxDbl& result, MtxDbl& ALU, MtxInt& ipvt, 
-				   MtxDbl& BRHS, char transA='N', 
+inline MtxDbl& solve_after_LU_fact(MtxDbl& result, const MtxDbl& ALU, const MtxInt& ipvt, 
+				   const MtxDbl& BRHS, char transA='N', 
 				   char transB='N')
 {
   int n   = static_cast<int>(ALU.getNRows());

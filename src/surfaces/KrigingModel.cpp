@@ -119,7 +119,30 @@ KrigingModel::KrigingModel(const SurfData& sd, const ParamMap& args)
   : SurfpackModel(sd.xSize())
 {
   surfdata_to_nkm_surfdata(sd, nkmSurfData);
-  nkmKrigingModel = new nkm::KrigingModel(nkmSurfData, args);
+  int der_order=0;
+  ParamMap::const_iterator param_it;
+  param_it = args.find("derivative_order");
+  if (param_it != args.end() && param_it->second.size() > 0) {
+    der_order=std::atoi(param_it->second.c_str());
+  }
+  if(der_order<0) {
+    std::cerr << "error in KrigingModel::KrigingModel()\nyou specified a negative derivative order, but derivative_order must be a non-negative integer" << std::endl;
+    assert(0<=der_order);
+  }
+  if(der_order>1) {
+    std::cerr << "error in KrigingModel::KrigingModel()\nyou specified that you want to build the Kriging Model with derivative order greater than 1.  Currently only regular kriging and gradient enhacned Kriging is implemented" << std::endl;
+    assert(der_order<=1);
+  }
+  if(der_order==0)
+    nkmKrigingModel = new nkm::KrigingModel(nkmSurfData, args);
+  else if(der_order==1) {
+    if(nkmSurfData.getDerOrder()<1) {
+      std::cerr << "error in KrigingModel::KrigingModel()\nyou requested that we build a Gradient Enhanced Kriging Model but did not provide gradient information" << std::endl;
+      assert(1<=nkmSurfData.getDerOrder());
+    }
+    nkmKrigingModel = new nkm::GradKrigingModel(nkmSurfData, args);
+  }
+
   nkmKrigingModel->create();
 }
 

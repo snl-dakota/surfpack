@@ -20,6 +20,70 @@ public:
 
   SurfPackModel(const SurfData& sd,int jout_keep) : sdBuild(sd,jout_keep), scaler(sdBuild) {};
 
+  virtual void create() {
+    std::cerr << "the create() function has not been implemented for this model type" << std::endl;
+    return;
+  };
+
+  virtual std::string model_summary_string() const {
+    std::string mod_sum_str="the model_summary_string() function has not been implemented for this model\n";
+    return mod_sum_str;
+  };
+
+
+  virtual double evaluate(const  MtxDbl& xr) const =0;
+
+  virtual MtxDbl& evaluate(MtxDbl& y, const MtxDbl& xr) const
+  {
+    int nrowsxr=xr.getNRows();
+    int ncolsxr=xr.getNCols();
+    assert((ncolsxr==sdBuild.getNVarsr())&&(nrowsxr>0));
+    y.newSize(nrowsxr);
+
+    if(nrowsxr==1) {
+      y(0)=evaluate(xr);
+      return y;
+    }
+      
+    MtxDbl xr_temp(1,ncolsxr);
+    for(int ipt=0; ipt<nrowsxr; ++ipt) {
+      xr.getRows(xr_temp,ipt);
+      y(ipt)=evaluate(xr_temp);
+    }
+    return y;
+  };
+
+  virtual double eval_variance(const MtxDbl& xr) const {
+    std::cerr << "This model doesn't have an implemented function to return a variance" << std::endl;
+    assert(false);
+    return (0.0/0.0);
+  };
+
+  virtual MtxDbl& eval_variance(MtxDbl& var, const MtxDbl& xr) const
+  {
+    int nrowsxr=xr.getNRows();
+    int ncolsxr=xr.getNCols();
+    assert((ncolsxr==sdBuild.getNVarsr())&&(nrowsxr>0));
+    var.newSize(nrowsxr);
+
+    if(nrowsxr==1) {
+      var(0)=eval_variance(xr);
+      return var;
+    }
+      
+    MtxDbl xr_temp(1,ncolsxr);
+    for(int ipt=0; ipt<nrowsxr; ++ipt) {
+      xr.getRows(xr_temp,ipt);
+      var(ipt)=eval_variance(xr_temp);
+    }
+    return var;
+  };
+
+  virtual MtxDbl& evaluate_d1y(MtxDbl& d1y, const MtxDbl& xr) const =0;
+
+  virtual MtxDbl& evaluate_d2y(MtxDbl& d2y, const MtxDbl& xr) const =0;
+
+
   /// adjust correlations to be feasible with respect to condition
   /// number constraints
   virtual MtxDbl& makeGuessFeasible(MtxDbl& correlations, 
@@ -27,12 +91,12 @@ public:
   {
     // default at base class is no-op
     return correlations;
-  }
+  };
 
   virtual void getRandGuess(MtxDbl& guess) const{
 
 
-  }
+  };
 
   virtual void set_conmin_parameters(OptimizationProblem& opt) const{
   };

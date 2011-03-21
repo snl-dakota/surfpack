@@ -17,6 +17,7 @@
 #include "SurfpackMatrix.h"
 
 #include "nkm/NKM_KrigingModel.hpp"
+#include "nkm/NKM_GradKrigingModel.hpp"
 
 
 /// A thin wrapper around a NewKrigingModel
@@ -39,7 +40,8 @@ private:
   void surfdata_to_nkm_surfdata(const SurfData& sd, nkm::SurfData& nkm_sd);
 
   // use class data to keep in scope for wrapped model
-  nkm::KrigingModel* nkmKrigingModel;
+  //nkm::KrigingModel* nkmKrigingModel;
+  nkm::SurfPackModel* nkmKrigingModel;
   nkm::SurfData nkmSurfData;
 };
 

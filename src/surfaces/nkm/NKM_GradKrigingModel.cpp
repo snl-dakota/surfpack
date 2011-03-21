@@ -2,7 +2,7 @@
 #include "NKM_GradKrigingModel.hpp"
 //#include "Accel.hpp"
 #include "NKM_LinearRegressionModel.hpp"
-#include <math.h>
+#include <cmath>
 #include <iostream>
 #include <cfloat>
 
@@ -91,14 +91,14 @@ GradKrigingModel::GradKrigingModel(const SurfData& sd, const ParamMap& params)
   }
   
   if(!(if_user_specified_lower_bounds==if_user_specified_upper_bounds)) {
-    cerr << "Your options are to\n(A) specify both the upper and lower, or\n(B) specify neither the upper nor lower,\nbounds of the domain of the Kriging Model\n";
+    std::cerr << "Your options are to\n(A) specify both the upper and lower, or\n(B) specify neither the upper nor lower,\nbounds of the domain of the Kriging Model\n";
     assert(if_user_specified_lower_bounds==if_user_specified_upper_bounds);
   }
   
   if(if_user_specified_lower_bounds==true) {
     for(int ivarsr=0; ivarsr<numVarsr; ++ivarsr) 
       if(!(min_max_xr(0,ivarsr)<=min_max_xr(1,ivarsr))) {
-	cerr << "The lower bound of the domain of the Kriging Model must be less than or equal to the upper bound of the domain of the Kriging Model\n";
+	std::cerr << "The lower bound of the domain of the Kriging Model must be less than or equal to the upper bound of the domain of the Kriging Model\n";
 	assert(min_max_xr(0,ivarsr)<=min_max_xr(1,ivarsr));
       }
     //printf("lower_bounds = (%g",min_max_xr(0,0));
@@ -153,7 +153,7 @@ GradKrigingModel::GradKrigingModel(const SurfData& sd, const ParamMap& params)
   else if(optimizationMethod.compare("global")==0)
     maxTrials = 10000;
   else{ //error checking the input
-    cerr << "GradKrigingModel() unknown optimization_method [" << optimizationMethod << "]  aborting\n";
+    std::cerr << "GradKrigingModel() unknown optimization_method [" << optimizationMethod << "]  aborting\n";
     assert(0);
   }
 
@@ -168,7 +168,7 @@ GradKrigingModel::GradKrigingModel(const SurfData& sd, const ParamMap& params)
   }
   
   if(!((numStarts==1)||(optimizationMethod.compare("local")==0))) {
-    cerr << "Local optimization is the only optimization method for Kriging that uses the \"num_starts\" key word. Check your input file for errors.\n";
+    std::cerr << "Local optimization is the only optimization method for Kriging that uses the \"num_starts\" key word. Check your input file for errors.\n";
     assert((numStarts==1)||(optimizationMethod.compare("local")==0));
   }
   
@@ -186,7 +186,7 @@ GradKrigingModel::GradKrigingModel(const SurfData& sd, const ParamMap& params)
     // * say they want to global optimize __AND__
     // * specify correlation lengths  
     if(optimizationMethod.compare("global")==0) {
-      cerr << "You can't both \n (A) use the global optimization method to choose, and \n (B) directly specify \n correlation lengths for the Kriging model.\n";
+      std::cerr << "You can't both \n (A) use the global optimization method to choose, and \n (B) directly specify \n correlation lengths for the Kriging model.\n";
       assert(optimizationMethod.compare("global")!=0);
     }
     else if(optimizationMethod.compare("sampling")==0) {
@@ -206,7 +206,7 @@ GradKrigingModel::GradKrigingModel(const SurfData& sd, const ParamMap& params)
     // but first we need to check the input for errors
     for(int ivarsr=0; ivarsr<numVarsr; ++ivarsr) 
       if(!(natLogCorrLen(ivarsr)>0.0)) {
-	cerr << "For the Kriging Model, correlation lengths must be strictly positive\n.";
+	std::cerr << "For the Kriging Model, correlation lengths must be strictly positive\n.";
 	assert(0);
       }
 
@@ -273,7 +273,7 @@ GradKrigingModel::GradKrigingModel(const SurfData& sd, const ParamMap& params)
   //check that we have enough data for the selected trend functions
   int needed_eqns = numVarsr + getNTrend(); 
   if( !(needed_eqns <= numRowsR) ) {
-    cerr << "With the selected set of trend functions there are more unknown parameters (" <<  needed_eqns << ") than there are pieces of data (" << numRowsR << ") for the GradKrigingModel. For the current set of trend functions, you need at least " << std::ceil((double)needed_eqns/nDer) << " data points and having at least " << std::ceil((double)2.0*needed_eqns/nDer) << " is _strongly_ recommended.\n";
+    std::cerr << "With the selected set of trend functions there are more unknown parameters (" <<  needed_eqns << ") than there are pieces of data (" << numRowsR << ") for the GradKrigingModel. For the current set of trend functions, you need at least " << std::ceil((double)needed_eqns/nDer) << " data points and having at least " << std::ceil((double)2.0*needed_eqns/nDer) << " is _strongly_ recommended.\n";
     assert(needed_eqns <= numRowsR);
   }
 
@@ -336,7 +336,7 @@ GradKrigingModel::GradKrigingModel(const SurfData& sd, const ParamMap& params)
   param_it = params.find("nugget_formula");
   if (param_it != params.end() && param_it->second.size() > 0) {
     if(ifChooseNug==true) {
-      cerr << "You can't both auto-select a nugget and use a preset formula" << endl;
+      std::cerr << "You can't both auto-select a nugget and use a preset formula" << std::endl;
       assert(ifChooseNug==false);
     }
     nuggetFormula=std::atoi(param_it->second.c_str()); 
@@ -349,7 +349,7 @@ GradKrigingModel::GradKrigingModel(const SurfData& sd, const ParamMap& params)
 	nug=2*numPoints/maxCondNum; //bob; may want to change this numPoints to numRowsr
 	break;
       default:
-	cerr << "nugget_formula =" << nuggetFormula << " is not one of the available preset nugget formulas." << endl;
+	std::cerr << "nugget_formula =" << nuggetFormula << " is not one of the available preset nugget formulas." << std::endl;
 	assert(0);
       }
     }
@@ -358,12 +358,12 @@ GradKrigingModel::GradKrigingModel(const SurfData& sd, const ParamMap& params)
   param_it = params.find("nugget");
   if (param_it != params.end() && param_it->second.size() > 0) {
     if(!((nuggetFormula==0)&&(ifChooseNug==false))) {
-      cerr << "You can do at most 1 of the following (A) auto-select the nugget (minimum needed to satisfy the condition number bound) (B) use one of the preset nugget formulas (C) directly specify a nugget.  The default is not to use a nugget at all (i.e. use a nugget of zero)." << endl;
+      std::cerr << "You can do at most 1 of the following (A) auto-select the nugget (minimum needed to satisfy the condition number bound) (B) use one of the preset nugget formulas (C) directly specify a nugget.  The default is not to use a nugget at all (i.e. use a nugget of zero)." << std::endl;
       assert((nuggetFormula==0)&&(ifChooseNug==false));
     }
     nug = std::atof(param_it->second.c_str()); 
     if(!(nug >= 0.0)) {
-      cerr << "The nugget must be greater than or equal to zero." << endl;
+      std::cerr << "The nugget must be greater than or equal to zero." << std::endl;
       assert (nug >= 0.0);
     }
   }
@@ -531,7 +531,7 @@ void GradKrigingModel::create()
     else if(optimizationMethod.compare("sampling")==0)
       opt.best_guess_optimize(maxTrials);
     else{
-      cerr << "GradKrigingModel:create() unknown optimization_method [" << optimizationMethod << "]  aborting\n";
+      std::cerr << "GradKrigingModel:create() unknown optimization_method [" << optimizationMethod << "]  aborting\n";
       assert(0);
     }
     natLogCorrLen = opt.best_point();
@@ -658,7 +658,7 @@ double GradKrigingModel::evaluate(const MtxDbl& xr) const
 
 
 /// evaluate (y) the Kriging Model at a collection of points (xr)
-MtxDbl& GradKrigingModel::evaluate(MtxDbl& y, const MtxDbl& xr)
+MtxDbl& GradKrigingModel::evaluate(MtxDbl& y, const MtxDbl& xr) const
 {
   int nrowsxr = xr.getNRows();
   //printf("nrowsxr=%d nvarsrxr=%d",nrowsxr,xr.getNCols());
@@ -705,7 +705,7 @@ MtxDbl& GradKrigingModel::evaluate(MtxDbl& y, const MtxDbl& xr)
   return y;
 }
 
-MtxDbl& GradKrigingModel::evaluate_d1y(MtxDbl& d1y, const MtxDbl& xr)
+MtxDbl& GradKrigingModel::evaluate_d1y(MtxDbl& d1y, const MtxDbl& xr) const
 {
   int nrowsxr = xr.getNRows();
   d1y.newSize(nrowsxr, numVarsr);
@@ -802,7 +802,7 @@ MtxDbl& GradKrigingModel::evaluate_d1y(MtxDbl& d1y, const MtxDbl& xr)
   return d1y;
 }
 
-MtxDbl& GradKrigingModel::evaluate_d2y(MtxDbl& d2y, const MtxDbl& xr)
+MtxDbl& GradKrigingModel::evaluate_d2y(MtxDbl& d2y, const MtxDbl& xr) const
 {
   int nrowsxr=xr.getNRows();
   int nder=num_multi_dim_poly_coef(numVarsr,-2);
@@ -892,7 +892,7 @@ MtxDbl& GradKrigingModel::evaluate_d2y(MtxDbl& d2y, const MtxDbl& xr)
 
 
 /// matrix Ops evaluation of adjusted variance at a single point
-double GradKrigingModel::eval_variance(const MtxDbl& xr) 
+double GradKrigingModel::eval_variance(const MtxDbl& xr) const
 {
   /*
   double singular_y;
@@ -950,7 +950,7 @@ double GradKrigingModel::eval_variance(const MtxDbl& xr)
 }
 
 /// matrix Ops (as much as possible with BLAS and LAPACK) evaluation of adjusted variance for a collection of points... The MATLAB would be estVarianceMLE*(1-sum((r/R).*r,2)+sum((g_minus_r_Rinv_G/(Gtran_Rinv_G)).*g_minus_r_Rinv_G,2) unfortunately there's not a convenient way to do it with BLAS & LAPACK
-MtxDbl& GradKrigingModel:: eval_variance(MtxDbl& adj_var, const MtxDbl& xr) 
+MtxDbl& GradKrigingModel:: eval_variance(MtxDbl& adj_var, const MtxDbl& xr) const
 {
   int nrowsxr=xr.getNRows();
   adj_var.newSize(nrowsxr,1);
@@ -1022,7 +1022,7 @@ VecDbl GradKrigingModel::gradient(const VecDbl& x) const
 {
   assert(!x.empty());
   assert(x.size()+1==betaHat.size()); //true for linear trend function; KRD added
-  cout << "IN gradient x[0] = " << x[0] << endl;
+  std::cout << "IN gradient x[0] = " << x[0] << std::endl;
   assert(rhs.size() == bs.centers.size());
   VecUns diff_var(1,0); // variable with which to differentiate
   VecDbl result(x.size(),0.0);
@@ -1179,7 +1179,7 @@ MtxDbl& GradKrigingModel::correlation_matrix(MtxDbl& r, const MtxDbl& xr) const
 
 MtxDbl& GradKrigingModel::dcorrelation_matrix_dxI(MtxDbl& dr, const MtxDbl& r, 
 						  const MtxDbl& xr, 
-						  MtxDbl& workI, int Ider)
+						  MtxDbl& workI, int Ider) const
 {
   int nrowsXR=XR.getNRows(); //data points used to build model
   int nrowsxr=xr.getNRows(); //points at which we are evalutating the model
@@ -1245,7 +1245,7 @@ MtxDbl& GradKrigingModel::dcorrelation_matrix_dxI(MtxDbl& dr, const MtxDbl& r,
   return dr;
 }
 
-MtxDbl& GradKrigingModel::d2correlation_matrix_dxIdxK(MtxDbl& d2r, const MtxDbl& drI, const MtxDbl& r, const MtxDbl& xr, MtxDbl& workK, int Ider, int Kder)
+MtxDbl& GradKrigingModel::d2correlation_matrix_dxIdxK(MtxDbl& d2r, const MtxDbl& drI, const MtxDbl& r, const MtxDbl& xr, MtxDbl& workK, int Ider, int Kder) const
 {
   int nrowsXR=XR.getNRows(); //data points used to build model
   int nrowsxr=xr.getNRows(); //points at which we are evalutating the model

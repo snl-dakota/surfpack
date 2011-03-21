@@ -659,7 +659,7 @@ double KrigingModel::evaluate(const MtxDbl& xr) const
 
 
 /// evaluate (y) the Kriging Model at a collection of points (xr)
-MtxDbl& KrigingModel::evaluate(MtxDbl& y, const MtxDbl& xr)
+MtxDbl& KrigingModel::evaluate(MtxDbl& y, const MtxDbl& xr) const
 {
   int nrowsxr = xr.getNRows();
   //printf("nrowsxr=%d nvarsrxr=%d",nrowsxr,xr.getNCols());
@@ -704,7 +704,7 @@ MtxDbl& KrigingModel::evaluate(MtxDbl& y, const MtxDbl& xr)
   return y;
 }
 
-MtxDbl& KrigingModel::evaluate_d1y(MtxDbl& d1y, const MtxDbl& xr)
+MtxDbl& KrigingModel::evaluate_d1y(MtxDbl& d1y, const MtxDbl& xr) const
 {
   int nrowsxr = xr.getNRows();
   d1y.newSize(nrowsxr, numVarsr);
@@ -783,7 +783,7 @@ MtxDbl& KrigingModel::evaluate_d1y(MtxDbl& d1y, const MtxDbl& xr)
     double d1y_unscale_factor=scaler.unScaleFactorDerY(ivar);
     //printf("d1y_usf=%g\n",d1y_unscale_factor);
 
-    dcorrelation_matrix_dxk(d1r, r, xr_scaled, ivar);
+    dcorrelation_matrix_dxI(d1r, r, xr_scaled, ivar);
     matrix_mult(temp_vec,d1r,rhs);
 
     for(int ipt=0; ipt<nrowsxr; ++ipt)
@@ -798,7 +798,7 @@ MtxDbl& KrigingModel::evaluate_d1y(MtxDbl& d1y, const MtxDbl& xr)
   return d1y;
 }
 
-MtxDbl& KrigingModel::evaluate_d2y(MtxDbl& d2y, const MtxDbl& xr)
+MtxDbl& KrigingModel::evaluate_d2y(MtxDbl& d2y, const MtxDbl& xr) const
 {
   int nrowsxr=xr.getNRows();
   int nder=num_multi_dim_poly_coef(numVarsr,-2);
@@ -860,7 +860,7 @@ MtxDbl& KrigingModel::evaluate_d2y(MtxDbl& d2y, const MtxDbl& xr)
 
     if(ivar!=ivarold) {
       ivarold=ivar;
-      dcorrelation_matrix_dxk(d1r, r, xr_scaled, ivar);
+      dcorrelation_matrix_dxI(d1r, r, xr_scaled, ivar);
     }
 
     //find the second dimension we are taking a first derivative of
@@ -871,7 +871,7 @@ MtxDbl& KrigingModel::evaluate_d2y(MtxDbl& d2y, const MtxDbl& xr)
 	if(der(ider,jvar)>0)
 	  break;
     
-    //dcorrelation_matrix_dxk(d2r, d1r, xr_scaled, jvar);
+    //dcorrelation_matrix_dxI(d2r, d1r, xr_scaled, jvar);
     d2correlation_matrix_dxIdxK(d2r, d1r, r, xr_scaled, ivar, jvar);
     
     matrix_mult(temp_vec,d2r,rhs);
@@ -886,7 +886,7 @@ MtxDbl& KrigingModel::evaluate_d2y(MtxDbl& d2y, const MtxDbl& xr)
 
 
 /// matrix Ops evaluation of adjusted variance at a single point
-double KrigingModel::eval_variance(const MtxDbl& xr) 
+double KrigingModel::eval_variance(const MtxDbl& xr) const
 {
   double singular_y;
   if(scaler.isYSingular(0,singular_y)) {
@@ -942,7 +942,7 @@ double KrigingModel::eval_variance(const MtxDbl& xr)
 }
 
 /// matrix Ops (as much as possible with BLAS and LAPACK) evaluation of adjusted variance for a collection of points... The MATLAB would be estVarianceMLE*(1-sum((r/R).*r,2)+sum((g_minus_r_Rinv_G/(Gtran_Rinv_G)).*g_minus_r_Rinv_G,2) unfortunately there's not a convenient way to do it with BLAS & LAPACK
-MtxDbl& KrigingModel:: eval_variance(MtxDbl& adj_var, const MtxDbl& xr) 
+MtxDbl& KrigingModel:: eval_variance(MtxDbl& adj_var, const MtxDbl& xr) const
 {
   int nrowsxr=xr.getNRows();
   adj_var.newSize(nrowsxr,1);
@@ -1192,22 +1192,23 @@ MtxDbl& KrigingModel::correlation_matrix(MtxDbl& r, const MtxDbl& xr) const
 }
 
 ///k is the variable/dimension not the point
-MtxDbl& KrigingModel::dcorrelation_matrix_dxk(MtxDbl& dr, const MtxDbl& r, 
-					      const MtxDbl& xr, int k){
+MtxDbl& KrigingModel::dcorrelation_matrix_dxI(MtxDbl& dr, const MtxDbl& r, 
+					      const MtxDbl& xr, int Ider) const
+{
   int nrowsxr=xr.getNRows();
   assert((r.getNRows()==nrowsxr)&&(r.getNCols()==numPoints)&&
-	 (xr.getNCols()==numVarsr)&&(0<=k)&&(k<numVarsr));
+	 (xr.getNCols()==numVarsr)&&(0<=Ider)&&(Ider<numVarsr));
   dr.newSize(nrowsxr,numPoints);
 
-  double temp_dbl=-2.0*correlations(k);
+  double temp_dbl=-2.0*correlations(Ider);
   for(int jpt=0; jpt<numPoints; ++jpt)
     for(int ipt=0; ipt<nrowsxr; ++ipt)
-      dr(ipt,jpt)=temp_dbl*r(ipt,jpt)*(xr(ipt,k)-XR(jpt,k));
+      dr(ipt,jpt)=temp_dbl*r(ipt,jpt)*(xr(ipt,Ider)-XR(jpt,Ider));
 
   return dr;
 }
 
-MtxDbl& KrigingModel::d2correlation_matrix_dxIdxK(MtxDbl& d2r, const MtxDbl& drI, const MtxDbl& r, const MtxDbl& xr, int Ider, int Kder)
+MtxDbl& KrigingModel::d2correlation_matrix_dxIdxK(MtxDbl& d2r, const MtxDbl& drI, const MtxDbl& r, const MtxDbl& xr, int Ider, int Kder) const
 {
   int nrowsXR=XR.getNRows(); //data points used to build model
   int nrowsxr=xr.getNRows(); //points at which we are evalutating the model

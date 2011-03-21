@@ -43,10 +43,21 @@ public:
 
   */
 
+  MtxDbl& evaluate_d1y(MtxDbl& d1y, const MtxDbl& xr) const {
+    std::cerr << "evaluation of gradients not yet implemented in nkm::LinearRegressionModel" << std::endl;
+    return d1y;
+  }
+
+  MtxDbl& evaluate_d2y(MtxDbl& d2y, const MtxDbl& xr) const {
+    std::cerr << "evaluation of hessians not yet implemented in nkm::LinearRegressionModel" << std::endl;
+    return d2y;
+  }
+
+
   /// this logic is common to a significant number of "evalBasis" and
   /// "evaluate" functions so do it once and call it to make code
   /// maintenance easy
-  MtxDbl& rot_xr(MtxDbl& xr_rot, MtxDbl& rot_or_eul_ang, MtxDbl& xr) {
+  MtxDbl& rot_xr(MtxDbl& xr_rot, const MtxDbl& rot_or_eul_ang, const MtxDbl& xr) const {
     return (rotate_xr(xr_rot,rot_or_eul_ang,xr));
   };
 
@@ -76,7 +87,7 @@ public:
       point in xr, and returns them in matrix g in a reasonably
       efficient way; it works for arbitrary number of dimensions and
       polynomial order */
-  MtxDbl& evalBasis(MtxDbl& g, MtxInt& poly, MtxDbl& xr)
+  MtxDbl& evalBasis(MtxDbl& g, const MtxInt& poly, const MtxDbl& xr) const
   {
     evaluate_poly_basis(g,poly,xr);
     return g;
@@ -84,7 +95,7 @@ public:
 
   /** evaluates g from a rotated xr (xr is preserved), this function
       wraps evalBasis(MtxDbl& g, MtxInt& poly, MtxDbl& xr) */
-  MtxDbl& evalBasis(MtxDbl& g, MtxInt& poly, MtxDbl& rot_or_eul_ang, MtxDbl& xr)
+  MtxDbl& evalBasis(MtxDbl& g, const MtxInt& poly, const MtxDbl& rot_or_eul_ang, const MtxDbl& xr) const
   {
     MtxDbl xr_rot;
     rot_xr(xr_rot, rot_or_eul_ang, xr);
@@ -95,7 +106,7 @@ public:
   /** evaluates an instantiated linear regression models basis
       functions at point(s) xr AFTER rotating xr (the orginal xr is
       preserved) */
-  MtxDbl& evalBasis(MtxDbl& g, const MtxDbl& xr) 
+  MtxDbl& evalBasis(MtxDbl& g, const MtxDbl& xr) const
   {
     MtxDbl xr_rot;
     matrix_mult(xr_rot,xr,Rot,0.0,1.0);
@@ -104,7 +115,7 @@ public:
   }
 
   /// evaluates an instantiated linear regression model at a single point xr
-  double evaluate(MtxDbl& xr) 
+  double evaluate(const MtxDbl& xr) const
   {
     MtxDbl g;
     evalBasis(g,xr);
@@ -112,7 +123,7 @@ public:
   }
 
   /// evaluates an instantiated linear regression model at multiple points xr
-  MtxDbl& evaluate(MtxDbl&y, MtxDbl& xr)
+  MtxDbl& evaluate(MtxDbl&y, const MtxDbl& xr) const
   {
     MtxDbl g;
     evalBasis(g,xr);
@@ -123,8 +134,8 @@ public:
   /** evaluates a polynomial fit at a single point AFTER rotating xr
       (the original xr is preserved), it wraps evaluate(MtxInt& poly,
       MtxDbl& xr, MtxDbl& beta) */
-  double evaluate(MtxInt& poly, MtxDbl& rot_or_eul_ang, 
-		  MtxDbl& xr, MtxDbl& beta)
+  double evaluate(const MtxInt& poly, const MtxDbl& rot_or_eul_ang, 
+		  const MtxDbl& xr, const MtxDbl& beta) const
   {
     MtxDbl xr_rot;
     rot_xr(xr_rot, rot_or_eul_ang, xr);
@@ -132,7 +143,7 @@ public:
   }
 
   /// evaluation of a polynomial fit at a single point xr without rotating xr 
-  double evaluate(MtxInt& poly, MtxDbl& xr, MtxDbl& beta) 
+  double evaluate(const MtxInt& poly, const MtxDbl& xr, const MtxDbl& beta) const
   {
     assert((xr.getNRows()==1)&&(poly.getNRows()==beta.getNRows()));
     MtxDbl g; 

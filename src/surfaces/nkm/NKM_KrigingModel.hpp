@@ -81,19 +81,19 @@ public:
   virtual double evaluate(const MtxDbl& xr) const;
 
   /// evaluate (y) the Kriging Model at a collection of points xr, one per row
-  virtual MtxDbl& evaluate(MtxDbl& y, const MtxDbl& xr);
+  virtual MtxDbl& evaluate(MtxDbl& y, const MtxDbl& xr) const;
 
   /// evaluate the KrigingModel's adjusted variance at a single point
-  double eval_variance(const MtxDbl& xr);
+  virtual double eval_variance(const MtxDbl& xr) const;
 
   /// evaluate the KrigingModel's adjusted variance at a collection of points xr, one per row
-  MtxDbl& eval_variance(MtxDbl& adj_var, const MtxDbl& xr);
+  virtual MtxDbl& eval_variance(MtxDbl& adj_var, const MtxDbl& xr) const;
 
   /// evaluate the partial first derivatives with respect to xr of the models adjusted mean
-  MtxDbl& evaluate_d1y(MtxDbl& d1y, const MtxDbl& xr);
+  virtual MtxDbl& evaluate_d1y(MtxDbl& d1y, const MtxDbl& xr) const;
 
   /// evaluate the partial second derivatives with respect to xr of the models adjusted mean... this gives you the lower triangular, including diagonal, part of the Hessian(s), with each evaluation point being a row in both xr (input) and d2y(output)
-  MtxDbl& evaluate_d2y(MtxDbl& d2y, const MtxDbl& xr);
+  virtual MtxDbl& evaluate_d2y(MtxDbl& d2y, const MtxDbl& xr) const;
 
   // Helpers for solving correlation optimization problems
 
@@ -280,9 +280,9 @@ private:
 
   /** dr(i,j)=d(r(i,j))/d(xr(i,k)) combining repeated calls can be used to 
       get arbitrary (mixed) higher order derivatives */
-  MtxDbl& dcorrelation_matrix_dxk(MtxDbl& dr, const MtxDbl& r, 
-				  const MtxDbl& xr, int k);
-  MtxDbl& d2correlation_matrix_dxIdxK(MtxDbl& d2r, const MtxDbl& drI, const MtxDbl& r, const MtxDbl& xr, int Ider, int Kder);
+  MtxDbl& dcorrelation_matrix_dxI(MtxDbl& dr, const MtxDbl& r, 
+				  const MtxDbl& xr, int Ider) const;
+  MtxDbl& d2correlation_matrix_dxIdxK(MtxDbl& d2r, const MtxDbl& drI, const MtxDbl& r, const MtxDbl& xr, int Ider, int Kder) const;
 
   /** this function applies the nugget to an r matrix (not a member variable)
       in place (i.e. it changes r to p). i.e. it scales r by 1.0/(1.0+nug). 
