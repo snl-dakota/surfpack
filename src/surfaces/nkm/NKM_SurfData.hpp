@@ -457,6 +457,10 @@ public:
   ///a constructor for when there are real input variables that we don't want to group scale and there are no integer input variables, models that use the default scaling will scale the real input variables and output variable(s) to a hypercube of volume 1
   SurfData(const MtxDbl& XR, const MtxDbl& Y, int jout_set=0);
 
+  //need to add a bunch more constructors like this (that accept der_order and derY)
+  SurfData(const MtxDbl& XR, const MtxDbl& Y, const MtxInt& der_order_in, 
+	   const std::vector<std::vector<MtxDbl> > & derY_in, int jout_set=0);
+
   ///a constructor for when there are real input variables that we want to group scale and there are no integer input variables, models that use the default scaling will scale the real input variables to a hyper-rectangle of volume 1 and the output variable(s) to a hypercube of volume 1
   SurfData(const MtxInt& LOCKXR, const MtxDbl& XR, const MtxDbl& Y, int jout_set=0);
 

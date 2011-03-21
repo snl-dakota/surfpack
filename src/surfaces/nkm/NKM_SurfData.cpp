@@ -367,6 +367,45 @@ MtxDbl& SurfData::getUpToDerY(MtxDbl& dny, int der_order, int jy) const {
 }
 
   
+///a constructor for when you pass in real inputs, and (arbitrarily high order) derivatives of the output with respect them, as well as the output, but don't pass in integer input variables.
+SurfData::SurfData(const MtxDbl& XR, const MtxDbl& Y, const MtxInt& der_order_in, const std::vector<std::vector<MtxDbl> > & derY_in, int jout_set) : xr(XR), y(Y), npts(XR.getNRows()), nvarsr(XR.getNCols()), nvarsi(0), nout(Y.getNCols()), jout(jout_set), derOrder(der_order_in), derY(derY_in), ifHaveMinMaxXr(false)
+{
+  //npts  =XR.getNRows();
+  //nvarsr=XR.getNCols();
+  assert(Y.getNRows()==npts);
+  //nvarsi=0;
+  //nout  =Y.getNCols();
+  //jout  =jout_set;
+  
+  if(0<npts) {
+    assert((0<=jout)&&(jout<nout)&&(1==derOrder.getNRows())&&
+	   (nout==derOrder.getNCols())&&(nout==derY.size()));
+    for(int iout=0; iout<nout; ++iout) {
+      assert(derOrder(iout)>=0);
+      if(1<=derOrder(iout)) {
+	assert(derY[iout].size()==derOrder(iout)+1);
+	for(int ider=1; ider<=derOrder(iout); ++ider)
+	  assert((derY[iout][ider].getNRows()==npts)&&
+		 (derY[iout][ider].getNCols()==
+		  num_multi_dim_poly_coef(nvarsr,-ider)));
+      }
+    }
+
+    //xr=XR;
+    //y=Y;
+    dontScale();
+
+  }
+  else{
+    jout=0;
+    cerr << "Warning: SurfData() constructor was passed empty data matrices!!!" << endl;
+  }
+  defaultLabels();
+  return;
+}
+
+
+
 
 ///a constructor for when there are real input variables that we want the model to group scale (if it is appropriate to the model) and there are no integer input variables.  If it is appropriate to the model to do so, the model will automatically scale the real input variables to a hyper-rectangle of volume 1 and the output variable(s) to a hypercube of volume 1
 SurfData::SurfData(const MtxInt& LOCKXR, const MtxDbl& XR, const MtxDbl& Y, int jout_set) : npts(XR.getNRows()), nvarsr(XR.getNCols()), nvarsi(0), nout(Y.getNCols()), jout(jout_set), derOrder(1,nout), derY(nout), ifHaveMinMaxXr(false)

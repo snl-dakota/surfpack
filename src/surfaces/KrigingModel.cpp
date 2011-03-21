@@ -22,6 +22,29 @@ surfdata_to_nkm_surfdata(const SurfData& sd, nkm::SurfData& nkm_sd)
   unsigned f_size = sd.fSize();
 
   nkm::MtxDbl XR(num_points, x_size), Y(num_points, f_size);
+  std::vector<std::vector<nkm::MtxDbl> > derY(f_size);
+  nkm::MtxInt der_order(1,f_size); 
+  der_order.zero(); //set contents to zero
+
+  if(num_points>0) {
+    //could increment der_order independently for each dimension but old surfdata/surfpoint does not support this, nkm::SurfData supports arbitrarily high order derivatives.
+
+    const SurfPoint& point=sd[0];
+    if(point.fGradientsSize() > 0) {
+      for(unsigned f_index=0; f_index<f_size; ++f_index)
+	++der_order(f_index);
+      if(point.fHessiansSize() > 0)
+	for(unsigned f_index=0; f_index<f_size; ++f_index)
+	  ++der_order(f_index);
+    }
+    
+    for(unsigned f_index=0; f_index<f_size; ++f_index) {
+      derY[f_index].resize(der_order(f_index)+1);
+      for(unsigned der_order_index=1; der_order_index<=der_order(f_index); ++der_order_index)
+	derY[f_index][der_order_index].newSize(num_points,nkm::num_multi_dim_poly_coef(x_size,-der_order_index));
+    }
+  }
+
 
   for (unsigned point_index=0; point_index<num_points; ++point_index) {
     const SurfPoint& point = sd[point_index];
@@ -39,39 +62,56 @@ surfdata_to_nkm_surfdata(const SurfData& sd, nkm::SurfData& nkm_sd)
     // there should be 0 or f_size gradients (could throw error)
     if (point.fGradientsSize() > 0) {
       for (unsigned f_index=0; f_index < f_size; ++f_index) {
+	assert(der_order(f_index)>=1);  //could change this to a throw
 	const vector<double>& sd_gradient = point.fGradient(f_index);
-	cout << "Surfpack gradient for point " << point_index << ", function "
-	     << f_index << ": [ ";
+	//cout << "Surfpack gradient for point " << point_index << ", function "
+	//     << f_index << ": [ ";
 	for (unsigned x_index=0; x_index < x_size; ++x_index) {
 	  // accessing each gradient element
-	  cout << sd_gradient[x_index] << " ";
+	  //cout << sd_gradient[x_index] << " ";
+	  derY[f_index][1](point_index,x_index) =sd_gradient[x_index];
 	}
-	cout << "]" << endl;
+	//cout << "]" << endl;
       }
+    }
+    else{
+      for (unsigned f_index=0; f_index < f_size; ++f_index) 
+	assert(der_order(f_index)==0);  //could change this to a throw
     }
 
     // example of mapping second derivatives
     // there should be 0 or f_size Hessians (could throw error)
     if (point.fHessiansSize() > 0) {
       for (unsigned f_index=0; f_index<f_size; ++f_index) {
+	assert(der_order(f_index)>=2);  //could change this to a throw
+
 	const SurfpackMatrix<double>& sd_hessian = point.fHessian(f_index);
-	cout << "Surfpack Hessian for point " << point_index << ", function "
-	     << f_index << " is:\n";
-	for (unsigned xj_index=0; xj_index < x_size; ++xj_index) {
-	  for (unsigned xk_index=0; xk_index < x_size; ++xk_index) {
-	    // accessing each Hessian element
-	    cout << sd_hessian(xj_index, xk_index) << " ";
-	  }
-	  cout << "\n";
-	}
-	cout << endl;
+	//cout << "Surfpack Hessian for point " << point_index << ", function "
+	//     << f_index << " is:\n";
+	unsigned der_index=0;
+	for (unsigned xj_index=0; xj_index < x_size; ++xj_index) 
+	  for (unsigned xk_index=xj_index; xk_index < x_size; ++xk_index, ++der_index)
+	    derY[f_index][2](point_index,der_index)=
+	      sd_hessian(xj_index,xk_index);
+
+	//for (unsigned xj_index=0; xj_index < x_size; ++xj_index) {
+	//  for (unsigned xk_index=0; xk_index < x_size; ++xk_index) {
+	//    // accessing each Hessian element
+	//    cout << sd_hessian(xj_index, xk_index) << " ";
+	//  }
+	//  cout << "\n";
+	//}
+	//cout << endl;
       }
     }
-
+    else{
+      for(unsigned f_index=0; f_index<f_size; ++f_index)
+	assert(der_order(f_index)<2);
+    }
   }
 
   // TODO: populate with derY as well
-  nkm_sd = nkm::SurfData(XR, Y);
+  nkm_sd = nkm::SurfData(XR, Y, der_order, derY);
 }
 
 
