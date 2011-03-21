@@ -273,7 +273,7 @@ GradKrigingModel::GradKrigingModel(const SurfData& sd, const ParamMap& params)
   //check that we have enough data for the selected trend functions
   int needed_eqns = numVarsr + getNTrend(); 
   if( !(needed_eqns <= numRowsR) ) {
-    cerr << "With the selected set of trend functions there are more unknown parameters (" <<  needed_eqns << ") than there are pieces of data (" << numRowsR << ") for the GradKrigingModel. For the current set of trend functions, you need at least " << ceil(needed_eqns/nDer) << " data points and having at least " << ceil(2.0*needed_eqns/nDer) << " is _strongly_ recommended.\n";
+    cerr << "With the selected set of trend functions there are more unknown parameters (" <<  needed_eqns << ") than there are pieces of data (" << numRowsR << ") for the GradKrigingModel. For the current set of trend functions, you need at least " << std::ceil((double)needed_eqns/nDer) << " data points and having at least " << std::ceil((double)2.0*needed_eqns/nDer) << " is _strongly_ recommended.\n";
     assert(needed_eqns <= numRowsR);
   }
 
