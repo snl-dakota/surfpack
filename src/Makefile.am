@@ -43,13 +43,17 @@ libsurfpack_la_SOURCES = AxesBounds.cpp \
 			 SurfpackInterface.h \
 			 SurfpackInterface.cpp \
 			 SurfpackParserArgs.h \
- 			 SurfpackParserArgs.cpp \
+                         SurfpackParserArgs.cpp \
 			 SurfPoint.cpp \
 			 SurfPoint.h \
 			 Conmin.cpp \
 			 Comin.h \
 			 ModelFitness.cpp \
 			 ModelFitness.h
+
+## Given the near-term move to CMake, only distributing headers we know 
+## external clients depend on
+include_HEADERS = SurfpackMatrix.h
 
 ## _LIBADD is automake's way of saying that these libraries must also
 ## be linked in whenever libsurfpack.la is linked against.  The
