@@ -3,6 +3,7 @@ include_directories(${PROJECT_SOURCE_DIR}/src)
 
 ## nkm library sources.
 set(nkm_src
+  NKM_GradKrigingModel.cpp
   NKM_KrigingModel.cpp
   NKM_LinearRegressionModel.cpp
   NKM_Optimize.cpp
