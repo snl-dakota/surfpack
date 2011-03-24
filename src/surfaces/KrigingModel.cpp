@@ -141,6 +141,7 @@ KrigingModel::KrigingModel(const SurfData& sd, const ParamMap& args)
       assert(1<=nkmSurfData.getDerOrder());
     }
     nkmKrigingModel = new nkm::GradKrigingModel(nkmSurfData, args);
+    //std::cerr << "built Gradient Enhanced Kriging Model" << std::endl;
   }
 
   nkmKrigingModel->create();

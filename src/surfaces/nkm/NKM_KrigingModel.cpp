@@ -1268,14 +1268,14 @@ void KrigingModel::correlation_matrix(const MtxDbl& theta)
   }
   R(numPoints-1,numPoints-1)=1.0;
 
-  FILE *fp=fopen("km_Rmat_check.txt","w");
-  for(int i=0; i<numPoints; ++i) {
-    fprintf(fp,"%-12.6g", R(i,0));
-    for(int j=1; j<numPoints; ++j) 
-      fprintf(fp," %-12.6g", R(i,j));     
-    fprintf(fp,"\n");
-  }
-  fclose(fp);
+  //  FILE *fp=fopen("km_Rmat_check.txt","w");
+  //  for(int i=0; i<numPoints; ++i) {
+  //    fprintf(fp,"%-12.6g", R(i,0));
+  //    for(int j=1; j<numPoints; ++j) 
+  //      fprintf(fp," %-12.6g", R(i,j));     
+  //    fprintf(fp,"\n");
+  //  }
+  //  fclose(fp);
 
   return; 
 }
