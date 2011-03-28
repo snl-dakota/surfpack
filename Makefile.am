@@ -12,6 +12,9 @@ SUBDIRS = packages src interface system_tests tests
 ## involved in the build process.
 EXTRA_DIST = $(top_srcdir)/examples/* $(top_srcdir)/docs/DoxygenConfig
 
+# Install, but don't distribute
+nodist_include_HEADERS = ${top_builddir}/surfpack_config.h
+
 ## The Makefiles produced by automake create a target named "clean"
 ## which removes, by default, the .o and .lo files that are normally
 ## created during a build.  The CLEANFILES automake variable allows the
