@@ -54,6 +54,7 @@ KrigingModel::KrigingModel(const SurfData& sd, const ParamMap& params)
   : SurfPackModel(sd,sd.getJOut()), numVarsr(sd.getNVarsr()), 
     numTheta(numVarsr), numPoints(sd.getNPts()), XR(sdBuild.xr), Y(sdBuild.y)
 {
+
   //printf("calling the right KrigingModel constructor\n"); fflush(stdout);
 
   //if the SurfDataScaler class does what it's supposed to (the only private content in sdBuild that a Model can access are the scaling bits, and only the model can see inside the scaler) the next line will cause an error when you try to compile with it uncommented
@@ -252,7 +253,7 @@ KrigingModel::KrigingModel(const SurfData& sd, const ParamMap& params)
     multi_dim_poly_power(Poly, numVarsr, polyOrder);  
 
   //check that we have enough data for the selected trend functions
-  int needed_points = numVarsr + getNTrend(); 
+  int needed_points = getNTrend()+1; //+numVarsr;
   if( !(needed_points <= numPoints) ) {
     cerr << "With the selected set of trend functions there are more unknown parameters (" <<  needed_points << ") than there are data points (" << numPoints << ") for the Kriging Model. For the current set of trend functions, you need at least " << needed_points << "data points and twice that is strongly recommended.\n";
     assert(needed_points <= numPoints);

@@ -8,9 +8,9 @@
 #include "surfpack_config.h"
 #endif
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <assert.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cassert>
 #include <cmath>
 
 
@@ -280,14 +280,14 @@ inline MtxDbl& Chol_fact(MtxDbl& matrix, int& info, double& rcondprecond)
   int minabspower;
   int maxabspower;
   MtxDbl scalefactor(nrows);
-  double log_of_2=log(2.0);
-  abspower=std::floor(0.5+log(sqrt(matrix(0,0)))/log_of_2);
+  double log_of_2=std::log(2.0);
+  abspower=std::floor(0.5+std::log(std::sqrt(matrix(0,0)))/log_of_2);
   scalefactor(0)=std::pow(2.0,(double) -abspower);
   //abspower=log2(sqrt(matrix(0,0)));
   //scalefactor(0)=1.0/sqrt(matrix(0,0));
   minabspower=maxabspower=abspower;
   for(int i=1; i<nrows; ++i) {
-    abspower=std::floor(0.5+log(sqrt(matrix(i,i)))/log_of_2);
+    abspower=std::floor(0.5+std::log(std::sqrt(matrix(i,i)))/log_of_2);
     scalefactor(i)=std::pow(2.0,(double) -abspower); //this is the "numerically optimal" preconditioning of a real symmetric positive definite matrix by "numerically optimal" I meant the analytically optimal (for reducing condition number) scaling has been rounded to the nearest power of 2 so that we don't lose any bits of accuracy due to rounding error due to preconditioning
     //abspower=log2(sqrt(matrix(i,i)));
     //scalefactor(i)=1.0/sqrt(matrix(i,i));
