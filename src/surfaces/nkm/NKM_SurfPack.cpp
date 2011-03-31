@@ -1,5 +1,5 @@
-#include <math.h>
 #include "NKM_SurfPack.hpp"
+#include <cmath>
 
 //the purpose of this file is to contain generic functions usable by everything
 
@@ -10,6 +10,8 @@
 namespace nkm {
 
 //not sure which of these usings are necessary, achieve compilation by random guessing
+using std::fabs;
+using std::pow;
 using std::cerr;
 using std::endl;
 using std::ifstream;
@@ -42,7 +44,7 @@ int main(){
     printf(" ]\n");
   }
   
-  double pi=acos(0.0)*2.0;
+  double pi=std::acos(0.0)*2.0;
   MtxDbl EulAng(6), Rot(4,4), RotShouldBe(4,4); 
   EulAng(0)=pi/6.0;
   EulAng(1)=pi/4.0;
@@ -151,7 +153,7 @@ int main(){
 int if_close_enough(double a, double b)
 {
   if(fabs(a-b)>1.0e-5){
-    printf("a=%20.14f b=%20.14f\n",a,b);  fflush(stdout);
+    std::printf("a=%20.14f b=%20.14f\n",a,b);  std::fflush(stdout);
     assert((fabs(a-b)<=1.0e-5));
   }
   return (fabs(a-b)<=1.0e-5);
@@ -187,8 +189,8 @@ MtxDbl& gen_rot_mat(MtxDbl& Rot, const MtxDbl& EulAng, int nvarsr){
   for(ivarr=0;ivarr<nvarsr-1;ivarr++) {
     nang--;
     for(iang=0; iang<nang; iang++) {
-      c=cos(EulAng(Iang));
-      s=sin(EulAng(Iang));
+      c=std::cos(EulAng(Iang));
+      s=std::sin(EulAng(Iang));
       R=I;
       R(iang  ,iang  )= c;
       R(iang  ,iang+1)=-s;
@@ -208,7 +210,7 @@ MtxDbl& gen_rand_rot_mat(MtxDbl& rot,int nvarsr)
   int n_eul_ang=nchoosek(nvarsr, 2);
   //printf("n_eul_ang=%d\n",n_eul_ang);
   MtxDbl eul_ang(n_eul_ang);
-  double pi=2.0*acos(0.0);
+  double pi=2.0*std::acos(0.0);
   int mymod = 1048576; //2^20 instead of 10^6 to be kind to the computer
   for(int i=0; i<n_eul_ang; ++i)
     eul_ang(i)=(std::rand() % mymod)*pi/mymod;
@@ -228,7 +230,7 @@ MtxDbl& gen_rand_axis_bin_opt_samples_0to1(MtxDbl& xr, int nvarsr)
     //printf("surfpack.cpp: i=%d",i);
     for(int j=0; j<nvarsr; ++j) {
       //printf(" j=%d",j); fflush(stdout);
-      xr(2*i,j)=2.0*floor(1.0+xr(i,j))-1.0;
+      xr(2*i,j)=2.0*std::floor(1.0+xr(i,j))-1.0;
       xr(2*i+1,j)=0.5*((-xr(2*i,j)*(std::rand() % mymod))/mymod+1.0);
       xr(2*i,j)=0.5*((xr(2*i,j)*(std::rand() % mymod))/mymod+1.0);
     }
@@ -372,7 +374,7 @@ MtxInt& main_effects_poly_power(MtxInt& poly, int nvarsr, int ndeg) {
 #endif
 
   if(ndeg<0) {
-    int abs_ndeg=abs(ndeg);
+    int abs_ndeg=std::abs((double)ndeg);
     poly.newSize(nvarsr,nvarsr);
     poly.zero();
     for(int ivarsr=0; ivarsr<nvarsr; ++ivarsr)

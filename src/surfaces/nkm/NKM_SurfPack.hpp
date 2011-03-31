@@ -13,6 +13,7 @@
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
+#include <cassert>
 #include <cstring>
 #include <csignal>
 #include <set>
@@ -60,7 +61,7 @@ inline MtxDbl& rotate_xr(MtxDbl& xr_rot, const MtxDbl& rot_or_eul_ang, const Mtx
       matrix_mult(xr_rot,xr,rot,0.0,1.0);
     }
     else{
-      printf("Error in rotate_xr(MtxDbl& xr_rot,MtxDbl& rot_or_eul_ang,MtxDbl& xr): rot_or_eul_ang has the wrong size!!!\n");
+      std::printf("Error in rotate_xr(MtxDbl& xr_rot,MtxDbl& rot_or_eul_ang,MtxDbl& xr): rot_or_eul_ang has the wrong size!!!\n");
       assert(0);
     }
     return xr_rot;

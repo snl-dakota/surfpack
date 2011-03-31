@@ -1,5 +1,6 @@
 #ifndef __SURFMAT_HPP__
 #define __SURFMAT_HPP__
+#include <cstdlib>
 #include <vector>
 //#include <iostream>
 #include <string>
@@ -12,7 +13,7 @@ inline void* data_alloc(size_t nelem, size_t elemsize){
 #ifdef __SURFMAT_ZERO_MEM__
   return calloc(nelem,elemsize);
 #else
-  return malloc(nelem*elemsize);
+  return std::malloc(nelem*elemsize);
 #endif  
 };
 
@@ -584,7 +585,7 @@ SurfMat<T>::SurfMat(int nrows_in, int ncols_in)
   data2D=NULL;
   if((nrows_in>0)&&(ncols_in>0)) {
     data  =(T*) data_alloc(nrows_in*ncols_in,sizeof(T));
-    data2D=(T**)malloc(ncols_in*sizeof(T *));
+    data2D=(T**)std::malloc(ncols_in*sizeof(T *));
 #ifdef __SURFMAT_ERR_CHECK__
     assert(data && data2D);
 #endif
@@ -613,8 +614,8 @@ SurfMat<T>::SurfMat(const SurfMat<T>& other){
   }
 
   int k, nelem=NRows*NCols;
-  data  =(T*) malloc(nelem*sizeof(T)); //we're going to fill it up completely so don't bother with data_alloc (which gives an option to calloc i.e. zero memory)
-  data2D=(T**)malloc(NCols*sizeof(T*));
+  data  =(T*) std::malloc(nelem*sizeof(T)); //we're going to fill it up completely so don't bother with data_alloc (which gives an option to calloc i.e. zero memory)
+  data2D=(T**)std::malloc(NCols*sizeof(T*));
 #ifdef __SURFMAT_ERR_CHECK__
   assert(data && data2D);
 #endif
@@ -652,7 +653,7 @@ SurfMat<T>::SurfMat(const std::vector<T>& vecT, int nrows_in, int ncols_in)
 
   if((nrows_in>0)&&(ncols_in>0)) {
     data  =(T*) data_alloc(nrows_in*ncols_in,sizeof(T));
-    data2D=(T**)malloc(ncols_in*sizeof(T *));
+    data2D=(T**)std::malloc(ncols_in*sizeof(T *));
 #ifdef __SURFMAT_ERR_CHECK__
     assert(data && data2D);
 #endif
@@ -687,8 +688,8 @@ void SurfMat<T>::clear()
   }
 #endif
   if(NRows) {
-    free(data2D); data2D=NULL;
-    free(data  ); data  =NULL;
+    std::free(data2D); data2D=NULL;
+    std::free(data  ); data  =NULL;
     NRows=NCols=0;
   }
   return;
@@ -711,12 +712,12 @@ void SurfMat<T>::newSize2(int nrows_new, int ncols_new)
   int nelem=NRows*NCols;
   //if(nelem!=nelem_new) {
   if(nelem<nelem_new) {
-    free(data);
+    std::free(data);
     data=(T*) data_alloc(nelem_new,sizeof(T));
   }
   else if(nelem>nelem_new) { 
     //decreasing the amount of memory allocated _may_be_ faster than deallocating the array and allocating a new one (couldn't find anything that said one way or another so just time it)
-    data=(T*) realloc(data,nelem_new*sizeof(T));
+    data=(T*) std::realloc(data,nelem_new*sizeof(T));
 #ifdef __SURFMAT_ZERO_MEM__
     for(int j=0; j<nelem_new; j++) data[j]=0;
 #endif
@@ -726,8 +727,8 @@ void SurfMat<T>::newSize2(int nrows_new, int ncols_new)
   NCols=ncols_new;
     
   //change data2D pointers into data
-  free(data2D); 
-  data2D=(T**) malloc(NCols*sizeof(T*)); 
+  std::free(data2D); 
+  data2D=(T**) std::malloc(NCols*sizeof(T*)); 
 #ifdef __SURFMAT_ERR_CHECK__
   assert(data2D);
 #endif
@@ -754,7 +755,7 @@ void SurfMat<T>::reshape2(int nrows_new, int ncols_new)
   //if NRows*NCols==nelem_new then we only need to change data2D ptrs into data
   int nelem=NRows*NCols;
   if(nelem!=nelem_new) {
-    data=(T*) realloc(data,nelem_new*sizeof(T));
+    data=(T*) std::realloc(data,nelem_new*sizeof(T));
 #ifdef __SURFMAT_ZERO_MEM__
     for(int j=nelem; j<nelem_new; j++) data[j]=0;
 #endif      
@@ -764,8 +765,8 @@ void SurfMat<T>::reshape2(int nrows_new, int ncols_new)
   NCols=ncols_new;
   
   //change data2D pointers into data
-  free(data2D); 
-  data2D=(T**) malloc(NCols*sizeof(T*)); 
+  std::free(data2D); 
+  data2D=(T**) std::malloc(NCols*sizeof(T*)); 
 #ifdef __SURFMAT_ERR_CHECK__
   assert(data2D);
 #endif
@@ -799,7 +800,7 @@ void SurfMat<T>::resize2(int nrows_new, int ncols_new) {
   //printf("resize2 doing the resizing itself\n"); fflush(stdout);
     
   int i, j;
-  T **data2D_temp=(T **) malloc(ncols_new*sizeof(T*));
+  T **data2D_temp=(T **) std::malloc(ncols_new*sizeof(T*));
   T  *data_temp=(T *) data_alloc(nrows_new*ncols_new,sizeof(T));
   
   *data2D_temp=data_temp;
@@ -815,8 +816,8 @@ void SurfMat<T>::resize2(int nrows_new, int ncols_new) {
     for(i=0; i<nrows_smaller; i++)
       data2D_temp[j][i]=data2D[j][i];
 
-  free(data2D); data2D=data2D_temp;
-  free(data  ); data  =data_temp;
+  std::free(data2D); data2D=data2D_temp;
+  std::free(data  ); data  =data_temp;
   
   return;
 }
@@ -829,15 +830,15 @@ SurfMat<T>& SurfMat<T>::copy(const SurfMat<T>& other){
   
   if((NRows!=other.NRows)||(NCols!=other.NCols)) {
     if(NCols!=other.NCols) {
-      free(data2D);
-      data2D=(T**)malloc(other.NCols*sizeof(T*));
+      std::free(data2D);
+      data2D=(T**)std::malloc(other.NCols*sizeof(T*));
     }
     NRows=other.NRows;
     NCols=other.NCols;
     
     if(nelem!=nelem_o) {
-      free(data);
-      data=(T* ) malloc(nelem_o*sizeof(T));  // don't give this the option to fill with zeros because we are about to copy other to fill in all elements of data
+      std::free(data);
+      data=(T* ) std::malloc(nelem_o*sizeof(T));  // don't give this the option to fill with zeros because we are about to copy other to fill in all elements of data
     }
 
 #ifdef __SURFMAT_ERR_CHECK__
