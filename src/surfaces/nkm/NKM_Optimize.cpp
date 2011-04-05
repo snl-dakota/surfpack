@@ -9,9 +9,34 @@
 // maxfunc = 90000-20
 #define NCSU_DIRECT_MAXFUNC 89980
 
+#ifdef HAVE_CONFIG_H
+// Tolerate F77_FUNC macro redefinition warnings in the autotools build
+#define CONMIN_F77      F77_FUNC(conmin,CONMIN)
 #define NCSU_DIRECT_F77 F77_FUNC_(ncsu_direct,NCSU_DIRECT)
 
+#else
+// Use the CMake generated fortran name mangling macros (eliminate warnings)
+#include "surf77_config.h"
+#define CONMIN_F77      SURF77_GLOBAL(conmin,CONMIN)
+#define NCSU_DIRECT_F77 SURF77_GLOBAL_(ncsu_direct,NCSU_DIRECT)
+#endif
+
 extern "C" {
+
+void CONMIN_F77(double* candidate, double* lowerb, double* upperb,
+                double* constraint_values,
+                double* scal, double* df, double* a, double* s, double* g1,
+                double* g2, double* b, double* c,
+                int* isc, int* ic, int* ms1,
+                int& n1, int& n2, int& n3, int& n4, int& n5,
+                double& delfun, double& dabfun, double& fdch, double& fdchm,
+                double& ct, double& ctmin, double& ctl, double& ctlmin,
+                double& alphax, double& abobj1, double& theta,
+                double& obj,
+                int& numdv, int& ncon, int& nside, int& iprint, int& nfdg,
+                int& nscal, int& linobj, int& itmax, int& itrm, int& incdir,
+                int& igoto, int& nac, int& info, int& infog, int& iter);
+
 void NCSU_DIRECT_F77(int (*objfun)(int *n, double c[], double l[], double u[],
 				   int point[], int *maxI, int *start,
 				   int *maxfunc, double fvec[], int iidata[],

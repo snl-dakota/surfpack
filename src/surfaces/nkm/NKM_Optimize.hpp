@@ -7,25 +7,6 @@ namespace nkm {
 
 class SurfPackModel;
 
-#define CONMIN_F77 F77_FUNC(conmin,CONMIN)
-#ifdef __cplusplus
-extern "C"  /* prevent C++ name mangling */
-#endif
-void CONMIN_F77(double* candidate, double* lowerb, double* upperb,
-                double* constraint_values,
-		double* scal, double* df, double* a, double* s, double* g1,
-		double* g2, double* b, double* c,
-		int* isc, int* ic, int* ms1,
-		int& n1, int& n2, int& n3, int& n4, int& n5,
-                double& delfun, double& dabfun, double& fdch, double& fdchm,
-		double& ct, double& ctmin, double& ctl, double& ctlmin,
-		double& alphax, double& abobj1, double& theta,
-		double& obj,
-		int& numdv, int& ncon, int& nside, int& iprint, int& nfdg,
-		int& nscal, int& linobj, int& itmax, int& itrm, int& incdir,
-		int& igoto, int& nac, int& info, int& infog, int& iter);
-
-
 
 /***********************************************************/
 /**** definition of optimizer specific data starts here ****/

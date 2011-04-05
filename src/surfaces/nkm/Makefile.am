@@ -1,4 +1,7 @@
 ## Process this file with automake to produce Makefile.in
+# WJB - ToDo: undo this change ASAP (undesirable dependency for F77_FUNC)
+INCLUDES = -I$(top_builddir) -I$(top_srcdir)/src
+
 noinst_LTLIBRARIES = libnkm.la
 
 libnkm_la_SOURCES = NKM_GradKrigingModel.cpp \

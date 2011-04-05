@@ -1,12 +1,13 @@
 
-include_directories(${PROJECT_SOURCE_DIR}/src
-                    ${PROJECT_SOURCE_DIR}/src/surfaces)
+include_directories(${Surfpack_BINARY_DIR}/include
+                    ${Surfpack_SOURCE_DIR}/src
+                    ${Surfpack_SOURCE_DIR}/src/surfaces)
 # WJB - ToDo: introduce interpreter dependency when I am ready for LEX/YACC
-#                    ${PROJECT_SOURCE_DIR}/src/interpreter
+#                    ${Surfpack_SOURCE_DIR}/src/interpreter
 #
 # WJB - ToDo: introduce teuchos dependency when requested by team
-#INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/packages/teuchos/src
-#                    ${PROJECT_BINARY_DIR}/packages/teuchos/src)
+#include_directories(${Surfpack_BINARY_DIR}/packages/teuchos/src
+#                    ${Surfpack_SOURCE_DIR}/packages/teuchos/src)
 
 add_subdirectory(mars)
 add_subdirectory(surfaces)

@@ -9,8 +9,6 @@ using std::cout;
 using std::endl;
 using std::string;
 
-using namespace nkm;
-
 void validate();
 void validate_grad();
 void hack();
@@ -26,7 +24,7 @@ int main(int argc, char* argv[])
 void hack()
 {
   string filename="ORIG_DATA.spd";
-  SurfData orig_data( filename , 6, 0, 10, 0, 1);
+  nkm::SurfData orig_data( filename , 6, 0, 10, 0, 1);
   
   std::map< std::string, std::string> km_params;
   km_params["order"] = "2";
@@ -34,7 +32,7 @@ void hack()
 
   for(int jout=0; jout<10; ++jout) {
     orig_data.setJOut(jout);
-    KrigingModel km(orig_data , km_params); km.create();
+    nkm::KrigingModel km(orig_data , km_params); km.create();
   }
   return;
 }
@@ -45,19 +43,19 @@ void validate_grad() {
   printf("validating Gradient Enhanced Kriging Model\n");
 
   string grad_validate2d_10 ="grad_validate2d_10.spd";
-  SurfData sd2d10(grad_validate2d_10 , 2, 0, 3, 0, 1, 0);
+  nkm::SurfData sd2d10(grad_validate2d_10 , 2, 0, 3, 0, 1, 0);
   string grad_validate2d_100 ="grad_validate2d_100.spd";
-  SurfData sd2d100(grad_validate2d_100 , 2, 0, 3, 0, 1, 0);
+  nkm::SurfData sd2d100(grad_validate2d_100 , 2, 0, 3, 0, 1, 0);
   string validate2d_10K="grad_validate2d_10K.spd";
-  SurfData sd2d10K(    validate2d_10K, 2, 0, 3, 0, 1, 0);
+  nkm::SurfData sd2d10K(    validate2d_10K, 2, 0, 3, 0, 1, 0);
 
-  MtxDbl yeval10(    10);
-  MtxDbl yeval100(  100);
-  MtxDbl yeval10K(10000);
+  nkm::MtxDbl yeval10(    10);
+  nkm::MtxDbl yeval100(  100);
+  nkm::MtxDbl yeval10K(10000);
   int jout=0; //the 0th output column is Rosenbrock  
 
-  MtxDbl roserror(3,4); roserror.zero();
-  MtxDbl roserror_grad(3,4); roserror_grad.zero();
+  nkm::MtxDbl roserror(3,4); roserror.zero();
+  nkm::MtxDbl roserror_grad(3,4); roserror_grad.zero();
   sd2d10.setJOut( jout);
   sd2d100.setJOut(jout);
   sd2d10K.setJOut(jout);
@@ -69,12 +67,12 @@ void validate_grad() {
   //km_params["optimization_method"]="none";
   km_params["optimization_method"]="local";
   km_params["order"] = "2";
-  km_params["reduced_polynomial"]=toString<bool>(true);
+  km_params["reduced_polynomial"]=nkm::toString<bool>(true);
 
-  KrigingModel kmros10( sd2d10 , km_params); kmros10.create();
-  KrigingModel kmros100( sd2d100, km_params); kmros100.create();
-  GradKrigingModel gkmros10( sd2d10 , km_params); gkmros10.create();
-  GradKrigingModel gkmros100( sd2d100, km_params); gkmros100.create();
+  nkm::KrigingModel kmros10( sd2d10 , km_params); kmros10.create();
+  nkm::KrigingModel kmros100( sd2d100, km_params); kmros100.create();
+  nkm::GradKrigingModel gkmros10( sd2d10 , km_params); gkmros10.create();
+  nkm::GradKrigingModel gkmros100( sd2d100, km_params); gkmros100.create();
 
   ///km_params["optimization_method"]="local";
 
@@ -167,10 +165,10 @@ void validate_grad()
   string validate2d_500="grad_validate2d_500.spd";
   string validate2d_10K="validate2d_10K.spd";
 
-  SurfData sd2d10( validate2d_10 , 2, 0, 3, 0, 1, 0);
-  SurfData sd2d100(validate2d_100, 2, 0, 3, 0, 1, 0);
-  SurfData sd2d500(validate2d_500, 2, 0, 3, 0, 1, 0);
-  SurfData sd2d10K(validate2d_10K, 2, 0, 3, 0, 0, 0);
+  nkm::SurfData sd2d10( validate2d_10 , 2, 0, 3, 0, 1, 0);
+  nkm::SurfData sd2d100(validate2d_100, 2, 0, 3, 0, 1, 0);
+  nkm::SurfData sd2d500(validate2d_500, 2, 0, 3, 0, 1, 0);
+  nkm::SurfData sd2d10K(validate2d_10K, 2, 0, 3, 0, 0, 0);
 #endif
 
   string paviani10d_50  ="grad_paviani10d_50.spd";
@@ -179,12 +177,12 @@ void validate_grad()
   string paviani10d_10K ="paviani10d_10K.spd";
 
 
-  MtxDbl yeval10(    10);
+  nkm::MtxDbl yeval10(    10);
 #ifndef __TIMING_BENCH__
-  MtxDbl yeval100(  100);
-  MtxDbl yeval500(  500);
+  nkm::MtxDbl yeval100(  100);
+  nkm::MtxDbl yeval500(  500);
 #endif
-  MtxDbl yeval10K(10000);
+  nkm::MtxDbl yeval10K(10000);
 
   int jout;
 
@@ -192,7 +190,7 @@ void validate_grad()
   km_params["constraint_type"] = "r";
   //km_params["order"] = "linear";
   km_params["order"] = "2";
-  km_params["reduced_polynomial"]=toString<bool>(true);
+  km_params["reduced_polynomial"]=nkm::toString<bool>(true);
 
 
 #ifndef __TIMING_BENCH__  
@@ -200,7 +198,7 @@ void validate_grad()
   printf("*** running rosenbrock 2D tests *********************************\n");
   printf("*****************************************************************\n");
 
-  MtxDbl roserror(3,4); roserror.zero();
+  nkm::MtxDbl roserror(3,4); roserror.zero();
   
   jout=0; //the 0th output column is Rosenbrock  
   sd2d10.setJOut( jout);
@@ -214,9 +212,9 @@ void validate_grad()
   //km_params["optimization_method"]="none";
   //km_params["nugget_formula"]="2";
 
-  GradKrigingModel kmros10( sd2d10 , km_params); kmros10.create();
-  GradKrigingModel kmros100(sd2d100, km_params); kmros100.create();
-  GradKrigingModel kmros500(sd2d500, km_params); kmros500.create();
+  nkm::GradKrigingModel kmros10( sd2d10 , km_params); kmros10.create();
+  nkm::GradKrigingModel kmros100(sd2d100, km_params); kmros100.create();
+  nkm::GradKrigingModel kmros500(sd2d500, km_params); kmros500.create();
 
   //exit(0);
 
@@ -263,16 +261,16 @@ void validate_grad()
   printf("*** running shubert 2D tests ************************************\n");
   printf("*****************************************************************\n");
 
-  MtxDbl shuerror(3,4); shuerror.zero();
+  nkm::MtxDbl shuerror(3,4); shuerror.zero();
   jout=1;
   sd2d10.setJOut( jout);
   sd2d100.setJOut(jout);
   sd2d500.setJOut(jout);
   sd2d10K.setJOut(jout);
 
-  GradKrigingModel kmshu10( sd2d10 , km_params); kmshu10.create();
-  GradKrigingModel kmshu100(sd2d100, km_params); kmshu100.create();
-  GradKrigingModel kmshu500(sd2d500, km_params); kmshu500.create();
+  nkm::GradKrigingModel kmshu10( sd2d10 , km_params); kmshu10.create();
+  nkm::GradKrigingModel kmshu100(sd2d100, km_params); kmshu100.create();
+  nkm::GradKrigingModel kmshu500(sd2d500, km_params); kmshu500.create();
 
 
   //evaluate error the 10 pt shubert kriging model at 10K points
@@ -317,7 +315,7 @@ void validate_grad()
   printf("*** running herbie 2D tests *************************************\n");
   printf("*****************************************************************\n");
 
-  MtxDbl herberror(3,4); herberror.zero();
+  nkm::MtxDbl herberror(3,4); herberror.zero();
 
   jout=2;
   sd2d10.setJOut( jout);
@@ -325,9 +323,9 @@ void validate_grad()
   sd2d500.setJOut(jout);
   sd2d10K.setJOut(jout);
 
-  GradKrigingModel kmherb10( sd2d10 , km_params); kmherb10.create();
-  GradKrigingModel kmherb100(sd2d100, km_params); kmherb100.create();
-  GradKrigingModel kmherb500(sd2d500, km_params); kmherb500.create();
+  nkm::GradKrigingModel kmherb10( sd2d10 , km_params); kmherb10.create();
+  nkm::GradKrigingModel kmherb100(sd2d100, km_params); kmherb100.create();
+  nkm::GradKrigingModel kmherb500(sd2d500, km_params); kmherb500.create();
 
   //evaluate error the 10 pt herbie kriging model at 10K points
   kmherb10.evaluate(yeval10K,sd2d10K.xr);
@@ -382,29 +380,29 @@ void validate_grad()
   km_params["upper_bounds"]="10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0";
 
 
-  MtxDbl paverror(3,4); paverror.zero();
+  nkm::MtxDbl paverror(3,4); paverror.zero();
 #ifndef __TIMING_BENCH__
-  SurfData sdpav50(  paviani10d_50  , 10, 0, 1, 0, 1, 0);
-  SurfData sdpav500( paviani10d_500 , 10, 0, 1, 0, 1, 0);
+  nkm::SurfData sdpav50(  paviani10d_50  , 10, 0, 1, 0, 1, 0);
+  nkm::SurfData sdpav500( paviani10d_500 , 10, 0, 1, 0, 1, 0);
 #endif
 #ifndef __FAST_TEST__
-  SurfData sdpav2500(paviani10d_2500, 10, 0, 1, 0, 1, 0);
+  nkm::SurfData sdpav2500(paviani10d_2500, 10, 0, 1, 0, 1, 0);
 #endif
-  SurfData sdpav10K( paviani10d_10K , 10, 0, 1, 0, 0, 0);
+  nkm::SurfData sdpav10K( paviani10d_10K , 10, 0, 1, 0, 0, 0);
 #ifndef __TIMING_BENCH__
-  GradKrigingModel kmpav50( sdpav50 , km_params); kmpav50.create();
-  GradKrigingModel kmpav500(sdpav500, km_params); kmpav500.create();
+  nkm::GradKrigingModel kmpav50( sdpav50 , km_params); kmpav50.create();
+  nkm::GradKrigingModel kmpav500(sdpav500, km_params); kmpav500.create();
 #endif
 #ifndef __FAST_TEST__
-  GradKrigingModel kmpav2500(sdpav2500, km_params); kmpav2500.create();
+  nkm::GradKrigingModel kmpav2500(sdpav2500, km_params); kmpav2500.create();
   //cout << kmpav2500.model_summary_string();
 #endif
 
 #ifndef __TIMING_BENCH__
-  MtxDbl yeval50(50);
+  nkm::MtxDbl yeval50(50);
 #endif
 #ifndef __FAST_TEST__
-  MtxDbl yeval2500(2500);
+  nkm::MtxDbl yeval2500(2500);
 #endif
 
 #ifndef __TIMING_BENCH__
@@ -519,10 +517,10 @@ void validate()
   string validate2d_500="grad_validate2d_500.spd";
   string validate2d_10K="grad_validate2d_10K.spd";
 
-  SurfData sd2d10( validate2d_10 , 2, 0, 3, 0, 1, 0);
-  SurfData sd2d100(validate2d_100, 2, 0, 3, 0, 1, 0);
-  SurfData sd2d500(validate2d_500, 2, 0, 3, 0, 1, 0);
-  SurfData sd2d10K(validate2d_10K, 2, 0, 3, 0, 1, 0);
+  nkm::SurfData sd2d10( validate2d_10 , 2, 0, 3, 0, 1, 0);
+  nkm::SurfData sd2d100(validate2d_100, 2, 0, 3, 0, 1, 0);
+  nkm::SurfData sd2d500(validate2d_500, 2, 0, 3, 0, 1, 0);
+  nkm::SurfData sd2d10K(validate2d_10K, 2, 0, 3, 0, 1, 0);
 #endif
 
   string paviani10d_50  ="grad_paviani10d_50.spd";
@@ -531,12 +529,12 @@ void validate()
   string paviani10d_10K ="grad_paviani10d_10K.spd";
 
 
-  MtxDbl yeval10(    10);
+  nkm::MtxDbl yeval10(    10);
 #ifndef __TIMING_BENCH__
-  MtxDbl yeval100(  100);
-  MtxDbl yeval500(  500);
+  nkm::MtxDbl yeval100(  100);
+  nkm::MtxDbl yeval500(  500);
 #endif
-  MtxDbl yeval10K(10000);
+  nkm::MtxDbl yeval10K(10000);
 
   int jout;
 
@@ -544,7 +542,7 @@ void validate()
   km_params["constraint_type"] = "r";
   //km_params["order"] = "linear";
   km_params["order"] = "2";
-  km_params["reduced_polynomial"]=toString<bool>(true);
+  km_params["reduced_polynomial"]=nkm::toString<bool>(true);
 
 
 #ifndef __TIMING_BENCH__  
@@ -552,7 +550,7 @@ void validate()
   printf("*** running rosenbrock 2D tests *********************************\n");
   printf("*****************************************************************\n");
 
-  MtxDbl roserror(3,4); roserror.zero();
+  nkm::MtxDbl roserror(3,4); roserror.zero();
   
   jout=0; //the 0th output column is Rosenbrock  
   sd2d10.setJOut( jout);
@@ -566,9 +564,9 @@ void validate()
   //km_params["optimization_method"]="none";
   //km_params["nugget_formula"]="2";
 
-  KrigingModel kmros10( sd2d10 , km_params); kmros10.create();
-  KrigingModel kmros100(sd2d100, km_params); kmros100.create();
-  KrigingModel kmros500(sd2d500, km_params); kmros500.create();
+  nkm::KrigingModel kmros10( sd2d10 , km_params); kmros10.create();
+  nkm::KrigingModel kmros100(sd2d100, km_params); kmros100.create();
+  nkm::KrigingModel kmros500(sd2d500, km_params); kmros500.create();
 
   //exit(0);
 
@@ -615,16 +613,16 @@ void validate()
   printf("*** running shubert 2D tests ************************************\n");
   printf("*****************************************************************\n");
 
-  MtxDbl shuerror(3,4); shuerror.zero();
+  nkm::MtxDbl shuerror(3,4); shuerror.zero();
   jout=1;
   sd2d10.setJOut( jout);
   sd2d100.setJOut(jout);
   sd2d500.setJOut(jout);
   sd2d10K.setJOut(jout);
 
-  KrigingModel kmshu10( sd2d10 , km_params); kmshu10.create();
-  KrigingModel kmshu100(sd2d100, km_params); kmshu100.create();
-  KrigingModel kmshu500(sd2d500, km_params); kmshu500.create();
+  nkm::KrigingModel kmshu10( sd2d10 , km_params); kmshu10.create();
+  nkm::KrigingModel kmshu100(sd2d100, km_params); kmshu100.create();
+  nkm::KrigingModel kmshu500(sd2d500, km_params); kmshu500.create();
 
 
   //evaluate error the 10 pt shubert kriging model at 10K points
@@ -669,7 +667,7 @@ void validate()
   printf("*** running herbie 2D tests *************************************\n");
   printf("*****************************************************************\n");
 
-  MtxDbl herberror(3,4); herberror.zero();
+  nkm::MtxDbl herberror(3,4); herberror.zero();
 
   jout=2;
   sd2d10.setJOut( jout);
@@ -677,9 +675,9 @@ void validate()
   sd2d500.setJOut(jout);
   sd2d10K.setJOut(jout);
 
-  KrigingModel kmherb10( sd2d10 , km_params); kmherb10.create();
-  KrigingModel kmherb100(sd2d100, km_params); kmherb100.create();
-  KrigingModel kmherb500(sd2d500, km_params); kmherb500.create();
+  nkm::KrigingModel kmherb10( sd2d10 , km_params); kmherb10.create();
+  nkm::KrigingModel kmherb100(sd2d100, km_params); kmherb100.create();
+  nkm::KrigingModel kmherb500(sd2d500, km_params); kmherb500.create();
 
   //evaluate error the 10 pt herbie kriging model at 10K points
   kmherb10.evaluate(yeval10K,sd2d10K.xr);
@@ -734,29 +732,29 @@ void validate()
   km_params["upper_bounds"]="10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0";
 
 
-  MtxDbl paverror(3,4); paverror.zero();
+  nkm::MtxDbl paverror(3,4); paverror.zero();
 #ifndef __TIMING_BENCH__
-  SurfData sdpav50( paviani10d_50 , 10, 0, 1, 0, 1, 0);
-  SurfData sdpav500(paviani10d_500, 10, 0, 1, 0, 1, 0);
+  nkm::SurfData sdpav50( paviani10d_50 , 10, 0, 1, 0, 1, 0);
+  nkm::SurfData sdpav500(paviani10d_500, 10, 0, 1, 0, 1, 0);
 #endif
 #ifndef __FAST_TEST__
-  SurfData sdpav2500(paviani10d_2500, 10, 0, 1, 0, 1, 0);
+  nkm::SurfData sdpav2500(paviani10d_2500, 10, 0, 1, 0, 1, 0);
 #endif
-  SurfData sdpav10K(paviani10d_10K, 10, 0, 1, 0, 1, 0);
+  nkm::SurfData sdpav10K(paviani10d_10K, 10, 0, 1, 0, 1, 0);
 #ifndef __TIMING_BENCH__
-  KrigingModel kmpav50( sdpav50 , km_params); kmpav50.create();
-  KrigingModel kmpav500(sdpav500, km_params); kmpav500.create();
+  nkm::KrigingModel kmpav50( sdpav50 , km_params); kmpav50.create();
+  nkm::KrigingModel kmpav500(sdpav500, km_params); kmpav500.create();
 #endif
 #ifndef __FAST_TEST__
-  KrigingModel kmpav2500(sdpav2500, km_params); kmpav2500.create();
+  nkm::KrigingModel kmpav2500(sdpav2500, km_params); kmpav2500.create();
   //cout << kmpav2500.model_summary_string();
 #endif
 
 #ifndef __TIMING_BENCH__
-  MtxDbl yeval50(50);
+  nkm::MtxDbl yeval50(50);
 #endif
 #ifndef __FAST_TEST__
-  MtxDbl yeval2500(2500);
+  nkm::MtxDbl yeval2500(2500);
 #endif
 
 #ifndef __TIMING_BENCH__

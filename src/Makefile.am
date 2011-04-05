@@ -63,7 +63,7 @@ libsurfpack_la_LIBADD = $(SUBLIBS)
 
 ## Specifies additional places for the compiler to look for files that
 ## are requested via #include.
-INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src \
+INCLUDES = -I$(top_builddir) -I$(top_srcdir) -I$(top_srcdir)/src \
 	   -I$(top_srcdir)/src/interpreter \
 	   -I$(top_srcdir)/src/surfaces
 

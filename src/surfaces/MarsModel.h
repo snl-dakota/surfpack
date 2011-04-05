@@ -10,6 +10,8 @@
 #define __MARS_MODEL_H__
 #ifdef HAVE_CONFIG_H
 #include "surfpack_config.h"
+#else
+#include "surf77_config.h"
 #endif
 
 #include "surfpack_system_headers.h"
@@ -19,18 +21,6 @@ class SurfPoint;
 
 typedef float real;
 
-#define MARS_F77 F77_FUNC(mars,MARS)
-#ifdef __cplusplus
-extern "C" /* prevent C++ name mangling */
-#endif
-void MARS_F77(int&, int&, real*, real*, real*, int&, int&, int*,
-	      real*, int*, real*, double*, int*);
-
-#define FMODM_F77 F77_FUNC(fmodm,FMODM)
-#ifdef __cplusplus
-extern "C" /* prevent C++ name mangling */
-#endif
-void FMODM_F77(int&, int&, real*, real*, int*, real*, real*);
 
 class MarsModel : public SurfpackModel
 {

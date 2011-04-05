@@ -4,9 +4,8 @@
 //#define __SURFMAT_ERR_CHECK__
 //#define __SURFMAT_ZERO_MEM__
 
-#ifdef HAVE_CONFIG_H
-#include "surfpack_config.h"
-#endif
+// WJB - ToDo: move Fortran name mangling macros into a lower-level pkg header
+#include "surfpack_system_headers.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -16,11 +15,6 @@
 
 #include "NKM_SurfMat_Native.hpp" //a native implementation
 //#include "SurfMat_Teuchos.hpp" //a wrapper for the Teuchos Serial Dense Matrix class
-
-namespace nkm {
-
-typedef SurfMat<double> MtxDbl;
-typedef SurfMat<int> MtxInt;
 
 /***************************************************************************/
 /***************************************************************************/
@@ -33,102 +27,43 @@ typedef SurfMat<int> MtxInt;
 
 
 /***************************************************************************/
-/**** BLAS Fortran to C name mangling                                   ****/
+/**** BLAS/LAPACK Fortran mangling                                      ****/
 /***************************************************************************/
 
-// Vector-vector inner product
-#define DDOT_F77 F77_FUNC(ddot, DDOT)
+#ifdef HAVE_CONFIG_H
+// Tolerate F77_FUNC macro redefinition warnings in the autotools build
+#define DPOTRF_F77 F77_FUNC(dpotrf,DPOTRF)
+#define DPOTRI_F77 F77_FUNC(dpotri,DPOTRI)
+#define DPOTRS_F77 F77_FUNC(dpotrs,DPOTRS)
+#define DGETRS_F77 F77_FUNC(dgetrs,DGETRS)
+#define DLANGE_F77 F77_FUNC(dlange,DLANGE)
+#define DPOCON_F77 F77_FUNC(dpocon,DPOCON)
+#define DGECON_F77 F77_FUNC(dgecon,DGECON)
+#define DSYEV_F77  F77_FUNC(dsyev,DSYEV)
+
+#else
+// Use the CMake generated fortran name mangling macros (eliminate warnings)
+#define DPOTRF_F77 SURF77_GLOBAL(dpotrf,DPOTRF)
+#define DPOTRI_F77 SURF77_GLOBAL(dpotri,DPOTRI)
+#define DPOTRS_F77 SURF77_GLOBAL(dpotrs,DPOTRS)
+#define DGETRS_F77 SURF77_GLOBAL(dgetrs,DGETRS)
+#define DLANGE_F77 SURF77_GLOBAL(dlange,DLANGE)
+#define DPOCON_F77 SURF77_GLOBAL(dpocon,DPOCON)
+#define DGECON_F77 SURF77_GLOBAL(dgecon,DGECON)
+#define DSYEV_F77  SURF77_GLOBAL(dsyev,DSYEV)
+#endif  // end of HAVE_CONFIG_H F77 mangling conditional
+
 #ifdef __cplusplus
-extern "C" /* prevents C++ name mangling */
+extern "C" { // prevent C++ name mangling
 #endif
-double DDOT_F77(const int* n, const double* x, const int* incx,
-		const double* y, const int* incy);
-
-
-// Matrix-vector multiplication
-#define DGEMV_F77 F77_FUNC(dgemv,DGEMV)
-#ifdef __cplusplus
-extern "C"  /* prevent C++ name mangling */
-#endif
-void DGEMV_F77(char* trans, const int* m, const int* n, const double* alpha, 
-	       const double* A, const int* lda, const double* x,
-	       const int* incx, const double* beta, double* y, const int* incy);
-
-// Matrix-matrix multiplication
-#define DGEMM_F77 F77_FUNC(dgemm,DGEMM)
-#ifdef __cplusplus
-extern "C"  /* prevent C++ name mangling */
-#endif
-void DGEMM_F77(char* transa, char* transb, const int* m, const int* n,
-	       const int* k, const double* alpha, const double* A,
-	       const int* lda, const double* B, const int* ldb, 
-	       const double* beta, double* C, const int* ldc);
-
-/***************************************************************************/
-/**** LAPACK Fortran to C name mangling                                 ****/
-/***************************************************************************/
 
 // Perform Cholesky factorization
-#define DPOTRF_F77 F77_FUNC(dpotrf,DPOTRF)
-#ifdef __cplusplus
-extern "C"  /* prevent C++ name mangling */
-#endif
 void DPOTRF_F77(const char* uplo, const int* n, double* AChol, const int* lda, int* info);
 
-
 // Compute the inverse of a matrix expressed as an cholesky decomposition (i.e., call dpotrf on the matrix first)
-#define DPOTRI_F77 F77_FUNC(dpotri,DPOTRI)
-#ifdef __cplusplus
-extern "C"  /* prevent C++ name mangling */
-#endif
 void DPOTRI_F77(const char* uplo, const int* n, double* ACholInv, const int* lda, int* info);
 
-// solve A*X=B for X, where A={A || A^T} after A has been Cholesky factorized (i.e., call dptorf on the matrix first)
-#define DPOTRS_F77 F77_FUNC(dpotrs,DPOTRS)
-#ifdef __cplusplus
-extern "C"  /* prevent C++ name mangling */
-#endif
-void DPOTRS_F77(const char* uplo, const int* n, const int* nRHS, 
-		const double* AChol,
-		const int* ldAChol , double* RHS, 
-		const int* ldRHS, int* info);
-
-
-//function to compute the condition number of a matrix from the Cholesky factorization
-#define DPOCON_F77 F77_FUNC(dpocon,DPOCON)
-#ifdef __cplusplus
-extern "C"  /* prevent C++ name mangling */
-#endif
-void DPOCON_F77(const char* uplo, const int* n, const double* AChol, const int* lda, const double* anorm, double* rconda, double* work, int* iwork, int* info);
-  
-  
-
-
-
-
-// Perform LU factorization
-#define DGETRF_F77 F77_FUNC(dgetrf,DGETRF)
-#ifdef __cplusplus
-extern "C"  /* prevent C++ name mangling */
-#endif
-void DGETRF_F77(const int* m, const int* n, double* a, const int* lda,
-		int* ipiv, int* info);
-
-
-// Compute the inverse of a matrix expressed as an LU decomposition (i.e., call dgetrf on the matrix first)
-#define DGETRI_F77 F77_FUNC(dgetri,DGETRI)
-#ifdef __cplusplus
-extern "C"  /* prevent C++ name mangling */
-#endif
-void DGETRI_F77(const int* n, double* a, const int* lda, const int* ipiv,
-		double* work, const int* lwork, int* info);
-
-
 // solve A*X=B for X, where A={A || A^T} after A has been LU factorize (i.e., call dgetrf on the matrix first)
-#define DGETRS_F77 F77_FUNC(dgetrs,DGETRS)
-#ifdef __cplusplus
-extern "C"  /* prevent C++ name mangling */
-#endif
 void DGETRS_F77(char* transLU, const int* n, const int* nRHS, 
 		const double* LU, const int* ldLU , const int* ipiv, 
 		double* RHS, const int* ldRHS, int* info);
@@ -138,50 +73,34 @@ void DGETRS_F77(char* transLU, const int* n, const int* nRHS,
 //1 one norm of a matrix, maximum column sum, 
 //I infinity norm of matrix, maximum row sum,or 
 //F frobenius norm of a matrix, square root of sum of squares
-#define DLANGE_F77 F77_FUNC(dlange,DLANGE)
-#ifdef __cplusplus
-extern "C" /* prevent C++ name mangling */
-#endif
 double DLANGE_F77(char *whichnorm, int *M, int *N, const double *A, int *LDA,
 		  double *work);
 
+// solve A*X=B for X, where A={A || A^T} after A has been Cholesky factorized (i.e., call dptorf on the matrix first)
+void DPOTRS_F77(const char* uplo, const int* n, const int* nRHS, 
+		const double* AChol,
+		const int* ldAChol , double* RHS, 
+		const int* ldRHS, int* info);
+
+//function to compute the condition number of a matrix from the Cholesky factorization
+void DPOCON_F77(const char* uplo, const int* n, const double* AChol, const int* lda,
+                const double* anorm, double* rconda, double* work, int* iwork, int* info);
+
 //function to compute the condition number of a matrix
-#define DGECON_F77 F77_FUNC(dgecon,DGECON)
-#ifdef __cplusplus
-extern "C"  /* prevent C++ name mangling */
-#endif
 void DGECON_F77(char *whichnorm, int *N, const double *ALU, int *LDA, double *anorm,
 		double *rcond, double *work, int *iwork, int *info);
 
-// Least-squares solution to linear system of equations
-#define DGELS_F77 F77_FUNC(dgels,DGELS)
-#ifdef __cplusplus
-extern "C" /* prevent C++ name mangling */
-#endif
-void DGELS_F77(const char* trans, const int* nrows, const int* ncols,
-	       const int* nrhs, double* A, const int* lda, double* b,
-	       const int* ldb, double* work, const int* lwork, int* info);
-
-// Performs least-squares solve subject to equality constraints
-#define DGGLSE_F77 F77_FUNC(dgglse,DGGLSE)
-#ifdef __cplusplus
-extern "C" /* prevent C++ name mangling */
-#endif
-void DGGLSE_F77(const int* m, const int* n, const int* p, double* A,
-		const int* lda, double* B, const int* ldb, double* c,
-		double* d, double* x, double* work, const int* lwork,
-		int* info);
-
 /// determines eigenvalues and (optionally) eigenvectors for a real symmetric matrix
-#define DSYEV_F77 F77_FUNC(dsyev,DSYEV)
-#ifdef __cplusplus
-extern "C" /* prevent C++ name mangling */
-#endif
 void DSYEV_F77(const char* jobz, const char* uplo, const int* N, 
 	       double *A_EIGVECT, const int* lda, double* eigval, 
 	       double* work, const int* lwork, int* info);
+}
 
 
+namespace nkm {
+
+typedef SurfMat<double> MtxDbl;
+typedef SurfMat<int> MtxInt;
 
 
 /***************************************************************************/

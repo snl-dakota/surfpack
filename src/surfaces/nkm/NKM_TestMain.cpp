@@ -10,13 +10,11 @@ using std::cout;
 using std::endl;
 using std::string;
 
-using namespace nkm;
-
 void get_input_file_params(string& filename, int& npts, int& nvarsr, 
 			   int& nvarsi, int& nout, int& jout, 
 			   int& skip_columns, int test_number);
-//void read_surf_data(SurfData& sd, int test_number);
-void Press(SurfData& sd);
+//void read_surf_data(nkm::SurfData& sd, int test_number);
+void Press(nkm::SurfData& sd);
 void validate();
 
 // will change this to a "unit testing" main function later
@@ -34,20 +32,19 @@ int main(int argc, char* argv[])
   //filename="testout.spd"; //only used this to make sure input could read output
 
   //cout << "filename=[" << filename << "]\n";
-  SurfData sd(filename, nvarsr, nvarsi, nout, jout, skip_columns);
-  //SurfData sd;
+  nkm::SurfData sd(filename, nvarsr, nvarsi, nout, jout, skip_columns);
+  //nkm::SurfData sd;
 
   //read_surf_data(sd, test_number);
     
-  //KrigingModel km(sd);
+  //nkm::KrigingModel km(sd);
 
   Press(sd);
-
   return 0;
 }
 
 // this reads XR and Y, and scales only XR so that the result of Press will have the same units as Surfpack
-//void read_surf_data(SurfData& sd, int test_number)
+//void read_surf_data(nkm::SurfData& sd, int test_number)
 void get_input_file_params(string& filename, int& npts, int& nvarsr, 
 			   int& nvarsi, int& nout, int& jout, 
 			   int& skip_columns, int test_number)
@@ -134,7 +131,7 @@ void get_input_file_params(string& filename, int& npts, int& nvarsr,
   return;
 
 #ifdef nononono
-  MtxDbl XR(npts,nvarsr),Y(npts);
+  nkm::MtxDbl XR(npts,nvarsr),Y(npts);
   
   for(i=0; i<npts; i++) {
     for(j=0; j<nvarsr; j++)
@@ -149,7 +146,7 @@ void get_input_file_params(string& filename, int& npts, int& nvarsr,
   }
   fclose(fp);
   
-  sd=SurfData(XR,Y);
+  sd=nkm::SurfData(XR,Y);
   
   /*
     printf("minmax(XR)={%g,%g}; minmax(xr)={%g, %g}\n",XR.minElem(),XR.maxElem(),
@@ -166,7 +163,7 @@ void get_input_file_params(string& filename, int& npts, int& nvarsr,
 #endif
 }
 
-void Press(SurfData& sd)
+void Press(nkm::SurfData& sd)
 {
   /*
     assert((sd.npts ==sd.xr.getNRows())&&
@@ -184,11 +181,11 @@ void Press(SurfData& sd)
   km_params["constraint_type"] = "r";
   km_params["order"] = "linear";
 
-  MtxDbl yeval(npts), y(npts);
-  KrigingModel km(sd, km_params);
-  SurfData sdeval(sd);
+  nkm::MtxDbl yeval(npts), y(npts);
+  nkm::KrigingModel km(sd, km_params);
+  nkm::SurfData sdeval(sd);
   km.create();
-  MtxDbl d1y, d2y;
+  nkm::MtxDbl d1y, d2y;
   //km.evaluate_d1y(d1y,sd.xr);
   //km.evaluate_d2y(d2y,sd.xr);
   km.evaluate(yeval,sd.xr);
@@ -204,13 +201,13 @@ void Press(SurfData& sd)
   }
   kmrms=sqrt(kmrms/npts);
   
-  LinearRegressionModel lrm(sd);
+  nkm::LinearRegressionModel lrm(sd);
   
   double press_score_km =0.0;
   double press_score_lrm=0.0;
 
   
-  SurfData rest, extracted;
+  nkm::SurfData rest, extracted;
   
   
   for(int ipt=0; ipt<npts; ipt++) {
@@ -271,7 +268,7 @@ void Press(SurfData& sd)
     }
     */
 
-    KrigingModel km(rest, km_params);
+    nkm::KrigingModel km(rest, km_params);
     km.create();
 
     temp_double=km.evaluate(extracted.xr)-extracted.y(extracted.getJOut());
@@ -284,7 +281,7 @@ void Press(SurfData& sd)
 
     sd.extractPoints(rest,extracted,ipt);
 
-    LinearRegressionModel lrm(rest);
+    nkm::LinearRegressionModel lrm(rest);
     //printf("\nNpoly=%d rms=%g\n",lrm.getNPoly(),lrm.getRMS());
 
     temp_double=lrm.evaluate(extracted.xr)-extracted.y(extracted.getJOut());

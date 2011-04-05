@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 2.8)
 
 project("Surfpack" CXX C Fortran)
 
@@ -22,18 +22,8 @@ else()
 #  FIND_PACKAGE(LAPACK REQUIRED)
 endif() 
 
-include_directories("${PROJECT_BINARY_DIR}")
+FortranCInterface_HEADER(include/surf77_config.h MACRO_NAMESPACE SURF77_)
 
-configure_file("${PROJECT_SOURCE_DIR}/cmake/surfpack_config.h.in"
-  "${PROJECT_BINARY_DIR}/surfpack_config.h"
-  @ONLY
-)
-
-add_definitions("-DHAVE_CONFIG_H")
-#add_definitions("-DF77_FUNC_=@FortranCInterface_GLOBAL_MACRO@")
-
-#SET(Surfpack_ENABLE_CXX ON)
-#SET(Surfpack_ENABLE_Fortran ON)
 set(Surfpack_ENABLE_DEBUG OFF)
 
 #INCLUDE(CTest)
@@ -43,9 +33,9 @@ add_subdirectory(src)
 #add_subdirectory(tests)
 
 #Keep track of what libraries should be included in libsurfpack
-# WJB ToDo: ask gurus about build ordering - would like to build f77 code FIRST!
 set(SUBLIBS ${SUBLIBS} surfpack)
 
 #Descend into source subdirectories
 ##SET(SUBLIBS ${SUBLIBS} mars surfaces conmin)
 set(SUBLIBS ${SUBLIBS} mars surfaces nkm)
+

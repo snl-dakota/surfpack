@@ -1,5 +1,5 @@
 
-include_directories(${PROJECT_SOURCE_DIR}/src)
+include_directories(${Surfpack_SOURCE_DIR}/src)
 
 ## nkm library sources.
 set(nkm_src
