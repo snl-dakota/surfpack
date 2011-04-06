@@ -40,6 +40,8 @@ set(Surfpack_src
 # WJB - ToDo: look into CMake template support features: SurfpackMatrix.tpl
 
 add_library(surfpack ${Surfpack_src})
-#TARGET_LINK_LIBRARIES(surfpack_src mars teuchos conmin ${LAPACK_LIBRARIES})
-INSTALL(TARGETS surfpack DESTINATION lib)
+#target_link_libraries(surfpack_src mars teuchos conmin ${LAPACK_LIBRARIES})
+install(TARGETS surfpack DESTINATION lib)
+
+install(FILES SurfpackMatrix.h surfpack_system_headers.h DESTINATION include)
 

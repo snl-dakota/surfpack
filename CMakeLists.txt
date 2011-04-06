@@ -22,7 +22,23 @@ else()
 #  FIND_PACKAGE(LAPACK REQUIRED)
 endif() 
 
+# WJB - ToDo: EVENTUALLY, eliminate need for configuration header files
+# WJB - ToDo: consider option instead? option(DAKOTA_CMAKE_SURFPACK "string" ON)
+add_definitions("-DDAKOTA_CMAKE_SURFPACK")
+
+include_directories(${Surfpack_BINARY_DIR}/include)
+
 FortranCInterface_HEADER(include/surf77_config.h MACRO_NAMESPACE SURF77_)
+
+configure_file("${Surfpack_SOURCE_DIR}/surfpack_config.h.cmake.in"
+  "${Surfpack_BINARY_DIR}/include/surfpack_config.h"
+  @ONLY
+)
+
+install(FILES ${Surfpack_BINARY_DIR}/include/surfpack_config.h
+  ${Surfpack_BINARY_DIR}/include/surf77_config.h
+  DESTINATION include
+)
 
 set(Surfpack_ENABLE_DEBUG OFF)
 

@@ -1,0 +1,7 @@
+// Maintain a "virtually empty" configuration header file until ALL
+// occurences of '-DHAVE_CONFIG_H' can be removed from the CMake build
+
+#if 0
+#cmakedefine DAKOTA_CMAKE_SURFPACK
+#endif
+
