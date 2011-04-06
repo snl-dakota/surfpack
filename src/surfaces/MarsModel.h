@@ -10,8 +10,6 @@
 #define __MARS_MODEL_H__
 #ifdef HAVE_CONFIG_H
 #include "surfpack_config.h"
-#else
-#include "surf77_config.h"
 #endif
 
 #include "surfpack_system_headers.h"

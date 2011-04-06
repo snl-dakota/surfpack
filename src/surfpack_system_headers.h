@@ -8,6 +8,7 @@
 
 #ifndef SURFPACK_SYSTEM_HEADERS_H
 #define SURFPACK_SYSTEM_HEADERS_H
+
 #include <algorithm>
 #include <limits>
 #include <cassert>
@@ -36,7 +37,6 @@
 #include <string>
 #include <sys/time.h>
 #include <vector>
-#endif
 
 typedef std::vector<double> VecDbl;
 typedef std::vector<double>::const_iterator VecDblIt;
@@ -50,3 +50,6 @@ typedef std::set< unsigned > SetUns;
 typedef std::pair< std::string, std::string > ModelParam;
 typedef std::map< std::string, std::string> ParamMap;
 typedef std::pair< std::string, ParamMap> Command;
+
+#endif // SURFPACK_SYSTEM_HEADERS_H
+

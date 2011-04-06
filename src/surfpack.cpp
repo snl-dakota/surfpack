@@ -12,6 +12,14 @@
 #include "surfpack.h"
 #include <cstdlib> // for rand
 
+#define DGGLSE_F77 F77_FUNC(dgglse,DGGLSE)
+// Performs least-squares solve subject to equality constraints
+extern "C"
+void DGGLSE_F77(const int* m, const int* n, const int* p, double* A,
+                const int* lda, double* B, const int* ldb, double* c,
+                double* d, double* x, double* work, const int* lwork,
+                int* info);
+
 using std::cerr;
 using std::endl;
 using std::ifstream;

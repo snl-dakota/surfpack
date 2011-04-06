@@ -12,9 +12,8 @@
 #define FMODM_F77 SURF77_GLOBAL(fmodm,FMODM)
 #define MARS_F77  SURF77_GLOBAL(mars,MARS)
 #endif
-#ifdef __cplusplus
+
 extern "C" { // prevent C++ name mangling
-#endif
   void FMODM_F77(int&, int&, real*, real*, int*, real*, real*);
 
   void MARS_F77(int&, int&, real*, real*, real*, int&, int&, int*,
