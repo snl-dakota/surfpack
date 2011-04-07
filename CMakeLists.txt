@@ -23,8 +23,9 @@ else()
 endif() 
 
 # WJB - ToDo: EVENTUALLY, eliminate need for configuration header files
-# WJB - ToDo: consider option instead? option(DAKOTA_CMAKE_SURFPACK "string" ON)
-add_definitions("-DDAKOTA_CMAKE_SURFPACK")
+add_definitions("-DHAVE_CONFIG_H")
+# WJB - ToDo: consider option instead? option(HAVE_EMPTY_CONFIG_H "string" ON)
+add_definitions("-DHAVE_EMPTY_CONFIG_H")
 
 include_directories(${Surfpack_BINARY_DIR}/include)
 

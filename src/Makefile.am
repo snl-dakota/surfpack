@@ -39,6 +39,7 @@ libsurfpack_la_SOURCES = AxesBounds.cpp \
 			 surfpack.h \
 			 SurfpackMatrix.h \
 			 SurfpackMatrix.tpl \
+			 surfpack_LAPACK_wrappers.h \
 			 surfpack_system_headers.h \
 			 SurfpackInterface.h \
 			 SurfpackInterface.cpp \
