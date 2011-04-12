@@ -1,5 +1,5 @@
 
-include_directories(${Surfpack_BINARY_DIR}/include
+include_directories(${Surfpack_BINARY_DIR}
                     ${Surfpack_SOURCE_DIR}/src
                     ${Surfpack_SOURCE_DIR}/src/surfaces)
 # WJB - ToDo: introduce interpreter dependency when I am ready for LEX/YACC
