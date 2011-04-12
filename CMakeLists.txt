@@ -23,9 +23,7 @@ else()
 endif() 
 
 # WJB - ToDo: EVENTUALLY, eliminate need for configuration header files
-add_definitions("-DHAVE_CONFIG_H")
-# WJB - ToDo: consider option instead? option(HAVE_EMPTY_CONFIG_H "string" ON)
-add_definitions("-DHAVE_EMPTY_CONFIG_H")
+remove_definitions("-DHAVE_CONFIG_H")
 
 include_directories(${Surfpack_BINARY_DIR}/include)
 
@@ -43,7 +41,7 @@ install(FILES ${Surfpack_BINARY_DIR}/include/surfpack_config.h
 
 set(Surfpack_ENABLE_DEBUG OFF)
 
-#INCLUDE(CTest)
+#include(CTest)
 
 add_subdirectory(packages)
 add_subdirectory(src)

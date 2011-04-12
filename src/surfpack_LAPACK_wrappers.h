@@ -11,10 +11,8 @@
 
 #ifdef HAVE_CONFIG_H
 #include "surfpack_config.h"
-/* WJB - ToDo:  one more iteration to get the CMake build functional
-#elif HAVE_EMPTY_CONFIG_H
+#else
 #include "surf77_config.h"
-*/
 #endif
 
 /***************************************************************************/
@@ -43,8 +41,8 @@
 #define DGECON_F77 F77_FUNC(dgecon,DGECON)
 #define DGGLSE_F77 F77_FUNC(dgglse,DGGLSE)
 #define DSYEV_F77  F77_FUNC(dsyev,DSYEV)
-/*
-#elif HAVE_EMPTY_CONFIG_H
+//
+#else
 // Use the CMake generated fortran name mangling macros (eliminate warnings)
 #define DGETRF_F77 SURF77_GLOBAL(dgetrf,DGETRF) 
 #define DGETRI_F77 SURF77_GLOBAL(dgetri,DGETRI) 
@@ -62,7 +60,7 @@
 #define DGECON_F77 SURF77_GLOBAL(dgecon,DGECON)
 #define DGGLSE_F77 SURF77_GLOBAL(dgglse,DGGLSE)
 #define DSYEV_F77  SURF77_GLOBAL(dsyev,DSYEV)
-*/
+//
 #endif
 
 /***************************************************************************/

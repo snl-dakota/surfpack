@@ -1,3 +1,5 @@
+# CMakeLists.txt for Surfpack surfaces library.
+
 include_directories(${Surfpack_SOURCE_DIR}/src)
 
 subdirs(nkm)
