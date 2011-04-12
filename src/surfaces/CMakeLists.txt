@@ -26,5 +26,5 @@ set(surfaces_src
 
 add_library(surfaces ${surfaces_src})
 #target_link_libraries(surfaces ${LAPACK_LIBRARIES})
-install(TARGETS surfaces DESTINATION lib)
+install(TARGETS surfaces EXPORT ${Dakota_export_target} DESTINATION lib)
 

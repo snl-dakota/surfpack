@@ -13,5 +13,5 @@ set(nkm_src
 
 add_library(nkm ${nkm_src})
 #target_link_libraries(surfaces ${LAPACK_LIBRARIES})
-install(TARGETS nkm DESTINATION lib)
+install(TARGETS nkm EXPORT ${Dakota_export_target} DESTINATION lib)
 
