@@ -13,6 +13,8 @@ using std::cerr;
 using std::endl;
 using std::ostringstream;
 
+  //#define __NKM_UNBIASED_LIKE__
+
 //#define __KRIGING_DER_TEST__
 
 /***********************************************************************/
@@ -542,7 +544,7 @@ void KrigingModel::create()
   //printf("]\n");
 
   masterObjectiveAndConstraints(correlations, 1, 0);
-  //cout << model_summary_string();
+  cout << model_summary_string();
   //deallocate matrices we no longer need after emulator has been created
 
   //temporary variables used by masterObjectiveAndConstraints
@@ -598,7 +600,7 @@ std::string KrigingModel::model_summary_string() const {
     else oss <<"full ";
   }
   oss << "polynomial of order=" << polyOrder << 
-    "; rcond(R)=" << rcondR << "; rcondGtran_Rinv_G=" << rcondGtran_Rinv_G 
+    "; rcond(R)=" << rcondR << "; rcond(Gtran_Rinv_G)=" << rcondGtran_Rinv_G 
       << "; nugget=" << nug << ".\n";
 	
   oss << "Beta= (" << betaHat(0);
@@ -1552,16 +1554,30 @@ void KrigingModel::masterObjectiveAndConstraints(const MtxDbl& theta, int obj_de
     rhs.newSize(numPoints);
     solve_after_Chol_fact(rhs,RChol,temp2);
 
-    //estVarianceMLE = dot_product(temp2,rhs)/numPoints; //the "Koehler and Owen" way
-    estVarianceMLE = dot_product(temp2,rhs)/(numPoints-ntrend); //following Rasmussen and Williams (2006) we assume a "vague prior" (i.e. that we don't know anything) for betaHat, then like "Koehler and Owen" we replace the covariance matrix K with (unadjusted variance)*R (where R is the correlation matrix) and find unadjusted variance through maximum likelihood.
+
+
 
     //it's actually the log likelihood, which we want to maximize
     //likelihood = -0.5*(numPoints*(log(4.0*acos(0.0))+log(estVarianceMLE)+1)
     //		       +log(determinant_R)); //from Koehler and Owen 
 
-    //likelihood = -0.5*(log(estVarianceMLE)+log_determinant_R/numPoints); //the "Koehler and Owen" way but dropping constant terms and on a per point basis
+#ifdef __NKM_UNBIASED_LIKE__
+    //derived following: C. E. Rasmussen & C. K. I. Williams, Gaussian Processes for Machine Learning, the MIT Press, 2006, ISBN 026218253X. c 2006 Massachusetts Institute of Technology. www.GaussianProcess.org/gpml...  we assume a "vague prior" (i.e. that we don't know anything) for betaHat, then like "Koehler and Owen" we replace the covariance matrix K with (unadjusted variance)*R (where R is the correlation matrix) and find unadjusted variance and betaHat through maximum likelihood.
 
-    likelihood = -0.5*(log(estVarianceMLE)+(log_determinant_R+log_determinant_Gtran_Rinv_G)/(numPoints-ntrend)); //derived following: C. E. Rasmussen & C. K. I. Williams, Gaussian Processes for Machine Learning, the MIT Press, 2006, ISBN 026218253X. c 2006 Massachusetts Institute of Technology. www.GaussianProcess.org/gpml... where we assume a "vague prior" (i.e. assume we don't know anything about it) for the least squares fit, then replacing covariance matrix K with unadjvar*R and following "Koehler and Owen" by using maximum likelihood for unadjvar and betaHat
+    //the unbiased estimate of unadjusted variance
+    estVarianceMLE = dot_product(temp2,rhs)/(numPoints-ntrend); 
+
+    //the "per point" unbiased log(likelihood)
+    likelihood = -0.5*(log(estVarianceMLE)+(log_determinant_R+log_determinant_Gtran_Rinv_G)/(numPoints-ntrend)); 
+#else
+    //derived the "Koehler and Owen" way (assumes we know the trend function, and is therefore biased, but usally seems to work better for surrogate based optimization)
+
+    //the estimate of unadjusted variance
+    estVarianceMLE = dot_product(temp2,rhs)/numPoints; //the "Koehler and Owen" way
+
+    //the "per point" log(likelihood)
+    likelihood = -0.5*(log(estVarianceMLE)+log_determinant_R/numPoints); 
+#endif
 
     //if(likelihood>=DBL_MAX)
     //printf("[estVarianceMLE=%g determinant_R=%g]",estVarianceMLE,determinant_R);

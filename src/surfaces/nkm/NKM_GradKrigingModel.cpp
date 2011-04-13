@@ -13,6 +13,8 @@ using std::cerr;
 using std::endl;
 using std::ostringstream;
 
+  //#define __NKM_UNBIASED_LIKE__
+
 //#define __GRADKRIGING_DER_TEST__
 
 /***********************************************************************/
@@ -122,8 +124,8 @@ GradKrigingModel::GradKrigingModel(const SurfData& sd, const ParamMap& params)
   
   scaler.scaleToDefault(); //scale outputs to -0.5<=Y<=0.5 and scale real inputs to volume 1 hyper-rectangle centered at 0 if real iputs dimensions are locked or the unit hypercube centered at 0 if no dimensions are locked.  The scaling is done to let us define the feasible region simply (done in create);
   
-  std::string debug_filename = "GradRos10sdBuildScaled.spd";
-  sdBuild.write(debug_filename);
+  //std::string debug_filename = "GradRos10sdBuildScaled.spd";
+  //sdBuild.write(debug_filename);
 
 
   sdBuild.getUpToDerY(Y,1); //Y contains [ sdBuild.y(:,jout) sdBuild.derY[jout][1] ] (the notation of this comment mixes MATLAB commands with SurfData variables)
@@ -553,7 +555,7 @@ void GradKrigingModel::create()
   //printf("]\n");
 
   masterObjectiveAndConstraints(correlations, 1, 0);
-  //cout << model_summary_string();
+  cout << model_summary_string();
   //deallocate matrices we no longer need after emulator has been created
 
   //temporary variables used by masterObjectiveAndConstraints
@@ -594,7 +596,7 @@ std::string GradKrigingModel::model_summary_string() const {
     else oss <<"full ";
   }
   oss << "polynomial of order=" << polyOrder << 
-    "; rcond(R)=" << rcondR << "; rcondGtran_Rinv_G=" << rcondGtran_Rinv_G 
+    "; rcond(R)=" << rcondR << "; rcond(Gtran_Rinv_G)=" << rcondGtran_Rinv_G 
       << "; nugget=" << nug << ".\n";
   
   oss << "Beta= (" << betaHat(0);
@@ -938,11 +940,11 @@ double GradKrigingModel::eval_variance(const MtxDbl& xr) const
   //fflush(stdout);
   //}
   if(adj_var<0.0) {
-    printf("NKM setting adj_var to zero adj_var=%g unadj_var=%g rcondR=%g\n",adj_var,estVarianceMLE*unscale_factor_vary,rcondR); 
+    printf("NKM GEK setting adj_var to zero adj_var=%g unadj_var=%g rcondR=%g\n",adj_var,estVarianceMLE*unscale_factor_vary,rcondR); 
     adj_var=0.0;
   }
   else if(adj_var==0.0)
-    printf("NKM adj_var is zero =%g\n",adj_var);
+    printf("NKM GEK adj_var is zero =%g\n",adj_var);
   else if(!(adj_var>=0.0))
     printf("double NKM_GradKrigingModel::eval_variance(...) adj_var=nan rcondR=%g\n",rcondR);
 
@@ -1977,16 +1979,29 @@ void GradKrigingModel::masterObjectiveAndConstraints(const MtxDbl& theta, int ob
     rhs.newSize(numRowsR);
     solve_after_Chol_fact(rhs,RChol,temp2);
 
-    //estVarianceMLE = dot_product(temp2,rhs)/numRowsR; //the "Koehler and Owen" way
-    estVarianceMLE = dot_product(temp2,rhs)/(numRowsR-ntrend); //following Rasmussen and Williams (2006) we assume a "vague prior" (i.e. that we don't know anything) for betaHat, then like "Koehler and Owen" we replace the covariance matrix K with (unadjusted variance)*R (where R is the correlation matrix) and find unadjusted variance through maximum likelihood.
 
     //it's actually the log likelihood, which we want to maximize
     //likelihood = -0.5*(numRowsR*(log(4.0*acos(0.0))+log(estVarianceMLE)+1)
     //		       +log(determinant_R)); //from Koehler and Owen 
 
-    //likelihood = -0.5*(log(estVarianceMLE)+log_determinant_R/numRowsR); //the "Koehler and Owen" way but dropping constant terms and on a per point basis
+#ifdef __NKM_UNBIASED_LIKE__
+    //derived following: C. E. Rasmussen & C. K. I. Williams, Gaussian Processes for Machine Learning, the MIT Press, 2006, ISBN 026218253X. c 2006 Massachusetts Institute of Technology. www.GaussianProcess.org/gpml...  we assume a "vague prior" (i.e. that we don't know anything) for betaHat, then like "Koehler and Owen" we replace the covariance matrix K with (unadjusted variance)*R (where R is the correlation matrix) and find unadjusted variance and betaHat through maximum likelihood.
 
-    likelihood = -0.5*(log(estVarianceMLE)+(log_determinant_R+log_determinant_Gtran_Rinv_G)/(numRowsR-ntrend)); //derived following: C. E. Rasmussen & C. K. I. Williams, Gaussian Processes for Machine Learning, the MIT Press, 2006, ISBN 026218253X. c 2006 Massachusetts Institute of Technology. www.GaussianProcess.org/gpml... where we assume a "vague prior" (i.e. assume we don't know anything about it) for the least squares fit, then replacing covariance matrix K with unadjvar*R and following "Koehler and Owen" by using maximum likelihood for unadjvar and betaHat
+    //the unbiased estimate of unadjusted variance
+    estVarianceMLE = dot_product(temp2,rhs)/(numRowsR-ntrend); 
+
+    //the "per point" unbiased log(likelihood)
+    likelihood = -0.5*(log(estVarianceMLE)+(log_determinant_R+log_determinant_Gtran_Rinv_G)/(numRowsR-ntrend)); 
+
+#else
+    //derived the "Koehler and Owen" way (assumes we know the trend function, and is therefore biased, but usally seems to work better for surrogate based optimization)
+
+    //the estimate of unadjusted variance
+    estVarianceMLE = dot_product(temp2,rhs)/numRowsR; //the "Koehler and Owen" way
+
+    //the "per point" log(likelihood)
+    likelihood = -0.5*(log(estVarianceMLE)+log_determinant_R/numRowsR);
+#endif
 
     //if(likelihood>=DBL_MAX)
     //printf("[estVarianceMLE=%g determinant_R=%g]",estVarianceMLE,determinant_R);
