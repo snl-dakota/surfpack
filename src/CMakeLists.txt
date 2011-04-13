@@ -41,7 +41,6 @@ set(Surfpack_src
 
 add_library(surfpack ${Surfpack_src})
 #target_link_libraries(surfpack_src mars teuchos conmin ${LAPACK_LIBRARIES})
-install(TARGETS surfpack EXPORT ${Dakota_export_target} DESTINATION lib)
+install(TARGETS surfpack EXPORT ${ExportTarget} DESTINATION lib)
 
 install(FILES SurfpackMatrix.h surfpack_system_headers.h DESTINATION include)
-

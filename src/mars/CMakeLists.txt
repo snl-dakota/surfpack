@@ -6,5 +6,5 @@ SET(mars_SOURCES
 ## Set the CONMIN library name.
 ADD_LIBRARY(mars ${mars_SOURCES})
 #set_target_properties(mars PROPERTIES LINKER_LANGUAGE Fortran)
-INSTALL(TARGETS mars EXPORT ${Dakota_export_target} DESTINATION lib)
+INSTALL(TARGETS mars EXPORT ${ExportTarget} DESTINATION lib)
 
