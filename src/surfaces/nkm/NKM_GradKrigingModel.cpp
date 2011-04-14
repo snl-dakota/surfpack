@@ -13,7 +13,7 @@ using std::cerr;
 using std::endl;
 using std::ostringstream;
 
-  //#define __NKM_UNBIASED_LIKE__
+#define __NKM_UNBIASED_LIKE__
 
 //#define __GRADKRIGING_DER_TEST__
 
