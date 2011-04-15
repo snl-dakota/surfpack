@@ -1165,6 +1165,7 @@ MtxDbl& GradKrigingModel::correlation_matrix(MtxDbl& r, const MtxDbl& xr) const
       }
     }
 
+  /*
   FILE *fp=fopen("gkm_rmat_check.txt","w");
   for(i=0; i<nrowsxr; ++i) {
     fprintf(fp,"%-12.6g", r(i,0));
@@ -1173,7 +1174,7 @@ MtxDbl& GradKrigingModel::correlation_matrix(MtxDbl& r, const MtxDbl& xr) const
     fprintf(fp,"\n");
   }
   fclose(fp);
-
+  */
 
   return r;
 }
@@ -1637,7 +1638,7 @@ void GradKrigingModel::correlation_matrix(const MtxDbl& theta)
     }
   }
 
-
+  /*
   FILE *fp=fopen("gkm_Rmat_check.txt","w");
   for(int i=0; i<numPoints; ++i) {
     fprintf(fp,"%-12.6g", R(i,0));
@@ -1646,7 +1647,7 @@ void GradKrigingModel::correlation_matrix(const MtxDbl& theta)
     fprintf(fp,"\n");
   }
   fclose(fp);
-
+  */
 
 
 #ifdef _FOR_DEBUG_DEVEL_ONLY_
