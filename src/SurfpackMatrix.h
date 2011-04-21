@@ -9,9 +9,6 @@
 #ifndef SURFPACK_MATRIX
 #define SURFPACK_MATRIX
 
-#ifdef HAVE_CONFIG_H
-#include "surfpack_config.h"
-#endif
 #include "surfpack_system_headers.h"
 
 /// A SurfpackMatrix uses an STL vector-- where all elements reside in a 
