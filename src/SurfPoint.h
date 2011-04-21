@@ -9,9 +9,11 @@
 #ifndef __SURF_POINT_H__
 #define __SURF_POINT_H__
 
-#ifdef HAVE_CONFIG_H
-#include "surfpack_config.h"
-#endif
+#if HAVE_CONFIG_H
+  // HAVE_CONFIG_H is STILL set in Dakota/src (EVEN IN THE CMAKE BUILD!) so
+  // use a "disable config header" conditional to help manage the transition
+  #include "surfpack_config.h"
+#endif // HAVE_CONFIG_H
 #include "surfpack_system_headers.h"
 #include "SurfpackMatrix.h"
 

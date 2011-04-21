@@ -9,6 +9,12 @@
 #ifndef SURFPACK_SYSTEM_HEADERS_H
 #define SURFPACK_SYSTEM_HEADERS_H
 
+#if defined(HAVE_CONFIG_H) && !defined(DISABLE_DAKOTA_CONFIG_H)
+  // HAVE_CONFIG_H is STILL set in Dakota/src (EVEN IN THE CMAKE BUILD!) so
+  // use a "disable config header" conditional to help manage the transition
+  #include "surfpack_config.h"
+#endif // HAVE_CONFIG_H
+
 #include <algorithm>
 #include <limits>
 #include <cassert>

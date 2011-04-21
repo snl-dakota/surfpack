@@ -8,7 +8,8 @@
 
 #ifndef __MODEL_SCALER_H__
 #define __MODEL_SCALER_H__
-#ifdef HAVE_CONFIG_H
+// WJB - ToDo: verify not needed and remove
+#if 0
 #include "surfpack_config.h"
 #endif
 

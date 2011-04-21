@@ -9,7 +9,8 @@
 #ifndef __MODEL_FACTORY_H__
 #define __MODEL_FACTORY_H__
 
-#ifdef HAVE_CONFIG_H
+// WJB - ToDo: verify "configHdr" not needed and remove
+#if 0
 #include "surfpack_config.h"
 #endif
 #include "surfpack_system_headers.h"

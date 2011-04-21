@@ -27,22 +27,13 @@ else()
 #  FIND_PACKAGE(LAPACK REQUIRED)
 endif() 
 
-# WJB - ToDo: EVENTUALLY, eliminate need for configuration header files
 remove_definitions("-DHAVE_CONFIG_H")
 
 include_directories(${Surfpack_BINARY_DIR})
 
 FortranCInterface_HEADER(surf77_config.h MACRO_NAMESPACE SURF77_)
 
-configure_file("${Surfpack_SOURCE_DIR}/surfpack_config.h.cmake.in"
-  "${Surfpack_BINARY_DIR}/surfpack_config.h"
-  @ONLY
-)
-
-install(FILES ${Surfpack_BINARY_DIR}/surfpack_config.h
-  ${Surfpack_BINARY_DIR}/surf77_config.h
-  DESTINATION include
-)
+install(FILES ${Surfpack_BINARY_DIR}/surf77_config.h DESTINATION include)
 
 set(Surfpack_ENABLE_DEBUG OFF)
 
