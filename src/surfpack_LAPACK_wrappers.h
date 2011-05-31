@@ -31,6 +31,7 @@
 #define DGEMM_F77  F77_FUNC(dgemm,DGEMM)
 #define DDOT_F77   F77_FUNC(ddot, DDOT)
 #define DGELS_F77  F77_FUNC(dgels,DGELS)
+#define DGESVD_F77 F77_FUNC(dgesvd,DGESVD)
 
 #define DPOTRF_F77 F77_FUNC(dpotrf,DPOTRF)
 #define DPOTRI_F77 F77_FUNC(dpotri,DPOTRI)
@@ -41,6 +42,10 @@
 #define DGECON_F77 F77_FUNC(dgecon,DGECON)
 #define DGGLSE_F77 F77_FUNC(dgglse,DGGLSE)
 #define DSYEV_F77  F77_FUNC(dsyev,DSYEV)
+#define DSYTRF_F77 F77_FUNC(dsytrf,DSYTRF)
+#define DSYTRI_F77 F77_FUNC(dsytri,DSYTRI)
+#define DSYTRS_F77 F77_FUNC(dsytrs,DSYTRS)
+#define DSYCON_F77 F77_FUNC(dsycon,DSYCON)
 //
 #else
 // Use the CMake generated fortran name mangling macros (eliminate warnings)
@@ -50,6 +55,7 @@
 #define DGEMM_F77  SURF77_GLOBAL(dgemm,DGEMM) 
 #define DDOT_F77   SURF77_GLOBAL(ddot, DDOT) 
 #define DGELS_F77  SURF77_GLOBAL(dgels,DGELS)
+#define DGESVD_F77 SURF77_GLOBAL(dgesvd,DGESVD)
 
 #define DPOTRF_F77 SURF77_GLOBAL(dpotrf,DPOTRF)
 #define DPOTRI_F77 SURF77_GLOBAL(dpotri,DPOTRI)
@@ -60,6 +66,10 @@
 #define DGECON_F77 SURF77_GLOBAL(dgecon,DGECON)
 #define DGGLSE_F77 SURF77_GLOBAL(dgglse,DGGLSE)
 #define DSYEV_F77  SURF77_GLOBAL(dsyev,DSYEV)
+#define DSYTRF_F77 SURF77_GLOBAL(dsytrf,DSYTRF)
+#define DSYTRI_F77 SURF77_GLOBAL(dsytri,DSYTRI)
+#define DSYTRS_F77 SURF77_GLOBAL(dsytrs,DSYTRS)
+#define DSYCON_F77 SURF77_GLOBAL(dsycon,DSYCON)
 //
 #endif
 
@@ -92,36 +102,45 @@ void DGEMM_F77(char* transa, char* transb, const int* m, const int* n,
 // Perform Cholesky factorization
 void DPOTRF_F77(const char* uplo, const int* n, double* AChol, const int* lda, int* info);
 
-
 // Compute the inverse of a matrix expressed as an cholesky decomposition (i.e., call dpotrf on the matrix first)
 void DPOTRI_F77(const char* uplo, const int* n, double* ACholInv, const int* lda, int* info);
 
-// solve A*X=B for X, where A={A || A^T} after A has been Cholesky factorized (i.e., call dptorf on the matrix first)
+// solve A*X=B for X, after A has been Cholesky factorized (i.e., call dptorf on the matrix first)
 void DPOTRS_F77(const char* uplo, const int* n, const int* nRHS, 
 		const double* AChol,
 		const int* ldAChol , double* RHS, 
 		const int* ldRHS, int* info);
 
-
-//function to compute the condition number of a matrix from the Cholesky factorization
+// function to compute the condition number of a matrix from the Cholesky factorization
 void DPOCON_F77(const char* uplo, const int* n, const double* AChol, const int* lda, const double* anorm, double* rconda, double* work, int* iwork, int* info);
+
   
-  
+// Performs an L*D*L^T  (or U*D*U^T, either can be used) factorization 
+void DSYTRF_F77(const char* uplo, const int* n, double* ALDLT, const int* lda, int* ipiv, double* work, const int* lwork, const int* info);
+
+// Compute the inverse of a matrix expressed as an L*D*L^T (or U*D*U^T, either can be used) factorization (i.e. call dsytrf on the matrix first)
+void DSYTRI_F77(const char* uplo, const int* n, double* ALDLTINV, const int* lda, const int* ipiv, double* work, int* info);
+
+// solve A*X=B for X, after A has been L*D*L^T (or U*D*U^T, either can be used) factorized (i.e. call dsytrf on the matrix first)
+  void DSYTRS_F77(const char* uplo, const int* n, const int* nRHS, const double* ALDLT, const int* lda, const int* ipiv, double* RHS, const int* ldRHS, int* info);
+
+// function to compute the condition number of a matrix from the L*D*L^T (or U*D*U^T, either can be used) factorization
+void DSYCON_F77(const char* uplo, const int* n, const double* ALDLT, const int* lda, const int* ipiv, const double* anorm, double* rconda, double* work, int* iwork, int* info);
 
 
+// Perform SVD factorization
+void DGESVD_F77(const char* jobu, const char* jobvt, const int* m, const int* n, double* A, const int* lda, double* S, double* U, const int* ldu, double* VT, const int* ldvt, double* work, const int* lwork, int* info);
 
 
 // Perform LU factorization
 void DGETRF_F77(const int* m, const int* n, double* a, const int* lda,
 		int* ipiv, int* info);
 
-
 // Compute the inverse of a matrix expressed as an LU decomposition (i.e., call dgetrf on the matrix first)
 void DGETRI_F77(const int* n, double* a, const int* lda, const int* ipiv,
 		double* work, const int* lwork, int* info);
 
-
-// solve A*X=B for X, where A={A || A^T} after A has been LU factorize (i.e., call dgetrf on the matrix first)
+// solve A*X=B for X, where A={A || A^T} after A has been LU factorized (i.e., call dgetrf on the matrix first)
 void DGETRS_F77(char* transLU, const int* n, const int* nRHS, 
 		const double* LU, const int* ldLU , const int* ipiv, 
 		double* RHS, const int* ldRHS, int* info);

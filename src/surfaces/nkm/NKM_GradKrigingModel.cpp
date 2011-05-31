@@ -13,7 +13,7 @@ using std::cerr;
 using std::endl;
 using std::ostringstream;
 
-#define __NKM_UNBIASED_LIKE__
+//#define __NKM_UNBIASED_LIKE__
 
 //#define __GRADKRIGING_DER_TEST__
 
@@ -433,8 +433,8 @@ void GradKrigingModel::create()
   // (assumes input space has a volume of 1, and data points are
   // uniformly distributed)
 
-  //aveDistBetweenPts=pow(numPoints,-1.0/numVarsr);
-  aveDistBetweenPts=pow(numRowsR,-1.0/numVarsr); //count each derivative as 
+  aveDistBetweenPts=pow(numPoints,-1.0/numVarsr);
+  //aveDistBetweenPts=pow(numRowsR,-1.0/numVarsr); //count each derivative as 
   //another point when determining the "average distance between points"
   //this is used to determine the "reach" of each data point...
   //on second thought should I shorten the correlation lengths because I 
