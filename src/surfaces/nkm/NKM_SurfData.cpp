@@ -260,11 +260,11 @@ void SurfData::putDerY(const MtxDbl& dny, int der_order, int jy) {
     jy=jout; //means use the user set default output (jout)
   assert((0<=jy)&&(jy<nout)&&(0<=der_order)&&(npts==dny.getNRows()));
   int ncols_dny_should_have=num_multi_dim_poly_coef(nvarsr,-der_order);
-  assert((der_order<=derOrder(jy)+1)&&
+  assert((der_order<=derOrder(0,jy)+1)&&
 	 (ncols_dny_should_have==dny.getNCols()));
-  if(der_order>derOrder(jy)) {
+  if(der_order>derOrder(0,jy)) {
     derY[jy].resize(der_order+1);
-    derOrder(jy)=der_order;
+    derOrder(0,jy)=der_order;
   }
   if(der_order==0)
     y.putCols(dny,jy);
@@ -278,7 +278,7 @@ MtxDbl& SurfData::getDerY(MtxDbl& dny, int der_order, int jy) const {
   if(jy==-99999) //default value
     jy=jout; //means use the user set default output (jout)
   assert((0<=jy)&&(jy<nout)&&(0<=der_order));
-  assert(der_order<=derOrder(jy));
+  assert(der_order<=derOrder(0,jy));
   if(der_order==0)
     y.getCols(dny,jy);
   else
@@ -293,20 +293,20 @@ void SurfData::putUpToDerY(const MtxDbl& dny, int der_order, int jy) {
   assert((0<=jy)&&(jy<nout)&&(0<=der_order)&&(npts==dny.getNRows()));
   int ncols_dny_should_have=num_multi_dim_poly_coef(nvarsr,der_order);
   assert(ncols_dny_should_have==dny.getNCols());
-  MtxDbl temp_vector(npts);
+  MtxDbl temp_vector(npts,1);
   dny.getCols(temp_vector,0);
   y.putCols(temp_vector,jy);
   int ncols_so_far=1;
-  if(der_order>derOrder(jy)) {
+  if(der_order>derOrder(0,jy)) {
     derY[jy].resize(der_order+1);
-    derOrder(jy)=der_order;
+    derOrder(0,jy)=der_order;
   }
   MtxInt icols;
   for(int ider=1; ider<=der_order; ++ider) {
     int nder_this_exact_total_order=num_multi_dim_poly_coef(nvarsr,-ider);
-    icols.newSize(1,nder_this_exact_total_order);
+    icols.newSize(nder_this_exact_total_order,1);
     for(int icol=0; icol<nder_this_exact_total_order; ++icol, ++ncols_so_far)
-      icols(0,icol)=ncols_so_far;
+      icols(icol,0)=ncols_so_far;
     dny.getCols(derY[jy][ider],icols);
   }
   return;
@@ -317,13 +317,13 @@ MtxDbl& SurfData::getUpToDerY(MtxDbl& dny, int der_order, int jy) const {
   if(jy==-99999) //default value
     jy=jout; //means use the user set default output (jout)
   assert((0<=jy)&&(jy<nout)&&(0<=der_order));
-  assert(der_order<=derOrder(jy));
+  assert(der_order<=derOrder(0,jy));
   int ncols_dny_should_have=num_multi_dim_poly_coef(nvarsr,der_order);
   dny.reshape(npts,ncols_dny_should_have);
   if(nout==1)
     dny.putCols(y,0);
   else{
-    MtxDbl temp_vector(npts);
+    MtxDbl temp_vector(npts,1);
     y.getCols(temp_vector,jy);
     dny.putCols(temp_vector,0);
   }
@@ -331,9 +331,9 @@ MtxDbl& SurfData::getUpToDerY(MtxDbl& dny, int der_order, int jy) const {
   MtxInt icols;
   for(int ider=1; ider<=der_order; ++ider) {
     int nder_this_exact_total_order=derY[jy][ider].getNCols();
-    icols.newSize(1,nder_this_exact_total_order);
+    icols.newSize(nder_this_exact_total_order,1);
     for(int icol=0; icol<nder_this_exact_total_order; ++icol, ++ncols_so_far)
-      icols(0,icol)=ncols_so_far;
+      icols(icol,0)=ncols_so_far;
     dny.putCols(derY[jy][ider],icols);
   }
   assert(ncols_so_far==ncols_dny_should_have);
@@ -381,10 +381,10 @@ SurfData::SurfData(const MtxDbl& XR, const MtxDbl& Y, const MtxInt& der_order_in
     assert((0<=jout)&&(jout<nout)&&(1==derOrder.getNRows())&&
 	   (nout==derOrder.getNCols())&&(nout==derY.size()));
     for(int iout=0; iout<nout; ++iout) {
-      assert(derOrder(iout)>=0);
-      if(1<=derOrder(iout)) {
-	assert(derY[iout].size()==derOrder(iout)+1);
-	for(int ider=1; ider<=derOrder(iout); ++ider)
+      assert(derOrder(0,iout)>=0);
+      if(1<=derOrder(0,iout)) {
+	assert(derY[iout].size()==derOrder(0,iout)+1);
+	for(int ider=1; ider<=derOrder(0,iout); ++ider)
 	  assert((derY[iout][ider].getNRows()==npts)&&
 		 (derY[iout][ider].getNCols()==
 		  num_multi_dim_poly_coef(nvarsr,-ider)));
@@ -412,7 +412,7 @@ SurfData::SurfData(const MtxInt& LOCKXR, const MtxDbl& XR, const MtxDbl& Y, int 
 {
   //npts  =XR.getNRows();
   //nvarsr=XR.getNCols();
-  assert((LOCKXR.getNElems()==nvarsr)&&
+  assert((LOCKXR.getNRows()==1)&&(LOCKXR.getNCols()==nvarsr)&&
 	 (Y.getNRows()==npts));
   //nvarsi=0;
   //nout  =Y.getNCols();
@@ -425,7 +425,7 @@ SurfData::SurfData(const MtxInt& LOCKXR, const MtxDbl& XR, const MtxDbl& Y, int 
     lockxr.newSize(2,nvarsr);
     int j;
     for(j=0; j<nvarsr; j++) {
-      lockxr(0,j)=LOCKXR(j);
+      lockxr(0,j)=LOCKXR(0,j);
       lockxr(1,j)=j; //need to retain original order of dimensions, because the columns of lockxr are going to be sorted by elements in row 0 of lockxr
     }
     //you want us to scale by groups, and although there are group flags for each dimension (lockxr), those dimensions aren't arranged so that member dimensions of a group are listed sequentionally so we need to sort lockxr by groups.
@@ -476,7 +476,7 @@ SurfData::SurfData(const MtxDbl& XR, const MtxInt& XI, const MtxDbl& Y, int jout
 {
   //npts  =XR.getNRows();
   //nvarsr=XR.getNCols();
-  assert((LOCKXR.getNElems()==nvarsr)&&
+  assert((LOCKXR.getNRows()==1)&&(LOCKXR.getNCols()==nvarsr)&&
 	 (XI.getNRows()==npts)&&(Y.getNRows()==npts));
   //nvarsi=XI.getNCols();
   //nout  =Y.getNCols();
@@ -489,7 +489,7 @@ SurfData::SurfData(const MtxDbl& XR, const MtxInt& XI, const MtxDbl& Y, int jout
     lockxr.newSize(2,nvarsr);
     int j;
     for(j=0; j<nvarsr; j++) {
-      lockxr(0,j)=LOCKXR(j);
+      lockxr(0,j)=LOCKXR(0,j);
       lockxr(1,j)=j; //need to retain original order of dimensions, because the columns of lockxr are going to be sorted by elements in row 0 of lockxr
     }
     //you want us to scale by groups, and although there are group flags for each dimension (lockxr), those dimensions aren't arranged so that member dimensions of a group are listed sequentionally so we need to sort lockxr by groups.
@@ -518,8 +518,8 @@ SurfData::SurfData(const string& filename, int nvarsr_in, int nvarsi_in, int nou
   assert((nvarsr>0)&&(nvarsi>=0)&&(nout>0)&&(jout>=0));
 
   for(int j=0; j<nout; ++j) {
-    derOrder(j)=der_order_in;
-    derY[j].resize(derOrder(j)+1);
+    derOrder(0,j)=der_order_in;
+    derY[j].resize(derOrder(0,j)+1);
   }
 
   //lockxr is an empy matrix
@@ -538,7 +538,7 @@ SurfData::SurfData(const string& filename, int nvarsr_in, int nvarsi_in, int nou
   assert((nvarsr>0)&&(nvarsi>=0)&&(nout>0)&&(jout>=0));
 
   for(int j=0; j<nout; ++j) 
-    derY[j].resize(derOrder(j)+1);
+    derY[j].resize(derOrder(0,j)+1);
 
   //lockxr is an empy matrix
   dontScale(); //set the initial scaling to identity
@@ -552,17 +552,18 @@ SurfData::SurfData(const string& filename, int nvarsr_in, int nvarsi_in, int nou
 SurfData::SurfData(const string& filename, int nvarsr_in, int nvarsi_in, int nout_in, int jout_in, int der_order_in, int skip_columns, const MtxInt& LOCKXR) : nvarsr(nvarsr_in), nvarsi(nvarsi_in), nout(nout_in), jout(jout_in), derOrder(1,nout), derY(nout), ifHaveMinMaxXr(false)
 {
   assert((nvarsr>0)&&(nvarsi>=0)&&(nout>0)&&(jout>=0)&&
-	 (LOCKXR.getNElems()==nvarsr));
+	 (LOCKXR.getNRows()==1)&&(LOCKXR.getNCols()==nvarsr));
+
   lockxr.newSize(2,nvarsr);
 
   for(int j=0; j<nout; ++j) {
-    derOrder(j)=der_order_in; 
-    derY[j].resize(derOrder(j)+1);
+    derOrder(0,j)=der_order_in; 
+    derY[j].resize(derOrder(0,j)+1);
   }
 
   int j;
   for(j=0; j<nvarsr; ++j) {
-    lockxr(0,j)=LOCKXR(j);
+    lockxr(0,j)=LOCKXR(0,j);
     lockxr(1,j)=j; //need to retain original order of dimensions, because the columns of lockxr are going to be sorted by elements in row 0 of lockxr
   }
   //you want us to scale by groups, and although there are group flags for each dimension (lockxr), those dimensions aren't arranged so that member dimensions of a group are listed sequentionally so we need to sort lockxr by groups.
@@ -578,15 +579,15 @@ SurfData::SurfData(const string& filename, int nvarsr_in, int nvarsi_in, int nou
   SurfData::SurfData(const string& filename, int nvarsr_in, int nvarsi_in, int nout_in, int jout_in, const MtxInt& der_order_in, int skip_columns, const MtxInt& LOCKXR) : nvarsr(nvarsr_in), nvarsi(nvarsi_in), nout(nout_in), jout(jout_in), derOrder(der_order_in), derY(nout), ifHaveMinMaxXr(false)
 {
   assert((nvarsr>0)&&(nvarsi>=0)&&(nout>0)&&(jout>=0)&&
-	 (LOCKXR.getNElems()==nvarsr));
+	 (LOCKXR.getNRows()==1)&&(LOCKXR.getNCols()==nvarsr));
 
   for(int j=0; j<nout; ++j) 
-    derY[j].resize(derOrder(j)+1);
+    derY[j].resize(derOrder(0,j)+1);
 
   lockxr.newSize(2,nvarsr);
   int j;
   for(j=0; j<nvarsr; ++j) {
-    lockxr(0,j)=LOCKXR(j);
+    lockxr(0,j)=LOCKXR(0,j);
     lockxr(1,j)=j; //need to retain original order of dimensions, because the columns of lockxr are going to be sorted by elements in row 0 of lockxr
   }
   //you want us to scale by groups, and although there are group flags for each dimension (lockxr), those dimensions aren't arranged so that member dimensions of a group are listed sequentionally so we need to sort lockxr by groups.
@@ -619,13 +620,13 @@ SurfData::SurfData(const SurfData& other, int jout_keep) : npts(other.npts), nva
   assert((0<=jout_keep)&&(jout_keep<other.nout)); //we shouldn't "throw" exceptions during construction but there is no prohibition of asserts during construction
   if(jout_keep==-1)
     jout_keep=other.jout;
-  y.newSize(nout);
+  y.newSize(nout,1);
   //printf("other.getNOut()=%d other.unscaley.getNCols()=%d\n", other.getNOut(),other.unscaley.getNCols());  fflush(stdout);
   other.y.getCols(y,jout_keep);
   other.unscaley.getCols(unscaley,jout_keep);
 
-  derOrder.newSize(nout);
-  derOrder(0)=other.derOrder(jout_keep);
+  derOrder.newSize(1,nout);
+  derOrder(0,0)=other.derOrder(0,jout_keep);
 
   derY.resize(nout);
   derY[0]=other.derY[jout_keep];
@@ -852,7 +853,7 @@ bool SurfData::readLabelsIfPresent(string single_line, int skip_columns)
         return false;
       }
       //if derivatives are in the file they have to have column headings and they have to be in the "right" order, but we don't need to read them because we can regenerate "standard" versions of them when it's time to right the file
-      int nder_up_to_derOrder=num_multi_dim_poly_coef(nvarsr,derOrder(j));
+      int nder_up_to_derOrder=num_multi_dim_poly_coef(nvarsr,derOrder(0,j));
       for(int jj=1; jj<nder_up_to_derOrder; ++jj) {
 	//start at 1 instead of zero because we already read in the function value
 	is >> dummy;
@@ -915,7 +916,7 @@ void SurfData::readPointText(int ipt, const string& single_line,
       ider=jder=0;
       nkm::surfpack::checkForEOF(streamline);
       streamline >> y(ipt,nout_read);
-      for(ider=1; ider<=derOrder(nout_read); ++ider) {
+      for(ider=1; ider<=derOrder(0,nout_read); ++ider) {
 	int nder_this_exact_total_order=derY[nout_read][ider].getNCols();
 	for(jder=0; jder<nder_this_exact_total_order; ++jder) {
 	    nkm::surfpack::checkForEOF(streamline);
@@ -930,13 +931,13 @@ void SurfData::readPointText(int ipt, const string& single_line,
 	 << "\n  " << nvarsr << " real input variable(s) and"
 	 << "\n  " << nvarsi << " integer input variable(s) and"
          << "\n  " << nout << " output variables(s) and"
-	 << "\n  Order(" << derOrder(0);
+	 << "\n  Order(" << derOrder(0,0);
     for(int jj=1; jj<nout; ++jj)
-      cerr << "," << derOrder(jj);
+      cerr << "," << derOrder(0,jj);
     cerr << ") derivatives" 
-	 << "so there should be (" << num_multi_dim_poly_coef(nvarsr,derOrder(0));
+	 << "so there should be (" << num_multi_dim_poly_coef(nvarsr,derOrder(0,0));
     for(int jj=1; jj<nout; ++jj)
-      cerr << "," << num_multi_dim_poly_coef(nvarsr,derOrder(jj));
+      cerr << "," << num_multi_dim_poly_coef(nvarsr,derOrder(0,jj));
     cerr << ") columns for the respective output variables." << endl
          << "Found: " 
 	 << "\n  " << nskip_read << " leading columns to skip and"
@@ -962,7 +963,6 @@ void SurfData::readPointBinary(int ipt, istream& is, int skip_columns)
   assert(0);
 
   int nvarsr_read=0, nvarsi_read=0, nout_read=0, nskip_read=0, ider=0, jder=0;
-  double dummy;
 
   try {
     // read the point in binary format
@@ -978,7 +978,7 @@ void SurfData::readPointBinary(int ipt, istream& is, int skip_columns)
       ider=jder=0;
       nkm::surfpack::checkForEOF(is);
       is.read(reinterpret_cast<char*>(y.ptr(ipt,nout_read)),sizeof(y(ipt,nout_read)));
-      for(ider=1; ider<=derOrder(nout_read); ++ider) {
+      for(ider=1; ider<=derOrder(0,nout_read); ++ider) {
 	int nder_this_exact_total_order=derY[nout_read][ider].getNCols();
 	for(jder=0; jder<nder_this_exact_total_order; ++jder) {
 	  nkm::surfpack::checkForEOF(is);
@@ -993,13 +993,13 @@ void SurfData::readPointBinary(int ipt, istream& is, int skip_columns)
 	 << "\n  " << nvarsr << " real input variable(s) and"
 	 << "\n  " << nvarsi << " integer input variable(s) and"
          << "\n  " << nout << " output variables(s) and"
-	 << "\n  Order(" << derOrder(0);
+	 << "\n  Order(" << derOrder(0,0);
     for(int jj=1; jj<nout; ++jj)
-      cerr << "," << derOrder(jj);
+      cerr << "," << derOrder(0,jj);
     cerr << ") derivatives" 
-	 << "so there should be (" << num_multi_dim_poly_coef(nvarsr,derOrder(0));
+	 << "so there should be (" << num_multi_dim_poly_coef(nvarsr,derOrder(0,0));
     for(int jj=1; jj<nout; ++jj)
-      cerr << "," << num_multi_dim_poly_coef(nvarsr,derOrder(jj));
+      cerr << "," << num_multi_dim_poly_coef(nvarsr,derOrder(0,jj));
     cerr << ") columns for the respective output variables." << endl
          << "Found: " 
 	 << "\n  " << nskip_read << " leading columns to skip and"
@@ -1045,8 +1045,8 @@ void SurfData::readText(istream& is, int skip_columns)
     y.newSize(nlines,nout);
     derY.resize(nout);
     for(int iout=0; iout<nout; ++iout) {
-      derY[iout].resize(derOrder(iout)+1);
-      for(int ider=1; ider<=derOrder(iout); ++ider) 
+      derY[iout].resize(derOrder(0,iout)+1);
+      for(int ider=1; ider<=derOrder(0,iout); ++ider) 
 	derY[iout][ider].newSize(nlines,num_multi_dim_poly_coef(nvarsr,-ider));
     }
     //cout << "just newsized arrays\n";
@@ -1096,7 +1096,7 @@ void SurfData::readText(istream& is, int skip_columns)
     xi.resize(npts,nvarsi);
     y.resize(npts,nout);
     for(int iout=0; iout<nout; ++iout)
-      for(int ider=1; ider<=derOrder(iout); ++ider) 
+      for(int ider=1; ider<=derOrder(0,iout); ++ider) 
 	derY[iout][ider].resize(npts,num_multi_dim_poly_coef(nvarsr,-ider));
   }else if(npts > nlines) {
     assert(0);  //replace with a throw, the only way to get here should be that whatever called this function passed it an istream that was not at the beginning of the .spd file, in which case we've read values into memory locations beyond the bounds of the matrices, i.e. it's a segfault waiting to happen
@@ -1132,9 +1132,9 @@ void SurfData::writeText(ostream& os, bool write_labels) const
       }
       for(iout=0; iout<nout; ++iout) {
 	ss << setw(nkm::surfpack::field_width) << yLabels[iout] << " ";
-	if(derOrder(iout)>0) {
+	if(derOrder(0,iout)>0) {
 	  MtxInt der;
-	  multi_dim_poly_power(der,nvarsr,derOrder(iout));
+	  multi_dim_poly_power(der,nvarsr,derOrder(0,iout));
 	  int nder_up_to_derOrder=der.getNRows();
 	  for(int jder=1; jder<nder_up_to_derOrder; ++jder) {
 	    //start at jder=1 rather than 0 because we already handled the function/response value 
@@ -1181,7 +1181,7 @@ void SurfData::writeText(ostream& os, bool write_labels) const
       }
       for(iout=0; iout<nout; ++iout) {
 	ss << " " << setw(nkm::surfpack::field_width)<< y(ipt,iout);
-	for(int ider=1; ider<=derOrder(iout); ++ider) {
+	for(int ider=1; ider<=derOrder(0,iout); ++ider) {
 	  int nder_this_exact_total_order=derY[iout][ider].getNCols();
 	  for(int jder=0; jder<nder_this_exact_total_order; ++jder)
 	    ss << " " << setw(nkm::surfpack::field_width)<< derY[iout][ider](ipt,jder);
@@ -1207,15 +1207,15 @@ void SurfData::readBinary(istream& is, int skip_columns)
  
     derOrder.newSize(1,nout);
     for(int jj=0; jj<nout; ++jj)
-      is.read((char*)derOrder.ptr(jj),sizeof(derOrder(jj)));
+      is.read((char*)derOrder.ptr(0,jj),sizeof(derOrder(0,jj)));
 
     xr.newSize(npts,nvarsr);
     xi.newSize(npts,nvarsi);
     y.newSize(npts,nout);
     derY.resize(nout);
     for(int iout=0; iout<nout; ++iout) {
-      derY[iout].resize(derOrder(iout)+1);
-      for(int ider=1; ider<=derOrder(iout); ++ider) 
+      derY[iout].resize(derOrder(0,iout)+1);
+      for(int ider=1; ider<=derOrder(0,iout); ++ider) 
 	derY[iout][ider].newSize(npts,num_multi_dim_poly_coef(nvarsr,-ider));
     }
     defaultLabels(); //need to replace this with something better (there should be a way to store labels in the binary file)
@@ -1242,7 +1242,7 @@ void SurfData::scaleDerY(int scalepower) {
   assert((scalepower==1)||(scalepower==-1));
   MtxInt der;
   for(int iout=0; iout<nout; ++iout) 
-    for(int ider=1; ider<=derOrder(iout); ++ider) {
+    for(int ider=1; ider<=derOrder(0,iout); ++ider) {
       multi_dim_poly_power(der,nvarsr,-ider);
       int nder_this_exact_total_order=der.getNRows();
       for(int jder=0; jder<nder_this_exact_total_order; ++jder) {
@@ -1271,14 +1271,14 @@ void SurfData::scaleToDefault()
 	   (unscaley.getNRows()==2)&&(unscaley.getNCols()==nout ));
 
     for(j=0; j<nvarsr; j++)
-      if((fabs(unscalexr(0,j))!=1.0)||(unscalexr(1,j)!=0.0)) {
+      if((std::fabs(unscalexr(0,j))!=1.0)||(unscalexr(1,j)!=0.0)) {
 	ifalreadyscaled=1;
 	break;
       }
 
     if(!ifalreadyscaled)
       for(j=0; j<nout; j++)
-	if((fabs(unscaley(0,j))!=1.0)||(unscaley(1,j)!=0.0)) {
+	if((std::fabs(unscaley(0,j))!=1.0)||(unscaley(1,j)!=0.0)) {
 	  ifalreadyscaled=1;
 	  break;
 	}
@@ -1316,9 +1316,9 @@ void SurfData::scaleToDefault()
 	 (igroupstop!=igroupstart)) {
 	//group scale if statement, we've found the end of a group is lock(0,j)!==lock(0,j-1) or we've reached the last dimension and the start of the group is not the same element as the end of the group (i.e. don't "group scale" a single dimension)
 	ngroup=igroupstop-igroupstart+1;
-	igroup.newSize(ngroup);
+	igroup.newSize(ngroup,1);
 	for(k=0,i=igroupstart; i<=igroupstop; i++,k++)
-	  igroup(k)=lockxr(1,i);	  
+	  igroup(k,0)=lockxr(1,i);	  
 	xr.getCols(group,igroup);
 	if(ifHaveMinMaxXr==true)
 	  minMaxXr.getCols(minmaxgroup,igroup);
@@ -1448,7 +1448,7 @@ void SurfData::groupScale(MtxDbl& a, MtxDbl& unscalea, const MtxDbl& minmaxa, bo
     }
   }
 
-  unscale_all=pow(proddiffa,1.0/numdiffa);
+  unscale_all=std::pow(proddiffa,1.0/numdiffa);
   scalea=1.0/unscale_all;
 
   for(j=0; j<ncolsa; j++) 
@@ -1479,8 +1479,8 @@ void SurfData::scaleXrToFactor(MtxDbl& unscale_xr) {
   double scaleby, shiftby;
   for(j=0; j<nvarsr; j++) {
     assert(unscale_xr(0,j));
-    scaleby=fabs(unscalexr(0,j))/fabs(unscale_xr(0,j));
-    shiftby=(unscalexr(1,j)-unscale_xr(1,j))/fabs(unscale_xr(0,j));
+    scaleby=std::fabs(unscalexr(0,j))/std::fabs(unscale_xr(0,j));
+    shiftby=(unscalexr(1,j)-unscale_xr(1,j))/std::fabs(unscale_xr(0,j));
     unscalexr(0,j)=unscale_xr(0,j);
     unscalexr(1,j)=unscale_xr(1,j);
     for(i=0; i<npts; i++)
@@ -1496,13 +1496,13 @@ void SurfData::scaleYToFactor(MtxDbl& unscale_y) {
   double scaleby, shiftby;
   for(j=0; j<nout; j++) {
     assert(unscale_y(0,j));
-    scaleby=fabs(unscaley(0,j))/fabs(unscale_y(0,j));
-    shiftby=(unscaley(1,j)-unscale_y(1,j))/fabs(unscale_y(0,j));
+    scaleby=std::fabs(unscaley(0,j))/std::fabs(unscale_y(0,j));
+    shiftby=(unscaley(1,j)-unscale_y(1,j))/std::fabs(unscale_y(0,j));
     unscaley(0,j)=unscale_y(0,j);
     unscaley(1,j)=unscale_y(1,j);
     for(i=0; i<npts; ++i)
       y(i,j)=y(i,j)*scaleby+shiftby;
-    for(int ider=1; ider<=derOrder(j); ++ider) {
+    for(int ider=1; ider<=derOrder(0,j); ++ider) {
       int nder_this_exact_total_order=derY[j][ider].getNCols();
       for(int jder=0; jder<nder_this_exact_total_order; ++jder)
 	for(i=0; i<npts; ++i)
@@ -1521,7 +1521,7 @@ SurfData& SurfData::unScale()
   int i, j;
   double scaleby, shiftby;
   for(j=0; j<nvarsr; j++) {
-    scaleby=fabs(unscalexr(0,j)); //in case this dimension was singular
+    scaleby=std::fabs(unscalexr(0,j)); //in case this dimension was singular
     shiftby=unscalexr(1,j);
     unscalexr(0,j)=1.0;
     unscalexr(1,j)=0.0;
@@ -1531,7 +1531,7 @@ SurfData& SurfData::unScale()
   
   //unscale the output variables  
   for(j=0; j<nout; j++) {
-    scaleby=fabs(unscaley(0,j)); //in case this dimension was singular
+    scaleby=std::fabs(unscaley(0,j)); //in case this dimension was singular
     shiftby=unscaley(1,j);
     unscaley(0,j)=1.0;
     unscaley(1,j)=0.0;
@@ -1552,14 +1552,14 @@ MtxDbl& SurfData::scaleYOther(MtxDbl& y_other, int j)
   int nout_other=y_other.getNCols();
   double scaleby, shiftby;
   if(nout_other==1) {
-    scaleby=1.0/fabs(unscaley(0,j));
+    scaleby=1.0/std::fabs(unscaley(0,j));
     shiftby=unscaley(1,j);
     for(int i=0; i<npts_other; ++i)
-      y_other(i)=(y_other(i)-shiftby)*scaleby;
+      y_other(i,0)=(y_other(i,0)-shiftby)*scaleby;
   }
   else if(nout_other==nout) {
     for(j=0; j<nout; ++j) {
-      scaleby=1.0/fabs(unscaley(0,j));
+      scaleby=1.0/std::fabs(unscaley(0,j));
       shiftby=unscaley(1,j);
       for(int i=0; i<npts_other; ++i)
 	y_other(i,j)=(y_other(i,j)-shiftby)*scaleby;
@@ -1585,14 +1585,14 @@ MtxDbl& SurfData::unScaleYOther(MtxDbl& y_other, int j)
   int nout_other=y_other.getNCols();
   double scaleby, shiftby;
   if(nout_other==1) {
-    scaleby=fabs(unscaley(0,j));
+    scaleby=std::fabs(unscaley(0,j));
     shiftby=unscaley(1,j);
     for(int i=0; i<npts_other; ++i)
-      y_other(i)=y_other(i)*scaleby+shiftby;
+      y_other(i,0)=y_other(i,0)*scaleby+shiftby;
   }
   else if(nout_other==nout) {
     for(j=0; j<nout; ++j) {
-      scaleby=fabs(unscaley(0,j));
+      scaleby=std::fabs(unscaley(0,j));
       shiftby=unscaley(1,j);
       for(int i=0; i<npts_other; ++i)
 	y_other(i,j)=y_other(i,j)*scaleby+shiftby;
@@ -1642,20 +1642,20 @@ int SurfData::ifRecommendRescale(SurfData& newpoints2) {
     //we need to check if any of the new points are outside the range of the 
     //current points, if so we will recommend to rescale if not we will 
     //recommend to NOT rescale
-    MtxDbl minmaxold(2), minmaxnew(2);
+    MtxDbl minmaxold(2,1), minmaxnew(2,1);
     //first we check xr
     for(j=0; j<nvarsr; j++) {
-      minmaxold(0)=minmaxold(1)=xr(0,j);
+      minmaxold(0,0)=minmaxold(1,0)=xr(0,j);
       for(i=1;i<npts;i++) {
-	if(xr(i,j)<minmaxold(0)) minmaxold(0)=xr(i,j);
-	if(xr(i,j)>minmaxold(1)) minmaxold(1)=xr(i,j);	       
+	if(xr(i,j)<minmaxold(0,0)) minmaxold(0,0)=xr(i,j);
+	if(xr(i,j)>minmaxold(1,0)) minmaxold(1,0)=xr(i,j);	       
       }
-      minmaxnew(0)=minmaxnew(1)=newpoints2.xr(0,j);
+      minmaxnew(0,0)=minmaxnew(1,0)=newpoints2.xr(0,j);
       for(i=1;i<nnew;i++){
-	if(newpoints2.xr(i,j)<minmaxnew(0)) minmaxnew(0)=newpoints2.xr(i,j);
-	if(newpoints2.xr(i,j)>minmaxnew(1)) minmaxnew(1)=newpoints2.xr(i,j);	       
+	if(newpoints2.xr(i,j)<minmaxnew(0,0)) minmaxnew(0,0)=newpoints2.xr(i,j);
+	if(newpoints2.xr(i,j)>minmaxnew(1,0)) minmaxnew(1,0)=newpoints2.xr(i,j);	       
       }
-      if((minmaxnew(0)<minmaxold(0))||(minmaxold(1)<minmaxnew(1))){
+      if((minmaxnew(0,0)<minmaxold(0,0))||(minmaxold(1,0)<minmaxnew(1,0))){
 	ifrecommendrescale=1;
 	break;
       }
@@ -1663,17 +1663,19 @@ int SurfData::ifRecommendRescale(SurfData& newpoints2) {
     if(!ifrecommendrescale) {
       //now we check y
       for(j=0; j<nout; j++) {
-	minmaxold(0)=minmaxold(1)=y(0,j);
+	minmaxold(0,0)=minmaxold(1,0)=y(0,j);
 	for(i=1;i<npts;i++) {
-	  if(y(i,j)<minmaxold(0)) minmaxold(0)=y(i,j);
-	  if(y(i,j)>minmaxold(1)) minmaxold(1)=y(i,j);	       
+	  if(y(i,j)<minmaxold(0,0)) minmaxold(0,0)=y(i,j);
+	  if(y(i,j)>minmaxold(1,0)) minmaxold(1,0)=y(i,j);	       
 	}
-	minmaxnew(0)=minmaxnew(1)=newpoints2.y(0,j);
+	minmaxnew(0,0)=minmaxnew(1,0)=newpoints2.y(0,j);
 	for(i=1;i<nnew;i++){
-	  if(newpoints2.y(i,j)<minmaxnew(0)) minmaxnew(0)=newpoints2.y(i,j);
-	  if(newpoints2.y(i,j)>minmaxnew(1)) minmaxnew(1)=newpoints2.y(i,j);	       
+	  if(newpoints2.y(i,j)<minmaxnew(0,0)) 
+	    minmaxnew(0,0)=newpoints2.y(i,j);
+	  if(newpoints2.y(i,j)>minmaxnew(1,0)) 
+	    minmaxnew(1,0)=newpoints2.y(i,j);	       
 	}
-	if((minmaxnew(0)<minmaxold(0))||(minmaxold(1)<minmaxnew(1))){
+	if((minmaxnew(0,0)<minmaxold(0,0))||(minmaxold(1,0)<minmaxnew(1,0))){
 	  ifrecommendrescale=1;
 	  break;
 	}
@@ -1698,7 +1700,7 @@ int SurfData::putPoints(SurfData& newpoints, int ipt) {
 	   (nvarsi==newpoints.nvarsi)&&
 	   (nout  ==newpoints.nout  ));
     for(int iout=0; iout<nout; ++iout)
-      assert(derOrder(iout)==newpoints.derOrder(iout));
+      assert(derOrder(0,iout)==newpoints.derOrder(0,iout));
   }
   else{
     if(ipt==-99999){
@@ -1724,8 +1726,8 @@ int SurfData::putPoints(SurfData& newpoints, int ipt) {
     derOrder =newpoints.derOrder;
     derY.resize(nout);
     for(int iout=0; iout<nout; ++iout) {
-      derY[iout].resize(derOrder(iout)+1);
-      for(int ider=1; ider<=derOrder(iout); ++ider) {
+      derY[iout].resize(derOrder(0,iout)+1);
+      for(int ider=1; ider<=derOrder(0,iout); ++ider) {
 	int nder_this_exact_total_order=newpoints.derY[iout][ider].getNCols();
 	derY[iout][ider].newSize(npts,nder_this_exact_total_order);
 	derY[iout][ider].putRows(newpoints.derY[iout][ider],ipt);
@@ -1765,7 +1767,7 @@ int SurfData::putPoints(SurfData& newpoints, int ipt) {
       xi.putRows(newpoints2.xi,ipt);
       y.putRows( newpoints2.y ,ipt);
       for(int iout=0; iout<nout; ++iout) 
-	for(int ider=1; ider<=derOrder(iout); ++ider) {
+	for(int ider=1; ider<=derOrder(0,iout); ++ider) {
 	  int nder_this_exact_total_order=
 	    newpoints2.derY[iout][ider].getNCols();
 	  derY[iout][ider].resize(npts,nder_this_exact_total_order);
@@ -1776,15 +1778,15 @@ int SurfData::putPoints(SurfData& newpoints, int ipt) {
       //there's multiple new points, so we need to create an integer 
       //vector of indices to specify the rows of the matrices we want
       //to fill in
-      MtxInt ipts(nnew);  
+      MtxInt ipts(nnew,1);  
       for(int i=0; i<nnew; i++)
-	ipts(i)=ipt+i;
+	ipts(i,0)=ipt+i;
       xr.putRows(newpoints2.xr,ipts);
       xi.putRows(newpoints2.xi,ipts);
       y.putRows( newpoints2.y ,ipts);
 
       for(int iout=0; iout<nout; ++iout) 
-	for(int ider=1; ider<=derOrder(iout); ++ider) {
+	for(int ider=1; ider<=derOrder(0,iout); ++ider) {
 	  int nder_this_exact_total_order=
 	    newpoints2.derY[iout][ider].getNCols();
 	  derY[iout][ider].resize(npts,nder_this_exact_total_order);
@@ -1812,7 +1814,7 @@ int SurfData::putPoints(SurfData& newpoints, int ipt) {
       y.resize( npts,nout  );
 
       for(int iout=0; iout<nout; ++iout) 
-	for(int ider=1; ider<=derOrder(iout); ++ider) {
+	for(int ider=1; ider<=derOrder(0,iout); ++ider) {
 	  int nder_this_exact_total_order=
 	    newpoints2.derY[iout][ider].getNCols();
 	  derY[iout][ider].resize(npts,nder_this_exact_total_order);
@@ -1821,7 +1823,7 @@ int SurfData::putPoints(SurfData& newpoints, int ipt) {
     }
     else{
       for(int iout=0; iout<nout; ++iout) 
-	for(int ider=1; ider<=derOrder(iout); ++ider) 
+	for(int ider=1; ider<=derOrder(0,iout); ++ider) 
 	  derY[iout][ider].putRows(newpoints2.derY[iout][ider],ipt);	
     }
     //fill in the new point
@@ -1862,7 +1864,7 @@ int SurfData::putPoints(SurfData& newpoints, MtxInt& ipts) {
     newpts=&newpoints;
     derY.resize(nout);
     for(int iout=0; iout<nout; ++iout)
-      derY[iout].resize(derOrder(iout)+1);
+      derY[iout].resize(derOrder(0,iout)+1);
   }
   else{
     //check to make sure that we have valid input
@@ -1870,7 +1872,7 @@ int SurfData::putPoints(SurfData& newpoints, MtxInt& ipts) {
 	   (nvarsi==newpoints.nvarsi)&&
 	   (nout  ==newpoints.nout  ));
     for(int iout=0; iout<nout; ++iout)
-      assert(derOrder(iout)==newpoints.derOrder(iout));
+      assert(derOrder(0,iout)==newpoints.derOrder(0,iout));
 
     SurfData newpoints2=newpoints; 
     newpts=&newpoints2;
@@ -1879,7 +1881,7 @@ int SurfData::putPoints(SurfData& newpoints, MtxInt& ipts) {
 
     //decide whether or not to recommend that this SurfData object after 
     //the newpoints have been added to the current points
-    int ifrecommendrescale=ifRecommendRescale(newpoints2);
+    ifrecommendrescale=ifRecommendRescale(newpoints2);
   }
 
   int iptsmax=ipts.maxElem();
@@ -1895,7 +1897,7 @@ int SurfData::putPoints(SurfData& newpoints, MtxInt& ipts) {
   xi.putRows(newpts->xi,ipts);
   y.putRows( newpts->y ,ipts);
   for(int iout=0; iout<nout; ++iout) 
-    for(int ider=1; ider<=derOrder(iout); ++ider) {
+    for(int ider=1; ider<=derOrder(0,iout); ++ider) {
       int nder_this_exact_total_order=
 	newpts->derY[iout][ider].getNCols();
       derY[iout][ider].resize(npts,nder_this_exact_total_order);
@@ -1923,8 +1925,8 @@ SurfData& SurfData::getPoints(SurfData& result, int ipt) {
   result.derOrder =derOrder;
   result.derY.resize(nout);
   for(int iout=0; iout<nout; ++iout) {
-    result.derY[iout].resize(derOrder(iout)+1);
-    for(int ider=1; ider<=derOrder(iout); ++ider) 
+    result.derY[iout].resize(derOrder(0,iout)+1);
+    for(int ider=1; ider<=derOrder(0,iout); ++ider) 
       derY[iout][ider].getRows(result.derY[iout][ider],ipt);
   }
 
@@ -1937,10 +1939,11 @@ SurfData& SurfData::getPoints(SurfData& result, int ipt) {
 
 ///retrieve multiple points (the ones whose indices are stored in ipts), pass them back as a reference to a SurfData object
 SurfData& SurfData::getPoints(SurfData& result, MtxInt& ipts) {
-  int nget=ipts.getNElems();
+  int nget=ipts.getNRows();
+  assert(ipts.getNCols()==1);
   ipts.uniqueElems();
-  assert(nget==ipts.getNElems());
-  assert((0<=ipts(0))&&(ipts(nget-1)<npts));
+  assert(nget==ipts.getNRows());
+  assert((0<=ipts(0,0))&&(ipts(nget-1,0)<npts));
   result.npts     =nget;
   result.nvarsr   =nvarsr;
   result.nvarsi   =nvarsi;
@@ -1955,8 +1958,8 @@ SurfData& SurfData::getPoints(SurfData& result, MtxInt& ipts) {
   result.derOrder =derOrder;
   result.derY.resize(nout);
   for(int iout=0; iout<nout; ++iout) {
-    result.derY[iout].resize(derOrder(iout)+1);
-    for(int ider=1; ider<=derOrder(iout); ++ider) 
+    result.derY[iout].resize(derOrder(0,iout)+1);
+    for(int ider=1; ider<=derOrder(0,iout); ++ider) 
       derY[iout][ider].getRows(result.derY[iout][ider],ipts);
   }
 
@@ -1984,8 +1987,8 @@ SurfData& SurfData::excludePoints(SurfData& result, int ipt) {
   result.derOrder =derOrder;
   result.derY.resize(nout);
   for(int iout=0; iout<nout; ++iout) {
-    result.derY[iout].resize(derOrder(iout)+1);
-    for(int ider=1; ider<=derOrder(iout); ++ider)
+    result.derY[iout].resize(derOrder(0,iout)+1);
+    for(int ider=1; ider<=derOrder(0,iout); ++ider)
       derY[iout][ider].excludeRows(result.derY[iout][ider],ipt);
   }
 
@@ -1999,10 +2002,11 @@ SurfData& SurfData::excludePoints(SurfData& result, int ipt) {
 
 ///retrieve all points except the ones whose indices are listed in ipts, return them as a reference to a SurfData object
 SurfData& SurfData::excludePoints(SurfData& result, MtxInt& ipts) {
-  int nexclude=ipts.getNElems();
+  int nexclude=ipts.getNRows();
+  assert(ipts.getNCols()==1);
   ipts.uniqueElems();
-  assert(nexclude==ipts.getNElems());
-  assert((0<=ipts(0))&&(ipts(nexclude-1)<npts));
+  assert(nexclude==ipts.getNRows());
+  assert((0<=ipts(0,0))&&(ipts(nexclude-1,0)<npts));
   result.npts     =npts-nexclude;
   result.nvarsr   =nvarsr;
   result.nvarsi   =nvarsi;
@@ -2017,8 +2021,8 @@ SurfData& SurfData::excludePoints(SurfData& result, MtxInt& ipts) {
   result.derOrder =derOrder;
   result.derY.resize(nout);
   for(int iout=0; iout<nout; ++iout) {
-    result.derY[iout].resize(derOrder(iout)+1);
-    for(int ider=1; ider<=derOrder(iout); ++ider)
+    result.derY[iout].resize(derOrder(0,iout)+1);
+    for(int ider=1; ider<=derOrder(0,iout); ++ider)
       derY[iout][ider].excludeRows(result.derY[iout][ider],ipts);
   }
 
@@ -2060,8 +2064,8 @@ void SurfData::extractPoints(SurfData& rest, SurfData& extracted, int ipt) {
   extracted.derOrder =derOrder;
   extracted.derY.resize(nout);
   for(int iout=0; iout<nout; ++iout) {
-    extracted.derY[iout].resize(derOrder(iout)+1);
-    for(int ider=1; ider<=derOrder(iout); ++ider)
+    extracted.derY[iout].resize(derOrder(0,iout)+1);
+    for(int ider=1; ider<=derOrder(0,iout); ++ider)
       derY[iout][ider].getRows(extracted.derY[iout][ider],ipt);
   }
 
@@ -2091,8 +2095,8 @@ void SurfData::extractPoints(SurfData& rest, SurfData& extracted, int ipt) {
   rest.derOrder =derOrder;
   rest.derY.resize(nout);
   for(int iout=0; iout<nout; ++iout) {
-    rest.derY[iout].resize(derOrder(iout)+1);
-    for(int ider=1; ider<=derOrder(iout); ++ider)
+    rest.derY[iout].resize(derOrder(0,iout)+1);
+    for(int ider=1; ider<=derOrder(0,iout); ++ider)
       derY[iout][ider].excludeRows(rest.derY[iout][ider],ipt);
   }
 
@@ -2105,10 +2109,11 @@ void SurfData::extractPoints(SurfData& rest, SurfData& extracted, int ipt) {
 
 ///create a split copy of the points stored in this surfdata, the ones whose indices are listed in ipts will be placed in "extracted", the rest will be placed in "rest", this is very useful for the Leave N Out cross Validation metric
 void SurfData::extractPoints(SurfData& rest, SurfData& extracted, MtxInt& ipts) {
-  int nextract=ipts.getNElems();
+  int nextract=ipts.getNRows();
+  assert(ipts.getNCols()==1);
   ipts.uniqueElems();
-  assert(nextract==ipts.getNElems());
-  assert((0<=ipts(0))&&(ipts(nextract-1)<npts));
+  assert(nextract==ipts.getNRows());
+  assert((0<=ipts(0,0))&&(ipts(nextract-1,0)<npts));
   extracted.npts     =nextract;
   extracted.nvarsr   =nvarsr;
   extracted.nvarsi   =nvarsi;
@@ -2123,8 +2128,8 @@ void SurfData::extractPoints(SurfData& rest, SurfData& extracted, MtxInt& ipts) 
   extracted.derOrder =derOrder;
   extracted.derY.resize(nout);
   for(int iout=0; iout<nout; ++iout) {
-    extracted.derY[iout].resize(derOrder(iout)+1);
-    for(int ider=1; ider<=derOrder(iout); ++ider)
+    extracted.derY[iout].resize(derOrder(0,iout)+1);
+    for(int ider=1; ider<=derOrder(0,iout); ++ider)
       derY[iout][ider].getRows(extracted.derY[iout][ider],ipts);
   }
 
@@ -2146,8 +2151,8 @@ void SurfData::extractPoints(SurfData& rest, SurfData& extracted, MtxInt& ipts) 
   rest.derOrder =derOrder;
   rest.derY.resize(nout);
   for(int iout=0; iout<nout; ++iout) {
-    rest.derY[iout].resize(derOrder(iout)+1);
-    for(int ider=1; ider<=derOrder(iout); ++ider)
+    rest.derY[iout].resize(derOrder(0,iout)+1);
+    for(int ider=1; ider<=derOrder(0,iout); ++ider)
       derY[iout][ider].excludeRows(rest.derY[iout][ider],ipts);
   }
 

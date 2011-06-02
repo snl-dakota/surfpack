@@ -109,7 +109,7 @@ public:
     correlations.newSize(1,numTheta);
     //MtxDbl theta(1,numTheta);
     for(int i=0; i<numTheta; ++i)
-      correlations(i)=0.5*exp(-2.0*nat_log_corr_len(i));
+      correlations(0,i)=0.5*std::exp(-2.0*nat_log_corr_len(0,i));
     masterObjectiveAndConstraints(correlations, 1, 0);
     //printf("[objective]");
     return obj;
@@ -124,14 +124,14 @@ public:
     correlations.newSize(1,numTheta);
     //MtxDbl theta(1,numTheta);
     for(int i=0; i<numTheta; ++i)
-      correlations(i)=0.5*exp(-2.0*nat_log_corr_len(i));
+      correlations(0,i)=0.5*std::exp(-2.0*nat_log_corr_len(0,i));
     masterObjectiveAndConstraints(correlations, 4, 0);
 
     //convert Hessian into log(correlation_length) space
     MtxDbl hess_obj_out(numTheta,numTheta);
     for(int i=0; i<numTheta; ++i)
       for(int j=0; j<numTheta; ++j)
-	hess_obj_out(i,j)=hessObj(i,j)*4.0*correlations(i)*correlations(j);
+	hess_obj_out(i,j)=hessObj(i,j)*4.0*correlations(0,i)*correlations(0,j);
 
     MtxDbl eig_vals(numTheta); //all the eigenvalues of a Hessian should be positive
     eig_sym(eig_vals,hess_obj_out);
@@ -150,11 +150,11 @@ public:
   inline void objectiveAndGradient(double& obj_out, MtxDbl& grad_obj_out,
 				   const MtxDbl& nat_log_corr_len) {
 
-    grad_obj_out.newSize(numTheta);
+    grad_obj_out.newSize(numTheta,1);
     correlations.newSize(1,numTheta);
     //MtxDbl theta(1,numTheta);
     for(int i=0; i<numTheta; ++i)
-      correlations(i)=0.5*exp(-2.0*nat_log_corr_len(i));
+      correlations(0,i)=0.5*std::exp(-2.0*nat_log_corr_len(0,i));
     masterObjectiveAndConstraints(correlations, 2, 0);
     obj_out=obj;
     //grad_obj_out.copy(gradObj);
@@ -162,10 +162,10 @@ public:
     //convert from gradient with respect to theta to gradient with 
     //respect to nat_log_corr_len
     for(int i=0; i<numTheta; ++i)
-      grad_obj_out(i)=gradObj(i)*-2.0*correlations(i);
-    //printf("[grad_obj_out={%g",grad_obj_out(0));
+      grad_obj_out(i,0)=gradObj(i,0)*-2.0*correlations(0,i);
+    //printf("[grad_obj_out={%g",grad_obj_out(0,0));
     //for(int i=1; i<numTheta; ++i)
-    //printf(", %g",grad_obj_out(i));
+    //printf(", %g",grad_obj_out(i,0));
     //printf("}]");
 
     return;
@@ -177,17 +177,17 @@ public:
 				      const MtxDbl& nat_log_corr_len) {
     //printf("entered objectiveAndConstraints\n");  fflush(stdout);
     correlations.newSize(1,numTheta);
-    con_out.newSize(numConFunc);
+    con_out.newSize(numConFunc,1);
     //MtxDbl theta(1,numTheta);
     for(int i=0; i<numTheta; ++i)
-      correlations(i)=0.5*exp(-2.0*nat_log_corr_len(i));
+      correlations(0,i)=0.5*std::exp(-2.0*nat_log_corr_len(0,i));
     //printf("about to enter masterObjectiveAndConstraints\n"); fflush(stdout);
     masterObjectiveAndConstraints(correlations, 1, 1);
     //printf("left masterObjectiveAndConstraints\n"); fflush(stdout);
     obj_out=obj;
     for(int i=0; i<numConFunc; i++){
       //printf("i=%d ",i); fflush(stdout);
-      con_out(i)=con(i);
+      con_out(i,0)=con(i,0);
     }
     //con_out.copy(con);
     //printf("[objectiveAndConstraints]");
@@ -201,23 +201,23 @@ public:
 						  MtxDbl& grad_obj_out, 
 						  MtxDbl& grad_con_out, 
 						  const MtxDbl& nat_log_corr_len) {
-    con_out.newSize(numConFunc);
-    grad_obj_out.newSize(numTheta);
+    con_out.newSize(numConFunc,1);
+    grad_obj_out.newSize(numTheta,1);
     grad_con_out.newSize(numConFunc,numTheta);
     //MtxDbl theta(1,numTheta);
     for(int i=0; i<numTheta; ++i)
-      correlations(i)=0.5*exp(-2.0*nat_log_corr_len(i));
+      correlations(0,i)=0.5*std::exp(-2.0*nat_log_corr_len(0,i));
     masterObjectiveAndConstraints(correlations, 2, 2);
     obj_out=obj;
     for(int i=0; i<numConFunc; ++i)
-      con_out(i)=con(i);
+      con_out(i,0)=con(i,0);
 
     //convert from gradient with respect to theta to gradient with 
     //respect to nat_log_corr_len
     for(int j=0; j<numTheta; ++j) {
-      grad_obj_out(j)=gradObj(j)*-2.0*correlations(j);
+      grad_obj_out(j,0)=gradObj(j,0)*-2.0*correlations(0,j);
       for(int i=0; i<numConFunc; ++i)
-	grad_con_out(i,j)=gradCon(i,j)*-2.0*correlations(j);
+	grad_con_out(i,j)=gradCon(i,j)*-2.0*correlations(0,j);
     }
 
     //printf("[grad_obj_out={%g",grad_obj_out(0));

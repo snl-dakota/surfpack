@@ -43,30 +43,34 @@ inline double dot_product(const MtxDbl& a, const MtxDbl& b)
   int inc=1;
   if((nrowsa==a.getNRowsAct())&&(nrowsb==b.getNRowsAct())) {
     // ddot will not violate the constness
-    return DDOT_F77(&nelem, a.ptr(0), &inc, b.ptr(0), &inc);
+    return DDOT_F77(&nelem, a.ptr(0,0), &inc, b.ptr(0,0), &inc);
   }
   else if(nrowsa==nrowsb) {
-    double dotprod=DDOT_F77(&nrowsa, a.ptr(0), &inc, b.ptr(0), &inc);
+    double dotprod=DDOT_F77(&nrowsa, a.ptr(0,0), &inc, b.ptr(0,0), &inc);
     for(int j=1; j<ncolsa; ++j)
       dotprod+=DDOT_F77(&nrowsa, a.ptr(0,j), &inc, b.ptr(0,j), &inc);
 
     return dotprod;
   }
+  else
+    assert(false);
+  /*
   else{
-    long double dotprod=a(0)*b(0);
+    long double dotprod=a(0,0)*b(0,0);
     for(int k=1; k<nelem; ++k)
       dotprod+=a(k)*b(k);
     
     return static_cast<double>(dotprod);
   }
+  */
 
 }
-
-#ifdef __SURFMAT_ERR_CHECK__
-MtxDbl& matrix_mult_debug(MtxDbl& C, const MtxDbl& A, const MtxDbl& B, 
-			  double scaleC=0.0, double scaleAB=1.0, 
-			  char transA='N', char transB='N');
-#endif
+  //
+  //#ifdef __SURFMAT_ERR_CHECK__
+//MtxDbl& matrix_mult_debug(MtxDbl& C, const MtxDbl& A, const MtxDbl& B, 
+  //		  double scaleC=0.0, double scaleAB=1.0, 
+  //		  char transA='N', char transB='N');
+  //#endif
 
 /// matrix matrix Mult OR Matrix Vector Mult: C=scaleAB*A*B+scaleC*C, where A={A || A^T} and B={B || B^T}, wraps and chooses between DGEMV and DGEMM
 inline MtxDbl& matrix_mult(MtxDbl& C, const MtxDbl& A, const MtxDbl& B, 
@@ -110,7 +114,7 @@ inline MtxDbl& matrix_mult(MtxDbl& C, const MtxDbl& A, const MtxDbl& B,
   
   int nrowsA=static_cast<int>(A.getNRows()); //transpose does not affect
   int ncolsA=static_cast<int>(A.getNCols()); //transpose does not affect
-  int nrowsB=static_cast<int>(B.getNRows()); //transpose does not affect
+  //int nrowsB=static_cast<int>(B.getNRows()); //transpose does not affect
   int lda=static_cast<int>(A.getNRowsAct()); //transpose does not affect
   int ldb=static_cast<int>(B.getNRowsAct()); //transpose does not affect
   int ldc=static_cast<int>(C.getNRowsAct()); //transpose does not affect
@@ -121,7 +125,7 @@ inline MtxDbl& matrix_mult(MtxDbl& C, const MtxDbl& A, const MtxDbl& B,
       //printf("transA=%c transB=%c nrowsC=%d ninnnerA=%d ninnerB=%d A.getNRows()=%d\n",transA,transB,nrowsC,ninnerA,ninnerB,A.getNRows());
       
       //DGEMV_F77(&transA,&nrowsC,&ninnerA,&scaleAB,A.ptr(0,0),&nrowsC,B.ptr(0),&inc,&scaleC,C.ptr(0),&inc); 
-      DGEMV_F77(&transA,&nrowsA,&ncolsA,&scaleAB,A.ptr(0,0),&lda,B.ptr(0),&inc,&scaleC,C.ptr(0),&inc);
+      DGEMV_F77(&transA,&nrowsA,&ncolsA,&scaleAB,A.ptr(0,0),&lda,B.ptr(0,0),&inc,&scaleC,C.ptr(0,0),&inc);
       
     }
   else //BLAS3 matrix matrix multiply
@@ -156,36 +160,36 @@ inline MtxDbl& LDLT_fact(MtxDbl& matrix, MtxInt& ipvt, MtxDbl& scale, int& info,
   double log_of_2=std::log(2.0);
   for(int i=0; i<nrows; ++i) {
     abspower=static_cast<int>(std::floor(0.5+std::log(std::sqrt(matrix(i,i)))/log_of_2));
-    scale(i)=std::pow(2.0,static_cast<double>(-abspower)); //this is the "numerically optimal" preconditioning of a real symmetric positive definite matrix by "numerically optimal" I meant the analytically optimal (for reducing condition number) scaling has been rounded to the nearest power of 2 so that we don't lose any bits of accuracy due to rounding error due to preconditioning (and yes I know that the matrix may not be positive definite, but we want it to work at least as good as preconditioned Cholesky for rspd matrix)
+    scale(i,0)=std::pow(2.0,static_cast<double>(-abspower)); //this is the "numerically optimal" preconditioning of a real symmetric positive definite matrix by "numerically optimal" I meant the analytically optimal (for reducing condition number) scaling has been rounded to the nearest power of 2 so that we don't lose any bits of accuracy due to rounding error due to preconditioning (and yes I know that the matrix may not be positive definite, but we want it to work at least as good as preconditioned Cholesky for rspd matrix)
   }
 
   for(int j=0; j<nrows; ++j)
     for(int i=0; i<nrows; ++i)
-      matrix(i,j)*=scale(i)*scale(j);
+      matrix(i,j)*=scale(i,0)*scale(j,0);
 
 
   //determine the needed amount of work space, and allocate it
   int lwork=-1; //lwork=-1 => tell me how much work space I need
   double workneeded;
-  DSYTRF_F77(&uplo,&nrows,matrix.ptr(0),&lda,ipvt.ptr(0),&workneeded,&lwork,&info_local);
+  DSYTRF_F77(&uplo,&nrows,matrix.ptr(0,0),&lda,ipvt.ptr(0,0),&workneeded,&lwork,&info_local);
 #ifdef __SURFMAT_ERR_CHECK__
   assert(info_local>=0);
 #endif
-  lwork = (int) workneeded;
+  lwork = static_cast<int>(workneeded);
   if(lwork<2*nrows) lwork=2*nrows;
-  MtxDbl work(lwork);
-  MtxInt iwork(nrows);
+  MtxDbl work(lwork,1);
+  MtxInt iwork(nrows,1);
 
 
 
   //calculate orignorm now so we don't have to store a copy of the unfactored matrix
   char whichnorm='1';  //DSYCON can only return the 1-norm rcond
-  double orignorm=DLANGE_F77(&whichnorm,&nrows,&ncols,matrix.ptr(0),&lda,work.ptr(0));
+  double orignorm=DLANGE_F77(&whichnorm,&nrows,&ncols,matrix.ptr(0,0),&lda,work.ptr(0,0));
 
 
   //perform the L*D*L^T factorization
   info_local=0;
-  DSYTRF_F77(&uplo,&nrows,matrix.ptr(0),&lda,ipvt.ptr(0),work.ptr(0),&lwork,&info_local);
+  DSYTRF_F77(&uplo,&nrows,matrix.ptr(0,0),&lda,ipvt.ptr(0,0),work.ptr(0,0),&lwork,&info_local);
 #ifdef __SURFMAT_ERR_CHECK__
   assert(info_local>=0);
 #endif
@@ -194,7 +198,7 @@ inline MtxDbl& LDLT_fact(MtxDbl& matrix, MtxInt& ipvt, MtxDbl& scale, int& info,
 
   //the rcond of the real symmetric matrix, feed it orignorm, note that 
   info_local=0;
-  DSYCON_F77(&uplo,&nrows,matrix.ptr(0),&lda,ipvt.ptr(0),&orignorm,&rcond,work.ptr(0),iwork.ptr(0),&info_local);
+  DSYCON_F77(&uplo,&nrows,matrix.ptr(0,0),&lda,ipvt.ptr(0,0),&orignorm,&rcond,work.ptr(0,0),iwork.ptr(0,0),&info_local);
 #ifdef __SURFMAT_ERR_CHECK__
   assert(info_local==0);
 #endif
@@ -213,16 +217,16 @@ inline MtxDbl& inverse_after_LDLT_fact(MtxDbl& matrix, const MtxInt& ipvt, const
   char uplo='L';
   int lda=static_cast<int>(matrix.getNRowsAct());
   int info=0;
-  MtxDbl work(nrows);
+  MtxDbl work(nrows,1);
 
-  DSYTRI_F77(&uplo,&nrows,matrix.ptr(0),&lda,ipvt.ptr(0),work.ptr(0),&info);
+  DSYTRI_F77(&uplo,&nrows,matrix.ptr(0,0),&lda,ipvt.ptr(0,0),work.ptr(0,0),&info);
 #ifdef __SURFMAT_ERR_CHECK__
   assert(info==0);
 #endif
   //fill in the top half of the inverse
   for(int j=0; j<ncols-1; ++j)
     for(int i=j+1; i<nrows; ++i) 
-      matrix(j,i)=(matrix(i,j)*=scale(i)*scale(j));
+      matrix(j,i)=(matrix(i,j)*=scale(i,0)*scale(j,0));
 
   return matrix;
 }
@@ -231,23 +235,23 @@ inline MtxDbl& inverse_after_LDLT_fact(MtxDbl& matrix, const MtxInt& ipvt, const
 inline double rcond_after_LDLT_fact(const MtxDbl& A, const MtxDbl& ALDLT, const MtxInt& ipvt)
 {
   std::cerr << "rcond_after_LDLT_fact doesn't work because ALDLT was scaled during LDLT_fact" << std::endl;
-  assert(0);
+  assert(false);
   double rconda;
   char whichnorm='1'; //DSYCON can only return the 1-norm rcond
   char uplo='L';
   int nrows=A.getNRows();
   int ncols=A.getNCols();
-  int nrows_ALDLT=ALDLT.getNRows();
   int lda=ALDLT.getNRowsAct();
-  MtxDbl work(2*nrows);
-  MtxInt iwork(nrows);
+  MtxDbl work(2*nrows,1);
+  MtxInt iwork(nrows,1);
   int info=0;
 #ifdef __SURFMAT_ERR_CHECK__
+  int nrows_ALDLT=ALDLT.getNRows();
   assert((nrows_ALDLT==nrows)&&(nrows_ALDLT==ALDLT.getNCols())&&(nrows==ncols));
 #endif
-  double anorm=DLANGE_F77(&whichnorm,&nrows,&ncols,A.ptr(0),&lda,work.ptr(0));
+  double anorm=DLANGE_F77(&whichnorm,&nrows,&ncols,A.ptr(0,0),&lda,work.ptr(0,0));
 
-  DSYCON_F77(&uplo,&nrows,ALDLT.ptr(0),&lda,ipvt.ptr(0),&anorm,&rconda,work.ptr(0),iwork.ptr(0),&info);
+  DSYCON_F77(&uplo,&nrows,ALDLT.ptr(0,0),&lda,ipvt.ptr(0,0),&anorm,&rconda,work.ptr(0,0),iwork.ptr(0,0),&info);
 #ifdef __SURFMAT_ERR_CHECK__
   assert(info==0);
 #endif
@@ -288,15 +292,15 @@ inline MtxDbl& solve_after_LDLT_fact(MtxDbl& result, const MtxDbl& ALDLT, const 
 
   for(int j=0; j<nrhs; ++j)
     for(int i=0; i<n; ++i)
-      result(i,j)*=scale(i);
+      result(i,j)*=scale(i,0);
 
   //printf("solve_after_LDLT_fact: n=%d nrhs=%d\n",n,nrhs);
   int info=0;
-  DSYTRS_F77(&uplo, &n, &nrhs, ALDLT.ptr(0,0), &lda, ipvt.ptr(0), result.ptr(0,0), &ldb, &info);
+  DSYTRS_F77(&uplo, &n, &nrhs, ALDLT.ptr(0,0), &lda, ipvt.ptr(0,0), result.ptr(0,0), &ldb, &info);
 
   for(int j=0; j<nrhs; ++j)
     for(int i=0; i<n; ++i)
-      result(i,j)*=scale(i);
+      result(i,j)*=scale(i,0);
 
   return result;
 }
@@ -322,39 +326,39 @@ inline MtxDbl& pseudo_inverse(MtxDbl& A, double min_allowed_rcond, double& rcond
 
   double size_of_work;
   int lwork=-1; //tell me how much work space I need;
-  DGESVD_F77(&jobu,&jobvt,&nrowsA,&ncolsA,A.ptr(0),&lda,S.ptr(0),U.ptr(0),&ldu,VT.ptr(0),&ldvt,&size_of_work,&lwork,&local_info);
+  DGESVD_F77(&jobu,&jobvt,&nrowsA,&ncolsA,A.ptr(0,0),&lda,S.ptr(0,0),U.ptr(0,0),&ldu,VT.ptr(0,0),&ldvt,&size_of_work,&lwork,&local_info);
 #ifdef __SURFMAT_ERR_CHECK__
   assert(local_info==0);
 #endif
   lwork=static_cast<int>(size_of_work);
   MtxDbl work(lwork,1);
   
-  DGESVD_F77(&jobu,&jobvt,&nrowsA,&ncolsA,A.ptr(0),&lda,S.ptr(0),U.ptr(0),&ldu,VT.ptr(0),&ldvt,work.ptr(0),&lwork,&local_info);
+  DGESVD_F77(&jobu,&jobvt,&nrowsA,&ncolsA,A.ptr(0,0),&lda,S.ptr(0,0),U.ptr(0,0),&ldu,VT.ptr(0,0),&ldvt,work.ptr(0,0),&lwork,&local_info);
 #ifdef __SURFMAT_ERR_CHECK__
   assert(local_info==0);
 #endif
 
-  rcondA=S(min_nrows_ncols_A-1)/S(0); //this is actually rcond if A is symmetric
+  rcondA=S(min_nrows_ncols_A-1,0)/S(0,0); //this is actually rcond if A is symmetric
 
   log_abs_det=0.0;
   if_det_eq_zero=0;
     
-  if(S(0)==0.0) {
+  if(S(0,0)==0.0) {
     A.zero();
     if_det_eq_zero=1;
   }
   else{
-    double min_allowed_sing=S(0)*min_allowed_rcond;
+    double min_allowed_sing=S(0,0)*min_allowed_rcond;
     double inv_sing;
     for(int j=0; j<min_nrows_ncols_A; ++j) {
 
-      if(S(j)>0.0)
-	log_abs_det+=std::log(S(j));
+      if(S(j,0)>0.0)
+	log_abs_det+=std::log(S(j,0));
       else
 	if_det_eq_zero=1;
 
-      if(min_allowed_sing<=S(j)) {
-	inv_sing=1.0/S(j);
+      if(min_allowed_sing<=S(j,0)) {
+	inv_sing=1.0/S(j,0);
 	for(int i=0; i<nrowsA; ++i)
 	  U(i,j)*=inv_sing;
       }
@@ -384,24 +388,24 @@ inline MtxDbl& Chol_fact(MtxDbl& matrix, int& info, double& rcondprecond)
   int lda=static_cast<int>(matrix.getNRowsAct());;
   int info_local=0;
 
-  MtxDbl work(3*nrows);
-  MtxInt iwork(nrows);
+  MtxDbl work(3*nrows,1);
+  MtxInt iwork(nrows,1);
 
   int abspower;
   int minabspower;
   int maxabspower;
-  MtxDbl scalefactor(nrows);
+  MtxDbl scalefactor(nrows,1);
   double log_of_2=std::log(2.0);
   abspower=static_cast<int>(std::floor(0.5+std::log(std::sqrt(matrix(0,0)))/log_of_2));
-  scalefactor(0)=std::pow(2.0,static_cast<double>(-abspower));
+  scalefactor(0,0)=std::pow(2.0,static_cast<double>(-abspower));
   //abspower=log2(sqrt(matrix(0,0)));
-  //scalefactor(0)=1.0/sqrt(matrix(0,0));
+  //scalefactor(0,0)=1.0/sqrt(matrix(0,0));
   minabspower=maxabspower=abspower;
   for(int i=1; i<nrows; ++i) {
     abspower=static_cast<int>(std::floor(0.5+std::log(std::sqrt(matrix(i,i)))/log_of_2));
-    scalefactor(i)=std::pow(2.0,static_cast<double>(-abspower)); //this is the "numerically optimal" preconditioning of a real symmetric positive definite matrix by "numerically optimal" I meant the analytically optimal (for reducing condition number) scaling has been rounded to the nearest power of 2 so that we don't lose any bits of accuracy due to rounding error due to preconditioning
+    scalefactor(i,0)=std::pow(2.0,static_cast<double>(-abspower)); //this is the "numerically optimal" preconditioning of a real symmetric positive definite matrix by "numerically optimal" I meant the analytically optimal (for reducing condition number) scaling has been rounded to the nearest power of 2 so that we don't lose any bits of accuracy due to rounding error due to preconditioning
     //abspower=log2(sqrt(matrix(i,i)));
-    //scalefactor(i)=1.0/sqrt(matrix(i,i));
+    //scalefactor(i,0)=1.0/sqrt(matrix(i,i));
     minabspower=(abspower<minabspower)?abspower:minabspower;
     maxabspower=(abspower>maxabspower)?abspower:maxabspower;   
   }
@@ -410,21 +414,21 @@ inline MtxDbl& Chol_fact(MtxDbl& matrix, int& info, double& rcondprecond)
     //only do the preconditioning if the maximum and minimum numerically optimal scaling factors are different (by a factor of 2 or more) because otherwise the real symmetric positive definite matrix is already numerically optimally preconditioned.
     for(int j=0; j<nrows; ++j)
       for(int i=0; i<nrows; ++i)
-	matrix(i,j)*=scalefactor(i)*scalefactor(j);
+	matrix(i,j)*=scalefactor(i,0)*scalefactor(j,0);
   }
 
   //calculate orignorm now so we don't have to store a copy of the unfactored matrix
   char whichnorm='1';
-  double orignorm=DLANGE_F77(&whichnorm,&nrows,&ncols,matrix.ptr(0),&lda,work.ptr(0));
+  double orignorm=DLANGE_F77(&whichnorm,&nrows,&ncols,matrix.ptr(0,0),&lda,work.ptr(0,0));
 
-  DPOTRF_F77(&uplo,&nrows,matrix.ptr(0),&lda,&info_local);
+  DPOTRF_F77(&uplo,&nrows,matrix.ptr(0,0),&lda,&info_local);
 #ifdef __SURFMAT_ERR_CHECK__
   assert(info_local>=0);
 #endif
   info=info_local;
 
   //the rcond of the "numerically optimally" preconditioned real symmetric positive definte matrix, feed it orignorm
-  DPOCON_F77(&uplo,&nrows,matrix.ptr(0),&lda,&orignorm,&rcondprecond,work.ptr(0),iwork.ptr(0),&info_local);
+  DPOCON_F77(&uplo,&nrows,matrix.ptr(0,0),&lda,&orignorm,&rcondprecond,work.ptr(0,0),iwork.ptr(0,0),&info_local);
 #ifdef __SURFMAT_ERR_CHECK__
   assert(info_local==0);
 #endif
@@ -432,11 +436,11 @@ inline MtxDbl& Chol_fact(MtxDbl& matrix, int& info, double& rcondprecond)
   if(maxabspower!=minabspower) {
     //undo the "numerically optimal" preconditioning of the real symmetric positive definite matrix, that is other than possibly avoiding rounding error due to poorly condition matrix this function produces the same cholesky "L" matrix that you would get without preconditiong.
     for(int i=0; i<nrows; ++i)
-      scalefactor(i)=1.0/scalefactor(i); //multiplication can be faster than division
+      scalefactor(i,0)=1.0/scalefactor(i,0); //multiplication can be faster than division
 
     for(int j=0; j<nrows; ++j)
       for(int i=j; i<nrows; ++i)  //it's lower triangular
-	matrix(i,j)*=scalefactor(i);
+	matrix(i,j)*=scalefactor(i,0);
   }
 
   return matrix;
@@ -454,7 +458,7 @@ inline MtxDbl& inverse_after_Chol_fact(MtxDbl& matrix)
   int lda=static_cast<int>(matrix.getNRowsAct());
   int info=0;
 
-  DPOTRI_F77(&uplo,&nrows,matrix.ptr(0),&lda,&info);
+  DPOTRI_F77(&uplo,&nrows,matrix.ptr(0,0),&lda,&info);
 #ifdef __SURFMAT_ERR_CHECK__
   assert(info==0);
 #endif
@@ -474,39 +478,39 @@ inline double rcond_after_Chol_fact(const MtxDbl& A, const MtxDbl& AChol)
   char uplo='L';
   int nrows=A.getNRows();
   int ncols=A.getNCols();
-  int nrows_AChol=AChol.getNRows();
   int lda=static_cast<int>(A.getNRowsAct());
   int ld_AChol=static_cast<int>(AChol.getNRowsAct());
-  MtxDbl work(3*nrows);
-  MtxInt iwork(nrows);
+  MtxDbl work(3*nrows,1);
+  MtxInt iwork(nrows,1);
   int info;
 #ifdef __SURFMAT_ERR_CHECK__
+  int nrows_AChol=AChol.getNRows();
   assert((nrows_AChol==nrows)&&(nrows_AChol==AChol.getNCols())&&(nrows==ncols));
 #endif
-  double anorm=DLANGE_F77(&whichnorm,&nrows,&ncols,A.ptr(0),&lda,work.ptr(0));
-  DPOCON_F77(&uplo,&nrows,AChol.ptr(0),&ld_AChol,&anorm,&rconda,work.ptr(0),iwork.ptr(0),&info);
+  double anorm=DLANGE_F77(&whichnorm,&nrows,&ncols,A.ptr(0,0),&lda,work.ptr(0,0));
+  DPOCON_F77(&uplo,&nrows,AChol.ptr(0,0),&ld_AChol,&anorm,&rconda,work.ptr(0,0),iwork.ptr(0,0),&info);
 #ifdef __SURFMAT_ERR_CHECK__
   assert(info==0);
 #endif
   return rconda;
 }
 
-MtxDbl& debug_solve_after_Chol_fact(MtxDbl& result, const MtxDbl& AChol, const MtxDbl& BRHS,char transB='N');
+  //MtxDbl& debug_solve_after_Chol_fact(MtxDbl& result, const MtxDbl& AChol, const MtxDbl& BRHS,char transB='N');
 
 /// solves A*X=B for X, where A is symmetric positive definite and B={B || B^T}, without changing the contents of B, after A has been Cholesky factorized, AChol must contain the lower triangular portion of the factorization of A, wraps DPOTRS 
 inline MtxDbl& solve_after_Chol_fact(MtxDbl& result, const MtxDbl& AChol, const MtxDbl& BRHS,char transB='N')
-#ifdef __SURFMAT_ERR_CHECK__
-{
-  return debug_solve_after_Chol_fact(result, AChol, BRHS,transB);
-}
-#else
+//#ifdef __SURFMAT_ERR_CHECK__
+//{
+//return debug_solve_after_Chol_fact(result, AChol, BRHS,transB);
+//}
+//#else
 {
   int n   = static_cast<int>(AChol.getNRows());
 #ifdef __SURFMAT_ERR_CHECK__
-  printf("solve_after_Chol_fact transB='%c' size(Achol)=[%d x %d] size(BRHS)=[%d x %d]",
-	 transB,n,n,BRHS.getNRows(),BRHS.getNCols());
-  fflush(stdout);
-  printf("\n");
+  //printf("solve_after_Chol_fact transB='%c' size(Achol)=[%d x %d] size(BRHS)=[%d x %d]",
+  //transB,n,n,BRHS.getNRows(),BRHS.getNCols());
+  //fflush(stdout);
+  //printf("\n");
   assert(((transB=='N') && (BRHS.getNRows()==n)) ||
 	 ((transB=='T') && (BRHS.getNCols()==n)));
 #endif
@@ -538,7 +542,7 @@ inline MtxDbl& solve_after_Chol_fact(MtxDbl& result, const MtxDbl& AChol, const 
   DPOTRS_F77(&uplo, &n, &nrhs, AChol.ptr(0,0), &lda, result.ptr(0,0), &ldb, &info);
   return result;
 }
-#endif
+  //#endif
 
 /// perform an LU factorization with partial pivoting, wraps LAPACK subroutine DGETRF
 inline MtxDbl& LU_fact(MtxDbl& matrix, MtxInt& ipvt)
@@ -551,13 +555,13 @@ inline MtxDbl& LU_fact(MtxDbl& matrix, MtxInt& ipvt)
   // dgetrf may reorder the rows, the mapping between old and new rows
   // is returned in ipvt.
   if((ipvt.getNRows()!=nrows)||(ipvt.getNCols()!=1))
-    ipvt.newSize(nrows); 
+    ipvt.newSize(nrows,1); 
   
   int lda = static_cast<int>(matrix.getNRowsAct());
   int info = 0;
   //printf("nrows=%d ncols=%d\n",nrows,ncols);
   //std::cout << "Matrix size: " << n_rows << " " << n_cols << std::endl;
-  DGETRF_F77(&nrows,&ncols,matrix.ptr(0,0),&lda,ipvt.ptr(0),&info);
+  DGETRF_F77(&nrows,&ncols,matrix.ptr(0,0),&lda,ipvt.ptr(0,0),&info);
   //std::cout << "Done with dgetrf" << std::endl;
   return matrix;
 }
@@ -571,11 +575,11 @@ inline MtxDbl& inverse_after_LU_fact(MtxDbl& matrix, MtxInt& ipvt)
   assert(nrows==ncols);
 #endif
   int lwork = ncols;  // should be optimal blocksize
-  MtxDbl work(lwork);
+  MtxDbl work(lwork,1);
   int lda = static_cast<int>(matrix.getNRowsAct());
   int info = 0;
   //std::cout << "Matrix size: " << n_rows << " " << n_cols << std::endl;
-  DGETRI_F77(&nrows,matrix.ptr(0,0),&lda,ipvt.ptr(0),work.ptr(0),&lwork,&info);
+  DGETRI_F77(&nrows,matrix.ptr(0,0),&lda,ipvt.ptr(0,0),work.ptr(0,0),&lwork,&info);
   //std::cout << "Done with getri" << std::endl;
   return matrix;
 }
@@ -590,19 +594,19 @@ inline double rcond_after_LU_fact(const MtxDbl& A, const MtxDbl& ALU) {
   int ncols_A=A.getNCols();
   int LDA=ALU.getNRowsAct();
   int nrows_ALU=ALU.getNRows();
-  int ncols_ALU=ALU.getNCols();
   int LD_ALU=ALU.getNRowsAct();
 
-  MtxDbl work(4*ncols_A); 
-  MtxInt iwork(ncols_A);
+  MtxDbl work(4*ncols_A,1); 
+  MtxInt iwork(ncols_A,1);
   int info;
 #ifdef __SURFMAT_ERR_CHECK__
+  int ncols_ALU=ALU.getNCols();
   assert((nrows_ALU==ncols_ALU)&&(nrows_ALU==nrows_A)&&(nrows_A==ncols_A));
 #endif
   double anorm=DLANGE_F77(&whichnorm,&nrows_A,&ncols_A,A.ptr(0,0),&LDA,
-			  work.ptr(0));
+			  work.ptr(0,0));
   DGECON_F77(&whichnorm,&nrows_ALU,ALU.ptr(0,0),&LD_ALU,&anorm,&rcond,
-	     work.ptr(0), iwork.ptr(0),&info);
+	     work.ptr(0,0), iwork.ptr(0,0),&info);
   return rcond;
 }
 
@@ -641,7 +645,7 @@ inline MtxDbl& solve_after_LU_fact(MtxDbl& result, const MtxDbl& ALU, const MtxI
   
   //printf("solve_after_LU_fact: n=%d nrhs=%d\n",n,nrhs);
   int info=0;
-  DGETRS_F77(&transA, &nrows_ALU, &nrhs, ALU.ptr(0,0), &lda, ipvt.ptr(0), result.ptr(0,0), &ldb, &info);
+  DGETRS_F77(&transA, &nrows_ALU, &nrhs, ALU.ptr(0,0), &lda, ipvt.ptr(0,0), result.ptr(0,0), &ldb, &info);
   return result;
 }
 
@@ -659,7 +663,7 @@ inline void least_squares(MtxDbl& A, MtxDbl& x, MtxDbl& b)
   int lda = static_cast<int>(A.getNRowsAct());
   // Client may supply a "blank" initialized vector for x
   int lwork = nrowsA*ncolsA * 2;
-  MtxDbl work(lwork);
+  MtxDbl work(lwork,1);
   // values must be passed by reference to Fortran, so variables must be 
   // declared for info, nrhs, trans
   int info;
@@ -667,9 +671,9 @@ inline void least_squares(MtxDbl& A, MtxDbl& x, MtxDbl& b)
   char trans = 'N';
   x = b; //preserve the original b
   int ldb=x.getNRowsAct();
-  DGELS_F77(&trans,&nrowsA,&ncolsA,&nrhs,A.ptr(0,0),&lda,x.ptr(0),
-	    &ldb,work.ptr(0),&lwork,&info);
-  x.reshape(ncolsA);
+  DGELS_F77(&trans,&nrowsA,&ncolsA,&nrhs,A.ptr(0,0),&lda,x.ptr(0,0),
+	    &ldb,work.ptr(0,0),&lwork,&info);
+  x.reshape(ncolsA,1);
 }
 
 
@@ -679,10 +683,10 @@ inline void least_squares_with_equality_constraints(MtxDbl& A,
   int nrowsA = static_cast<int>(A.getNRows());
   int ncolsA = static_cast<int>(A.getNCols());
   int nrowsB = static_cast<int>(B.getNRows());
-  int ncolsB = static_cast<int>(B.getNCols());
   int lda = static_cast<int>(A.getNRowsAct());
   int ldb = static_cast<int>(B.getNRowsAct());
 #ifdef __SURFMAT_ERR_CHECK__
+  int ncolsB = static_cast<int>(B.getNCols());
   assert(ncolsB == ncolsA);
   assert(nrowsB <= ncolsA);
   assert(ncolsA <= nrowsB + nrowsA);
@@ -691,9 +695,9 @@ inline void least_squares_with_equality_constraints(MtxDbl& A,
   int lwork = (nrowsA + ncolsA + nrowsB);
   lwork *= lwork;
   ///\todo Compute optimal blocksize before running dgglse
-  MtxDbl work(lwork);
+    MtxDbl work(lwork,1);
   int info = 0;
-  DGGLSE_F77(&nrowsA,&ncolsA,&nrowsB,A.ptr(0,0),&lda,B.ptr(0,0),&ldb,c.ptr(0),d.ptr(0),x.ptr(0),work.ptr(0),&lwork,
+  DGGLSE_F77(&nrowsA,&ncolsA,&nrowsB,A.ptr(0,0),&lda,B.ptr(0,0),&ldb,c.ptr(0,0),d.ptr(0,0),x.ptr(0,0),work.ptr(0,0),&lwork,
 	     &info);
 #ifdef __SURFMAT_ERR_CHECK__
   if (info != 0) {
@@ -714,19 +718,19 @@ inline MtxDbl& eig_sym(MtxDbl& eigvect, MtxDbl& eigval, const MtxDbl& A, char jo
   assert((0<nrowsA)&&(nrowsA==A.getNCols()));
 #endif
   eigvect.copy(A);
-  eigval.newSize(nrowsA); eigval.zero(); //zero is for sanity check
+  eigval.newSize(nrowsA,1); eigval.zero(); //zero is for sanity check
   int info;
   int lwork=-1;
   double work_size;
-  DSYEV_F77(&jobz, &uplo, &nrowsA, eigvect.ptr(0), &lda, eigval.ptr(0), 
+  DSYEV_F77(&jobz, &uplo, &nrowsA, eigvect.ptr(0,0), &lda, eigval.ptr(0,0), 
 	    &work_size, &lwork, &info);
 #ifdef __SURFMAT_ERR_CHECK__
   assert(info==0);
 #endif
   lwork=static_cast<int>(work_size);
-  MtxDbl work(lwork);
-  DSYEV_F77(&jobz, &uplo, &nrowsA, eigvect.ptr(0), &lda, eigval.ptr(0), 
-	    work.ptr(0), &lwork, &info);
+  MtxDbl work(lwork,1);
+  DSYEV_F77(&jobz, &uplo, &nrowsA, eigvect.ptr(0,0), &lda, eigval.ptr(0,0), 
+	    work.ptr(0,0), &lwork, &info);
 
   return eigval;
 }
@@ -748,39 +752,38 @@ inline MtxDbl& pseudo_inverse_sym(MtxDbl& A, double min_allowed_rcond, double& r
 #ifdef __SURFMAT_ERR_CHECK__
   assert(nrowsA==A.getNCols());
 #endif
-  MtxDbl scale(nrowsA);
+  MtxDbl scale(nrowsA,1);
   int abspower;
-  double log_det_A=0.0;
   double log_of_2=std::log(2.0);
   for(int i=0; i<nrowsA; ++i) {
     abspower=static_cast<int>(std::floor(0.5+std::log(std::sqrt(std::fabs(A(i,i))))/log_of_2));
-    scale(i)=std::pow(2.0,static_cast<double>(-abspower));
-    log_abs_det_A-=log(scale(i));
+    scale(i,0)=std::pow(2.0,static_cast<double>(-abspower));
+    log_abs_det_A-=log(scale(i,0));
   }
   log_abs_det_A*=2.0;
   for(int j=0; j<nrowsA; ++j)
     for(int i=0; i<nrowsA; ++i)
-      A(i,j)*=scale(i)*scale(j);
+      A(i,j)*=scale(i,0)*scale(j,0);
 
-  MtxDbl eigvect(nrowsA,nrowsA), eigval(nrowsA);  
+  MtxDbl eigvect(nrowsA,nrowsA), eigval(nrowsA,1);  
   eig_sym(eigvect, eigval, A);
 
   sign_of_det_A=1.0;
   MtxDbl eigvect_eigval_inv(nrowsA,nrowsA);
-  double smallest_eigval=std::fabs(eigval(0));
+  double smallest_eigval=std::fabs(eigval(0,0));
   for(int j=1; j<nrowsA; ++j) {
-    sign_of_det_A*=(static_cast<double> ((eigval(j)>0.0) - (eigval(j)<0.0)));
-    if(std::fabs(eigval(j))>smallest_eigval) {
-      log_abs_det_A+=std::log(std::fabs(eigval(j)));
-      smallest_eigval=std::fabs(eigval(j));  
+    sign_of_det_A*=(static_cast<double> ((eigval(j,0)>0.0) - (eigval(j,0)<0.0)));
+    if(std::fabs(eigval(j,0))>smallest_eigval) {
+      log_abs_det_A+=std::log(std::fabs(eigval(j,0)));
+      smallest_eigval=std::fabs(eigval(j,0));  
     }
   }
   smallest_eigval*=min_allowed_rcond;
   
   double eigval_inv;
   for(int j=0; j<nrowsA; ++j) 
-    if(smallest_eigval<=std::fabs(eigval(j))) {
-      eigval_inv=1.0/eigval(j);
+    if(smallest_eigval<=std::fabs(eigval(j,0))) {
+      eigval_inv=1.0/eigval(j,0);
       for(int i=0; i<nrowsA; ++i) 
 	eigvect_eigval_inv(i,j)=eigvect(i,j)*eigval_inv;
     }
@@ -792,7 +795,7 @@ inline MtxDbl& pseudo_inverse_sym(MtxDbl& A, double min_allowed_rcond, double& r
 
   for(int j=0; j<nrowsA; ++j)
     for(int i=0; i<nrowsA; ++i)
-      A(i,j)*=scale(i)*scale(j);
+      A(i,j)*=scale(i,0)*scale(j,0);
 
   return A;
 }
@@ -808,22 +811,22 @@ inline double log_det_after_LDLT_fact(const MtxDbl& ALDLT, const MtxInt& ipvt, c
 #endif
   double log_det_A=0.0;
   for(int i=0; i<nrowsA; ++i)
-    log_det_A-=log(scale(i));
+    log_det_A-=log(scale(i,0));
   log_det_A*=2.0;
 
   sign_of_det=1.0;
   double block2_det;
   for(int i=0; i<nrowsA; ) {
 #ifdef __SURFMAT_ERR_CHECK__
-    assert(ipvt(i)!=0);
+    assert(ipvt(i,0)!=0);
 #endif
-    if(ipvt(i)>0) {
+    if(ipvt(i,0)>0) {
       //sign_of_det*=sign(ALDLT(i,i))
       sign_of_det*=(static_cast<double> ((ALDLT(i,i)>0.0) - (ALDLT(i,i)<0.0)));       
       log_det_A+=std::log(std::fabs(ALDLT(i,i)));
       i++;
     }
-    else if(ipvt(i)==ipvt(i+1)){
+    else if(ipvt(i,0)==ipvt(i+1,0)){
 #ifdef __SURFMAT_ERR_CHECK__
       assert(i<nrowsA-1);
 #endif
@@ -833,8 +836,8 @@ inline double log_det_after_LDLT_fact(const MtxDbl& ALDLT, const MtxInt& ipvt, c
       i+=2;
     }
     else{
-      std::cerr << "in log_det_after_LDLT_fact must have ipvt(i)>0 or ipvt(i)==ipvt(i+1) (in latter case we do i+=2, so we never see the 'second negative' i.e. don't see ipvt(i+1)<0 when ipvt(i)==ipvt(i+1)<0.  See LAPACK DSYTRF for more details about diagonal block size of 2 when UPLO='L'" << std::endl;
-      assert((ipvt(i)>0)||(ipvt(i)==ipvt(i+1)));
+      std::cerr << "in log_det_after_LDLT_fact must have ipvt(i,0)>0 or ipvt(i,0)==ipvt(i+1,0) (in latter case we do i+=2, so we never see the 'second negative' i.e. don't see ipvt(i+1)<0 when ipvt(i)==ipvt(i+1)<0.  See LAPACK DSYTRF for more details about diagonal block size of 2 when UPLO='L'" << std::endl;
+      assert((ipvt(i,0)>0)||(ipvt(i,0)==ipvt(i+1,0)));
     }
   }
   return log_det_A;

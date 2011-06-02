@@ -57,10 +57,10 @@ OptimizationProblem* OptimizationProblem::optimizationProblemInstance(NULL);
 // TODO: move to Teuchos, use putScalar (no need for bds check)
 
 void OptimizationProblem::lower_bound(int i, double lb)
-{ lowerBounds(i) = lb; }
+{ lowerBounds(i,0) = lb; }
 
 void OptimizationProblem::upper_bound(int i, double ub)
-{ upperBounds(i) = ub; }
+{ upperBounds(i,0) = ub; }
 
 void OptimizationProblem::initial_iterate(int j, double x0)
 { initialIterates(0,j) = x0; }
@@ -72,9 +72,9 @@ void OptimizationProblem::add_initial_iterates(MtxDbl& init_iterates_to_add)
   int numtoadd=init_iterates_to_add.getNRows();
   //printf("numsofar=%d numtoadd=%d\n",numsofar,numtoadd);
   initialIterates.resize(numsofar+numtoadd,numDesignVar);
-  MtxInt irows(numtoadd);
+  MtxInt irows(numtoadd,1);
   for(int i=0; i<numtoadd; ++i)
-    irows(i)=i+numsofar;
+    irows(i,0)=i+numsofar;
   initialIterates.putRows(init_iterates_to_add,irows);
 }
 
@@ -88,7 +88,7 @@ void OptimizationProblem::multistart_conmin_optimize(int num_guesses)
   bestFunction = DBL_MAX;
 
   double obj;
-  MtxDbl con_out(10);
+  MtxDbl con_out(10,1);
 
   // iterate over provided then possibly random guesses
   for (int iguess = 0; iguess < num_guesses; ++iguess) {
@@ -99,9 +99,9 @@ void OptimizationProblem::multistart_conmin_optimize(int num_guesses)
     
     // TODO: put switch here for optimizer choice
     optimize_with_conmin(guess, best_obj);
-    //printf("theta={%g",0.5*exp(-2.0*guess(0))); //for debug with Kriging
+    //printf("theta={%g",0.5*std::exp(-2.0*guess(0,0))); //for debug with Kriging
     //for(int i=1; i<numDesignVar; ++i)
-    //printf(", %g",0.5*exp(-2.0*guess(i))); //for debug with Kriging
+    //printf(", %g",0.5*std::exp(-2.0*guess(0,i))); //for debug with Kriging
     theModel.objectiveAndConstraints(obj,con_out,guess);
     //printf("} obj=%g\n",best_obj);
 
@@ -441,22 +441,22 @@ where
   int N5 = 2*N4;
   
   int info = 0;                  ///CONMIN variable: status flag for optimization
-  MtxDbl s(N1); s.zero();        ///Internal CONMIN array. Move direction in N-dimensional space.
-  MtxDbl g1(N2); g1.zero();      ///Internal CONMIN array. Temporary storage of constraint values.  
-  MtxDbl g2(N2); g2.zero();      ///Internal CONMIN array. Temporary storage of constraint values.
+  MtxDbl s(N1,1); s.zero();        ///Internal CONMIN array. Move direction in N-dimensional space.
+  MtxDbl g1(N2,1); g1.zero();      ///Internal CONMIN array. Temporary storage of constraint values.  
+  MtxDbl g2(N2,1); g2.zero();      ///Internal CONMIN array. Temporary storage of constraint values.
   MtxDbl B(N3,N3); B.zero();     ///Internal CONMIN array. Temporary storage of constraint values.
-  MtxDbl c(N4);  c.zero();       ///Internal CONMIN array. Temporary storage for use with arrays B and S.
-  MtxInt ms1(N5); ms1.zero();    ///Internal CONMIN array. Temporary storage for use with arrays B and S.
-   MtxInt ic(N3); ic.zero();     ///Internal CONMIN array. Array of flags to identify active and violated constraints. I need to fill this in when I supply analytical gradients... see http://www.eng.buffalo.edu/Research/MODEL/mdo.test.orig/CONMIN/manual.html#List_4 for more details  
+  MtxDbl c(N4,1);  c.zero();       ///Internal CONMIN array. Temporary storage for use with arrays B and S.
+  MtxInt ms1(N5,1); ms1.zero();    ///Internal CONMIN array. Temporary storage for use with arrays B and S.
+  MtxInt ic(N3,1); ic.zero();     ///Internal CONMIN array. Array of flags to identify active and violated constraints. I need to fill this in when I supply analytical gradients... see http://www.eng.buffalo.edu/Research/MODEL/mdo.test.orig/CONMIN/manual.html#List_4 for more details  
   double alphax = 0.1;           ///Internal CONMIN variable: 1-D search parameter.
   double abobj1 = 0.1;           ///Internal CONMIN variable: 1-D search parameter.
   double theta  = 1.0;           ///Internal CONMIN variable: mean value of push-off factor.
   double phi    = 5.0;           ///Internal CONMIN variable: "participation coefficient".
   int  nscal    = 0;             ///Internal CONMIN variable: scaling control parameter.
-  MtxDbl scal(N1);  scal.zero(); ///Internal CONMIN array. Vector of scaling parameters for design parameter values.
+  MtxDbl scal(N1,1);  scal.zero(); ///Internal CONMIN array. Vector of scaling parameters for design parameter values.
 
   int  linobj   = 0;             ///Internal CONMIN variable: linear objective function identifier (unused).
-  MtxInt isc(N2); isc.zero();    ///Internal CONMIN array. Array of flags to identify linear constraints. (not used in this implementation of CONMIN)
+  MtxInt isc(N2,1); isc.zero();    ///Internal CONMIN array. Array of flags to identify linear constraints. (not used in this implementation of CONMIN)
   
   int igoto = 0;                 ///Internal CONMIN variable: internal optimization termination flag. needs to be zero or CONMIN will carry over count of the number of evaluations of the objective function and its gradient from the construction of previous emulators, such as when the press metric of emulator quality is evaluated
   int nac   = 0;                 ///Internal CONMIN variable: number of active and violated constraints.  
@@ -466,24 +466,24 @@ where
   ///conjugate direction restart parameter
   if(conminData.icndir==0) conminData.icndir=numDesignVar+1;
 
-  MtxDbl query_pt(N1); //CONMIN CALLS THIS "X"
-  MtxDbl lower_bounds(N1);
-  MtxDbl upper_bounds(N1);
+  MtxDbl query_pt(N1,1); //CONMIN CALLS THIS "X"
+  MtxDbl lower_bounds(N1,1);
+  MtxDbl upper_bounds(N1,1);
   theModel.makeGuessFeasible(guess,this); //need to find a better place to put this
   for(int ivar=0; ivar<numDesignVar; ivar++) {
-    query_pt(ivar)=guess(ivar);
-    lower_bounds(ivar)=lowerBounds(ivar);
-    upper_bounds(ivar)=upperBounds(ivar);
+    query_pt(ivar,0)=guess(0,ivar);
+    lower_bounds(ivar,0)=lowerBounds(ivar,0);
+    upper_bounds(ivar,0)=upperBounds(ivar,0);
   }
 
   double obj, dummy_obj;
-  MtxDbl grad_obj(numDesignVar);
-  MtxDbl con(numConFunc);
+  MtxDbl grad_obj(numDesignVar,1);
+  MtxDbl con(numConFunc,1);
   MtxDbl grad_con(numConFunc,numDesignVar);
 
-  MtxDbl df(N1); df.zero(); //the objective function gradient array that we need to pass into CONMIN (includes extra workspace), if a finite difference gradient is used this is a CONMIN internal array
+  MtxDbl df(N1,1); df.zero(); //the objective function gradient array that we need to pass into CONMIN (includes extra workspace), if a finite difference gradient is used this is a CONMIN internal array
 
-  MtxDbl cv(N2); cv.zero(); //the constraint values array (called g(N2) in CONMIN's documentation) that we need to pass into CONMIN (includes extra workspace)
+  MtxDbl cv(N2,1); cv.zero(); //the constraint values array (called g(N2) in CONMIN's documentation) that we need to pass into CONMIN (includes extra workspace)
 
   MtxDbl A(N1,N3); A.zero(); //the gradients of constraints array that we need to pass into CONMIN (inludes extra workspace), if finite difference gradients are used this is a CONMIN internal array
 
@@ -502,8 +502,8 @@ where
 	  if(conminData.nfdg==1) {
 	    nac=0;
 	    for(k=0; k<numConFunc; k++) 
-	      if(conminData.ct<=con(k)) {
-		ic(nac)=k+1;
+	      if(conminData.ct<=con(k,0)) {
+		ic(nac,0)=k+1;
 		for(i=0; i<numDesignVar; i++) 
 		  A(i,nac) = grad_con(k,i);
 		nac++;
@@ -515,13 +515,13 @@ where
 	  theModel.objectiveAndGradient(dummy_obj, grad_obj, guess);
 	
 	for(i=0; i<numDesignVar; i++) 
-	  df(i)=grad_obj(i);	
+	  df(i,0)=grad_obj(i,0);	
       }
       else{ //if(info==1) {
 	//conmin is requesting the objective and constraint functions but NOT their gradients
 	theModel.objectiveAndConstraints(obj, con, guess);
 	for(k=0; k<numConFunc; k++) 
-	  cv(k)=con(k);	  
+	  cv(k,0)=con(k,0);	  
       }
       //else
       //assert(info>0); //we shouldn't be able to get here
@@ -533,7 +533,7 @@ where
 	//conmin is requesting the analytical GRADIENT of the objective function (but not the objective function itself)
 	theModel.objectiveAndGradient(dummy_obj, grad_obj, guess);
 	for(i=0; i<numDesignVar; i++) 
-	  df(i)=grad_obj(i);
+	  df(i,0)=grad_obj(i,0);
       }
       else{
 	//conmin is requesting the objective function but NOT it's analytical gradient
@@ -541,10 +541,10 @@ where
       }
     }
 
-    CONMIN_F77(query_pt.ptr(0), lower_bounds.ptr(0), upper_bounds.ptr(0),
-	       cv.ptr(0), scal.ptr(0), df.ptr(0), A.ptr(0), s.ptr(0),
-	       g1.ptr(0), g2.ptr(0), B.ptr(0), c.ptr(0),
-	       isc.ptr(0), ic.ptr(0), ms1.ptr(0), N1, N2, N3, N4, N5,
+    CONMIN_F77(query_pt.ptr(0,0), lower_bounds.ptr(0,0), upper_bounds.ptr(0,0),
+	       cv.ptr(0,0), scal.ptr(0,0), df.ptr(0,0), A.ptr(0,0), s.ptr(0,0),
+	       g1.ptr(0,0), g2.ptr(0,0), B.ptr(0,0), c.ptr(0,0),
+	       isc.ptr(0,0), ic.ptr(0,0), ms1.ptr(0,0), N1, N2, N3, N4, N5,
 	       conminData.delfun, conminData.dabfun, 
 	       conminData.fdch, conminData.fdchm,
 	       conminData.ct, conminData.ctmin, conminData.ctl,
@@ -555,7 +555,7 @@ where
 	       igoto, nac, info, infog, iter);
 
     for(i = 0; i<numDesignVar; i++) 
-      guess(i) = query_pt(i);
+      guess(0,i) = query_pt(i,0);
     //printf("numDesignVar: %d query_pt.getNElems(): %d N1: %d\n",numDesignVar,query_pt.getNElems(),N1);
   } while (igoto != 0);
 
@@ -625,9 +625,9 @@ optimize_with_direct(double& final_val)
   double* ddata = NULL;
   char*   cdata = NULL;
 
-  NCSU_DIRECT_F77(direct_objective_eval, bestVars.ptr(0), num_cv, eps,
+  NCSU_DIRECT_F77(direct_objective_eval, bestVars.ptr(0,0), num_cv, eps,
 		  directData.maxFunctionEvals, directData.maxIterations, fmin, 
-		  lowerBounds.ptr(0), upperBounds.ptr(0), algmethod, ierror, 
+		  lowerBounds.ptr(0,0), upperBounds.ptr(0,0), algmethod, ierror, 
 		  logfile, directData.solutionTarget, fglper, volper, sigmaper,
 		  idata, isize, ddata, dsize, cdata, csize, quiet_flag);
 
@@ -720,12 +720,12 @@ direct_objective_eval(int *n, double c[], double l[], double u[], int point[],
 
     if (*start == 1)
       for (int i=0; i<nx; i++)
-	curr_vars(i) = (c[i]+u[i])*l[i];
+	curr_vars(0,i) = (c[i]+u[i])*l[i];
     else {
       for (int i=0; i<nx; i++) {
 	// c[pos+i*maxfunc] = c(pos,i) in Fortran.
 	double ci=c[pos+i*(*maxfunc)];
-	curr_vars(i) = (ci + u[i])*l[i];
+	curr_vars(0,i) = (ci + u[i])*l[i];
       }
       pos = point[pos]-1;
     }
@@ -734,7 +734,7 @@ direct_objective_eval(int *n, double c[], double l[], double u[], int point[],
     if (optimizationProblemInstance->directData.constraintsPresent) {
       
       double obj;
-      MtxDbl con(optimizationProblemInstance->numConFunc);
+      MtxDbl con(optimizationProblemInstance->numConFunc,1);
 
       optimizationProblemInstance->
 	theModel.objectiveAndConstraints(obj, con, curr_vars);
@@ -746,7 +746,7 @@ direct_objective_eval(int *n, double c[], double l[], double u[], int point[],
       int infeasible = 0;
       //std::cout << "numConFunc=" << optimizationProblemInstance->numConFunc;
       for(int k=0; k<optimizationProblemInstance->numConFunc; k++) 
-	if (!(con(k) < 0.0)) {
+	if (!(con(k,0) < 0.0)) {
 	  infeasible = 1;
 	  //std::cout << "constraint violated" << std::endl;
 	  break;
@@ -783,22 +783,22 @@ void OptimizationProblem::retrieve_initial_iterate(int it_ind, MtxDbl& iterate)
     //printf("opt:retrieve_initial_iterate getRandGuess\n"); fflush(stdout);
     getRandGuess(iterate);
   }
-  //printf("iguess=%d EulAng=[ %g",iguess,guess(0));
+  //printf("iguess=%d EulAng=[ %g",iguess,guess(0,0));
   //for(int i=1; i<guess.getNElems(); i++)
-  //printf(",%g ",guess(i));
+  //printf(",%g ",guess(0,i));
   //printf("]\n");
 }
 
 void OptimizationProblem::getRandGuess(MtxDbl& guess) const
 {
   int mymod = 1048576; //2^20 instead of 10^6 to be kind to the computer
-  guess.newSize(numDesignVar);
+  guess.newSize(0,numDesignVar);
   //printf("getRandGuess: lowerBounds.size=[%d %d] upperBounds=[%d %d]\n",
   //lowerBounds.getNRows(),lowerBounds.getNCols(),
   //upperBounds.getNRows(),upperBounds.getNCols()); fflush(stdout);
   for(int j=0;j<numDesignVar;j++)
-    guess(j)=(std::rand() % mymod) *
-      (upperBounds(j)-lowerBounds(j))/mymod + lowerBounds(j);
+    guess(0,j)=(std::rand() % mymod) *
+      (upperBounds(j,0)-lowerBounds(j,0))/mymod + lowerBounds(j,0);
 }
 
 const MtxDbl& OptimizationProblem::best_point() const

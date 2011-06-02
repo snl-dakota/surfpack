@@ -7,9 +7,9 @@
 
 //#define __PROFILING_TEST__ //not iplemented yet
 //#define __TIMING_BENCH__
-#define __FAST_TEST__
+//#define __FAST_TEST__
 //#define __WITH_PAV_500__
-//#define __FASTER_TEST__
+#define __FASTER_TEST__
 //#define __EVEN_FASTER_TEST__
 //#define __VALGRIND_TEST__
 //#define __GKM_USE_KM_CORR_LEN__
@@ -351,8 +351,11 @@ void check_matrix()
   nkm::MtxDbl E1(13,13), E2(13,13), E3(15,25);
   E1.newSize(10,10);
   nrows=ncols=10;
-  for(int ij=0; ij<nrows*ncols; ++ij)
-    E1(ij)=B(ij);
+  for(int j=0; j<ncols; ++j)
+    for(int i=0; i<nrows; ++i)
+      E1(i,j)=B(i,j);
+  //for(int ij=0; ij<nrows*ncols; ++ij)
+  //E1(ij)=B(ij);
 
   nrows=E1.getNRows();
   ncols=E1.getNCols();
@@ -435,10 +438,10 @@ void validate_grad() {
   string validate2d_10K="grad_validate2d_10K.spd";
   nkm::SurfData sd2d10K(    validate2d_10K, 2, 0, 3, 0, 1, 0);
   
-  nkm::MtxDbl yeval10(    10);
-  nkm::MtxDbl yeval100(  100);
-  nkm::MtxDbl yeval500(  500);
-  nkm::MtxDbl yeval10K(10000);
+  nkm::MtxDbl yeval10(    10,1);
+  nkm::MtxDbl yeval100(  100,1);
+  nkm::MtxDbl yeval500(  500,1);
+  nkm::MtxDbl yeval10K(10000,1);
   int jout=0; //the 0th output column is Rosenbrock  
   
   nkm::MtxDbl roserror(3,4); roserror.zero();
@@ -474,64 +477,64 @@ void validate_grad() {
   //evaluate error the 10 pt rosenbrock kriging model at 10K points
   //kmros10.evaluate(yeval10K,sd2d10K.xr);
   //for(int i=0; i<10000; ++i)
-  //roserror(0,2)+=pow(yeval10K(i)-sd2d10K.y(i,jout),2);
-  //roserror(0,3)=sqrt(roserror(0,2)/10000.0);
+  //roserror(0,2)+=std::pow(yeval10K(i,0)-sd2d10K.y(i,jout),2);
+  //roserror(0,3)=std::sqrt(roserror(0,2)/10000.0);
 
   //evaluate error the 10 pt rosenbrock kriging model at build points  
   //kmros10.evaluate(yeval10,sd2d10.xr);
   //for(int i=0; i<10; ++i)
-  //roserror(0,0)+=pow(yeval10(i)-sd2d10.y(i,jout),2);
-  //roserror(0,1)=sqrt(roserror(0,0)/10.0);
+  //roserror(0,0)+=std::pow(yeval10(i,0)-sd2d10.y(i,jout),2);
+  //roserror(0,1)=std::sqrt(roserror(0,0)/10.0);
 
   //evaluate error the 10 pt rosenbrock Grad kriging model at 10K points
   //gkmros10.evaluate(yeval10K,sd2d10K.xr);
   //for(int i=0; i<10000; ++i)
-  //roserror_grad(0,2)+=pow(yeval10K(i)-sd2d10K.y(i,jout),2);
-  //roserror_grad(0,3)=sqrt(roserror_grad(0,2)/10000.0);
+  //roserror_grad(0,2)+=std::pow(yeval10K(i,0)-sd2d10K.y(i,jout),2);
+  //roserror_grad(0,3)=std::sqrt(roserror_grad(0,2)/10000.0);
 
   //evaluate error the 10 pt rosenbrock Grad kriging model at build points  
   //gkmros10.evaluate(yeval10,sd2d10.xr);
   //for(int i=0; i<10; ++i)
-  //roserror_grad(0,0)+=pow(yeval10(i)-sd2d10.y(i,jout),2);
-  //roserror_grad(0,1)=sqrt(roserror_grad(0,0)/10.0);
+  //roserror_grad(0,0)+=std::pow(yeval10(i,0)-sd2d10.y(i,jout),2);
+  //roserror_grad(0,1)=std::sqrt(roserror_grad(0,0)/10.0);
 
 
   //evaluate error the 100 pt rosenbrock kriging model at 10K points
   //kmros100.evaluate(yeval10K,sd2d10K.xr);
   //for(int i=0; i<10000; ++i)
-  //roserror(1,2)+=pow(yeval10K(i)-sd2d10K.y(i,jout),2);
-  //roserror(1,3)=sqrt(roserror(1,2)/10000.0);
+  //roserror(1,2)+=std::pow(yeval10K(i,0)-sd2d10K.y(i,jout),2);
+  //roserror(1,3)=std::sqrt(roserror(1,2)/10000.0);
 
   //evaluate error the 100 pt rosenbrock kriging model at build points  
   //kmros100.evaluate(yeval100,sd2d100.xr);
   //for(int i=0; i<100; ++i)
-  //roserror(1,0)+=pow(yeval100(i)-sd2d100.y(i,jout),2);
-  //roserror(1,1)=sqrt(roserror(1,0)/100.0);
+  //roserror(1,0)+=std::pow(yeval100(i,0)-sd2d100.y(i,jout),2);
+  //roserror(1,1)=std::sqrt(roserror(1,0)/100.0);
   
   //evaluate error the 100 pt rosenbrock Grad kriging model at 10K points
   gkmros100.evaluate(yeval10K,sd2d10K.xr);
   for(int i=0; i<10000; ++i)
-  roserror_grad(1,2)+=pow(yeval10K(i)-sd2d10K.y(i,jout),2);
-  roserror_grad(1,3)=sqrt(roserror_grad(1,2)/10000.0);
+  roserror_grad(1,2)+=std::pow(yeval10K(i,0)-sd2d10K.y(i,jout),2);
+  roserror_grad(1,3)=std::sqrt(roserror_grad(1,2)/10000.0);
 
   //evaluate error the 100 pt rosenbrock Grad kriging model at build points  
   gkmros100.evaluate(yeval100,sd2d100.xr);
   for(int i=0; i<100; ++i)
-  roserror_grad(1,0)+=pow(yeval100(i)-sd2d100.y(i,jout),2);
-  roserror_grad(1,1)=sqrt(roserror_grad(1,0)/100.0);
+  roserror_grad(1,0)+=std::pow(yeval100(i,0)-sd2d100.y(i,jout),2);
+  roserror_grad(1,1)=std::sqrt(roserror_grad(1,0)/100.0);
 
   
   //evaluate error the 500 pt rosenbrock Grad kriging model at 10K points
   //gkmros500.evaluate(yeval10K,sd2d10K.xr);
   //for(int i=0; i<10000; ++i)
-    //roserror_grad(2,2)+=pow(yeval10K(i)-sd2d10K.y(i,jout),2);
-  //roserror_grad(2,3)=sqrt(roserror_grad(2,2)/10000.0);
+    //roserror_grad(2,2)+=std::pow(yeval10K(i,0)-sd2d10K.y(i,jout),2);
+  //roserror_grad(2,3)=std::sqrt(roserror_grad(2,2)/10000.0);
 
   //evaluate error the 500 pt rosenbrock Grad kriging model at build points  
   //gkmros500.evaluate(yeval500,sd2d500.xr);
   //for(int i=0; i<500; ++i)
-    //roserror_grad(2,0)+=pow(yeval500(i)-sd2d500.y(i,jout),2);
-  //roserror_grad(2,1)=sqrt(roserror_grad(2,0)/500.0);
+    //roserror_grad(2,0)+=std::pow(yeval500(i,0)-sd2d500.y(i,jout),2);
+  //roserror_grad(2,1)=std::sqrt(roserror_grad(2,0)/500.0);
   
   FILE *fpout=fopen("grad_Kriging.validate","w");
 
@@ -572,8 +575,8 @@ void validate_grad()
 
 
 
-  nkm::MtxDbl yeval100(    10);
-  nkm::MtxDbl yeval10K(10000);
+  nkm::MtxDbl yeval100(    10,1);
+  nkm::MtxDbl yeval10K(10000,1);
 
   int jout;
 
@@ -607,14 +610,14 @@ void validate_grad()
   //evaluate error the 10 pt shubert kriging model at 10K points
   gkmshu100.evaluate(yeval10K,sd2d10K.xr);
   for(int i=0; i<10000; ++i)
-    shuerror(0,2)+=pow(yeval10K(i)-sd2d10K.y(i,jout),2);
-  shuerror(0,3)=sqrt(shuerror(0,2)/10000.0);
+    shuerror(0,2)+=std::pow(yeval10K(i,0)-sd2d10K.y(i,jout),2);
+  shuerror(0,3)=std::sqrt(shuerror(0,2)/10000.0);
 
   //evaluate error the 10 pt shubert kriging model at build points  
   gkmshu100.evaluate(yeval100,sd2d100.xr);
   for(int i=0; i<100; ++i)
-    shuerror(0,0)+=pow(yeval100(i)-sd2d100.y(i,jout),2);
-  shuerror(0,1)=sqrt(shuerror(0,0)/100.0);
+    shuerror(0,0)+=std::pow(yeval100(i,0)-sd2d100.y(i,jout),2);
+  shuerror(0,1)=std::sqrt(shuerror(0,0)/100.0);
 
 #ifdef NONO
   printf("*****************************************************************\n");
@@ -633,21 +636,21 @@ void validate_grad()
   nkm::GradKrigingModel gkmpav50( sdpav50 , gkm_params); gkmpav50.create();
 
 
-  nkm::MtxDbl yeval50(50);
+  nkm::MtxDbl yeval50(50,1);
 
   //evaluate error the 10 pt paviani10d kriging model at 10K points
   gkmpav50.evaluate(yeval10K,sdpav10K.xr);
   for(int i=0; i<10000; ++i)
-    paverror(0,2)+=pow(yeval10K(i)-sdpav10K.y(i),2);
-  paverror(0,3)=sqrt(paverror(0,2)/10000.0);
+    paverror(0,2)+=std::pow(yeval10K(i,0)-sdpav10K.y(i,0),2);
+  paverror(0,3)=std::sqrt(paverror(0,2)/10000.0);
 
   sdpav10K.clear();
 
   //evaluate error the 50 pt paviani10d kriging model at build points  
   gkmpav50.evaluate(yeval50,sdpav50.xr);
   for(int i=0; i<50; ++i)
-    paverror(0,0)+=pow(yeval50(i)-sdpav50.y(i),2);
-  paverror(0,1)=sqrt(paverror(0,0)/50.0);
+    paverror(0,0)+=std::pow(yeval50(i,0)-sdpav50.y(i,0),2);
+  paverror(0,1)=std::sqrt(paverror(0,0)/50.0);
 
   sdpav50.clear();
   yeval50.clear();
@@ -680,9 +683,12 @@ void validate_grad()
 std::string mtxdbl_2_string(nkm::MtxDbl& md) { 
   std::ostringstream oss;
   oss.precision(16);
-  oss << md(0);
-  for(int i=1; i<md.getNElems(); ++i)
-    oss << " " << md(i);
+  oss << md(0,0);
+  for(int i=1; i<md.getNRows(); ++i)
+    oss << " " << md(i,0);
+  for(int j=1; j<md.getNCols(); ++j)
+    for(int i=0; i<md.getNElems(); ++i)
+      oss << " " << md(i,j);
   return oss.str();
 }
 
@@ -722,15 +728,15 @@ void validate_grad()
 #endif
 
 #ifndef __PROFILING_TEST__
-  nkm::MtxDbl yeval10(    10);
+  nkm::MtxDbl yeval10(    10,1);
 #endif
 #ifndef __TIMING_BENCH__
-  nkm::MtxDbl yeval100(  100);
+  nkm::MtxDbl yeval100(  100,1);
 #ifndef __PROFILING_TEST__
-  nkm::MtxDbl yeval500(  500);
+  nkm::MtxDbl yeval500(  500,1);
 #endif
 #endif
-  nkm::MtxDbl yeval10K(10000);
+  nkm::MtxDbl yeval10K(10000,1);
 
   int jout;
 
@@ -806,8 +812,8 @@ void validate_grad()
   //evaluate error the 10 pt rosenbrock kriging model at 10K points
   gkmros10.evaluate(yeval10K,sd2d10K.xr);
   for(int i=0; i<10000; ++i)
-    roserror(0,2)+=pow(yeval10K(i)-sd2d10K.y(i,jout),2);
-  roserror(0,3)=sqrt(roserror(0,2)/10000.0);
+    roserror(0,2)+=std::pow(yeval10K(i,0)-sd2d10K.y(i,jout),2);
+  roserror(0,3)=std::sqrt(roserror(0,2)/10000.0);
 #endif  //__PROFILING_TEST__
 
 #ifndef __VALGRIND_TEST__
@@ -815,24 +821,24 @@ void validate_grad()
   //evaluate error the 100 pt rosenbrock kriging model at 10K points
   gkmros100.evaluate(yeval10K,sd2d10K.xr);
   for(int i=0; i<10000; ++i)
-    roserror(1,2)+=pow(yeval10K(i)-sd2d10K.y(i,jout),2);
-  roserror(1,3)=sqrt(roserror(1,2)/10000.0);
+    roserror(1,2)+=std::pow(yeval10K(i,0)-sd2d10K.y(i,jout),2);
+  roserror(1,3)=std::sqrt(roserror(1,2)/10000.0);
 
 #ifndef __FASTER_TEST__  
 #ifndef __PROFILING_TEST__
   //evaluate error the 500 pt rosenbrock kriging model at 10K points
   gkmros500.evaluate(yeval10K,sd2d10K.xr);
   for(int i=0; i<10000; ++i)
-    roserror(2,2)+=pow(yeval10K(i)-sd2d10K.y(i,jout),2);
-  roserror(2,3)=sqrt(roserror(2,2)/10000.0);
+    roserror(2,2)+=std::pow(yeval10K(i,0)-sd2d10K.y(i,jout),2);
+  roserror(2,3)=std::sqrt(roserror(2,2)/10000.0);
   
   //sd2d10K.clear();
 
   //evaluate error the 500 pt rosenbrock kriging model at build points
   gkmros500.evaluate(yeval500,sd2d500.xr);
   for(int i=0; i<500; ++i)
-    roserror(2,0)+=pow(yeval500(i)-sd2d500.y(i,jout),2);
-  roserror(2,1)=sqrt(roserror(2,0)/500.0);
+    roserror(2,0)+=std::pow(yeval500(i,0)-sd2d500.y(i,jout),2);
+  roserror(2,1)=std::sqrt(roserror(2,0)/500.0);
 #endif //__PROFILING_TEST__
 #endif //__FASTER_TEST__
 
@@ -840,8 +846,8 @@ void validate_grad()
   //evaluate error the 100 pt rosenbrock kriging model at build points
   gkmros100.evaluate(yeval100,sd2d100.xr);
   for(int i=0; i<100; ++i)
-    roserror(1,0)+=pow(yeval100(i)-sd2d100.y(i,jout),2);
-  roserror(1,1)=sqrt(roserror(1,0)/100.0);
+    roserror(1,0)+=std::pow(yeval100(i,0)-sd2d100.y(i,jout),2);
+  roserror(1,1)=std::sqrt(roserror(1,0)/100.0);
 #endif //__EVEN_FASTER_TEST__
 #endif //__VALGRIND_TEST__
 
@@ -849,8 +855,8 @@ void validate_grad()
   //evaluate error the 10 pt rosenbrock kriging model at build points  
   gkmros10.evaluate(yeval10,sd2d10.xr);
   for(int i=0; i<10; ++i)
-    roserror(0,0)+=pow(yeval10(i)-sd2d10.y(i,jout),2);
-  roserror(0,1)=sqrt(roserror(0,0)/10.0);
+    roserror(0,0)+=std::pow(yeval10(i,0)-sd2d10.y(i,jout),2);
+  roserror(0,1)=std::sqrt(roserror(0,0)/10.0);
   
 #ifndef __VALGRIND_TEST__
   printf("*****************************************************************\n");
@@ -893,43 +899,43 @@ void validate_grad()
   //evaluate error the 10 pt shubert kriging model at 10K points
   gkmshu10.evaluate(yeval10K,sd2d10K.xr);
   for(int i=0; i<10000; ++i)
-    shuerror(0,2)+=pow(yeval10K(i)-sd2d10K.y(i,jout),2);
-  shuerror(0,3)=sqrt(shuerror(0,2)/10000.0);
+    shuerror(0,2)+=std::pow(yeval10K(i,0)-sd2d10K.y(i,jout),2);
+  shuerror(0,3)=std::sqrt(shuerror(0,2)/10000.0);
 
 #ifndef __EVEN_FASTER_TEST__
   //evaluate error the 100 pt shubert kriging model at 10K points
   gkmshu100.evaluate(yeval10K,sd2d10K.xr);
   for(int i=0; i<10000; ++i)
-    shuerror(1,2)+=pow(yeval10K(i)-sd2d10K.y(i,jout),2);
-  shuerror(1,3)=sqrt(shuerror(1,2)/10000.0);
+    shuerror(1,2)+=std::pow(yeval10K(i,0)-sd2d10K.y(i,jout),2);
+  shuerror(1,3)=std::sqrt(shuerror(1,2)/10000.0);
 
 #ifndef __FASTER_TEST__   
   //evaluate error the 500 pt shubert kriging model at 10K points
   gkmshu500.evaluate(yeval10K,sd2d10K.xr);
   for(int i=0; i<10000; ++i)
-    shuerror(2,2)+=pow(yeval10K(i)-sd2d10K.y(i,jout),2);
-  shuerror(2,3)=sqrt(shuerror(2,2)/10000.0);
+    shuerror(2,2)+=std::pow(yeval10K(i,0)-sd2d10K.y(i,jout),2);
+  shuerror(2,3)=std::sqrt(shuerror(2,2)/10000.0);
   
 
   //evaluate error the 500 pt shubert kriging model at build points
   gkmshu500.evaluate(yeval500,sd2d500.xr);
   for(int i=0; i<500; ++i)
-    shuerror(2,0)+=pow(yeval500(i)-sd2d500.y(i,jout),2);
-  shuerror(2,1)=sqrt(shuerror(2,0)/500.0);
+    shuerror(2,0)+=std::pow(yeval500(i,0)-sd2d500.y(i,jout),2);
+  shuerror(2,1)=std::sqrt(shuerror(2,0)/500.0);
 #endif //FASTER_TEST
 
   //evaluate error the 100 pt shubert kriging model at build points
   gkmshu100.evaluate(yeval100,sd2d100.xr);
   for(int i=0; i<100; ++i)
-    shuerror(1,0)+=pow(yeval100(i)-sd2d100.y(i,jout),2);
-  shuerror(1,1)=sqrt(shuerror(1,0)/100.0);
+    shuerror(1,0)+=std::pow(yeval100(i,0)-sd2d100.y(i,jout),2);
+  shuerror(1,1)=std::sqrt(shuerror(1,0)/100.0);
 #endif //EVEN_FASTER_TEST
 
   //evaluate error the 10 pt shubert kriging model at build points  
   gkmshu10.evaluate(yeval10,sd2d10.xr);
   for(int i=0; i<10; ++i)
-    shuerror(0,0)+=pow(yeval10(i)-sd2d10.y(i,jout),2);
-  shuerror(0,1)=sqrt(shuerror(0,0)/10.0);
+    shuerror(0,0)+=std::pow(yeval10(i,0)-sd2d10.y(i,jout),2);
+  shuerror(0,1)=std::sqrt(shuerror(0,0)/10.0);
 
   printf("*****************************************************************\n");
   printf("*** running herbie 2D tests *************************************\n");
@@ -972,43 +978,43 @@ void validate_grad()
   //evaluate error the 10 pt herbie kriging model at 10K points
   gkmherb10.evaluate(yeval10K,sd2d10K.xr);
   for(int i=0; i<10000; ++i)
-    herberror(0,2)+=pow(yeval10K(i)-sd2d10K.y(i,jout),2);
-  herberror(0,3)=sqrt(herberror(0,2)/10000.0);
+    herberror(0,2)+=std::pow(yeval10K(i,0)-sd2d10K.y(i,jout),2);
+  herberror(0,3)=std::sqrt(herberror(0,2)/10000.0);
 
 #ifndef __EVEN_FASTER_TEST__
   //evaluate error the 100 pt herbie kriging model at 10K points
   gkmherb100.evaluate(yeval10K,sd2d10K.xr);
   for(int i=0; i<10000; ++i)
-    herberror(1,2)+=pow(yeval10K(i)-sd2d10K.y(i,jout),2);
-  herberror(1,3)=sqrt(herberror(1,2)/10000.0);
+    herberror(1,2)+=std::pow(yeval10K(i,0)-sd2d10K.y(i,jout),2);
+  herberror(1,3)=std::sqrt(herberror(1,2)/10000.0);
 
 #ifndef __FASTER_TEST__   
   //evaluate error the 500 pt herbie kriging model at 10K points
   gkmherb500.evaluate(yeval10K,sd2d10K.xr);
   for(int i=0; i<10000; ++i)
-    herberror(2,2)+=pow(yeval10K(i)-sd2d10K.y(i,jout),2);
-  herberror(2,3)=sqrt(herberror(2,2)/10000.0);
+    herberror(2,2)+=std::pow(yeval10K(i,0)-sd2d10K.y(i,jout),2);
+  herberror(2,3)=std::sqrt(herberror(2,2)/10000.0);
   
 
   //evaluate error the 500 pt herbie kriging model at build points
   gkmherb500.evaluate(yeval500,sd2d500.xr);
   for(int i=0; i<500; ++i)
-    herberror(2,0)+=pow(yeval500(i)-sd2d500.y(i,jout),2);
-  herberror(2,1)=sqrt(herberror(2,0)/500.0);
+    herberror(2,0)+=std::pow(yeval500(i,0)-sd2d500.y(i,jout),2);
+  herberror(2,1)=std::sqrt(herberror(2,0)/500.0);
 #endif //FASTER_TEST
 
   //evaluate error the 100 pt herbie kriging model at build points
   gkmherb100.evaluate(yeval100,sd2d100.xr);
   for(int i=0; i<100; ++i)
-    herberror(1,0)+=pow(yeval100(i)-sd2d100.y(i,jout),2);
-  herberror(1,1)=sqrt(herberror(1,0)/100.0);
+    herberror(1,0)+=std::pow(yeval100(i,0)-sd2d100.y(i,jout),2);
+  herberror(1,1)=std::sqrt(herberror(1,0)/100.0);
 #endif //EVEN_FASTER_TEST
 
   //evaluate error the 10 pt herbie kriging model at build points  
   gkmherb10.evaluate(yeval10,sd2d10.xr);
   for(int i=0; i<10; ++i)
-    herberror(0,0)+=pow(yeval10(i)-sd2d10.y(i,jout),2);
-  herberror(0,1)=sqrt(herberror(0,0)/10.0);
+    herberror(0,0)+=std::pow(yeval10(i,0)-sd2d10.y(i,jout),2);
+  herberror(0,1)=std::sqrt(herberror(0,0)/10.0);
   
   sd2d10.clear();
   sd2d100.clear();
@@ -1081,11 +1087,11 @@ void validate_grad()
 #endif //FASTER_TEST
 
 #ifndef __TIMING_BENCH__
-  nkm::MtxDbl yeval50(50);
+  nkm::MtxDbl yeval50(50,1);
 #endif
 #ifndef __FASTER_TEST__
 #ifndef __FAST_TEST__
-  nkm::MtxDbl yeval2500(2500);
+  nkm::MtxDbl yeval2500(2500,1);
 #endif //FAST_TEST
 #endif //FASTER_TEST
 
@@ -1093,16 +1099,16 @@ void validate_grad()
   //evaluate error the 10 pt paviani10d kriging model at 10K points
   gkmpav50.evaluate(yeval10K,sdpav10K.xr);
   for(int i=0; i<10000; ++i)
-    paverror(0,2)+=pow(yeval10K(i)-sdpav10K.y(i),2);
-  paverror(0,3)=sqrt(paverror(0,2)/10000.0);
+    paverror(0,2)+=std::pow(yeval10K(i,0)-sdpav10K.y(i,0),2);
+  paverror(0,3)=std::sqrt(paverror(0,2)/10000.0);
 
 #ifndef __FASTER_TEST__
 #ifdef __WITH_PAV_500__
   //evaluate error the 100 pt paviani10d kriging model at 10K points
   gkmpav500.evaluate(yeval10K,sdpav10K.xr);
   for(int i=0; i<10000; ++i)
-    paverror(1,2)+=pow(yeval10K(i)-sdpav10K.y(i),2);
-  paverror(1,3)=sqrt(paverror(1,2)/10000.0);
+    paverror(1,2)+=std::pow(yeval10K(i,0)-sdpav10K.y(i,0),2);
+  paverror(1,3)=std::sqrt(paverror(1,2)/10000.0);
 #endif //__WITH_PAV_500__
 #endif //FASTER_TEST
 #endif //TIMING_BENCH
@@ -1112,8 +1118,8 @@ void validate_grad()
   //evaluate error the 2500 pt paviani10d kriging model at 10K points
   gkmpav2500.evaluate(yeval10K,sdpav10K.xr);
   for(int i=0; i<10000; ++i)
-    paverror(2,2)+=pow(yeval10K(i)-sdpav10K.y(i),2);
-  paverror(2,3)=sqrt(paverror(2,2)/10000.0);
+    paverror(2,2)+=std::pow(yeval10K(i,0)-sdpav10K.y(i,0),2);
+  paverror(2,3)=std::sqrt(paverror(2,2)/10000.0);
 #endif //FAST_TEST
 #endif //FASTER_TEST
 
@@ -1130,8 +1136,8 @@ void validate_grad()
   //evaluate error the 2500 pt paviani10d kriging model at build points
   gkmpav2500.evaluate(yeval2500,sdpav2500.xr);
   for(int i=0; i<2500; ++i)
-    paverror(2,0)+=pow(yeval2500(i)-sdpav2500.y(i),2);
-  paverror(2,1)=sqrt(paverror(2,0)/2500.0);
+    paverror(2,0)+=std::pow(yeval2500(i,0)-sdpav2500.y(i,0),2);
+  paverror(2,1)=std::sqrt(paverror(2,0)/2500.0);
   
   sdpav2500.clear();
   yeval2500.clear();
@@ -1142,8 +1148,8 @@ void validate_grad()
   //evaluate error the 500 pt paviani10d kriging model at build points
   gkmpav500.evaluate(yeval500,sdpav500.xr);
   for(int i=0; i<500; ++i)
-    paverror(1,0)+=pow(yeval500(i)-sdpav500.y(i),2);
-  paverror(1,1)=sqrt(paverror(1,0)/500.0);
+    paverror(1,0)+=std::pow(yeval500(i,0)-sdpav500.y(i,0),2);
+  paverror(1,1)=std::sqrt(paverror(1,0)/500.0);
 
   sdpav500.clear();
 #endif //__WITH_PAV_500__
@@ -1154,8 +1160,8 @@ void validate_grad()
   //evaluate error the 50 pt paviani10d kriging model at build points  
   gkmpav50.evaluate(yeval50,sdpav50.xr);
   for(int i=0; i<50; ++i)
-    paverror(0,0)+=pow(yeval50(i)-sdpav50.y(i),2);
-  paverror(0,1)=sqrt(paverror(0,0)/50.0);
+    paverror(0,0)+=std::pow(yeval50(i,0)-sdpav50.y(i,0),2);
+  paverror(0,1)=std::sqrt(paverror(0,0)/50.0);
 
   sdpav50.clear();
   yeval50.clear();
@@ -1257,12 +1263,12 @@ void validate()
   string paviani10d_10K ="grad_paviani10d_10K.spd";
 
 
-  nkm::MtxDbl yeval10(    10);
+  nkm::MtxDbl yeval10(    10,1);
 #ifndef __TIMING_BENCH__
-  nkm::MtxDbl yeval100(  100);
-  nkm::MtxDbl yeval500(  500);
+  nkm::MtxDbl yeval100(  100,1);
+  nkm::MtxDbl yeval500(  500,1);
 #endif
-  nkm::MtxDbl yeval10K(10000);
+  nkm::MtxDbl yeval10K(10000,1);
 
   int jout;
 
@@ -1302,40 +1308,40 @@ void validate()
   //evaluate error the 10 pt rosenbrock kriging model at 10K points
   kmros10.evaluate(yeval10K,sd2d10K.xr);
   for(int i=0; i<10000; ++i)
-    roserror(0,2)+=pow(yeval10K(i)-sd2d10K.y(i,jout),2);
-  roserror(0,3)=sqrt(roserror(0,2)/10000.0);
+    roserror(0,2)+=std::pow(yeval10K(i,0)-sd2d10K.y(i,jout),2);
+  roserror(0,3)=std::sqrt(roserror(0,2)/10000.0);
 
   //evaluate error the 100 pt rosenbrock kriging model at 10K points
   kmros100.evaluate(yeval10K,sd2d10K.xr);
   for(int i=0; i<10000; ++i)
-    roserror(1,2)+=pow(yeval10K(i)-sd2d10K.y(i,jout),2);
-  roserror(1,3)=sqrt(roserror(1,2)/10000.0);
+    roserror(1,2)+=std::pow(yeval10K(i,0)-sd2d10K.y(i,jout),2);
+  roserror(1,3)=std::sqrt(roserror(1,2)/10000.0);
   
   //evaluate error the 500 pt rosenbrock kriging model at 10K points
   kmros500.evaluate(yeval10K,sd2d10K.xr);
   for(int i=0; i<10000; ++i)
-    roserror(2,2)+=pow(yeval10K(i)-sd2d10K.y(i,jout),2);
-  roserror(2,3)=sqrt(roserror(2,2)/10000.0);
+    roserror(2,2)+=std::pow(yeval10K(i,0)-sd2d10K.y(i,jout),2);
+  roserror(2,3)=std::sqrt(roserror(2,2)/10000.0);
   
   //sd2d10K.clear();
 
   //evaluate error the 500 pt rosenbrock kriging model at build points
   kmros500.evaluate(yeval500,sd2d500.xr);
   for(int i=0; i<500; ++i)
-    roserror(2,0)+=pow(yeval500(i)-sd2d500.y(i,jout),2);
-  roserror(2,1)=sqrt(roserror(2,0)/500.0);
+    roserror(2,0)+=std::pow(yeval500(i,0)-sd2d500.y(i,jout),2);
+  roserror(2,1)=std::sqrt(roserror(2,0)/500.0);
 
   //evaluate error the 100 pt rosenbrock kriging model at build points
   kmros100.evaluate(yeval100,sd2d100.xr);
   for(int i=0; i<100; ++i)
-    roserror(1,0)+=pow(yeval100(i)-sd2d100.y(i,jout),2);
-  roserror(1,1)=sqrt(roserror(1,0)/100.0);
+    roserror(1,0)+=std::pow(yeval100(i,0)-sd2d100.y(i,jout),2);
+  roserror(1,1)=std::sqrt(roserror(1,0)/100.0);
 
   //evaluate error the 10 pt rosenbrock kriging model at build points  
   kmros10.evaluate(yeval10,sd2d10.xr);
   for(int i=0; i<10; ++i)
-    roserror(0,0)+=pow(yeval10(i)-sd2d10.y(i,jout),2);
-  roserror(0,1)=sqrt(roserror(0,0)/10.0);
+    roserror(0,0)+=std::pow(yeval10(i,0)-sd2d10.y(i,jout),2);
+  roserror(0,1)=std::sqrt(roserror(0,0)/10.0);
   
   printf("*****************************************************************\n");
   printf("*** running shubert 2D tests ************************************\n");
@@ -1356,40 +1362,40 @@ void validate()
   //evaluate error the 10 pt shubert kriging model at 10K points
   kmshu10.evaluate(yeval10K,sd2d10K.xr);
   for(int i=0; i<10000; ++i)
-    shuerror(0,2)+=pow(yeval10K(i)-sd2d10K.y(i,jout),2);
-  shuerror(0,3)=sqrt(shuerror(0,2)/10000.0);
+    shuerror(0,2)+=std::pow(yeval10K(i,0)-sd2d10K.y(i,jout),2);
+  shuerror(0,3)=std::sqrt(shuerror(0,2)/10000.0);
 
   //evaluate error the 100 pt shubert kriging model at 10K points
   kmshu100.evaluate(yeval10K,sd2d10K.xr);
   for(int i=0; i<10000; ++i)
-    shuerror(1,2)+=pow(yeval10K(i)-sd2d10K.y(i,jout),2);
-  shuerror(1,3)=sqrt(shuerror(1,2)/10000.0);
+    shuerror(1,2)+=std::pow(yeval10K(i,0)-sd2d10K.y(i,jout),2);
+  shuerror(1,3)=std::sqrt(shuerror(1,2)/10000.0);
   
   //evaluate error the 500 pt shubert kriging model at 10K points
   kmshu500.evaluate(yeval10K,sd2d10K.xr);
   for(int i=0; i<10000; ++i)
-    shuerror(2,2)+=pow(yeval10K(i)-sd2d10K.y(i,jout),2);
-  shuerror(2,3)=sqrt(shuerror(2,2)/10000.0);
+    shuerror(2,2)+=std::pow(yeval10K(i,0)-sd2d10K.y(i,jout),2);
+  shuerror(2,3)=std::sqrt(shuerror(2,2)/10000.0);
   
 
   //evaluate error the 500 pt shubert kriging model at build points
   kmshu500.evaluate(yeval500,sd2d500.xr);
   for(int i=0; i<500; ++i)
-    shuerror(2,0)+=pow(yeval500(i)-sd2d500.y(i,jout),2);
-  shuerror(2,1)=sqrt(shuerror(2,0)/500.0);
+    shuerror(2,0)+=std::pow(yeval500(i,0)-sd2d500.y(i,jout),2);
+  shuerror(2,1)=std::sqrt(shuerror(2,0)/500.0);
  
 
   //evaluate error the 100 pt shubert kriging model at build points
   kmshu100.evaluate(yeval100,sd2d100.xr);
   for(int i=0; i<100; ++i)
-    shuerror(1,0)+=pow(yeval100(i)-sd2d100.y(i,jout),2);
-  shuerror(1,1)=sqrt(shuerror(1,0)/100.0);
+    shuerror(1,0)+=std::pow(yeval100(i,0)-sd2d100.y(i,jout),2);
+  shuerror(1,1)=std::sqrt(shuerror(1,0)/100.0);
 
   //evaluate error the 10 pt shubert kriging model at build points  
   kmshu10.evaluate(yeval10,sd2d10.xr);
   for(int i=0; i<10; ++i)
-    shuerror(0,0)+=pow(yeval10(i)-sd2d10.y(i,jout),2);
-  shuerror(0,1)=sqrt(shuerror(0,0)/10.0);
+    shuerror(0,0)+=std::pow(yeval10(i,0)-sd2d10.y(i,jout),2);
+  shuerror(0,1)=std::sqrt(shuerror(0,0)/10.0);
 
   printf("*****************************************************************\n");
   printf("*** running herbie 2D tests *************************************\n");
@@ -1410,39 +1416,39 @@ void validate()
   //evaluate error the 10 pt herbie kriging model at 10K points
   kmherb10.evaluate(yeval10K,sd2d10K.xr);
   for(int i=0; i<10000; ++i)
-    herberror(0,2)+=pow(yeval10K(i)-sd2d10K.y(i,jout),2);
-  herberror(0,3)=sqrt(herberror(0,2)/10000.0);
+    herberror(0,2)+=std::pow(yeval10K(i,0)-sd2d10K.y(i,jout),2);
+  herberror(0,3)=std::sqrt(herberror(0,2)/10000.0);
 
   //evaluate error the 100 pt herbie kriging model at 10K points
   kmherb100.evaluate(yeval10K,sd2d10K.xr);
   for(int i=0; i<10000; ++i)
-    herberror(1,2)+=pow(yeval10K(i)-sd2d10K.y(i,jout),2);
-  herberror(1,3)=sqrt(herberror(1,2)/10000.0);
+    herberror(1,2)+=std::pow(yeval10K(i,0)-sd2d10K.y(i,jout),2);
+  herberror(1,3)=std::sqrt(herberror(1,2)/10000.0);
   
   //evaluate error the 500 pt herbie kriging model at 10K points
   kmherb500.evaluate(yeval10K,sd2d10K.xr);
   for(int i=0; i<10000; ++i)
-    herberror(2,2)+=pow(yeval10K(i)-sd2d10K.y(i,jout),2);
-  herberror(2,3)=sqrt(herberror(2,2)/10000.0);
+    herberror(2,2)+=std::pow(yeval10K(i,0)-sd2d10K.y(i,jout),2);
+  herberror(2,3)=std::sqrt(herberror(2,2)/10000.0);
   
 
   //evaluate error the 500 pt herbie kriging model at build points
   kmherb500.evaluate(yeval500,sd2d500.xr);
   for(int i=0; i<500; ++i)
-    herberror(2,0)+=pow(yeval500(i)-sd2d500.y(i,jout),2);
-  herberror(2,1)=sqrt(herberror(2,0)/500.0);
+    herberror(2,0)+=std::pow(yeval500(i,0)-sd2d500.y(i,jout),2);
+  herberror(2,1)=std::sqrt(herberror(2,0)/500.0);
 
   //evaluate error the 100 pt herbie kriging model at build points
   kmherb100.evaluate(yeval100,sd2d100.xr);
   for(int i=0; i<100; ++i)
-    herberror(1,0)+=pow(yeval100(i)-sd2d100.y(i,jout),2);
-  herberror(1,1)=sqrt(herberror(1,0)/100.0);
+    herberror(1,0)+=std::pow(yeval100(i,0)-sd2d100.y(i,jout),2);
+  herberror(1,1)=std::sqrt(herberror(1,0)/100.0);
 
   //evaluate error the 10 pt herbie kriging model at build points  
   kmherb10.evaluate(yeval10,sd2d10.xr);
   for(int i=0; i<10; ++i)
-    herberror(0,0)+=pow(yeval10(i)-sd2d10.y(i,jout),2);
-  herberror(0,1)=sqrt(herberror(0,0)/10.0);
+    herberror(0,0)+=std::pow(yeval10(i,0)-sd2d10.y(i,jout),2);
+  herberror(0,1)=std::sqrt(herberror(0,0)/10.0);
   
   sd2d10.clear();
   sd2d100.clear();
@@ -1479,32 +1485,32 @@ void validate()
 #endif
 
 #ifndef __TIMING_BENCH__
-  nkm::MtxDbl yeval50(50);
+  nkm::MtxDbl yeval50(50,1);
 #endif
 #ifndef __FAST_TEST__
-  nkm::MtxDbl yeval2500(2500);
+  nkm::MtxDbl yeval2500(2500,1);
 #endif
 
 #ifndef __TIMING_BENCH__
   //evaluate error the 10 pt paviani10d kriging model at 10K points
   kmpav50.evaluate(yeval10K,sdpav10K.xr);
   for(int i=0; i<10000; ++i)
-    paverror(0,2)+=pow(yeval10K(i)-sdpav10K.y(i),2);
-  paverror(0,3)=sqrt(paverror(0,2)/10000.0);
+    paverror(0,2)+=std::pow(yeval10K(i,0)-sdpav10K.y(i,0),2);
+  paverror(0,3)=std::sqrt(paverror(0,2)/10000.0);
 
   //evaluate error the 100 pt paviani10d kriging model at 10K points
   kmpav500.evaluate(yeval10K,sdpav10K.xr);
   for(int i=0; i<10000; ++i)
-    paverror(1,2)+=pow(yeval10K(i)-sdpav10K.y(i),2);
-  paverror(1,3)=sqrt(paverror(1,2)/10000.0);
+    paverror(1,2)+=std::pow(yeval10K(i,0)-sdpav10K.y(i,0),2);
+  paverror(1,3)=std::sqrt(paverror(1,2)/10000.0);
 #endif
 
 #ifndef __FAST_TEST__      
   //evaluate error the 2500 pt paviani10d kriging model at 10K points
   kmpav2500.evaluate(yeval10K,sdpav10K.xr);
   for(int i=0; i<10000; ++i)
-    paverror(2,2)+=pow(yeval10K(i)-sdpav10K.y(i),2);
-  paverror(2,3)=sqrt(paverror(2,2)/10000.0);
+    paverror(2,2)+=std::pow(yeval10K(i,0)-sdpav10K.y(i,0),2);
+  paverror(2,3)=std::sqrt(paverror(2,2)/10000.0);
 #endif
 
 #ifdef __TIMING_BENCH__  
@@ -1520,8 +1526,8 @@ void validate()
   //evaluate error the 2500 pt paviani10d kriging model at build points
   kmpav2500.evaluate(yeval2500,sdpav2500.xr);
   for(int i=0; i<2500; ++i)
-    paverror(2,0)+=pow(yeval2500(i)-sdpav2500.y(i),2);
-  paverror(2,1)=sqrt(paverror(2,0)/2500.0);
+    paverror(2,0)+=std::pow(yeval2500(i,0)-sdpav2500.y(i,0),2);
+  paverror(2,1)=std::sqrt(paverror(2,0)/2500.0);
   
   sdpav2500.clear();
   yeval2500.clear();
@@ -1530,16 +1536,16 @@ void validate()
   //evaluate error the 500 pt paviani10d kriging model at build points
   kmpav500.evaluate(yeval500,sdpav500.xr);
   for(int i=0; i<500; ++i)
-    paverror(1,0)+=pow(yeval500(i)-sdpav500.y(i),2);
-  paverror(1,1)=sqrt(paverror(1,0)/500.0);
+    paverror(1,0)+=std::pow(yeval500(i,0)-sdpav500.y(i,0),2);
+  paverror(1,1)=std::sqrt(paverror(1,0)/500.0);
 
   sdpav500.clear();
 
   //evaluate error the 50 pt paviani10d kriging model at build points  
   kmpav50.evaluate(yeval50,sdpav50.xr);
   for(int i=0; i<50; ++i)
-    paverror(0,0)+=pow(yeval50(i)-sdpav50.y(i),2);
-  paverror(0,1)=sqrt(paverror(0,0)/50.0);
+    paverror(0,0)+=std::pow(yeval50(i,0)-sdpav50.y(i,0),2);
+  paverror(0,1)=std::sqrt(paverror(0,0)/50.0);
 
   sdpav50.clear();
   yeval50.clear();

@@ -75,7 +75,7 @@ int main(){
     printf("    [ ");
     for(j=0; j<nvarsr; j++) {
       printf("%9f ",Rot(i,j));
-      if(fabs(Rot(i,j)-RotShouldBe(i,j))>1.0e-15) {
+      if(std::fabs(Rot(i,j)-RotShouldBe(i,j))>1.0e-15) {
 	printf("\n(%d,%d):Rot=%.16f RotShouldBe=%.16f\n",i,j,Rot(i,j),RotShouldBe(i,j));
 	fflush(stdout);
 	assert(Rot(i,j)==RotShouldBe(i,j));
@@ -116,8 +116,8 @@ int main(){
   MtxDbl Axis;
 
   int ioct;
-  int noct=(int) pow(2,rotnvarsr);
-  MtxInt InOct(noct); InOct.zero();
+  int noct=static_cast<int>(std::pow(2,rotnvarsr));
+  MtxInt InOct(noct,1); InOct.zero();
   int NDV=(rotnvarsr*(rotnvarsr-1))/2; //nchoosek(nvarsr,2);
   MtxDbl lowerBounds(1,NDV); lowerBounds.zero();
   MtxDbl upperBounds(1,NDV);
@@ -136,7 +136,7 @@ int main(){
       //{k=0;
       ioct=(Axis(k,0)>=0.0);
       for(j=1;j<rotnvarsr;j++)
-	ioct+=(Axis(k,j)>=0)*((int) pow(2.0,j));
+	ioct+=(Axis(k,j)>=0)*(static_cast<int>(std::pow(2.0,j)));
       InOct(ioct)++;
     }
   }
@@ -152,11 +152,11 @@ int main(){
 
 int if_close_enough(double a, double b)
 {
-  if(fabs(a-b)>1.0e-5){
+  if(std::fabs(a-b)>1.0e-5){
     std::printf("a=%20.14f b=%20.14f\n",a,b);  std::fflush(stdout);
-    assert((fabs(a-b)<=1.0e-5));
+    assert((std::fabs(a-b)<=1.0e-5));
   }
-  return (fabs(a-b)<=1.0e-5);
+  return (std::fabs(a-b)<=1.0e-5);
 };
 
 ///this function should be moved to surfpack.cpp
@@ -176,7 +176,7 @@ int nchoosek(int n, int k){
 ///this function should be moved to surfpack.cpp
 MtxDbl& gen_rot_mat(MtxDbl& Rot, const MtxDbl& EulAng, int nvarsr){
 #ifdef __SURFPACK_ERR_CHECK__
-  assert(EulAng.getNElems()==(nvarsr*(nvarsr-1)/2));
+  assert((EulAng.getNRows()==(nvarsr*(nvarsr-1)/2))&&(EulAng.getNCols()==1));
 #endif
   MtxDbl I(nvarsr,nvarsr), R(nvarsr,nvarsr), RotTemp(nvarsr,nvarsr);
   I.zero();
@@ -189,8 +189,8 @@ MtxDbl& gen_rot_mat(MtxDbl& Rot, const MtxDbl& EulAng, int nvarsr){
   for(ivarr=0;ivarr<nvarsr-1;ivarr++) {
     nang--;
     for(iang=0; iang<nang; iang++) {
-      c=std::cos(EulAng(Iang));
-      s=std::sin(EulAng(Iang));
+      c=std::cos(EulAng(Iang,0));
+      s=std::sin(EulAng(Iang,0));
       R=I;
       R(iang  ,iang  )= c;
       R(iang  ,iang+1)=-s;
@@ -209,11 +209,11 @@ MtxDbl& gen_rand_rot_mat(MtxDbl& rot,int nvarsr)
 {
   int n_eul_ang=nchoosek(nvarsr, 2);
   //printf("n_eul_ang=%d\n",n_eul_ang);
-  MtxDbl eul_ang(n_eul_ang);
+  MtxDbl eul_ang(n_eul_ang,1);
   double pi=2.0*std::acos(0.0);
   int mymod = 1048576; //2^20 instead of 10^6 to be kind to the computer
   for(int i=0; i<n_eul_ang; ++i)
-    eul_ang(i)=(std::rand() % mymod)*pi/mymod;
+    eul_ang(i,0)=(std::rand() % mymod)*pi/mymod;
   rot.newSize(nvarsr,nvarsr);
   gen_rot_mat(rot, eul_ang, nvarsr);
   return rot;
@@ -280,7 +280,7 @@ MtxInt& multi_dim_poly_power(MtxInt& poly, int Nvarsr, int Ndeg, int istart, int
   }
 
   int i, j;
-  int ndeg, nvarsr; //these are for recursive calls to smaller multi_dim_poly_power()'s that's why they start with little "n" instead of big "N"
+  int ndeg; //this is for recursive calls to smaller multi_dim_poly_power()'s that's why it starts with little "n" instead of big "N"
   if(Ndeg==0) {
     // a Nvarsr-dimensional polynomial of total degree 0 has all mixed partial powers equal to zero, istart and jstart should be 0 but the user could have done something strange
     for(j=0;j<Nvarsr; j++)
@@ -343,7 +343,7 @@ MtxInt& multi_dim_poly_power(MtxInt& poly, int Nvarsr, int Ndeg, int istart, int
   }
   else{ //we know that Ndeg < -1 and Nvarsr > 2
     //we want all Nvarsr-dimensional polynomials of exaclty degree abs(Ndeg) so we are going to start with the first column being ideg=abs(Ndeg) decrimenting that and pairing it with ALL (Nvarsr-1)-dimensional polynomials of exactly degree ndeg=abs(Ndeg)-ideg
-    int nvarsr=Nvarsr-1;
+    int nvarsr=Nvarsr-1; //this is for recursive calls to smaller multi_dim_poly_power()'s that's why it starts with little "n" instead of big "N"
     for(int ideg=-Ndeg; ideg>=0; ideg--){
       ndeg=-Ndeg-ideg;
       npoly=nchoosek(ndeg-1+nvarsr,ndeg);
@@ -374,7 +374,7 @@ MtxInt& main_effects_poly_power(MtxInt& poly, int nvarsr, int ndeg) {
 #endif
 
   if(ndeg<0) {
-    int abs_ndeg=std::abs((double)ndeg);
+    int abs_ndeg=std::abs(ndeg);
     poly.newSize(nvarsr,nvarsr);
     poly.zero();
     for(int ivarsr=0; ivarsr<nvarsr; ++ivarsr)
@@ -447,7 +447,7 @@ MtxDbl& evaluate_poly_basis(MtxDbl& g, const MtxInt& poly, const MtxDbl& xr) {
       default:
 	//we pulled out cubics as being simple and common too, but they're not as simple or common, typical use case for Kriging is power<=2, and we have to stop somewhere
 	for(ipt=0; ipt<npts; ipt++)
-	  g(ipt,ipoly)=pow(xr(ipt,ivarr),poly(ipoly,ivarr));
+	  g(ipt,ipoly)=std::pow(xr(ipt,ivarr),poly(ipoly,ivarr));
       }
       ivarr++;
      
@@ -470,7 +470,7 @@ MtxDbl& evaluate_poly_basis(MtxDbl& g, const MtxInt& poly, const MtxDbl& xr) {
 	default:
 	  //we could have pulled out cubics as being simple and common too, but they're not as simple or common, the typical use case for Kriging is power<=2, and we have to stop somewhere
 	  for(ipt=0; ipt<npts; ipt++)
-	    g(ipt,ipoly)*=pow(xr(ipt,ivarr),poly(ipoly,ivarr));
+	    g(ipt,ipoly)*=std::pow(xr(ipt,ivarr),poly(ipoly,ivarr));
 	}
     }
   }
@@ -567,7 +567,7 @@ MtxDbl& evaluate_poly_der_basis(MtxDbl& dg, const MtxInt& poly, const MtxInt& de
 	default:
 	  //do the generic "pow" case for polynomial powers>=3
 	  for(int ipt=0; ipt<npts; ++ipt)
-	    dg(ipt+ideroffset,ipoly)=tempcoef*pow(xr(ipt,ivar),temppolypow);
+	    dg(ipt+ideroffset,ipoly)=tempcoef*std::pow(xr(ipt,ivar),temppolypow);
 	}
 	++ivar;//increase the retained value of ivar by 1
 	
@@ -595,7 +595,7 @@ MtxDbl& evaluate_poly_der_basis(MtxDbl& dg, const MtxInt& poly, const MtxInt& de
 	  default:
 	    //do the generic "pow" case for polynomial powers>=3
 	    for(int ipt=0; ipt<npts; ++ipt)
-	      dg(ipt+ideroffset,ipoly)*=pow(xr(ipt,ivar),temppolypow);
+	      dg(ipt+ideroffset,ipoly)*=std::pow(xr(ipt,ivar),temppolypow);
 	  } //switch(temppolypow>0)
 	} //for(; ivar<nvar; ++ivar) 	
       } //if(tempcoef==0.0) {...} else
@@ -616,9 +616,8 @@ MtxDbl& evaluate_poly_der(MtxDbl& result, const MtxInt& poly, const MtxInt& der,
 	 (coef.getNRows()==npoly)&&(coef.getNCols()==1));
   result.newSize(npts,nder);
   result.zero();
-  double tempcoef;
   int temppolypow;
-  MtxDbl tempres(npts);
+  MtxDbl tempres(npts,1);
   int ivar;
 
 
@@ -626,7 +625,7 @@ MtxDbl& evaluate_poly_der(MtxDbl& result, const MtxInt& poly, const MtxInt& der,
 
     for(int ipoly=0; ipoly<npoly; ++ipoly) {
 
-      double tempcoef=coef(ipoly);
+      double tempcoef=coef(ipoly,0);
       if(tempcoef) {
 	//only proceed with this monomial term if its coefficient isn't zero
 	for(ivar=0; ivar<nvars; ++ivar) {
@@ -644,7 +643,7 @@ MtxDbl& evaluate_poly_der(MtxDbl& result, const MtxInt& poly, const MtxInt& der,
 	    //we need to know what it is
 	    int thisder=der(ider,ivar);
 	    for(int jder=0; jder<thisder; ++jder) 
-	      tempcoef*=(poly(ipoly,ivar)-jder);	  
+	      tempcoef*=static_cast<double>(poly(ipoly,ivar)-jder);	  
 	  }
 	}
 	
@@ -689,7 +688,7 @@ MtxDbl& evaluate_poly_der(MtxDbl& result, const MtxInt& poly, const MtxInt& der,
 	      break;
 	    default:
 	      for(int ipt=0; ipt<npts; ++ipt)
-		result(ipt,ider)+=tempcoef*pow(xr(ipt,ivar),temppolypow);
+		result(ipt,ider)+=tempcoef*std::pow(xr(ipt,ivar),temppolypow);
 	    }
 	  }
 	  else{
@@ -700,15 +699,15 @@ MtxDbl& evaluate_poly_der(MtxDbl& result, const MtxInt& poly, const MtxInt& der,
 	    switch(temppolypow) {
 	    case 1:
 	      for(int ipt=0; ipt<npts; ++ipt)
-		tempres(ipt)=tempcoef*xr(ipt,ivar);
+		tempres(ipt,0)=tempcoef*xr(ipt,ivar);
 	      break;
 	    case 2:
 	      for(int ipt=0; ipt<npts; ++ipt)
-		tempres(ipt)=tempcoef*xr(ipt,ivar)*xr(ipt,ivar);
+		tempres(ipt,0)=tempcoef*xr(ipt,ivar)*xr(ipt,ivar);
 	      break;
 	    default:
 	      for(int ipt=0; ipt<npts; ++ipt)
-		tempres(ipt)=tempcoef*pow(xr(ipt,ivar),temppolypow);
+		tempres(ipt,0)=tempcoef*std::pow(xr(ipt,ivar),temppolypow);
 	    }
 	    ++ivar; //increase the retained value of ivar by 1
 
@@ -721,15 +720,15 @@ MtxDbl& evaluate_poly_der(MtxDbl& result, const MtxInt& poly, const MtxInt& der,
 		break;
 	      case 1:
 		for(int ipt=0; ipt<npts; ++ipt)
-		  tempres(ipt)*=xr(ipt,ivar);
+		  tempres(ipt,0)*=xr(ipt,ivar);
 		break;
 	      case 2:
 		for(int ipt=0; ipt<npts; ++ipt)
-		  tempres(ipt)*=xr(ipt,ivar)*xr(ipt,ivar);
+		  tempres(ipt,0)*=xr(ipt,ivar)*xr(ipt,ivar);
 		break;
 	      default:
 		for(int ipt=0; ipt<npts; ++ipt)
-		  tempres(ipt)*=pow(xr(ipt,ivar),temppolypow);
+		  tempres(ipt,0)*=std::pow(xr(ipt,ivar),temppolypow);
 	      } //switch(temppolypow)
 	    } //for(; ivar<nvar; ++ivar)
 
@@ -737,7 +736,7 @@ MtxDbl& evaluate_poly_der(MtxDbl& result, const MtxInt& poly, const MtxInt& der,
 	    //multi-dimensional monomial term in the derivative polynomial)
 	    //to result
 	    for(int ipt=0; ipt<npts; ipt++)
-	      result(ipt,ider)+=tempres(ipt);
+	      result(ipt,ider)+=tempres(ipt,0);
 	      
 
 	  } //if(ivar==nvar){...}else 

@@ -207,19 +207,19 @@ GradKrigingModel::GradKrigingModel(const SurfData& sd, const ParamMap& params)
     // the natural log of the scaled correlation length, we need to fix that
     // but first we need to check the input for errors
     for(int ivarsr=0; ivarsr<numVarsr; ++ivarsr) 
-      if(!(natLogCorrLen(ivarsr)>0.0)) {
+      if(!(natLogCorrLen(0,ivarsr)>0.0)) {
 	std::cerr << "For the Kriging Model, correlation lengths must be strictly positive\n.";
 	assert(0);
       }
 
-    //printf("unscaled corr lens = [%12.6g",natLogCorrLen(0)); 
+    //printf("unscaled corr lens = [%12.6g",natLogCorrLen(0,0)); 
     //for(int ivarsr=1; ivarsr<numVarsr; ++ivarsr)
     //printf(", %12.6g",natLogCorrLen(0,ivarsr));
     //printf("]\n");    
 
     scaler.scaleXrDist(natLogCorrLen); //scale the lengths
     //scaler.scaleXrOther(natLogCorrLen); //error
-    //printf("scaled corr lens = [%12.6g",natLogCorrLen(0)); 
+    //printf("scaled corr lens = [%12.6g",natLogCorrLen(0,0)); 
     //for(int ivarsr=1; ivarsr<numVarsr; ++ivarsr)
     // printf(", %12.6g",natLogCorrLen(0,ivarsr));
     //printf("]\n");    
@@ -227,7 +227,7 @@ GradKrigingModel::GradKrigingModel(const SurfData& sd, const ParamMap& params)
     
     //compute the natural log of the correlation lengths
     for(int ivarsr=0; ivarsr<numVarsr; ++ivarsr) 
-      natLogCorrLen(0,ivarsr)=log(natLogCorrLen(0,ivarsr)); 
+      natLogCorrLen(0,ivarsr)=std::log(natLogCorrLen(0,ivarsr)); 
     
     //natLogCorrLen will be the first of the initial iterates (guesses), this happens in the create() function below
   }
@@ -275,7 +275,7 @@ GradKrigingModel::GradKrigingModel(const SurfData& sd, const ParamMap& params)
   //check that we have enough data for the selected trend functions
   int needed_eqns = getNTrend()+1; //+numVarsr;
   if( !(needed_eqns <= numRowsR) ) {
-    std::cerr << "With the selected set of trend functions there are more unknown parameters (" <<  needed_eqns << ") than there are pieces of data (" << numRowsR << ") for the GradKrigingModel. For the current set of trend functions, you need at least " << std::ceil((double)needed_eqns/nDer) << " data points and having at least " << std::ceil((double)2.0*needed_eqns/nDer) << " is _strongly_ recommended.\n";
+    std::cerr << "With the selected set of trend functions there are more unknown parameters (" <<  needed_eqns << ") than there are pieces of data (" << numRowsR << ") for the GradKrigingModel. For the current set of trend functions, you need at least " << std::ceil(static_cast<double>(needed_eqns)/static_cast<double>(nDer)) << " data points and having at least " << std::ceil(2.0*static_cast<double>(needed_eqns)/static_cast<double>(nDer)) << " is _strongly_ recommended.\n";
     assert(needed_eqns <= numRowsR);
   }
 
@@ -306,12 +306,12 @@ GradKrigingModel::GradKrigingModel(const SurfData& sd, const ParamMap& params)
   numConFunc=1;
   
   //convert to the Dakota bitflag convention for derivative orders
-  maxObjDerMode=((int) pow(2.0,num_analytic_obj_ders_in+1))-1; //analytical gradients of objective function
-  maxConDerMode=((int) pow(2.0,num_analytic_con_ders_in+1))-1; //analytical gradients of constraint function(s)
+  maxObjDerMode=static_cast<int>(std::pow(2.0,num_analytic_obj_ders_in+1))-1; //analytical gradients of objective function
+  maxConDerMode=static_cast<int>(std::pow(2.0,num_analytic_con_ders_in+1))-1; //analytical gradients of constraint function(s)
 
-  //maxCondNum=pow(1024.0,5); 
-  maxCondNum=pow(1024.0,4); 
-  //maxCondNum=pow(1024.0,5)/32.0;
+  //maxCondNum=std::pow(1024.0,5); 
+  maxCondNum=std::pow(1024.0,4); 
+  //maxCondNum=std::pow(1024.0,5)/32.0;
 
   // *************************************************************
   // this starts the input section about the nugget which can be
@@ -384,7 +384,8 @@ GradKrigingModel::GradKrigingModel(const SurfData& sd, const ParamMap& params)
   //poly=lrp.poly;
   //lrp.getInitGuess(EulAng);
   //lrp.optimize_by_picking_best_guess(EulAng);
-  EulAng.newSize(1, nchoosek(numVarsr, 2)); 
+  //EulAng.reshape(nchoosek(numVarsr, 2),1);
+  EulAng.newSize(nchoosek(numVarsr, 2),1); 
   EulAng.zero();
   gen_rot_mat(Rot, EulAng, numVarsr);
   eval_trend_fn(G, Poly, Der, Rot, XR);
@@ -433,8 +434,8 @@ void GradKrigingModel::create()
   // (assumes input space has a volume of 1, and data points are
   // uniformly distributed)
 
-  aveDistBetweenPts=pow(numPoints,-1.0/numVarsr);
-  //aveDistBetweenPts=pow(numRowsR,-1.0/numVarsr); //count each derivative as 
+  aveDistBetweenPts=std::pow(numPoints,-1.0/numVarsr);
+  //aveDistBetweenPts=std::pow(numRowsR,-1.0/numVarsr); //count each derivative as 
   //another point when determining the "average distance between points"
   //this is used to determine the "reach" of each data point...
   //on second thought should I shorten the correlation lengths because I 
@@ -451,7 +452,7 @@ void GradKrigingModel::create()
      KRD */
   double max_corr_length = aveDistBetweenPts*8.0; 
 
-  maxNatLogCorrLen=log(max_corr_length);
+  maxNatLogCorrLen=std::log(max_corr_length);
 
   /* Gaussian Process error model has about ~5% confidence (2 std devs) midway
      between neighboring points... i.e. you're 4 std devs away from your 
@@ -459,7 +460,7 @@ void GradKrigingModel::create()
      uncorrelated 
      KRD */
   double min_corr_length = aveDistBetweenPts/4.0; 
-  minNatLogCorrLen=log(min_corr_length);
+  minNatLogCorrLen=std::log(min_corr_length);
   //double max_correlation = 1.0/(2.0*min_corr_length*min_corr_length);
 
   //Choose dead center (in log(correlation length)) of feasible region as the 
@@ -540,16 +541,16 @@ void GradKrigingModel::create()
   }
 
   correlations.newSize(1,numVarsr);
-  correlations(0)=0.5*exp(-2.0*natLogCorrLen(0));
-  //printf("theta={%g",correlations(0));
+  correlations(0,0)=0.5*std::exp(-2.0*natLogCorrLen(0,0));
+  //printf("theta={%g",correlations(0,0));
   for(int k=1; k<numVarsr; ++k) {
-    correlations(k)=0.5*exp(-2.0*natLogCorrLen(k));
-    //printf(", %g",correlations(k));
+    correlations(0,k)=0.5*std::exp(-2.0*natLogCorrLen(0,k));
+    //printf(", %g",correlations(0,k));
   }
 
   //printf("}\n");
 
-  //printf("scaled correlations=[%12.6g",correlations(0));
+  //printf("scaled correlations=[%12.6g",correlations(0,0));
   //for(int ivarsr=1; ivarsr<numVarsr; ++ivarsr)
   //printf(", %12.6g",correlations(0,ivarsr));
   //printf("]\n");
@@ -582,13 +583,13 @@ void GradKrigingModel::create()
 std::string GradKrigingModel::model_summary_string() const {
   MtxDbl temp_out_corr_lengths(1,numVarsr);
   for(int i=0; i<numVarsr; ++i) 
-    temp_out_corr_lengths(i)=sqrt(0.5/correlations(i));
+    temp_out_corr_lengths(0,i)=std::sqrt(0.5/correlations(0,i));
   scaler.unScaleXrDist(temp_out_corr_lengths);
   
   std::ostringstream oss;
-  oss << "GKM: #pts="<< numPoints <<"; Correlation lengths=(" << temp_out_corr_lengths(0);
+  oss << "GKM: #pts="<< numPoints <<"; Correlation lengths=(" << temp_out_corr_lengths(0,0);
   for(int i=1; i<numVarsr; ++i)
-    oss << ", " << temp_out_corr_lengths(i);
+    oss << ", " << temp_out_corr_lengths(0,i);
   oss << "); unadjusted variance=" << estVarianceMLE * scaler.unScaleFactorVarY() << "; log(likelihood)=" << likelihood << "; the trend is a ";
   if(polyOrder>1) {
     if(ifReducedPoly==true)
@@ -599,10 +600,10 @@ std::string GradKrigingModel::model_summary_string() const {
     "; rcond(R)=" << rcondR << "; rcond(Gtran_Rinv_G)=" << rcondGtran_Rinv_G 
       << "; nugget=" << nug << ".\n";
   
-  oss << "Beta= (" << betaHat(0);
+  oss << "Beta= (" << betaHat(0,0);
   int ntrend=getNTrend(); 
   for(int i=1; i<ntrend; ++i)
-    oss << "," << betaHat(i);
+    oss << "," << betaHat(i,0);
   oss << ")\n";
 
   return (oss.str());  
@@ -747,8 +748,6 @@ MtxDbl& GradKrigingModel::evaluate_d1y(MtxDbl& d1y, const MtxDbl& xr) const
   MtxInt der(nder,numVarsr); 
   multi_dim_poly_power(der,numVarsr,-1); //equivalent to der.identity();
 
-  int ntrend=getNTrend();
-
   evaluate_poly_der(d1y,Poly,der,betaHat,xr_scaled);
   
 #ifdef __KRIGING_DER_TEST__
@@ -774,7 +773,7 @@ MtxDbl& GradKrigingModel::evaluate_d1y(MtxDbl& d1y, const MtxDbl& xr) const
   apply_nugget_eval(r);
   MtxDbl d1r(nrowsxr,numRowsR);
   MtxDbl work(nrowsxr,numPoints);
-  MtxDbl temp_vec(nrowsxr);
+  MtxDbl temp_vec(nrowsxr,1);
 
 
   int ivar;
@@ -793,7 +792,7 @@ MtxDbl& GradKrigingModel::evaluate_d1y(MtxDbl& d1y, const MtxDbl& xr) const
     matrix_mult(temp_vec,d1r,rhs);
 
     for(int ipt=0; ipt<nrowsxr; ++ipt)
-      d1y(ipt,ider)=(d1y(ipt,ider)+temp_vec(ipt))*d1y_unscale_factor;
+      d1y(ipt,ider)=(d1y(ipt,ider)+temp_vec(ipt,0))*d1y_unscale_factor;
   }
   /*
   printf("d1y(0,:)=[%g",d1y(0,0));
@@ -853,7 +852,7 @@ MtxDbl& GradKrigingModel::evaluate_d2y(MtxDbl& d2y, const MtxDbl& xr) const
   apply_nugget_eval(r);
   MtxDbl d1r(nrowsxr,numRowsR);
   MtxDbl d2r(nrowsxr,numRowsR);
-  MtxDbl temp_vec(nrowsxr);
+  MtxDbl temp_vec(nrowsxr,1);
   MtxDbl work(nrowsxr,numPoints);
 
   int ivar, ivarold=-1, jvar;
@@ -885,7 +884,7 @@ MtxDbl& GradKrigingModel::evaluate_d2y(MtxDbl& d2y, const MtxDbl& xr) const
     matrix_mult(temp_vec,d2r,rhs);
 
     for(int ipt=0; ipt<nrowsxr; ++ipt)
-      d2y(ipt,ider)=(d2y(ipt,ider)+temp_vec(ipt))*d2y_unscale_factor;
+      d2y(ipt,ider)=(d2y(ipt,ider)+temp_vec(ipt,0))*d2y_unscale_factor;
   }
 
   return d2y;
@@ -921,8 +920,8 @@ double GradKrigingModel::eval_variance(const MtxDbl& xr) const
     correlation_matrix(r, xr_scaled);
   }
 
-  MtxDbl tempa(numRowsR);
-  MtxDbl tempb(ntrend);
+  MtxDbl tempa(numRowsR,1);
+  MtxDbl tempb(ntrend,1);
 
   if(nug>0.0) 
     apply_nugget_eval(r);
@@ -997,56 +996,26 @@ MtxDbl& GradKrigingModel:: eval_variance(MtxDbl& adj_var, const MtxDbl& xr) cons
 
   for(i=0; i<nrowsxr; ++i) {
     //saved 2*nrowsxr loops
-    adj_var(i)=1.0-r(i,0)*tempa(0,i)+g_minus_r_Rinv_G(i,0)*tempb(0,i);
+    adj_var(i,0)=1.0-r(i,0)*tempa(0,i)+g_minus_r_Rinv_G(i,0)*tempb(0,i);
 
     for(j=1; j<numRowsR; ++j)
-      adj_var(i)-=r(i,j)*tempa(j,i); //looks a lot like matrix mult but only N^2 ops
+      adj_var(i,0)-=r(i,j)*tempa(j,i); //looks a lot like matrix mult but only N^2 ops
 
     for(j=1; j<ntrend; ++j)
-      adj_var(i)+=g_minus_r_Rinv_G(i,j)*tempb(j,i); //looks a lot like matrix mult but only N^2 ops
+      adj_var(i,0)+=g_minus_r_Rinv_G(i,j)*tempb(j,i); //looks a lot like matrix mult but only N^2 ops
 
-    adj_var(i)*=estVarianceMLE*var_unscale_factor;
+    adj_var(i,0)*=estVarianceMLE*var_unscale_factor;
   }
 
   for(i=0; i<nrowsxr; ++i)
-    if(adj_var(i)<0.0)
-      adj_var(i)=0.0;
-    else if(!(adj_var(i)>=0.0))
+    if(adj_var(i,0)<0.0)
+      adj_var(i,0)=0.0;
+    else if(!(adj_var(i,0)>=0.0))
       printf("MtxDbl& NKM_GradKrigingModel::eval_variance(...) adj_var(%d)=nan rcondR=%g\n",i,rcondR);
 	
 
   return adj_var;
 }
-
-
-/*
-VecDbl GradKrigingModel::gradient(const VecDbl& x) const
-{
-  assert(!x.empty());
-  assert(x.size()+1==betaHat.size()); //true for linear trend function; KRD added
-  std::cout << "IN gradient x[0] = " << x[0] << std::endl;
-  assert(rhs.size() == bs.centers.size());
-  VecUns diff_var(1,0); // variable with which to differentiate
-  VecDbl result(x.size(),0.0);
-  for (unsigned i = 0; i < x.size(); i++) {
-    diff_var[0] = i;
-    result[i] = betaHat[i+1]; //true for linear trend function; KRD added
-    for (unsigned j = 0; j < bs.centers.size(); j++) {
-      result[i] += rhs[j]*bs.deriv(j,x,diff_var);
-    }
-  }
-  return result;
-}
-
-std::string GradKrigingModel::asString() const
-{
-  std::ostringstream os;
-  os << "\ncenters:\n" << bs.asString() << "rhs: ";
-  copy(rhs.begin(),rhs.end(),std::ostream_iterator<double>(os," "));
-  os << "\n";
-  return os.str();
-}
-*/
 
 
 /** this function scales the input matrix, r, in place by 1.0/(1.0+nug), 
@@ -1068,11 +1037,15 @@ MtxDbl& GradKrigingModel::apply_nugget_eval(MtxDbl& r) const {
 
   //printf("apply_nugget_eval\n");
 
-  int nelem=r.getNElems();
+  //int nelem=r.getNElems();
+  int nrowsr=r.getNRows();
   double temp_dbl=1.0/(1.0+nug);
 
-  for(int ij=0; ij<nelem; ++ij) 
-    r(ij)*=temp_dbl;
+  //for(int ij=0; ij<nelem; ++ij) 
+  //r(ij)*=temp_dbl;
+  for(int j=0; j<numRowsR; ++j)
+    for(int i=0; i<nrowsr; ++i)
+      r(i,j)*=temp_dbl;
 
   //printf("apply_nugget_eval temp=%g\n",temp);
 
@@ -1092,12 +1065,16 @@ void GradKrigingModel::apply_nugget_build() {
   
   //int nrowsR=R.getNRows();
   //assert(nrowsR==R.getNCols());
-  int nelemsR=numRowsR*numRowsR;
+  //int nelemsR=numRowsR*numRowsR;
 
   double temp_dbl=1.0/(1.0+nug);
-  int ij;
-  for(ij=0; ij<nelemsR; ++ij)
-    R(ij)*=temp_dbl;
+  //int ij;
+  //for(ij=0; ij<nelemsR; ++ij)
+  //R(ij)*=temp_dbl;
+  for(int j=0; j<numRowsR; ++j)
+    for(int i=0; i<numRowsR; ++i)
+      R(i,j)*=temp_dbl;
+  
   
   //the "paranoid" part of my mind wonders if there would be less round off
   //error if I added the nugget to the diagonal BEFORE scaling, the pragmatic
@@ -1140,19 +1117,19 @@ MtxDbl& GradKrigingModel::correlation_matrix(MtxDbl& r, const MtxDbl& xr) const
   for(j=0; j<nrowsXR; ++j)
     for(i=0; i<nrowsxr; ++i) {
       temp_double=xr(i,0)-XR(j,0);
-      r( i, j)=-correlations(0)*temp_double*temp_double; //=- is correct
+      r( i, j)=-correlations(0,0)*temp_double*temp_double; //=- is correct
     }
   for(k=1; k<numVarsr-1; ++k)
     for(j=0; j<nrowsXR; ++j)
       for(i=0; i<nrowsxr; ++i) {
 	temp_double=xr(i,k)-XR(j,k);
-	r( i, j)-=correlations(k)*temp_double*temp_double; //-= is correct
+	r( i, j)-=correlations(0,k)*temp_double*temp_double; //-= is correct
       }
   k=numVarsr-1;
   for(j=0; j<nrowsXR; ++j)
     for(i=0; i<nrowsxr; ++i) {
       temp_double=xr(i,k)-XR(j,k);
-      r( i, j)=exp(r( i, j)-correlations(k)*temp_double*temp_double);
+      r( i, j)=std::exp(r( i, j)-correlations(0,k)*temp_double*temp_double);
     }
 
   //first derivative with respect to second input (XR)
@@ -1160,7 +1137,7 @@ MtxDbl& GradKrigingModel::correlation_matrix(MtxDbl& r, const MtxDbl& xr) const
     for(j=0; j<nrowsXR; ++j) {
       Jj=(Jder+1)*nrowsXR+j;
       for(i=0; i<nrowsxr; ++i) {
-	r( i,Jj)= 2.0*correlations(Jder)*(xr(i,Jder)-XR(j,Jder))*r( i, j);
+	r( i,Jj)= 2.0*correlations(0,Jder)*(xr(i,Jder)-XR(j,Jder))*r( i, j);
 	//no negative sign here because used xr-XR instead of -(XR-xr)
       }
     }
@@ -1189,7 +1166,7 @@ MtxDbl& GradKrigingModel::dcorrelation_matrix_dxI(MtxDbl& dr, const MtxDbl& r,
   //assert(xr.getNCols()==numVarsr);
   dr.newSize(nrowsxr,nrowsXR*(1+numVarsr));
   workI.newSize(nrowsxr,nrowsXR);
-  int i, j, k, Ij, Jj, Jder;
+  int i, j, Ij, Jj, Jder;
   //the convention is that the second index into r and dr has 2 characters 
   //eg r(i,Jj) and dr(i,Jj). The second charater is lower case and 
   //indicates the "point" index INTO a derivative (with respect to XR) 
@@ -1209,7 +1186,7 @@ MtxDbl& GradKrigingModel::dcorrelation_matrix_dxI(MtxDbl& dr, const MtxDbl& r,
   //r(i, j)=r(xr(i,:),XR(j,:)) 
   //dr(i, j)=d[r(xr(i,:),XR(j,:))]/dxr(i,Ider)
 
-  double twoThetaI=2.0*correlations(Ider);
+  double twoThetaI=2.0*correlations(0,Ider);
   //now I don't need to touch correlations for the rest of the function call
 
   //first derivative with respect to Ider component (variable) of first 
@@ -1254,7 +1231,7 @@ MtxDbl& GradKrigingModel::d2correlation_matrix_dxIdxK(MtxDbl& d2r, const MtxDbl&
   int nrowsxr=xr.getNRows(); //points at which we are evalutating the model
   d2r.newSize(nrowsxr,nrowsXR*(1+numVarsr));
   workK.newSize(nrowsxr,nrowsXR);
-  int i, j, K, Jj, Kj, Jder;
+  int i, j, Jj, Kj, Jder;
   //the convention is that the second index into r and drI and d2r has 2 
   //characters, eg r(i,Jj), dr(i,Jj), and d2r(i,Jj).  The second charater 
   //is lower case and indicates the "point" index INTO a derivative (with 
@@ -1276,7 +1253,7 @@ MtxDbl& GradKrigingModel::d2correlation_matrix_dxIdxK(MtxDbl& d2r, const MtxDbl&
   //drI(i, j)=d[r(xr(i,:),XR(j,:))]/dxr(i,Ider)
   //d2r(i, j)=d^2[r(xr(i,:),XR(j,:))]/dxr(i,Ider)dxr(i,Kder)
 
-  double twoThetaK=2.0*correlations(Kder);
+  double twoThetaK=2.0*correlations(0,Kder);
   //now I don't need to touch correlations for the remainder of the function 
   //call
 
@@ -1366,25 +1343,25 @@ MtxDbl& GradKrigingModel::correlation_matrix(MtxDbl& r, const MtxDbl& xr) const
   //diagonal submatrix (i.e. it's a mixed second derivative with respect to
   //the same component of the first, xr, and second, XR, input variables)
   //r(Ji,Jj)=d^2r(xr(i,:),XR(j,:))/dxr(i,J)dXR(j,J) which has an extra 
-  //additive term, +2*theta(J)*r( i, j) relative to other mixed second 
+  //additive term, +2*theta(0,J)*r( i, j) relative to other mixed second 
   //derivatives
 
   for(j=0; j<nrowsXR; ++j)
     for(i=0; i<nrowsxr; ++i) {
       temp_double=xr(i,0)-XR(j,0);
-      r( i, j)=-correlations(0)*temp_double*temp_double; //=- is correct
+      r( i, j)=-correlations(0,0)*temp_double*temp_double; //=- is correct
     }
   for(k=1; k<numVarsr-1; ++k)
     for(j=0; j<nrowsXR; ++j)
       for(i=0; i<nrowsxr; ++i) {
 	temp_double=xr(i,k)-XR(j,k);
-	r( i, j)-=correlations(k)*temp_double*temp_double; //-= is correct
+	r( i, j)-=correlations(0,k)*temp_double*temp_double; //-= is correct
       }
   k=numVarsr-1;
   for(j=0; j<nrowsXR; ++j)
     for(i=0; i<nrowsxr; ++i) {
       temp_double=xr(i,k)-XR(j,k);
-      r( i, j)=exp(r( i, j)-correlations(k)*temp_double*temp_double);
+      r( i, j)=std::exp(r( i, j)-correlations(0,k)*temp_double*temp_double);
     }
   //above this line is needed to evaluate both the function values and as a 
   //"precompute, store, and reuse" quantity to compute the portion of r 
@@ -1396,7 +1373,7 @@ MtxDbl& GradKrigingModel::correlation_matrix(MtxDbl& r, const MtxDbl& xr) const
     for(j=0; j<nrowsXR; ++j) {
       Jj=(Jder+1)*nrowsXR+j;
       for(i=0; i<nrowsxr; ++i) {
-	r( i,Jj)= 2.0*correlations(Jder)*(xr(i,Jder)-XR(j,Jder))*r( i, j);
+	r( i,Jj)= 2.0*correlations(0,Jder)*(xr(i,Jder)-XR(j,Jder))*r( i, j);
 	//no negative sign here because used xr-XR instead of -(XR-xr)
       }
     }
@@ -1412,7 +1389,7 @@ MtxDbl& GradKrigingModel::correlation_matrix(MtxDbl& r, const MtxDbl& xr) const
     for(j=0; j<nrowsXR; ++j) 
       for(i=0; i<nrowsxr; ++i) {
 	Ii=(Ider+1)*nrowsxr+i;
-	r(Ii, j)=-2.0*correlations(Ider)*(xr(i,Ider)-XR(j,Ider))*r( i, j);
+	r(Ii, j)=-2.0*correlations(0,Ider)*(xr(i,Ider)-XR(j,Ider))*r( i, j);
       }
 
   //now do the mixed second derivative submatrices
@@ -1426,20 +1403,20 @@ MtxDbl& GradKrigingModel::correlation_matrix(MtxDbl& r, const MtxDbl& xr) const
 	for(i=0; i<nrowsxr; ++i) {
 	  Ii=(Ider+1)*nrowsxr+i;	  
 	  r(Ii,Jj)=-4.0*r( i, j)*
-	    correlations(Ider)*(xr(i,Ider)-XR(j,Ider))*
-	    correlations(Jder)*(xr(i,Jder)-XR(j,Jder));
+	    correlations(0,Ider)*(xr(i,Ider)-XR(j,Ider))*
+	    correlations(0,Jder)*(xr(i,Jder)-XR(j,Jder));
 	}
       }
   
     //Ider=Jder; derivatives with respect to the same component (variable) in 
     //the first (xr) and second (XR) inputs, there is an extra term here...
-    //+2.0*theta(Jder)*r( i, j) compared to other mixed 2nd derivatives
+    //+2.0*theta(0,Jder)*r( i, j) compared to other mixed 2nd derivatives
     for(j=0; j<nrowsXR; ++j) {
       Jj=(Jder+1)*nrowsXR+j;
       for(i=0; i<nrowsxr; ++i) {
 	Ji=(Jder+1)*nrowsxr+i;
-	temp_double=2.0*correlations(Jder)*(xr(i,Jder)-XR(j,Jder));
-	r(Ji,Jj)=(2.0*correlations(Jder)-temp_double*temp_double)*r( i, j);
+	temp_double=2.0*correlations(0,Jder)*(xr(i,Jder)-XR(j,Jder));
+	r(Ji,Jj)=(2.0*correlations(0,Jder)-temp_double*temp_double)*r( i, j);
       }
     }
 
@@ -1451,8 +1428,8 @@ MtxDbl& GradKrigingModel::correlation_matrix(MtxDbl& r, const MtxDbl& xr) const
 	for(i=0; i<nrowsxr; ++i) {
 	  Ii=(Ider+1)*nrowsxr+i;	  
 	  r(Ii,Jj)=-4.0*r( i, j)*
-	    correlations(Ider)*(xr(i,Ider)-XR(j,Ider))*
-	    correlations(Jder)*(xr(i,Jder)-XR(j,Jder));
+	    correlations(0,Ider)*(xr(i,Ider)-XR(j,Ider))*
+	    correlations(0,Jder)*(xr(i,Jder)-XR(j,Jder));
 	}
       }
   }
@@ -1470,7 +1447,7 @@ MtxDbl& GradKrigingModel::dcorrelation_matrix_dxk(MtxDbl& dr, const MtxDbl& r,
 	 (xr.getNCols()==numVarsr)&&(0<=k)&&(k<numVarsr));
   dr.newSize(nrowsxr,numPoints);
 
-  double temp_dbl=-2.0*correlations(k);
+  double temp_dbl=-2.0*correlations(0,k);
   for(int jpt=0; jpt<numPoints; ++jpt)
     for(int ipt=0; ipt<nrowsxr; ++ipt)
       dr(ipt,jpt)=temp_dbl*r(ipt,jpt)*(xr(ipt,k)-XR(jpt,k));
@@ -1518,7 +1495,7 @@ void GradKrigingModel::correlation_matrix(const MtxDbl& theta)
   //second derivative with respect to the same component of the first 
   //and second input variables)
   //R(Ji,Jj)=d^2[r(xr(i,:),XR(j,:))]/dXR(i,J)dXR(j,J) 
-  //which has the extra /additive term, +2*theta(J)*r( i, j) 
+  //which has the extra /additive term, +2*theta(0,J)*r( i, j) 
   //relative to other mixed second derivatives
 
   double temp_double; //a temporary variable from which the matrix is filled
@@ -1535,10 +1512,10 @@ void GradKrigingModel::correlation_matrix(const MtxDbl& theta)
   for(j=0; j<numPoints-1; ++j) {
     R( j, j)=1.0;  
     for(int i=j+1; i<numPoints; ++i) {
-      temp_double=exp(Ztheta(zij));
+      temp_double=std::exp(Ztheta(zij,0));
       R( i, j)=temp_double;
       R( j, i)=temp_double;
-      //printf("i=%d j=%d zij=%d Ztheta=%g R=%g\n",i,j,zij,Ztheta(zij),R(i,j));
+      //printf("i=%d j=%d zij=%d Ztheta=%g R=%g\n",i,j,zij,Ztheta(zij,0),R(i,j));
       ++zij;
     }
   }
@@ -1561,7 +1538,7 @@ void GradKrigingModel::correlation_matrix(const MtxDbl& theta)
       for(int i=j+1; i<numPoints; ++i) {
 	//off diagonal (_i,_j) of off-diagonal (I_, _) submatrix 
 	Ii=(Ider+1)*numPoints+i;
-	temp_double=-theta(Ider)*twoXRminusXRtran(zij,Ider)*R( i, j);
+	temp_double=-theta(0,Ider)*twoXRminusXRtran(zij,Ider)*R( i, j);
 	R(Ii, j)= temp_double; 
 	R( j,Ii)= temp_double; //whole R matrix is symmetric
 	R(Ij, i)=-temp_double; 
@@ -1583,16 +1560,16 @@ void GradKrigingModel::correlation_matrix(const MtxDbl& theta)
   double two_theta_Jder;
   for(int Jder=0; Jder<numVarsr; ++Jder) {
     //do the on diagonal (J_,J_) submatrix 
-    two_theta_Jder=2.0*theta(Jder);
+    two_theta_Jder=2.0*theta(0,Jder);
     zij=0;
     for(j=0; j<numPoints-1; ++j) { //j<numPoints-1 avoids an i loop of length 0
       //diagonal (_j,_j) of on diagonal (J_,J_) submatrix
       Jj=(Jder+1)*numPoints+j; 
-      R(Jj,Jj)=two_theta_Jder; //R(Jj,Jj)=2*theta(Jder)*R(j,j); R(j,j)=1; 
+      R(Jj,Jj)=two_theta_Jder; //R(Jj,Jj)=2*theta(0,Jder)*R(j,j); R(j,j)=1; 
       for(int i=j+1; i<numPoints; ++i) {
 	//off diagonal (_i,_j) of on-diagonal (J_,J_) submatrix
 	Ji=(Jder+1)*numPoints+i;
-	temp_double=theta(Jder)*twoXRminusXRtran(zij,Jder)*R(Ji, j)+
+	temp_double=theta(0,Jder)*twoXRminusXRtran(zij,Jder)*R(Ji, j)+
 	  two_theta_Jder*R( i, j);
 	R(Ji,Jj)=temp_double;
 	R(Jj,Ji)=temp_double;
@@ -1602,7 +1579,7 @@ void GradKrigingModel::correlation_matrix(const MtxDbl& theta)
     //diagonal (_j,_j) of on diagonal (J_,J_) submatrix 
     j=numPoints-1; //avoids an i loop of length 0
     Jj=(Jder+1)*numPoints+j;
-    R(Jj,Jj)=two_theta_Jder; //R(j,j)=1 R(jj,jj)=2*theta(Jder)*R(j,j)
+    R(Jj,Jj)=two_theta_Jder; //R(j,j)=1 R(jj,jj)=2*theta(0,Jder)*R(j,j)
 
 
     //do the off diagonal (I_,J_) submatrices
@@ -1621,7 +1598,7 @@ void GradKrigingModel::correlation_matrix(const MtxDbl& theta)
 	  //off diagonal (_i,_j) of off-diagonal (I_,J_) submatrix 
 	  Ii=(Ider+1)*numPoints+i;
 	  Ji=(Jder+1)*numPoints+i;
-	  temp_double=theta(Jder)*twoXRminusXRtran(zij,Jder)*R(Ii, j);
+	  temp_double=theta(0,Jder)*twoXRminusXRtran(zij,Jder)*R(Ii, j);
 	  R(Ii,Jj)= temp_double; 
 	  R(Ij,Ji)= temp_double; 
 	  R(Ji,Ij)= temp_double; 
@@ -1655,7 +1632,7 @@ void GradKrigingModel::correlation_matrix(const MtxDbl& theta)
   MtxDbl rr(numRowsR,numRowsR);
   MtxDbl r(numPoints,numRowsR);
   MtxDbl dr(numPoints,numRowsR);
-  MtxInt irows(numPoints);
+  MtxInt irows(numPoints,1);
   MtxDbl work(numPoints,numPoints);
 
   correlations.copy(theta);
@@ -1676,7 +1653,7 @@ void GradKrigingModel::correlation_matrix(const MtxDbl& theta)
   FILE* fp=fopen("CheckGKE_Rmat.txt","w");
   fprintf(fp,"%d\n%d\n\n",numPoints,numVarsr);
   for(int i; i<numVarsr; ++i)
-    fprintf(fp,"%.16g ",theta(i));
+    fprintf(fp,"%.16g ",theta(0,i));
   fprintf(fp,"\n");
   
 
@@ -1744,17 +1721,20 @@ MtxDbl& GradKrigingModel::gen_Z_matrix()
 
 
   register double mult_term;
-  register int ijk=0;
-  double *twoXRminusXRtran_ptr=twoXRminusXRtran.ptr(0);
-  double *Z_ptr=Z.ptr(0); //done for speed
+  register int ij;
+  double *twoXRminusXRtran_k_ptr;
+  double *Zk_ptr; //done for speed
   const double *XR_k_ptr; //done for speed
   for(int k=0; k<ncolsXR; k++) {
     XR_k_ptr=XR.ptr(0,k);
-    for(int j=0; j<nrowsXR-1; j++)
-      for(int i=j+1; i<nrowsXR; i++) {
+    Zk_ptr=Z.ptr(0,k);
+    twoXRminusXRtran_k_ptr=twoXRminusXRtran.ptr(0,k);
+    ij=0;
+    for(int j=0; j<nrowsXR-1; ++j)
+      for(int i=j+1; i<nrowsXR; ++i, ++ij) {
 	mult_term=XR_k_ptr[i]-XR_k_ptr[j];
-	twoXRminusXRtran_ptr[ijk]=2*mult_term;
-	Z_ptr[ijk++]=-mult_term*mult_term;
+	twoXRminusXRtran_k_ptr[ij]=2*mult_term;
+	Zk_ptr[ij]=-mult_term*mult_term;
       }
   }
   
@@ -1799,9 +1779,9 @@ void GradKrigingModel::masterObjectiveAndConstraints(const MtxDbl& theta, int ob
 
   //next 5 or 6 must be copied out (can't allow external code to change these or have no guarantee that we can reuse "previous" values)
   //member variable: double obj;
-  //member variable: MtxDbl gradObj(numTheta);
+  //member variable: MtxDbl gradObj(numTheta,1);
   //member variable: MtxDbl hessObj(numTheta,numTheta);
-  //member variable: MtxDbl con(numConFunc);
+  //member variable: MtxDbl con(numConFunc,1);
   //member variable: MtxDbl gradCon(numConFunc,numTheta);
   //???member variable: vector<MtxDbl(numTheta,numTheta)> hessCon(numConFunc) ..hessians of the constraints are also a bit more expensive to copy out, might be better to use finite difference hessians of the constraint functions, analytical hessians of the constraint functions are not yet implemented
   //end of variables to copy out
@@ -1813,11 +1793,11 @@ void GradKrigingModel::masterObjectiveAndConstraints(const MtxDbl& theta, int ob
   //these are temporary variables that we keep around during emulator 
   //creation so we don't have to constantly allocate and deallocate them, 
   //these get deallocated at the end of create
-  //member variable: MtxDbl temp(ntrend)
-  //member variable: MtxDbl temp2(numPoints)
-  //member variable: MtxDbl temp3(numPoints)
-  //member variable: MtxDbl temp4(numPoints)
-  //member variable: MtxDbl temp5(numPoints)
+  //member variable: MtxDbl temp(ntrend,1)
+  //member variable: MtxDbl temp2(numPoints,1)
+  //member variable: MtxDbl temp3(numPoints,1)
+  //member variable: MtxDbl temp4(numPoints,1)
+  //member variable: MtxDbl temp5(numPoints,1)
 
 
   //these are private and their values need to be retained between sequential calls to masterObjectiveAndConstraints, that is no other function (other than the create) can access them, these get deallocated at the end of create
@@ -1825,14 +1805,14 @@ void GradKrigingModel::masterObjectiveAndConstraints(const MtxDbl& theta, int ob
   //member variable: int prevConDerMode
   //member variable: MtxDbl prevTheta(1,numTheta)
   //member variable: MtxDbl allEigVect(numPoints,numPoints)
-  //member variable: MtxDbl allEigVal(numPoints)
+  //member variable: MtxDbl allEigVal(numPoints,1)
   //member variable: MtxDbl Z(numPoints*numPoints,numTheta)
   //member variable: MtxDbl R(numPoints,numPoints)
   //member variable: MtxDbl G(numPoints,ntrend)
 
 
   //keep these around after emulator creation so we can evaluate the emulator
-  //member variable: MtxDbl rhs(numPoints)
+  //member variable: MtxDbl rhs(numPoints,1)
   //member variable: MtxDbl RLU(numPoints,numPoints)
   //member variable: MtxInt ipvt_RLU
   //member variable: MtxDbl Rinv(numPoints,numPoints) //needed to eval integral of adjusted variance, capability not yet added
@@ -1842,11 +1822,11 @@ void GradKrigingModel::masterObjectiveAndConstraints(const MtxDbl& theta, int ob
 
   //if theta was the same as the last time we called this function than we can reuse some of the things we calculated last time
   
-  int i, j;
+  int i;
 
   //MtxDbl temp_row_vec_to_print_corrlen(1,numVarsr);
   //for(i=0; i<numTheta; ++i)
-  //temp_row_vec_to_print_corrlen(i)=1.0/sqrt(2.0*theta(i));
+  //temp_row_vec_to_print_corrlen(i)=1.0/std::sqrt(2.0*theta(0,i));
   //scaler.unScaleXrDist(temp_row_vec_to_print_corrlen);
   //printf("L=(%g",temp_row_vec_to_print_corrlen(0));
   //for(i=1; i<numTheta; ++i)
@@ -1860,7 +1840,7 @@ void GradKrigingModel::masterObjectiveAndConstraints(const MtxDbl& theta, int ob
   }
   else
     for(i=0; i<numTheta; ++i) 
-      if(prevTheta(i)!=theta(i)) {
+      if(prevTheta(0,i)!=theta(0,i)) {
 	prevObjDerMode=prevConDerMode=0;
 	break;
       }
@@ -1877,8 +1857,8 @@ void GradKrigingModel::masterObjectiveAndConstraints(const MtxDbl& theta, int ob
   if((prevObjDerMode==0)&&(prevConDerMode==0)) {
     //printf("Changing correlati0n lengths: "); 
     for(i=0; i<numTheta; ++i) {
-      //temp_row_vec_to_print_corrlen(i)=1.0/sqrt(2.0*theta(i));
-      prevTheta(i)=theta(i); 
+      //temp_row_vec_to_print_corrlen(i)=1.0/std::sqrt(2.0*theta(0,i));
+      prevTheta(0,i)=theta(0,i); 
     }}
   //scaler.unScaleXrDist(temp_row_vec_to_print_corrlen);
   //printf("L=(%g",temp_row_vec_to_print_corrlen(0));
@@ -1886,7 +1866,6 @@ void GradKrigingModel::masterObjectiveAndConstraints(const MtxDbl& theta, int ob
   //printf(",%g",temp_row_vec_to_print_corrlen(i));
   //printf(")\n");
 
-  int k;
   int ntrend=Poly.getNRows();
   int chol_info;
 
@@ -1918,7 +1897,7 @@ void GradKrigingModel::masterObjectiveAndConstraints(const MtxDbl& theta, int ob
     //for large numbers of points (read as large number of Rows in R), 
     //log(0)=-inf
     for (int i = 0; i < numRowsR; ++i) 
-      log_determinant_R += log(RChol(i,i)); 
+      log_determinant_R += std::log(RChol(i,i)); 
     log_determinant_R *= 2.0; //only multiply by 2 for Cholesky factorization 
     //of R because det(L)=det(U) and det(R)=det(L)*det(U)=det(L)^2
     //so log(det(R))=2*log(det(L))
@@ -1965,11 +1944,11 @@ void GradKrigingModel::masterObjectiveAndConstraints(const MtxDbl& theta, int ob
 
     double log_determinant_Gtran_Rinv_G=0.0; //need this for the Rassmussen & Williams formulation of likelihood
     for (int itrend = 0; itrend < ntrend; ++itrend)
-      log_determinant_Gtran_Rinv_G += log(Gtran_Rinv_G_Chol(itrend,itrend)); 
+      log_determinant_Gtran_Rinv_G += std::log(Gtran_Rinv_G_Chol(itrend,itrend)); 
     log_determinant_Gtran_Rinv_G *= 2.0; //only for Cholesky factorization of R 
-    temp.newSize(ntrend);
+    temp.newSize(ntrend,1);
     matrix_mult(temp, Rinv_G, Y, 0.0, 1.0, 'T', 'N');
-    betaHat.newSize(ntrend);
+    betaHat.newSize(ntrend,1);
     solve_after_Chol_fact(betaHat,Gtran_Rinv_G_Chol,temp); //O(ntrend^2) ops
 
     temp2.copy(Y); //this will be eps=epsilon=Y-G(XR)*betaHat, but use 
@@ -1977,13 +1956,13 @@ void GradKrigingModel::masterObjectiveAndConstraints(const MtxDbl& theta, int ob
     //5 lines of code (not counting comments) and we want to save space, 
     //afterwards we will only need R^-1*eps which is stored in "rhs"
     matrix_mult(temp2, G, betaHat, 1.0, -1.0, 'N', 'N'); //eps=Y-G(XR)*betaHat
-    rhs.newSize(numRowsR);
+    rhs.newSize(numRowsR,1);
     solve_after_Chol_fact(rhs,RChol,temp2);
 
 
     //it's actually the log likelihood, which we want to maximize
-    //likelihood = -0.5*(numRowsR*(log(4.0*acos(0.0))+log(estVarianceMLE)+1)
-    //		       +log(determinant_R)); //from Koehler and Owen 
+    //likelihood = -0.5*(numRowsR*(std::log(4.0*acos(0.0))+std::log(estVarianceMLE)+1)
+    //		       +std::log(determinant_R)); //from Koehler and Owen 
 
 #ifdef __NKM_UNBIASED_LIKE__
     //derived following: C. E. Rasmussen & C. K. I. Williams, Gaussian Processes for Machine Learning, the MIT Press, 2006, ISBN 026218253X. c 2006 Massachusetts Institute of Technology. www.GaussianProcess.org/gpml...  we assume a "vague prior" (i.e. that we don't know anything) for betaHat, then like "Koehler and Owen" we replace the covariance matrix K with (unadjusted variance)*R (where R is the correlation matrix) and find unadjusted variance and betaHat through maximum likelihood.
@@ -1992,7 +1971,7 @@ void GradKrigingModel::masterObjectiveAndConstraints(const MtxDbl& theta, int ob
     estVarianceMLE = dot_product(temp2,rhs)/(numRowsR-ntrend); 
 
     //the "per point" unbiased log(likelihood)
-    likelihood = -0.5*(log(estVarianceMLE)+(log_determinant_R+log_determinant_Gtran_Rinv_G)/(numRowsR-ntrend)); 
+    likelihood = -0.5*(std::log(estVarianceMLE)+(log_determinant_R+log_determinant_Gtran_Rinv_G)/(numRowsR-ntrend)); 
 
 #else
     //derived the "Koehler and Owen" way (assumes we know the trend function, and is therefore biased, but usally seems to work better for surrogate based optimization)
@@ -2001,7 +1980,7 @@ void GradKrigingModel::masterObjectiveAndConstraints(const MtxDbl& theta, int ob
     estVarianceMLE = dot_product(temp2,rhs)/numRowsR; //the "Koehler and Owen" way
 
     //the "per point" log(likelihood)
-    likelihood = -0.5*(log(estVarianceMLE)+log_determinant_R/numRowsR);
+    likelihood = -0.5*(std::log(estVarianceMLE)+log_determinant_R/numRowsR);
 #endif
 
     //if(likelihood>=DBL_MAX)
@@ -2029,26 +2008,26 @@ void GradKrigingModel::masterObjectiveAndConstraints(const MtxDbl& theta, int ob
     //(so we don't have to worry about dividing by zero when the smallest eigenvalue is zero 
     //and the scaling should be rougly consistant regardless of the number of points), the 
     //value of nug is typically zero
-    con.newSize(numConFunc);
+    con.newSize(numConFunc,1);
     
     if(constraintType.compare("rcond")==0) { //use rcond (and maybe its numerical derivatives) to bound the 
       //condition number
       
       assert((1<=prevObjDerMode)&&(numConFunc==1)); //make sure we have calculated rcondR already
       //con(0)=1.0-rcondR*3.0*maxCondNum;  //have seen rcond as low as about 1/3 of the true value
-      con(0)=1.0-rcondR*maxCondNum;  //have seen rcond as low as about 1/3 of the true value
+      con(0,0)=1.0-rcondR*maxCondNum;  //have seen rcond as low as about 1/3 of the true value
     }
     /*
     else if(constraintType.compare("eig")==0) { //use eigenvalues (and maybe their analytical derivatives) to
       //bound the condition number
       allEigVect.newSize(numPoints,numPoints);
-      allEigVal.newSize(numPoints);
+      allEigVal.newSize(numPoints,1);
 
       eig_sym(allEigVect, allEigVal, R); //R is correct
       for(int icon=0; icon<numConFunc; icon++)
-	con(icon)=(allEigVal(numPoints-1)+nug)/maxCondNum-(allEigVal(icon)+nug);
-        //con(icon)=1.0-maxCondNum*(allEigVal(icon)+nug)/(allEigVal(numPoints-1)+nug);
-        //con(icon)=1.0/maxCondNum-(allEigVal(icon)+nug);
+	con(icon,0)=(allEigVal(numPoints-1,0)+nug)/maxCondNum-(allEigVal(icon,0)+nug);
+        //con(icon,0)=1.0-maxCondNum*(allEigVal(icon,0)+nug)/(allEigVal(numPoints-1)+nug);
+        //con(icon,0)=1.0/maxCondNum-(allEigVal(icon,0)+nug);
     }
     else
       assert((constraintType.compare("eig")==0)||(constraintType.compare("rcond")==0));
@@ -2104,20 +2083,20 @@ void GradKrigingModel::getRandGuess(MtxDbl& guess) const
 {
   int mymod = 1048576; //2^20 instead of 10^6 to be kind to the computer
   guess.newSize(1,numVarsr);
-  double corr_length,tempdouble;
+  //double corr_length, tempdouble;
   for(int j=0;j<numVarsr;j++) {
     //tempdouble=(std::rand() % mymod);
     //tempdouble/=mymod;
     //printf("tempdouble=%g ",tempdouble);
-    //corr_length=pow(2.0,tempdouble*(log2(max_corr_length)-log2(min_corr_length)) + log2(min_corr_length));    
+    //corr_length=std::pow(2.0,tempdouble*(log2(max_corr_length)-log2(min_corr_length)) + log2(min_corr_length));    
       
-    //corr_length=exp((std::rand() % mymod)*(maxNatLogCorrLen-minNatLogCorrLen)/mymod+
+    //corr_length=std::exp((std::rand() % mymod)*(maxNatLogCorrLen-minNatLogCorrLen)/mymod+
     //minNatLogCorrLen);
-    //guess(j) = 1.0/(2.0*corr_length*corr_length); 
-    guess(j) = (std::rand() % mymod)*(maxNatLogCorrLen-minNatLogCorrLen)/mymod+
+    //guess(0,j) = 1.0/(2.0*corr_length*corr_length); 
+    guess(0,j) = (std::rand() % mymod)*(maxNatLogCorrLen-minNatLogCorrLen)/mymod+
       minNatLogCorrLen; //this returns a random nat_log_corr_len which is the space we need to search in
 
-    //guess(j)=100.0;
+    //guess(0,j)=100.0;
   }
   //printf("\n");
 }
@@ -2138,11 +2117,11 @@ MtxDbl& GradKrigingModel::makeGuessFeasible(MtxDbl& nat_log_corr_len, Optimizati
   int chol_info;
   MtxDbl theta(1,numTheta);
   for(k=0; k<numTheta; ++k)
-    theta(k)=0.5*exp(-2.0*nat_log_corr_len(k));
+    theta(0,k)=0.5*std::exp(-2.0*nat_log_corr_len(0,k));
 
   R.newSize(numRowsR,numRowsR);
   
-  temp.newSize(numRowsR);
+  temp.newSize(numRowsR,1);
   correlation_matrix(theta); //assigns to member variable R
 
   if((ifChooseNug==true)||(nug<0.0))
@@ -2164,7 +2143,7 @@ MtxDbl& GradKrigingModel::makeGuessFeasible(MtxDbl& nat_log_corr_len, Optimizati
 
     //convert guess from nat_log_corr_len to theta
     for(k=0; k<numTheta; ++k)
-      guess_theta(k)=0.5*exp(-2.0*guess(k));
+      guess_theta(0,k)=0.5*std::exp(-2.0*guess(0,k));
 
     correlation_matrix(guess_theta); //assigns to member variable R
     apply_nugget_build();

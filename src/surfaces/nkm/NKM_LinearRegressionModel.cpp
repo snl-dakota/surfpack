@@ -136,9 +136,9 @@ LinearRegressionModel(const SurfData& sd_in)
   MtxDbl eps = Y;
   matrix_mult(eps, G, betaHat, 1.0, -1.0); //eps_new=eps_old-G*betaHat;
 
-  rms = eps(0)*eps(0);
+  rms = eps(0,0)*eps(0,0);
   for(int i=1; i<numPoints; ++i)
-    rms += eps(i)*eps(i);
+    rms += eps(i,0)*eps(i,0);
   rms = std::sqrt(rms);
 
 }
@@ -149,7 +149,7 @@ LinearRegressionModel(const SurfData& sd_in)
 double LinearRegressionModel::objective(const MtxDbl& euler_angle) {
   //printf("numVarsr=%d",numVarsr); fflush(stdout);
   //printf(" euler_angle.size=[%d %d]",euler_angle.getNRows(),euler_angle.getNCols()); fflush(stdout);
-  //printf(" eulerangle(0)=%12.6g\n",euler_angle(0));fflush(stdout);
+  //printf(" eulerangle(0,0)=%12.6g\n",euler_angle(0,0));fflush(stdout);
 
   // TODO: consider local varible here now that classes merged
   gen_rot_mat(Rot, euler_angle, numVarsr);
@@ -163,10 +163,10 @@ double LinearRegressionModel::objective(const MtxDbl& euler_angle) {
   //calculate the error
   MtxDbl eps = Y;
   matrix_mult(eps, G, betaHat, 1.0, -1.0); //eps_new=eps_old-G*betaHat;
-  rms = eps(0)*eps(0);
+  rms = eps(0,0)*eps(0,0);
   for(int i=1; i<numPoints; ++i)
-    rms += eps(i)*eps(i);
-  rms = sqrt(rms);
+    rms += eps(i,0)*eps(i,0);
+  rms = std::sqrt(rms);
   return rms;
 }
 
@@ -220,7 +220,7 @@ MtxDbl& LinearRegressionModel::evalBasis(MtxDbl& g, MtxInt& poly, MtxDbl& xr)
       default:
 	//we pulled out cubics as being simple and common too, but they're not as simple or common, typical use case for Kriging is power<=2, and we have to stop somewhere
 	for(ipt=0; ipt<numPoints; ipt++)
-	  g(ipt,ipoly)=pow(xr(ipt,ivar),poly(ipoly,ivar));
+	  g(ipt,ipoly)=std::pow(xr(ipt,ivar),poly(ipoly,ivar));
       }
       ivar++;
      
@@ -243,7 +243,7 @@ MtxDbl& LinearRegressionModel::evalBasis(MtxDbl& g, MtxInt& poly, MtxDbl& xr)
 	default:
 	  //we pulled out cubics as being simple and common too, but they're not as simple or common, the typical use case for Kriging is power<=2, and we have to stop somewhere
 	  for(ipt=0; ipt<numPoints; ipt++)
-	    g(ipt,ipoly)*=pow(xr(ipt,ivar),poly(ipoly,ivar));
+	    g(ipt,ipoly)*=std::pow(xr(ipt,ivar),poly(ipoly,ivar));
 	}
     }
   }

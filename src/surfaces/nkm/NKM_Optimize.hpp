@@ -225,8 +225,8 @@ public:
   { 
     //printf("calling the OptProb constructor num_vars=%d numDesignVar=%d\n",
     //num_vars,numDesignVar); fflush(stdout);
-    lowerBounds.newSize(numDesignVar);
-    upperBounds.newSize(numDesignVar);
+    lowerBounds.newSize(numDesignVar,1);
+    upperBounds.newSize(numDesignVar,1);
     initialIterates.newSize(1, numDesignVar);
     bestVars.newSize(1, numDesignVar);
   }

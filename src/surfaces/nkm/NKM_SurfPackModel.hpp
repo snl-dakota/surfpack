@@ -38,17 +38,17 @@ public:
     int nrowsxr=xr.getNRows();
     int ncolsxr=xr.getNCols();
     assert((ncolsxr==sdBuild.getNVarsr())&&(nrowsxr>0));
-    y.newSize(nrowsxr);
+    y.newSize(nrowsxr,1);
 
     if(nrowsxr==1) {
-      y(0)=evaluate(xr);
+      y(0,0)=evaluate(xr);
       return y;
     }
       
     MtxDbl xr_temp(1,ncolsxr);
     for(int ipt=0; ipt<nrowsxr; ++ipt) {
       xr.getRows(xr_temp,ipt);
-      y(ipt)=evaluate(xr_temp);
+      y(ipt,0)=evaluate(xr_temp);
     }
     return y;
   };
@@ -64,17 +64,17 @@ public:
     int nrowsxr=xr.getNRows();
     int ncolsxr=xr.getNCols();
     assert((ncolsxr==sdBuild.getNVarsr())&&(nrowsxr>0));
-    var.newSize(nrowsxr);
+    var.newSize(nrowsxr,1);
 
     if(nrowsxr==1) {
-      var(0)=eval_variance(xr);
+      var(0,0)=eval_variance(xr);
       return var;
     }
       
     MtxDbl xr_temp(1,ncolsxr);
     for(int ipt=0; ipt<nrowsxr; ++ipt) {
       xr.getRows(xr_temp,ipt);
-      var(ipt)=eval_variance(xr_temp);
+      var(ipt,0)=eval_variance(xr_temp);
     }
     return var;
   };

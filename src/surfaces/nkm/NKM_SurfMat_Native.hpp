@@ -32,7 +32,7 @@ public:
   };
   
   //typical matrix constructor, defaults to 1 column (a vector) if the number of columns is not specified
-  SurfMat(int nrows_in, int ncols_in=1);
+  SurfMat(int nrows_in, int ncols_in);
   
   //copy constructor, make a deep copy
   SurfMat(const SurfMat<T>& other);
@@ -50,7 +50,7 @@ public:
   void clear();
   
   //change this matrix to a matrix with nrows_new apparent rows and ncols_new apparent columns, it does not attempt to preserve values in memory which, if a change is needed, makes it faster than reshape2 or resize2: if the matrices actual number of rows and actual number of columns it will just change the apparent number of rows and apparent number of columns without actually changing the memory foot print unless the user forces memory reallocation by specifying if_force=true.  Normally, this function won't do anything if you request a new size the same as the current size. The user can force the memory footprint of this matrix to shrink to exactly the requested ammount by specifying if_force=true
-  inline void newSize(int nrows_new, int ncols_new=1, bool if_force=false){
+  inline void newSize(int nrows_new, int ncols_new, bool if_force=false){
     if((NRows!=nrows_new)||(NCols!=ncols_new)||
        ((if_force==true)&&((nrows_new!=NRowsAct)||(ncols_new!=NColsAct)))) {      
       if((nrows_new<=NRowsAct)&&(ncols_new<=NColsAct)&&
@@ -67,7 +67,7 @@ public:
     return;};
 
   //enlarge or shrink the matrix while keeping contigous in memory elements contiguous in memory: this function doesn't do anything if you request a new size the same as the current size
-  inline void reshape(int nrows_new, int ncols_new=1, bool if_force=false){
+  inline void reshape(int nrows_new, int ncols_new, bool if_force=false){
     if((NRows!=nrows_new)||(NCols!=ncols_new)||
        ((if_force==true)&&((nrows_new!=NRowsAct)||(ncols_new!=NColsAct)))) {
       if((NRows==nrows_new)&&(ncols_new<=NColsAct)&&
@@ -82,7 +82,7 @@ public:
   return;};
 
   //enlarge or shrink the matrix while adding zeros after the last row and/or last column and/or chopping off the rows and/or columns after the newly requested last row and/or column: this function doesn't do anything if you request a new size the same as the current size
-  inline void resize(int nrows_new, int ncols_new=1, bool if_force=false){
+  inline void resize(int nrows_new, int ncols_new, bool if_force=false){
     if((NRows!=nrows_new)||(NCols!=ncols_new)||
        ((if_force==true)&&((nrows_new!=NRowsAct)||(ncols_new!=NColsAct)))) {
       if((nrows_new<=NRowsAct)&&(ncols_new<=NColsAct)&&
@@ -140,7 +140,7 @@ public:
   inline const T getTol() const {return tol;};
   inline void putTol(T tol_in){tol=tol_in; return;};
   
-  
+  /*  
   //vector style retrieve of a single element from the matrix by value
   inline const T& operator()(int k) const {
 #ifdef __SURFMAT_ERR_CHECK__
@@ -152,6 +152,10 @@ public:
   
   //vector style retrieve of a single element from the matrix by reference
   inline T& operator()(int k) {
+    printf("single index access");
+    fflush(stdout);
+    printf("\n");
+    //assert(false); //to root out single index access which is now slower;
     //T& operator()(int k) {
 #ifdef __SURFMAT_ERR_CHECK__
     assert((data.size()>=NRowsAct*NColsAct)&&(NRowsAct>=NRows)&&(NColsAct>=NCols)&&(jtoi.size()>=NColsAct));
@@ -163,6 +167,7 @@ public:
     }
 #endif
     return data[jtoi[k/NRows]+(k%NRows)];};
+  */
   
   //matrix style retrieve of a single element from the matrix by value
   inline const T& operator()(int i, int j) const {
@@ -173,7 +178,13 @@ public:
       printf("data.size()=%d  NRowsAct*NColsAct=%d\n",data.size(),NRowsAct*NColsAct);
     }
     assert((data.size()>=NRowsAct*NColsAct)&&(NRowsAct>=NRows)&&(NColsAct>=NCols)&&(jtoi.size()>=NColsAct));
-    assert((0<=i)&&(i<NRows)&&(0<=j)&&(j<NCols));
+    if(!((0<=i)&&(i<NRows)&&(0<=j)&&(j<NCols))) {
+      printf("ERROR: need 0<=i=%d<NRows=%d & 0<=j=%d<NCols=%d",
+	     i,NRows,j,NCols);
+      fflush(stdout);
+      printf("\n");
+      assert((0<=i)&&(i<NRows)&&(0<=j)&&(j<NCols));
+    }
 #endif
     return const_cast<T&> (data[jtoi[j]+i]);};
 
@@ -192,7 +203,8 @@ public:
     return data[jtoi[j]+i];
   };
 
-  
+
+  /*  
   //vector style retrieve of pointer to element, for passing to BLAS & LAPACK convenience
   inline T* ptr(int k){
     //T* ptr(int k){
@@ -213,6 +225,7 @@ public:
 #endif
     return &(data[jtoi[k/NRows]+(k%NRows)]);
   };
+  */
 
   //matrix style retrieve of pointer to element, for passing to BLAS & LAPACK convenience
   inline T* ptr(int i, int j){
@@ -304,21 +317,22 @@ public:
 	   (row.getNRows()==1)&&(row.getNCols()==NCols));
 #endif
     for(int j=0; j<NCols; j++) 
-      data[jtoi[j]+irow]=row(j);
+      data[jtoi[j]+irow]=row(0,j);
     return;    
   };
   
   ///replace the values in multiple rows (which rows they are is specified in irows) of this matrix with the values stored in "rows"; this function will NOT expand the size of this matrix if you specify a row index larger than NRows-1.
   inline void putRows(const SurfMat<T>& rows, SurfMat<int> irows) {
-    int nrows_put=irows.getNElems();
+    int nrows_put=irows.getNRows();
 #ifdef __SURFMAT_ERR_CHECK__
-    assert((data.size()>=NRowsAct*NColsAct)&&(NRowsAct>=NRows)&&(NColsAct>=NCols)&&(jtoi.size()>=NColsAct));
+    assert((irows.getNCols()==1)&&
+	   (data.size()>=NRowsAct*NColsAct)&&(NRowsAct>=NRows)&&(NColsAct>=NCols)&&(jtoi.size()>=NColsAct));
     assert((0<=irows.minElem())&&(irows.maxElem()<NRows)&&
 	   (rows.getNRows()==nrows_put)&&(rows.getNCols()==NCols));
 #endif
     for(int j=0; j<NCols; j++)
       for(int k=0; k<nrows_put; k++)
-	data[jtoi[j]+irows(k)]=rows(k,j);
+	data[jtoi[j]+irows(k,0)]=rows(k,j);
     return;
   };
   
@@ -364,15 +378,22 @@ public:
     }
 #endif
     for(int i=0; i<NRows; i++)
-      data[jtoi[jcol]+i]=col(i);
+      data[jtoi[jcol]+i]=col(i,0);
     return;
   };
 
   ///replace the values in multiple columns (which columns they are is specified in jcols) of this matrix with the values stored in "cols"; this function will NOT expand the size of this matrix if you specify a column index larger than NCols-1.
   inline void putCols(const SurfMat<T>& cols, SurfMat<int> jcols) {
-    int ncols_put=jcols.getNElems();
+    int ncols_put=jcols.getNRows();
 #ifdef __SURFMAT_ERR_CHECK__
-    assert((data.size()>=NRowsAct*NColsAct)&&(NRowsAct>=NRows)&&(NColsAct>=NCols)&&(jtoi.size()>=NColsAct));
+    if(!((jcols.getNCols()==1)&&
+	 (data.size()>=NRowsAct*NColsAct)&&(NRowsAct>=NRows)&&(NColsAct>=NCols)&&(jtoi.size()>=NColsAct))) {
+      printf("jcols.NCols=%d",jcols.getNCols());
+      fflush(stdout);
+      printf("\n");
+    assert((jcols.getNCols()==1)&&
+	   (data.size()>=NRowsAct*NColsAct)&&(NRowsAct>=NRows)&&(NColsAct>=NCols)&&(jtoi.size()>=NColsAct));
+    }
     assert((0<=jcols.minElem())&&(jcols.maxElem()<NCols)&&
 	   (cols.getNRows()==NRows)&&(cols.getNCols()==ncols_put));
 #endif
@@ -389,7 +410,7 @@ public:
 
     for(int k=0; k<ncols_put; k++)
       for(int i=0; i<NRows; i++)
-	data[jtoi[jcols(k)]+i]=cols(i,k); 
+	data[jtoi[jcols(k,0)]+i]=cols(i,k); 
     return;
   };
   
@@ -405,23 +426,24 @@ public:
     result.newSize(1,NCols,if_force);
     result.tol=tol;
     for(int j=0; j<NCols; j++) 
-      result(j)=data[jtoi[j]+irow];
+      result(0,j)=data[jtoi[j]+irow];
     return result;
   };
   
   ///get multiple rows (indices stored in matrix irows) of this matrix and return as a new matrix
   inline SurfMat<T>& getRows(SurfMat<T>& result, SurfMat<int>& irows, bool if_force=false) const {
 #ifdef __SURFMAT_ERR_CHECK__
-    assert((data.size()>=NRowsAct*NColsAct)&&(NRowsAct>=NRows)&&(NColsAct>=NCols)&&(jtoi.size()>=NColsAct));
+    assert((irows.getNCols()==1)&&
+	   (data.size()>=NRowsAct*NColsAct)&&(NRowsAct>=NRows)&&(NColsAct>=NCols)&&(jtoi.size()>=NColsAct));
     assert((0<=irows.minElem())&&(irows.maxElem()<NRows));
 #endif
-    int nrows_res=irows.getNElems();
+    int nrows_res=irows.getNRows();
     result.newSize(nrows_res,NCols,if_force);
     result.tol=tol;
     if(nrows_res>0) 
       for(int j=0; j<NCols; j++)
 	for(int i=0; i<nrows_res; i++)
-	  result(i,j)=data[jtoi[j]+irows(i)];	
+	  result(i,j)=data[jtoi[j]+irows(i,0)];	
     
     return result;
   };
@@ -434,23 +456,24 @@ public:
 #endif
     result.newSize(NRows,1,if_force);
     result.tol=tol;
-    for (int i=0; i<NRows; i++) result(i)=data[jtoi[jcol]+i];
+    for (int i=0; i<NRows; i++) result(i,0)=data[jtoi[jcol]+i];
     return result;
   };
   
   ///get multiple columns (indices stored in matrix jcols) of this matrix and return as a new matrix
   inline SurfMat<T>& getCols(SurfMat<T>& result, SurfMat<int>& jcols, bool if_force=false) const {
 #ifdef __SURFMAT_ERR_CHECK__
-    assert((data.size()>=NRowsAct*NColsAct)&&(NRowsAct>=NRows)&&(NColsAct>=NCols)&&(jtoi.size()>=NColsAct));
+    assert((jcols.getNCols()==1)&&
+	   (data.size()>=NRowsAct*NColsAct)&&(NRowsAct>=NRows)&&(NColsAct>=NCols)&&(jtoi.size()>=NColsAct));
     assert((0<=jcols.minElem())&&(jcols.maxElem()<NCols));
 #endif
-    int ncols_res=jcols.getNElems();
+    int ncols_res=jcols.getNRows();
     result.newSize(NRows,ncols_res,if_force); 
     result.tol=tol;
     if(ncols_res>0)
       for(int j=0; j<ncols_res; j++)
 	for(int i=0; i<NRows; i++)
-	  result(i,j)=data[jtoi[jcols(j)]+i];	
+	  result(i,j)=data[jtoi[jcols(j,0)]+i];	
     
     return result;
   };
@@ -495,7 +518,7 @@ public:
   ///performs an ascending unique sort of the elements, eliminates duplicates, and reshapes it into a (shruken, if appropriate) vector
   inline void uniqueElems() {
     int nelems=getNElems();
-    reshape(nelems); //make sure the data we are about to quick sort is contiguous
+    reshape(nelems,1); //make sure the data we are about to quick sort is contiguous
     if(nelems>1) {
       sortElems();    
       int i,k;
@@ -507,7 +530,7 @@ public:
 	  data[i]=data[k];
 	  ++i; //make i the index of the element after the one we are keeping
 	}
-      reshape(i); //i is the index of the element after the last one we are keeping, i.e. the number of elements that we are keeping, this is just record keeping of the number of unique elements, it won't actually change the size of memory.
+      reshape(i,1); //i is the index of the element after the last one we are keeping, i.e. the number of elements that we are keeping, this is just record keeping of the number of unique elements, it won't actually change the size of memory.
     }
     return;
   };
@@ -783,7 +806,6 @@ void SurfMat<T>::newSize2(int nrows_new, int ncols_new, bool if_force)
     return;
   }
 
-  int largest_of_rows=(NRowsAct>=nrows_new)?NRowsAct:nrows_new;
   if(((if_force==false)&&(nelem_new<=nelem_act))||
      ((if_force==true )&&(nelem_new==nelem_act))) {
     //don't need to change the number of elements so don't resize data
@@ -1083,7 +1105,7 @@ template< typename T >
 SurfMat<T>& SurfMat<T>::copy(const SurfMat<T>& other, bool if_force){
   
   int nrows_new=other.NRows, ncols_new=other.NCols;
-  int k, nelem_act=data.size(), nelem=NRows*NCols, 
+  int nelem_act=data.size(), //nelem=NRows*NCols, 
     nelem_new=nrows_new*ncols_new;
 
   //printf("copy:\n  nrows_new=%d ncols_new=%d nelem_new=%d\n  NRowsAct=%d NRows=%d\n NColsAct=%d NCols=%d\n  nelem_act=%d\n",nrows_new,ncols_new,nelem_new,NRowsAct,NRows,NColsAct,NCols,nelem_act);
@@ -1183,19 +1205,20 @@ SurfMat<T>& SurfMat<T>::excludeRows(SurfMat<T>& result, int irow, bool if_force)
 template< typename T >
 SurfMat<T>& SurfMat<T>::excludeRows(SurfMat<T>& result, SurfMat<int>& irows, bool if_force) {
 #ifdef __SURFMAT_ERR_CHECK__
-    assert((data.size()>=NRowsAct*NColsAct)&&(NRowsAct>=NRows)&&(NColsAct>=NCols)&&(jtoi.size()>=NColsAct));
+  assert((irows.getNCols()==1)&&
+	 (data.size()>=NRowsAct*NColsAct)&&(NRowsAct>=NRows)&&(NColsAct>=NCols)&&(jtoi.size()>=NColsAct));
 #endif
   int j;
-  int nexclude=irows.getNElems();
+  int nexclude=irows.getNRows();
   if(nexclude<1) {
     //the list of rows to exclude is empty so copy over the whole matrix
     result.copy(*this,if_force);
   }
   else{
     irows.uniqueElems(); //sort the rows to exclude into ascending order and eliminate duplicate listings
-    nexclude=irows.getNElems();
+    nexclude=irows.getNRows();
 #ifdef __SURFMAT_ERR_CHECK__
-    assert((0<=irows(0))&&(irows(nexclude-1)<NRows));
+    assert((0<=irows(0,0))&&(irows(nexclude-1,0)<NRows));
 #endif
     if(nexclude==NRows) {
       //the user wants us to eliminate _all_ rows
@@ -1216,9 +1239,9 @@ SurfMat<T>& SurfMat<T>::excludeRows(SurfMat<T>& result, SurfMat<int>& irows, boo
 	iexclude=ikeep=isrc=0;
 	while(isrc<NRows) {
 	  if(iexclude<nexclude) {
-	    for(;isrc<irows(iexclude); ++isrc, ++ikeep)
+	    for(;isrc<irows(iexclude,0); ++isrc, ++ikeep)
 	      result(ikeep,j)=data[jtoi[j]+isrc];
-	    //at this point isrc=irows(iexclude)
+	    //at this point isrc=irows(iexclude,0)
 	    ++iexclude;
 	    ++isrc;}
 	  else{
@@ -1276,17 +1299,18 @@ SurfMat<T>& SurfMat<T>::excludeCols(SurfMat<T>& result, int jcol, bool if_force)
 template< typename T >
 SurfMat<T>& SurfMat<T>::excludeCols(SurfMat<T>& result, SurfMat<int>& jcols, bool if_force) {
 #ifdef __SURFMAT_ERR_CHECK__
-  assert((data.size()>=NRowsAct*NColsAct)&&(NRowsAct>=NRows)&&(NColsAct>=NCols)&&(jtoi.size()>=NColsAct));
+  assert((jcols.getNCols()==1)&&
+	 (data.size()>=NRowsAct*NColsAct)&&(NRowsAct>=NRows)&&(NColsAct>=NCols)&&(jtoi.size()>=NColsAct));
 #endif
-  int nexclude=jcols.getNElems();
+  int nexclude=jcols.getNRows();
   int i;
   if(nexclude<1) 
     result.copy(*this, if_force);
   else{
     jcols.uniqueElems();
-    nexclude=jcols.getNElems();
+    nexclude=jcols.getNRows();
 #ifdef __SURFMAT_ERR_CHECK__
-    assert((0<=jcols(0))&&(jcols(nexclude-1)<NCols));
+    assert((0<=jcols(0,0))&&(jcols(nexclude-1,0)<NCols));
 #endif
     if(nexclude==NCols) {
       //the user wants us to eliminate _all_ columns
@@ -1306,7 +1330,7 @@ SurfMat<T>& SurfMat<T>::excludeCols(SurfMat<T>& result, SurfMat<int>& jcols, boo
       jexclude=jkeep=jsrc=0;
       while(jsrc<NCols) {
 	if(jexclude<nexclude) {
-	  for(;jsrc<jcols(jexclude); ++jsrc, ++jkeep)
+	  for(;jsrc<jcols(jexclude,0); ++jsrc, ++jkeep)
 	    for(i=0;i<NRows;++i)
 	      result(i,jkeep)=data[jtoi[jsrc]+i];
 	  //at this point jsrc=jrows(jexclude)

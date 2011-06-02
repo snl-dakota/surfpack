@@ -172,8 +172,8 @@ void Press(nkm::SurfData& sd)
     (sd.nout ==sd.y.getNCols()));  
   */
   int npts =sd.getNPts();
-  int nvarsr=sd.getNVarsr();
-  int nout =sd.getNOut();
+  //int nvarsr=sd.getNVarsr();
+  //int nout =sd.getNOut();
   //printf("Press: npts=%d nvarsr=%d nout=%d\n",npts,nvarsr,nout); fflush(stdout);
   double temp_double;
 
@@ -181,7 +181,7 @@ void Press(nkm::SurfData& sd)
   km_params["constraint_type"] = "r";
   km_params["order"] = "linear";
 
-  nkm::MtxDbl yeval(npts), y(npts);
+  nkm::MtxDbl yeval(npts,1), y(npts,1);
   nkm::KrigingModel km(sd, km_params);
   nkm::SurfData sdeval(sd);
   km.create();
@@ -196,10 +196,10 @@ void Press(nkm::SurfData& sd)
   double kmrms(0.0);
   
   for(int i=0; i<npts; i++){
-    temp_double=y(i)-yeval(i);
+    temp_double=y(i,0)-yeval(i,0);
     kmrms+=temp_double*temp_double;
   }
-  kmrms=sqrt(kmrms/npts);
+  kmrms=std::sqrt(kmrms/npts);
   
   nkm::LinearRegressionModel lrm(sd);
   
@@ -271,7 +271,7 @@ void Press(nkm::SurfData& sd)
     nkm::KrigingModel km(rest, km_params);
     km.create();
 
-    temp_double=km.evaluate(extracted.xr)-extracted.y(extracted.getJOut());
+    temp_double=km.evaluate(extracted.xr)-extracted.y(0,extracted.getJOut());
     
     press_score_km+=temp_double*temp_double;
   }
@@ -284,7 +284,7 @@ void Press(nkm::SurfData& sd)
     nkm::LinearRegressionModel lrm(rest);
     //printf("\nNpoly=%d rms=%g\n",lrm.getNPoly(),lrm.getRMS());
 
-    temp_double=lrm.evaluate(extracted.xr)-extracted.y(extracted.getJOut());
+    temp_double=lrm.evaluate(extracted.xr)-extracted.y(0,extracted.getJOut());
 
     press_score_lrm+=temp_double*temp_double;
   }
