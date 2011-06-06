@@ -758,7 +758,7 @@ inline MtxDbl& pseudo_inverse_sym(MtxDbl& A, double min_allowed_rcond, double& r
   for(int i=0; i<nrowsA; ++i) {
     abspower=static_cast<int>(std::floor(0.5+std::log(std::sqrt(std::fabs(A(i,i))))/log_of_2));
     scale(i,0)=std::pow(2.0,static_cast<double>(-abspower));
-    log_abs_det_A-=log(scale(i,0));
+    log_abs_det_A-=std::log(scale(i,0));
   }
   log_abs_det_A*=2.0;
   for(int j=0; j<nrowsA; ++j)
@@ -811,7 +811,7 @@ inline double log_det_after_LDLT_fact(const MtxDbl& ALDLT, const MtxInt& ipvt, c
 #endif
   double log_det_A=0.0;
   for(int i=0; i<nrowsA; ++i)
-    log_det_A-=log(scale(i,0));
+    log_det_A-=std::log(scale(i,0));
   log_det_A*=2.0;
 
   sign_of_det=1.0;
