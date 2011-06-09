@@ -42,6 +42,10 @@ class GradKrigingModel: public SurfPackModel
 {
 
 public:
+  int n_pivot_cholesky_calls;
+  int n_rcond_calls_in_pivot_cholesky;
+  double time_spent_on_rcond_in_pivot_cholesky;
+  double time_spent_on_pivot_cholesky;
 
   std::string model_summary_string() const;
 
@@ -109,7 +113,7 @@ public:
     correlations.newSize(1,numTheta);
     //MtxDbl theta(1,numTheta);
     for(int i=0; i<numTheta; ++i)
-      correlations(0,i)=0.5*std::exp(-2.0*nat_log_corr_len(0,i));
+      correlations(0,i)=0.5*exp(-2.0*nat_log_corr_len(0,i));
     masterObjectiveAndConstraints(correlations, 1, 0);
     //printf("[objective]");
     return obj;
@@ -124,14 +128,14 @@ public:
     correlations.newSize(1,numTheta);
     //MtxDbl theta(1,numTheta);
     for(int i=0; i<numTheta; ++i)
-      correlations(0,i)=0.5*std::exp(-2.0*nat_log_corr_len(i));
+      correlations(i)=0.5*exp(-2.0*nat_log_corr_len(i));
     masterObjectiveAndConstraints(correlations, 4, 0);
 
     //convert Hessian into log(correlation_length) space
     MtxDbl hess_obj_out(numTheta,numTheta);
     for(int i=0; i<numTheta; ++i)
       for(int j=0; j<numTheta; ++j)
-	hess_obj_out(i,j)=hessObj(i,j)*4.0*correlations(0,i)*correlations(0,j);
+	hess_obj_out(i,j)=hessObj(i,j)*4.0*correlations(i)*correlations(j);
 
     MtxDbl eig_vals(numTheta); //all the eigenvalues of a Hessian should be positive
     eig_sym(eig_vals,hess_obj_out);
@@ -154,7 +158,7 @@ public:
     correlations.newSize(1,numTheta);
     //MtxDbl theta(1,numTheta);
     for(int i=0; i<numTheta; ++i)
-      correlations(0,i)=0.5*std::exp(-2.0*nat_log_corr_len(0,i));
+      correlations(0,i)=0.5*exp(-2.0*nat_log_corr_len(0,i));
     masterObjectiveAndConstraints(correlations, 2, 0);
     obj_out=obj;
     //grad_obj_out.copy(gradObj);
@@ -163,9 +167,9 @@ public:
     //respect to nat_log_corr_len
     for(int i=0; i<numTheta; ++i)
       grad_obj_out(i,0)=gradObj(i,0)*-2.0*correlations(0,i);
-    //printf("[grad_obj_out={%g",grad_obj_out(0,0));
+    //printf("[grad_obj_out={%g",grad_obj_out(0));
     //for(int i=1; i<numTheta; ++i)
-    //printf(", %g",grad_obj_out(i,0));
+    //printf(", %g",grad_obj_out(i));
     //printf("}]");
 
     return;
@@ -180,7 +184,7 @@ public:
     con_out.newSize(numConFunc,1);
     //MtxDbl theta(1,numTheta);
     for(int i=0; i<numTheta; ++i)
-      correlations(0,i)=0.5*std::exp(-2.0*nat_log_corr_len(0,i));
+      correlations(0,i)=0.5*exp(-2.0*nat_log_corr_len(0,i));
     //printf("about to enter masterObjectiveAndConstraints\n"); fflush(stdout);
     masterObjectiveAndConstraints(correlations, 1, 1);
     //printf("left masterObjectiveAndConstraints\n"); fflush(stdout);
@@ -220,9 +224,9 @@ public:
 	grad_con_out(i,j)=gradCon(i,j)*-2.0*correlations(0,j);
     }
 
-    //printf("[grad_obj_out={%g",grad_obj_out(0,0));
+    //printf("[grad_obj_out={%g",grad_obj_out(0));
     //for(int i=1; i<numTheta; ++i)
-    //printf(", %g",grad_obj_out(i,0));
+    //printf(", %g",grad_obj_out(i));
     //printf("}]");
 
     return;
@@ -256,7 +260,19 @@ public:
   void getRandGuess(MtxDbl& guess) const;
 
 private:
-
+  void getBaseIEqnKeep();
+  void equationSelectingPrecondCholR();
+  inline void Chol_fact_R() {
+    if(ifSelectDerEquations==false) {
+      int info;
+      RChol.copy(R);
+      Chol_fact_workspace(RChol,scaleRChol,rcondDblWork,rcondIntWork,info,rcondR);
+    }
+    else{
+      equationSelectingPrecondCholR();      
+    }
+  }
+  
   // helper functions
 
   /// this function calculates the objective function (negative log
@@ -324,7 +340,10 @@ private:
      corr_vec, implmented as R=exp(Z*theta) where Z=Z(XR),
      Z(ij,k)=-(XR(i,k)-XR(j,k))^2, */
   //MtxDbl 
+  void correlation_matrix_all(const MtxDbl& corr_vec);
   void correlation_matrix(const MtxDbl& corr_vec);
+
+  void protected_pseudo_inverseR(double& rcond_R, double& log_determinant_R);
 
   /** this function applies the nugget to the R matrix (a member variable)
       and stores the result in R (another member variable), i.e. it adds 
@@ -455,7 +474,35 @@ private:
       The convention is that capital matrices are for the data the model 
       is built from, lower case matrices are for arbitrary points to 
       evaluate the model at */
-  MtxDbl RChol;
+  MtxDbl RChol; //now that the actual and apparent sizes of matrices can be different we can combine RChol and U into the same matrix (since the actual size won't change and so we won't run into poor performance due to constantly reallocating memory)
+  MtxDbl scaleRChol;
+  //MtxDbl RCholInv;
+  //MtxDbl uNextCol;
+  MtxDbl sumAbsColPrecondR;
+  MtxDbl oneNormPrecondR;
+  MtxDbl nptsRcond;
+  MtxDbl rcondDblWork;
+  MtxInt rcondIntWork;
+  MtxInt iEqnKeep;
+  MtxInt iOrderEqnTest;
+  bool ifSelectDerEquations;
+  bool ifDidInitialScreen;
+  bool ifWantInitialScreen;
+  MtxInt iptIderTest;
+  MtxInt iptIderKeep;
+  MtxInt iAnchorPoints;
+  int numOrderedEqnToTest;
+  int numAnchorPoints;
+  int numEqnAvail;
+  int numEqnKeep;
+  int numBaseEqnKeep;
+  int numDerEqnKeep;
+  int numBaseDerEqnKeep;
+
+  //MtxDbl Rall; //don't actually need R after we do the equation selecting precond cholesky so keep variable named R and discard variable named Rall
+  MtxDbl Yall;
+  MtxDbl Gall;
+  MtxDbl dots;
 
   /** LU decomposition of R (the correlation matrix after possible
       modification by the inclusion of a nugget).  Keep this around to 
@@ -493,7 +540,7 @@ private:
   /** the rcond (estimated reciprocal of the condition number) of the 
       modified correlation matrix, R */
   double rcondR; 
-  double rcondGtran_Rinv_G;
+  double rcond_Gtran_Rinv_G;
 
   /** the matrix of trend function evaluations, G=G(XR); The convention is
       that capital matrices are for the data the model is built from, lower
@@ -525,8 +572,8 @@ private:
       ill-conditioning. */
   MtxDbl R;
 
-  ///keep around to evaluate the integral of adjusted variance, this currently only getting calculated when optimization_method=local is selected
-  MtxDbl Rinv; //(numPoints,numPoints)
+ ///we need to calculate Rinv (a protected pseudo inverse), and we can use it to "efficiently" calculate adjusted variances, and even the integral of adjusted variance  ///keep around to evaluate the integral of adjusted variance, this currently only getting calculated when optimization_method=local is selected
+  MtxDbl Rinv; //(numRowsR,numRowsR)
 
   /// keep around to evaluate adjusted variance
   MtxDbl Rinv_G;
@@ -534,7 +581,12 @@ private:
   /// keep around to evaluate adjusted variance
   //MtxDbl Gtran_Rinv_G_LU;
   MtxDbl Gtran_Rinv_G_Chol;
+  MtxDbl Gtran_Rinv_G_Chol_Scale;
+  MtxDbl Gtran_Rinv_G_Chol_DblWork;
+  MtxInt Gtran_Rinv_G_Chol_IntWork;
 
+
+  //MtxDbl Gtran_Rinv_G_inv;
 
   /// keep around to evaluate adjusted variance
   //MtxInt ipvt_Gtran_Rinv_G_LU;

@@ -792,7 +792,7 @@ void OptimizationProblem::retrieve_initial_iterate(int it_ind, MtxDbl& iterate)
 void OptimizationProblem::getRandGuess(MtxDbl& guess) const
 {
   int mymod = 1048576; //2^20 instead of 10^6 to be kind to the computer
-  guess.newSize(0,numDesignVar);
+  guess.newSize(1,numDesignVar);
   //printf("getRandGuess: lowerBounds.size=[%d %d] upperBounds=[%d %d]\n",
   //lowerBounds.getNRows(),lowerBounds.getNCols(),
   //upperBounds.getNRows(),upperBounds.getNCols()); fflush(stdout);

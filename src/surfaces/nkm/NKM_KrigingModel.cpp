@@ -530,6 +530,12 @@ void KrigingModel::create()
   }
 
   correlations.newSize(1,numVarsr);
+  //MtxDbl *mtxdblptr=&natLogCorrLen;
+  //int nROWS=natLogCorrLen.getNRows();
+  //int nCOLS=natLogCorrLen.getNCols();
+  //printf("mtxdblptr=%d nROWS=%d nCOLS=%d",mtxdblptr,nROWS,nCOLS);
+  //fflush(stdout);
+  //printf("\n");
   correlations(0,0)=0.5*std::exp(-2.0*natLogCorrLen(0,0));
   //printf("theta={%g",correlations(0,0));
   for(int k=1; k<numVarsr; ++k) {

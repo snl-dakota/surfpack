@@ -7,9 +7,9 @@
 
 //#define __PROFILING_TEST__ //not iplemented yet
 //#define __TIMING_BENCH__
-//#define __FAST_TEST__
+#define __FAST_TEST__
 //#define __WITH_PAV_500__
-#define __FASTER_TEST__
+//#define __FASTER_TEST__
 //#define __EVEN_FASTER_TEST__
 //#define __VALGRIND_TEST__
 //#define __GKM_USE_KM_CORR_LEN__
@@ -21,9 +21,11 @@ void validate();
 void validate_grad();
 void hack();
 void check_matrix();
+void compare_sample_designs();
 
 int main(int argc, char* argv[])
 {
+  //compare_sample_designs();
   //hack();
   //validate();
   validate_grad();
@@ -422,6 +424,74 @@ void hack()
     orig_data.setJOut(jout);
     nkm::KrigingModel km(orig_data , km_params); km.create();
   }
+  return;
+}
+
+void compare_sample_designs() {
+  
+  string build_filename ="build_file.spd";
+  nkm::SurfData sd2dbuild(build_filename , 2, 0, 3, 0, 1, 0);
+  string valid_filename ="valid_file.spd";
+  nkm::SurfData sd2dvalid(valid_filename , 2, 0, 3, 0, 1, 0);
+  FILE* fpout=fopen("compare_out.txt","w");
+  
+  nkm::MtxDbl yeval(16384,1);
+  int jout; //the 0th output column is Rosenbrock    
+  double rmse;
+
+
+  std::map< std::string, std::string> km_params;
+  km_params["lower_bounds"]="-2.0 -2.0";
+  km_params["upper_bounds"]="2.0 2.0";
+
+  km_params["order"] = "2";
+  km_params["reduced_polynomial"]=nkm::toString<bool>(true);
+  
+
+  jout=0;
+  sd2dbuild.setJOut(jout);
+  sd2dvalid.setJOut(jout);
+  nkm::KrigingModel kmros( sd2dbuild, km_params); kmros.create();
+
+  //evaluate error the rosenbrock kriging model at 2^14=16384 validation points
+  kmros.evaluate(yeval,sd2dvalid.xr);
+  rmse=0.0;
+  for(int i=0; i<16384; ++i)
+    rmse+=std::pow(yeval(i,0)-sd2dvalid.y(i,jout),2);
+  rmse=std::sqrt(rmse/16384.0);
+  fprintf(fpout,"%22.16g\n",rmse);
+
+
+  jout=1;
+  sd2dbuild.setJOut(jout);
+  sd2dvalid.setJOut(jout);
+  nkm::KrigingModel kmshu( sd2dbuild, km_params); kmshu.create();
+
+  //evaluate error the shubert kriging model at 2^14=16384 validation points
+  kmshu.evaluate(yeval,sd2dvalid.xr);
+  rmse=0.0;
+  for(int i=0; i<16384; ++i)
+    rmse+=std::pow(yeval(i,0)-sd2dvalid.y(i,jout),2);
+  rmse=std::sqrt(rmse/16384.0);
+  fprintf(fpout,"%22.16g\n",rmse);
+
+
+  jout=2;
+  sd2dbuild.setJOut(jout);
+  sd2dvalid.setJOut(jout);
+  nkm::KrigingModel kmherb( sd2dbuild, km_params); kmherb.create();
+
+  //evaluate error the herbie kriging model at 2^14=16384 validation points
+  kmherb.evaluate(yeval,sd2dvalid.xr);
+  rmse=0.0;
+  for(int i=0; i<16384; ++i)
+    rmse+=std::pow(yeval(i,0)-sd2dvalid.y(i,jout),2);
+  rmse=std::sqrt(rmse/16384.0);
+  fprintf(fpout,"%22.16g\n",rmse);
+
+  fclose(fpout);
+
+
   return;
 }
 
@@ -1063,6 +1133,8 @@ void validate_grad()
   gkm_params["correlation_lengths"]=mtxdbl_2_string(kmpav50.get_correlation_lengths(corr_lengths));
 #endif
   nkm::GradKrigingModel gkmpav50( sdpav50 , gkm_params); gkmpav50.create();
+  //printf("pav10D 50pt GKM: time_spent_on_pivot_cholesky=%g time_spent_on_rcond_in_pivot_cholesky=%g n_pivot_cholesky_calls=%d nrcond_calls_in_pivot_cholesky=%d\n",gkmpav50.time_spent_on_pivot_cholesky,gkmpav50.time_spent_on_rcond_in_pivot_cholesky,gkmpav50.n_pivot_cholesky_calls,gkmpav50.n_rcond_calls_in_pivot_cholesky);
+
 #endif //TIMING_BENCH
 
 #ifndef __FASTER_TEST__
@@ -1073,6 +1145,8 @@ void validate_grad()
   gkm_params["correlation_lengths"]=mtxdbl_2_string(kmpav500.get_correlation_lengths(corr_lengths));
 #endif
   nkm::GradKrigingModel gkmpav500(sdpav500, gkm_params); gkmpav500.create();
+  //printf("pav10D 500pt GKM: time_spent_on_pivot_cholesky=%g time_spent_on_rcond_in_pivot_cholesky=%g n_pivot_cholesky_calls=%d nrcond_calls_in_pivot_cholesky=%d\n",gkmpav500.time_spent_on_pivot_cholesky,gkmpav500.time_spent_on_rcond_in_pivot_cholesky,gkmpav500.n_pivot_cholesky_calls,gkmpav500.n_rcond_calls_in_pivot_cholesky);
+
 #endif //__WITH_PAV_500__
 #endif //TIMING_BENCH
 
