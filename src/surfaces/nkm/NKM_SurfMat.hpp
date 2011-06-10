@@ -36,6 +36,7 @@ inline double dot_product(const MtxDbl& a, const MtxDbl& b)
   int ncolsa=a.getNCols();
   int nrowsa=a.getNRows();
   int nrowsb=b.getNRows();
+  int ncolsb=b.getNCols();
   int nelem=nrowsa*ncolsa;
 #ifdef __SURFMAT_ERR_CHECK__
   assert(nelem==nrowsb*b.getNCols());
@@ -52,8 +53,17 @@ inline double dot_product(const MtxDbl& a, const MtxDbl& b)
 
     return dotprod;
   }
-  else
-    assert(false);
+  else{
+    double dotprod=a(0,0)*b(0,0);
+    if((nrowsa==ncolsb)&&(ncolsa==1)&&(nrowsb==1)) 
+      for(int i=1; i<nrowsa; ++i)
+	dotprod+=a(i,0)*b(0,i);
+    else if((nrowsb==ncolsa)&&(ncolsb==1)&&(nrowsa==1)) 
+      for(int i=1; i<nrowsa; ++i)
+	dotprod+=a(0,i)*b(i,0);
+    else
+      assert(false);
+  }
   /*
   else{
     long double dotprod=a(0,0)*b(0,0);

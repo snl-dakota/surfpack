@@ -7,9 +7,9 @@
 
 //#define __PROFILING_TEST__ //not iplemented yet
 //#define __TIMING_BENCH__
-#define __FAST_TEST__
+//#define __FAST_TEST__
 //#define __WITH_PAV_500__
-//#define __FASTER_TEST__
+#define __FASTER_TEST__
 //#define __EVEN_FASTER_TEST__
 //#define __VALGRIND_TEST__
 //#define __GKM_USE_KM_CORR_LEN__
@@ -1145,7 +1145,7 @@ void validate_grad()
   gkm_params["correlation_lengths"]=mtxdbl_2_string(kmpav500.get_correlation_lengths(corr_lengths));
 #endif
   nkm::GradKrigingModel gkmpav500(sdpav500, gkm_params); gkmpav500.create();
-  //printf("pav10D 500pt GKM: time_spent_on_pivot_cholesky=%g time_spent_on_rcond_in_pivot_cholesky=%g n_pivot_cholesky_calls=%d nrcond_calls_in_pivot_cholesky=%d\n",gkmpav500.time_spent_on_pivot_cholesky,gkmpav500.time_spent_on_rcond_in_pivot_cholesky,gkmpav500.n_pivot_cholesky_calls,gkmpav500.n_rcond_calls_in_pivot_cholesky);
+  printf("pav10D 500pt GKM: time_spent_on_pivot_cholesky=%g time_spent_on_rcond_in_pivot_cholesky=%g n_pivot_cholesky_calls=%d nrcond_calls_in_pivot_cholesky=%d\n",gkmpav500.time_spent_on_pivot_cholesky,gkmpav500.time_spent_on_rcond_in_pivot_cholesky,gkmpav500.n_pivot_cholesky_calls,gkmpav500.n_rcond_calls_in_pivot_cholesky);
 
 #endif //__WITH_PAV_500__
 #endif //TIMING_BENCH

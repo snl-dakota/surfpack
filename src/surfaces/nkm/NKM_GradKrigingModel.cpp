@@ -5,7 +5,7 @@
 #include <cmath>
 #include <iostream>
 #include <cfloat>
-//#define __TIME_PIVOT_CHOLESKY__
+#define __TIME_PIVOT_CHOLESKY__
 #ifdef __TIME_PIVOT_CHOLESKY__
 #include <sys/time.h>
 #endif
