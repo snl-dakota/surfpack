@@ -3,13 +3,17 @@
 #include "NKM_KrigingModel.hpp"
 #include "NKM_GradKrigingModel.hpp"
 #include <iostream>
+#include <iomanip>
+using namespace std;
+using std::ostringstream;
+
 #include <cstdlib>
 
 //#define __PROFILING_TEST__ //not iplemented yet
 //#define __TIMING_BENCH__
-//#define __FAST_TEST__
+#define __FAST_TEST__
 //#define __WITH_PAV_500__
-#define __FASTER_TEST__
+//#define __FASTER_TEST__
 //#define __EVEN_FASTER_TEST__
 //#define __VALGRIND_TEST__
 //#define __GKM_USE_KM_CORR_LEN__
@@ -22,9 +26,49 @@ void validate_grad();
 void hack();
 void check_matrix();
 void compare_sample_designs();
+void compare_sample_designs_pav(int nvarsr);
+
+void time_build_grad() {  
+  std::map< std::string, std::string> gkm_params;
+  gkm_params["constraint_type"] = "r";
+  gkm_params["order"] = "2";
+  gkm_params["reduced_polynomial"]=nkm::toString<bool>(true);
+  
+  
+  gkm_params["lower_bounds"]="-2.0 -2.0";
+  gkm_params["upper_bounds"]="2.0 2.0";
+  string paviani10d_500 ="grad_validate2d_10.spd";
+  nkm::SurfData sdpav500( paviani10d_500 , 2, 0, 3, 0, 1, 0);
+  /*
+  gkm_params["lower_bounds"]=" 2.0  2.0  2.0  2.0  2.0  2.0  2.0  2.0  2.0  2.0";
+  gkm_params["upper_bounds"]="10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0";
+  string paviani10d_500 ="grad_paviani10d_500.spd";
+  nkm::SurfData sdpav500( paviani10d_500 , 10, 0, 1, 0, 1, 0);
+  */
+  nkm::GradKrigingModel gkmpav500(sdpav500, gkm_params); 
+  gkmpav500.create();
+  printf("pav10D 500pt GKM: time_spent_on_pivot_cholesky=%g time_spent_on_rcond_in_pivot_cholesky=%g\n",  
+	 gkmpav500.time_spent_on_pivot_cholesky,
+	 gkmpav500.time_spent_on_rcond_in_pivot_cholesky);
+  /*
+  printf("pav10D 500pt GKM: time_spent_on_pivot_cholesky={%g,%g,(%g),%g,%g} time_spent_on_rcond_in_pivot_cholesky=%g n_pivot_cholesky_calls=%d nrcond_calls_in_pivot_cholesky=%d\n",  
+	 gkmpav500.time_spent_on_pivot_cholesky_block1,
+	 gkmpav500.time_spent_on_pivot_cholesky_blocks1_2,
+	 gkmpav500.time_spent_on_pivot_cholesky_block4,
+	 gkmpav500.time_spent_on_pivot_cholesky_blocks1_2_3,
+	 gkmpav500.time_spent_on_pivot_cholesky,
+	 gkmpav500.time_spent_on_rcond_in_pivot_cholesky,
+	 gkmpav500.n_pivot_cholesky_calls,
+	 gkmpav500.n_rcond_calls_in_pivot_cholesky);
+  */
+}
 
 int main(int argc, char* argv[])
 {
+  //time_build_grad();
+  //compare_sample_designs_pav(2);
+  //compare_sample_designs_pav(4);
+  //compare_sample_designs_pav(8);
   //compare_sample_designs();
   //hack();
   //validate();
@@ -495,6 +539,55 @@ void compare_sample_designs() {
   return;
 }
 
+void compare_sample_designs_pav(int nvarsr) {
+  
+  string build_filename ="build_file.spd";
+  nkm::SurfData sd_pav_build(build_filename , nvarsr, 0, 1, 0, 1, 0);
+  string valid_filename ="valid_file.spd";
+  nkm::SurfData sd_pav_valid(valid_filename , nvarsr, 0, 1, 0, 1, 0);
+  FILE* fpout=fopen("compare_out.txt","w");
+
+  nkm::MtxDbl yeval(16384,1);
+  double rmse;
+
+  std::map< std::string, std::string> km_params;
+  {  
+    ostringstream os;  
+    os << "2.0";
+    for(int i=1; i<nvarsr; ++i)
+      os << " 2.0";
+    km_params["lower_bounds"]=os.str();
+  }
+  {  
+    ostringstream os;  
+    os << "10.0";
+    for(int i=1; i<nvarsr; ++i)
+      os << " 10.0";
+    km_params["upper_bounds"]=os.str();
+  }
+
+  km_params["order"] = "2";
+  km_params["reduced_polynomial"]=nkm::toString<bool>(true);
+  
+  nkm::KrigingModel km( sd_pav_build, km_params); km.create();
+
+  //evaluate error the rosenbrock kriging model at 2^14=16384 validation points
+  km.evaluate(yeval,sd_pav_valid.xr);
+  rmse=0.0;
+  for(int i=0; i<16384; ++i)
+    rmse+=std::pow(yeval(i,0)-sd_pav_valid.y(i,0),2);
+  rmse=std::sqrt(rmse/16384.0);
+  fprintf(fpout,"%22.16g\n",rmse);
+
+
+  fclose(fpout);
+
+
+  return;
+}
+
+
+
 /*
 void validate_grad() {
   printf("validating Gradient Enhanced Kriging Model\n");
@@ -797,6 +890,7 @@ void validate_grad()
   string paviani10d_10K ="paviani10d_10K.spd";
 #endif
 
+
 #ifndef __PROFILING_TEST__
   nkm::MtxDbl yeval10(    10,1);
 #endif
@@ -815,6 +909,7 @@ void validate_grad()
   //km_params["order"] = "linear";
   km_params["order"] = "2";
   km_params["reduced_polynomial"]=nkm::toString<bool>(true);
+
 
   std::map< std::string, std::string> gkm_params;
   gkm_params=km_params;
@@ -1110,6 +1205,7 @@ void validate_grad()
   gkm_params=km_params;
 #endif
 
+
   nkm::MtxDbl paverror(3,4); paverror.zero();
 #ifndef __TIMING_BENCH__
   nkm::SurfData sdpav50(  paviani10d_50  , 10, 0, 1, 0, 1, 0);
@@ -1137,6 +1233,7 @@ void validate_grad()
 
 #endif //TIMING_BENCH
 
+
 #ifndef __FASTER_TEST__
 #ifndef __TIMING_BENCH__
 #ifdef __WITH_PAV_500__
@@ -1145,7 +1242,15 @@ void validate_grad()
   gkm_params["correlation_lengths"]=mtxdbl_2_string(kmpav500.get_correlation_lengths(corr_lengths));
 #endif
   nkm::GradKrigingModel gkmpav500(sdpav500, gkm_params); gkmpav500.create();
-  printf("pav10D 500pt GKM: time_spent_on_pivot_cholesky=%g time_spent_on_rcond_in_pivot_cholesky=%g n_pivot_cholesky_calls=%d nrcond_calls_in_pivot_cholesky=%d\n",gkmpav500.time_spent_on_pivot_cholesky,gkmpav500.time_spent_on_rcond_in_pivot_cholesky,gkmpav500.n_pivot_cholesky_calls,gkmpav500.n_rcond_calls_in_pivot_cholesky);
+  printf("pav10D 500pt GKM: time_spent_on_pivot_cholesky={%g,%g,(%g),%g,%g} time_spent_on_rcond_in_pivot_cholesky=%g n_pivot_cholesky_calls=%d nrcond_calls_in_pivot_cholesky=%d\n",  
+	 gkmpav500.time_spent_on_pivot_cholesky_block1,
+	 gkmpav500.time_spent_on_pivot_cholesky_blocks1_2,
+	 gkmpav500.time_spent_on_pivot_cholesky_block4,
+	 gkmpav500.time_spent_on_pivot_cholesky_blocks1_2_3,
+	 gkmpav500.time_spent_on_pivot_cholesky,
+	 gkmpav500.time_spent_on_rcond_in_pivot_cholesky,
+	 gkmpav500.n_pivot_cholesky_calls,
+	 gkmpav500.n_rcond_calls_in_pivot_cholesky);
 
 #endif //__WITH_PAV_500__
 #endif //TIMING_BENCH
@@ -1311,6 +1416,8 @@ void validate_grad()
   fclose(fpout);
   return;
 }
+
+
 
 
 void validate()

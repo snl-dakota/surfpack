@@ -25,6 +25,8 @@
 /***************************************************************************/
 
 #ifdef HAVE_CONFIG_H
+#define PIVOTCHOL_F77 F77_FUNC(pivotchol,PIVOTCHOL)
+
 #define DGETRF_F77 F77_FUNC(dgetrf,DGETRF)
 #define DGETRI_F77 F77_FUNC(dgetri,DGETRI)
 #define DGEMV_F77  F77_FUNC(dgemv,DGEMV)
@@ -49,6 +51,8 @@
 //
 #else
 // Use the CMake generated fortran name mangling macros (eliminate warnings)
+#define PIVOTCHOL_F77 SURF77_GLOBAL(pivotchol,PIVOTCHOL)
+
 #define DGETRF_F77 SURF77_GLOBAL(dgetrf,DGETRF) 
 #define DGETRI_F77 SURF77_GLOBAL(dgetri,DGETRI) 
 #define DGEMV_F77  SURF77_GLOBAL(dgemv,DGEMV) 
@@ -74,10 +78,19 @@
 #endif
 
 /***************************************************************************/
-/**** BLAS Fortran to C name mangling                                   ****/
+/**** Fortran to C name mangling                                        ****/
 /***************************************************************************/
 
 extern "C" { // prevent C++ name mangling
+
+//wrapper for KRD's implementation of the pivoting cholesky algorithm of: C. Lucas, "LAPACK-style Codes for LEvel2 and 3 Pivoted Cholesky Factorizations", Numerical Analysis Report No. 442, February 2004, from the Manchester Center for Computational Mathematics, I downloaded it from http://www.maths.manchester.ac.uk/~nareports/narep442.pdf, I think that Lucas's lev3pchol.f was ALWAYS defaulting to his lev2pchol.f, but this implementation was between 5% and 10% faster than Lucas's for the test problem (a 5500x5500 R matrix paviani 10D, 500 pts)
+void PIVOTCHOL_F77(const char* uplo, const int* n, double* A, const int* lda,
+		   int* piv, int* rank, const double* tol, int* info);
+
+
+/***************************************************************************/
+/**** BLAS Fortran to C name mangling                                   ****/
+/***************************************************************************/
 
 // Vector-vector inner product
 double DDOT_F77(const int* n, const double* x, const int* incx,

@@ -9,6 +9,8 @@ set(nkm_src
   NKM_Optimize.cpp
   NKM_SurfData.cpp
   NKM_SurfPack.cpp
+  NKM_SurfMat.cpp
+  NKM_PivotChol.f
 )
 
 add_library(nkm ${nkm_src})

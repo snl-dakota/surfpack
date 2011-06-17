@@ -46,6 +46,10 @@ public:
   int n_rcond_calls_in_pivot_cholesky;
   double time_spent_on_rcond_in_pivot_cholesky;
   double time_spent_on_pivot_cholesky;
+  double time_spent_on_pivot_cholesky_block1;
+  double time_spent_on_pivot_cholesky_blocks1_2;
+  double time_spent_on_pivot_cholesky_blocks1_2_3;
+  double time_spent_on_pivot_cholesky_block4;
 
   std::string model_summary_string() const;
 
@@ -260,20 +264,9 @@ public:
   void getRandGuess(MtxDbl& guess) const;
 
 private:
-  void getBaseIEqnKeep();
-  void equationSelectingPrecondCholR();
-  inline void Chol_fact_R() {
-    if(ifSelectDerEquations==false) {
-      int info;
-      RChol.copy(R);
-      Chol_fact_workspace(RChol,scaleRChol,rcondDblWork,rcondIntWork,info,rcondR);
-    }
-    else{
-      equationSelectingPrecondCholR();      
-    }
-  }
-  
   // helper functions
+  void getBaseIEqnKeep(); //to replace or rewrite+rename
+  void equationSelectingPrecondCholR();
 
   /// this function calculates the objective function (negative log
   /// likelihood) and/or the constraint functions and/or their analytical
@@ -340,7 +333,6 @@ private:
      corr_vec, implmented as R=exp(Z*theta) where Z=Z(XR),
      Z(ij,k)=-(XR(i,k)-XR(j,k))^2, */
   //MtxDbl 
-  void correlation_matrix_all(const MtxDbl& corr_vec);
   void correlation_matrix(const MtxDbl& corr_vec);
 
   void protected_pseudo_inverseR(double& rcond_R, double& log_determinant_R);
@@ -476,33 +468,24 @@ private:
       evaluate the model at */
   MtxDbl RChol; //now that the actual and apparent sizes of matrices can be different we can combine RChol and U into the same matrix (since the actual size won't change and so we won't run into poor performance due to constantly reallocating memory)
   MtxDbl scaleRChol;
-  //MtxDbl RCholInv;
-  //MtxDbl uNextCol;
   MtxDbl sumAbsColPrecondR;
   MtxDbl oneNormPrecondR;
-  MtxDbl nptsRcond;
+  MtxDbl lapackRcondR;
   MtxDbl rcondDblWork;
   MtxInt rcondIntWork;
-  MtxInt iEqnKeep;
+  MtxInt ifPointUsed;
+  MtxInt iPointOrderTest;
   MtxInt iOrderEqnTest;
-  bool ifSelectDerEquations;
-  bool ifDidInitialScreen;
-  bool ifWantInitialScreen;
-  MtxInt iptIderTest;
+  MtxInt iEqnKeep;
   MtxInt iptIderKeep;
-  MtxInt iAnchorPoints;
-  int numOrderedEqnToTest;
-  int numAnchorPoints;
+  bool ifHaveAnchorPoint;
+  int  iAnchorPoint;
   int numEqnAvail;
   int numEqnKeep;
-  int numBaseEqnKeep;
-  int numDerEqnKeep;
-  int numBaseDerEqnKeep;
 
   //MtxDbl Rall; //don't actually need R after we do the equation selecting precond cholesky so keep variable named R and discard variable named Rall
   MtxDbl Yall;
   MtxDbl Gall;
-  MtxDbl dots;
 
   /** LU decomposition of R (the correlation matrix after possible
       modification by the inclusion of a nugget).  Keep this around to 

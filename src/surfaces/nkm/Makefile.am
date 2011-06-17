@@ -14,11 +14,13 @@ libnkm_la_SOURCES = NKM_GradKrigingModel.cpp \
 	NKM_Optimize.hpp \
 	NKM_SurfData.cpp \
 	NKM_SurfData.hpp \
+	NKM_SurfMat.cpp \
 	NKM_SurfMat.hpp \
 	NKM_SurfMat_Native.hpp \
 	NKM_SurfPack.cpp \
 	NKM_SurfPack.hpp \
-	NKM_SurfPackModel.hpp
+	NKM_SurfPackModel.hpp \
+	NKM_PivotChol.f
 #	NKM_SurfMat_Teuchos.hpp
 
 noinst_PROGRAMS = TestMain ValidateMain
