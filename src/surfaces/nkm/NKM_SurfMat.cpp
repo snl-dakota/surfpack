@@ -19,7 +19,9 @@ double dot_product(const MtxDbl& a, const MtxDbl& b)
   assert(nelem==nrowsb*b.getNCols());
 #endif
   int inc=1;
-  if((nrowsa==a.getNRowsAct())&&(nrowsb==b.getNRowsAct())) {
+  if(((nrowsa==a.getNRowsAct())&&(nrowsb==b.getNRowsAct()))||
+     ((ncolsa==1)&&(ncolsb==1))
+     ) {
     // ddot will not violate the constness
     return DDOT_F77(&nelem, a.ptr(0,0), &inc, b.ptr(0,0), &inc);
   }
@@ -36,7 +38,7 @@ double dot_product(const MtxDbl& a, const MtxDbl& b)
       for(int i=1; i<nrowsa; ++i)
 	dotprod+=a(i,0)*b(0,i);
     else if((nrowsb==ncolsa)&&(ncolsb==1)&&(nrowsa==1)) 
-      for(int i=1; i<nrowsa; ++i)
+      for(int i=1; i<ncolsa; ++i)
 	dotprod+=a(0,i)*b(i,0);
     else
       assert(false);

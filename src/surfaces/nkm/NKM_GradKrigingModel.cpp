@@ -1228,6 +1228,7 @@ double GradKrigingModel::evaluate(const MtxDbl& xr) const
     printf("]\n");
   */
   
+  //MtxDbl xr_scaled(xr);
   if(scaler.isUnScaled()) {
     eval_trend_fn(g, xr);
     correlation_matrix(r, xr);
@@ -1242,12 +1243,22 @@ double GradKrigingModel::evaluate(const MtxDbl& xr) const
   if(nug>0.0)
     apply_nugget_eval(r);
   
+  //printf("size(xr)={%d %d} size(xr_scaled)={%d %d} size(r)={%d,%d} size(rhs)={%d,%d}\n",
+  // xr.getNRows(),xr.getNCols(),
+  // xr_scaled.getNRows(),xr_scaled.getNCols(),
+  // r.getNRows(),r.getNCols(),
+  // rhs.getNRows(),rhs.getNCols());
+
   double y = dot_product(g, betaHat) + dot_product(r, rhs);
 
   //double yus=scaler.unScaleYOther(y);
   //printf("] y=%g\n",yus);
   //printf("y=%g yunscaled=%g\n",y,yus);
   //return yus;
+  //printf("GKM::evaluate({%g->%g}",xr(0,0),xr_scaled(0,0));
+  //for(int ivar=1; ivar<numVarsr; ++ivar)
+  //printf(",{%g->%g}",xr(0,ivar),xr_scaled(0,ivar));
+  //printf(")=(scaled_y=%g),scaled_y=%g\n",y,scaler.unScaleYOther(y));
 
   return (scaler.unScaleYOther(y));
 }
@@ -1789,8 +1800,10 @@ MtxDbl& GradKrigingModel::correlation_matrix(MtxDbl& r, const MtxDbl& xr) const
   for(j=0; j<numEqnKeep; ++j) {
     jpt=iptIderKeep(j,0);
     Jder=iptIderKeep(j,1);
+    //printf("corr_mtx(r,xr)::jpt=%d Jder=%d\n",jpt,Jder);
 
     if(Jder==-1) {
+      //printf("corr_mtx(r,xr):: case 1\n");
       //correlation between function values
       j_last_func_val=j;
       for(i=0; i<nrowsxr; ++i) {
@@ -1809,6 +1822,7 @@ MtxDbl& GradKrigingModel::correlation_matrix(MtxDbl& r, const MtxDbl& xr) const
       }
     }
     else{
+      //printf("corr_mtx(r,xr):: case 2\n");
       //correlation between the prediction point's function values and the
       //"Jder" derivative of the build point
       //relies on knowing that if a derivative equation occurs, the previous

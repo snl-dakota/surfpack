@@ -23,6 +23,7 @@ using std::string;
 
 void validate();
 void validate_grad();
+void validate_grad2();
 void hack();
 void check_matrix();
 void compare_sample_designs();
@@ -73,6 +74,7 @@ int main(int argc, char* argv[])
   //hack();
   //validate();
   validate_grad();
+  //validate_grad2();
   //check_matrix();
   return 0;
 }
@@ -587,138 +589,52 @@ void compare_sample_designs_pav(int nvarsr) {
 }
 
 
-
-/*
-void validate_grad() {
+void validate_grad2() {
   printf("validating Gradient Enhanced Kriging Model\n");
+  string buildfilename ="dakota_sbo_rosen_10_first11.spd";
+  nkm::SurfData sdbuild(buildfilename, 2, 0, 1, 0, 1, 0);
+  string validfilename="grad_validate2d_10K.spd";
+  nkm::SurfData sdvalid(validfilename, 2, 0, 3, 0, 1, 0);
   
-  string grad_validate2d_10 ="grad_validate2d_10.spd";
-  nkm::SurfData sd2d10(grad_validate2d_10 , 2, 0, 3, 0, 1, 0);
-  string grad_validate2d_100 ="grad_validate2d_100.spd";
-  nkm::SurfData sd2d100(grad_validate2d_100 , 2, 0, 3, 0, 1, 0);
-  string grad_validate2d_500 ="grad_validate2d_500.spd";
-  nkm::SurfData sd2d500(grad_validate2d_500 , 2, 0, 3, 0, 1, 0);
-  string validate2d_10K="grad_validate2d_10K.spd";
-  nkm::SurfData sd2d10K(    validate2d_10K, 2, 0, 3, 0, 1, 0);
-  
-  nkm::MtxDbl yeval10(    10,1);
-  nkm::MtxDbl yeval100(  100,1);
-  nkm::MtxDbl yeval500(  500,1);
+  int NptsBuild=sdbuild.getNPts();
+  nkm::MtxDbl yevalbuild(NptsBuild,1);
   nkm::MtxDbl yeval10K(10000,1);
   int jout=0; //the 0th output column is Rosenbrock  
   
-  nkm::MtxDbl roserror(3,4); roserror.zero();
-  nkm::MtxDbl roserror_grad(3,4); roserror_grad.zero();
-  sd2d10.setJOut( jout);
-  sd2d100.setJOut(jout);
-  sd2d500.setJOut(jout);
-  sd2d10K.setJOut(jout);
+  nkm::MtxDbl roserror_grad(1,4); roserror_grad.zero();
+  sdvalid.setJOut(jout);
   
   std::map< std::string, std::string> km_params;
-  km_params["lower_bounds"]="-2.0 -2.0";
-  km_params["upper_bounds"]="2.0 2.0";
-  //km_params["correlation_lengths"]="0.419055 2.93523";
-  
-  //km_params["correlation_lengths"]="1.0 2.0";
-  //km_params["optimization_method"]="none";
-  //km_params["optimization_method"]="local";
+  km_params["lower_bounds"]="-1.4 0.8";
+  km_params["upper_bounds"]="-1.0 1.2";
   km_params["order"] = "2";
   km_params["reduced_polynomial"]=nkm::toString<bool>(true);
   
-  //nkm::KrigingModel kmros10( sd2d10 , km_params); kmros10.create();
-  //nkm::KrigingModel kmros100( sd2d100, km_params); kmros100.create();
-  //nkm::GradKrigingModel gkmros10( sd2d10 , km_params); gkmros10.create();
-  nkm::GradKrigingModel gkmros100( sd2d100, km_params); gkmros100.create();
-  //nkm::GradKrigingModel gkmros500( sd2d500, km_params); gkmros500.create();
+  nkm::GradKrigingModel gkmros(sdbuild, km_params); gkmros.create();
   
-  //km_params["optimization_method"]="local";
-							  
-  //km_params["correlation_lengths"]="0.53066 2.11213";
-  //km_params["optimization_method"]="none";
-
-  
-  //evaluate error the 10 pt rosenbrock kriging model at 10K points
-  //kmros10.evaluate(yeval10K,sd2d10K.xr);
-  //for(int i=0; i<10000; ++i)
-  //roserror(0,2)+=std::pow(yeval10K(i,0)-sd2d10K.y(i,jout),2);
-  //roserror(0,3)=std::sqrt(roserror(0,2)/10000.0);
-
-  //evaluate error the 10 pt rosenbrock kriging model at build points  
-  //kmros10.evaluate(yeval10,sd2d10.xr);
-  //for(int i=0; i<10; ++i)
-  //roserror(0,0)+=std::pow(yeval10(i,0)-sd2d10.y(i,jout),2);
-  //roserror(0,1)=std::sqrt(roserror(0,0)/10.0);
-
-  //evaluate error the 10 pt rosenbrock Grad kriging model at 10K points
-  //gkmros10.evaluate(yeval10K,sd2d10K.xr);
-  //for(int i=0; i<10000; ++i)
-  //roserror_grad(0,2)+=std::pow(yeval10K(i,0)-sd2d10K.y(i,jout),2);
-  //roserror_grad(0,3)=std::sqrt(roserror_grad(0,2)/10000.0);
-
-  //evaluate error the 10 pt rosenbrock Grad kriging model at build points  
-  //gkmros10.evaluate(yeval10,sd2d10.xr);
-  //for(int i=0; i<10; ++i)
-  //roserror_grad(0,0)+=std::pow(yeval10(i,0)-sd2d10.y(i,jout),2);
-  //roserror_grad(0,1)=std::sqrt(roserror_grad(0,0)/10.0);
-
-
-  //evaluate error the 100 pt rosenbrock kriging model at 10K points
-  //kmros100.evaluate(yeval10K,sd2d10K.xr);
-  //for(int i=0; i<10000; ++i)
-  //roserror(1,2)+=std::pow(yeval10K(i,0)-sd2d10K.y(i,jout),2);
-  //roserror(1,3)=std::sqrt(roserror(1,2)/10000.0);
-
-  //evaluate error the 100 pt rosenbrock kriging model at build points  
-  //kmros100.evaluate(yeval100,sd2d100.xr);
-  //for(int i=0; i<100; ++i)
-  //roserror(1,0)+=std::pow(yeval100(i,0)-sd2d100.y(i,jout),2);
-  //roserror(1,1)=std::sqrt(roserror(1,0)/100.0);
-  
-  //evaluate error the 100 pt rosenbrock Grad kriging model at 10K points
-  gkmros100.evaluate(yeval10K,sd2d10K.xr);
+  //evaluate error the NptsBuild pt rosenbrock grad kriging model at 10K points
+  gkmros.evaluate(yeval10K,sdvalid.xr);
   for(int i=0; i<10000; ++i)
-  roserror_grad(1,2)+=std::pow(yeval10K(i,0)-sd2d10K.y(i,jout),2);
-  roserror_grad(1,3)=std::sqrt(roserror_grad(1,2)/10000.0);
+    roserror_grad(0,2)+=std::pow(yeval10K(i,0)-sdvalid.y(i,jout),2);
+  roserror_grad(0,3)=std::sqrt(roserror_grad(0,2)/10000.0);
 
-  //evaluate error the 100 pt rosenbrock Grad kriging model at build points  
-  gkmros100.evaluate(yeval100,sd2d100.xr);
-  for(int i=0; i<100; ++i)
-  roserror_grad(1,0)+=std::pow(yeval100(i,0)-sd2d100.y(i,jout),2);
-  roserror_grad(1,1)=std::sqrt(roserror_grad(1,0)/100.0);
+  //evaluate error the NptsBuild pt rosenbrock Grad kriging model at build points  
+  gkmros.evaluate(yevalbuild,sdbuild.xr);
+  for(int i=0; i<NptsBuild; ++i)
+    roserror_grad(0,0)+=std::pow(yevalbuild(i,0)-sdbuild.y(i,0),2);
+  roserror_grad(0,1)=std::sqrt(roserror_grad(0,0)/NptsBuild);
 
-  
-  //evaluate error the 500 pt rosenbrock Grad kriging model at 10K points
-  //gkmros500.evaluate(yeval10K,sd2d10K.xr);
-  //for(int i=0; i<10000; ++i)
-    //roserror_grad(2,2)+=std::pow(yeval10K(i,0)-sd2d10K.y(i,jout),2);
-  //roserror_grad(2,3)=std::sqrt(roserror_grad(2,2)/10000.0);
-
-  //evaluate error the 500 pt rosenbrock Grad kriging model at build points  
-  //gkmros500.evaluate(yeval500,sd2d500.xr);
-  //for(int i=0; i<500; ++i)
-    //roserror_grad(2,0)+=std::pow(yeval500(i,0)-sd2d500.y(i,jout),2);
-  //roserror_grad(2,1)=std::sqrt(roserror_grad(2,0)/500.0);
-  
   FILE *fpout=fopen("grad_Kriging.validate","w");
-
   
-  //fprintf(fpout,"rosenbrock\n");
-  //fprintf(fpout,"# of samples, SSE at build points, RMSE at build points, SSE at 10K points, RMSE at 10K points\n");
-  //fprintf(fpout,"Kriging:\n");
-  //fprintf(fpout,"%12d, %19.6g, %20.6g, %17.6g, %18.6g\n",10,roserror(0,0),roserror(0,1),roserror(0,2),roserror(0,3));  
-  //fprintf(fpout,"%12d, %19.6g, %20.6g, %17.6g, %18.6g\n",100,roserror(1,0),roserror(1,1),roserror(1,2),roserror(1,3));  
-  
+  fprintf(fpout,"rosenbrock\n");
   fprintf(fpout,"Grad Kriging:\n");
-  fprintf(fpout,"%12d, %19.6g, %20.6g, %17.6g, %18.6g\n",10,roserror_grad(0,0),roserror_grad(0,1),roserror_grad(0,2),roserror_grad(0,3));
-  fprintf(fpout,"%12d, %19.6g, %20.6g, %17.6g, %18.6g\n",100,roserror_grad(1,0),roserror_grad(1,1),roserror_grad(1,2),roserror_grad(1,3));
-  fprintf(fpout,"%12d, %19.6g, %20.6g, %17.6g, %18.6g\n",500,roserror_grad(2,0),roserror_grad(2,1),roserror_grad(2,2),roserror_grad(2,3));
+  fprintf(fpout,"%12d, %19.6g, %20.6g, %17.6g, %18.6g\n",NptsBuild,roserror_grad(0,0),roserror_grad(0,1),roserror_grad(0,2),roserror_grad(0,3));
   
   fclose(fpout);
 
-
   return;
 }
-*/
+
 
 /*
 void validate_grad()
