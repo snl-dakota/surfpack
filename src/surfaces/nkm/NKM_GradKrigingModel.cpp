@@ -1228,6 +1228,7 @@ double GradKrigingModel::evaluate(const MtxDbl& xr) const
     printf("]\n");
   */
   
+
   //MtxDbl xr_scaled(xr);
   if(scaler.isUnScaled()) {
     eval_trend_fn(g, xr);
