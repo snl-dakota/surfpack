@@ -144,6 +144,12 @@ public:
   /// Get the predictor for all the points as a vector
   std::vector< double > getPredictor(unsigned index) const;
 
+  /// Get the constraint point
+  const SurfPoint& getConstraintPoint() const;
+
+  /// Get the number of constraint data included in the provided point
+  unsigned numConstraints() const;
+
   /// Return defaultIndex
   unsigned getDefaultIndex() const;
 
@@ -181,6 +187,10 @@ public:
   /// Return the index of the new variable.
   unsigned addResponse(const std::vector<double>& newValues, 
     std::string label = ""); 
+
+  /// Set the constraint (anchor) point, copying the data (only single
+  /// constraint supported)
+  void setConstraintPoint(const SurfPoint& sp);
   
   /// Specify which points should be skipped.  This can be used when only a 
   /// subset of the SurfPoints should be used for some computation.
@@ -268,6 +278,13 @@ private:
 
   /// The index of the response variable that will be returned by F
   mutable unsigned defaultIndex;
+
+  /// Constraint (anchor) point which the model should match exactly
+  /// point). Some models require separate treatment, e.g.,
+  /// LinearRegressionModel, though KrigingModel would allow
+  /// integrated in the points array.  For other surrogates, these are
+  /// typically just integrated into the points.
+  SurfPoint constraintPoint;
 
   /// Labels for the predictor variables
   std::vector< std::string > xLabels;

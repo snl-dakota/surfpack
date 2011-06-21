@@ -257,6 +257,19 @@ void KrigingModelFactory::config()
   SurfpackModelFactory::config();
 }
 
+bool KrigingModelFactory::supports_constraints()
+{
+  // TODO: Kriging model will soon map the anchor point
+  return false;
+}
+
+void KrigingModelFactory::sufficient_data(const SurfData& sd)
+{
+  // NKM manages error checking, so this always passes
+  return;
+}
+
+
 SurfpackModel* KrigingModelFactory::Create(const std::string& model_string)
 {
   ///\todo Be able to parse a Kriging model from a string

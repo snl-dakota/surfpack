@@ -221,6 +221,7 @@ void SurfpackModelFactory::config()
   if (arg != "") response_index = atoi(arg.c_str());
 }
 
+/// Default implementation of minimum data to build
 unsigned SurfpackModelFactory::minPointsRequired()
 {
   SurfpackModelFactory::config();
@@ -228,11 +229,31 @@ unsigned SurfpackModelFactory::minPointsRequired()
   return (ndims+1);
 }
 
+/// Default implementation of recommended data to build
 unsigned SurfpackModelFactory::recommendedNumPoints()
 {
   SurfpackModelFactory::config();
   assert(ndims);
   return (5*ndims);
+}
+
+/// By default, models don't support constraints
+bool SurfpackModelFactory::supports_constraints()
+{
+  return false;
+}
+
+
+// default implementation assumes only function value data
+void SurfpackModelFactory::sufficient_data(const SurfData& sd)
+{
+  if (sd.size() < minPointsRequired()) {
+    std::ostringstream not_enough;
+    not_enough << "Not enough Points: ";
+    not_enough << "size of data = " << sd.size();
+    not_enough << ", minPointsRequired = " << minPointsRequired();
+    throw(not_enough.str());
+  }
 }
 
 const ParamMap& SurfpackModelFactory::parameters() const
@@ -266,11 +287,8 @@ SurfpackModel* SurfpackModelFactory::Build(const SurfData& sd)
     }
   }
   sd.setDefaultIndex(this->response_index);
-  if (sd.size() < minPointsRequired()) {
-    throw string("Not enough Points");
-    std::cout << " size of data " << sd.size();
-    std::cout << " minPointsRequired " << minPointsRequired();
-  }
+  // check whether there is sufficient SurfData to build
+  sufficient_data(sd);
   SurfpackModel* model = Create(sd);
   model->parameters(params);
   return model;

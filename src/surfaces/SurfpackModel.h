@@ -97,10 +97,14 @@ public:
   virtual unsigned minPointsRequired();
   /// the recommended default number of points
   virtual unsigned recommendedNumPoints();
+  /// whether the model type supports constraints (anchor point)
+  virtual bool supports_constraints();
   virtual void config();
   const ParamMap& parameters() const;
   void add(const std::string& name, const std::string& value);
 protected:
+  /// convenience function to verify that a model has sufficient data to build
+  virtual void sufficient_data(const SurfData& sd);
   ParamMap params;
   unsigned ndims;
   unsigned response_index;

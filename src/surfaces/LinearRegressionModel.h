@@ -55,18 +55,24 @@ class LinearRegressionModelFactory : public SurfpackModelFactory
 public:
   LinearRegressionModelFactory();
   LinearRegressionModelFactory(const ParamMap& args);
-  void setEqualityConstraints(unsigned asv,const SurfPoint& sp,  
-    double valuePtr, VecDbl* gradientPtr, MtxDbl* hessianPtr);
   virtual SurfpackModel* Create(const SurfData& sd);
   virtual SurfpackModel* Create(const std::string& model_string);
   virtual void config();
   virtual unsigned minPointsRequired();
   virtual unsigned recommendedNumPoints();
+  /// LRM does allow constraints
+  virtual bool supports_constraints();
   VecDbl lrmSolve(const LRMBasisSet& bs, const ScaledSurfData& ssd);
   static LRMBasisSet CreateLRM(unsigned order, unsigned dims);
 protected:
+  /// Sufficient data is based on points plus constraint data
+  virtual void sufficient_data(const SurfData& sd);
   unsigned order;
   MtxDbl eqConLHS;
   VecDbl eqConRHS;
+private:
+  /// convenience function to create constraint linear system in the factory
+  void setEqualityConstraints(const SurfPoint& sp);
+
 };
 #endif

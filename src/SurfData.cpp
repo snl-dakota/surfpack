@@ -330,6 +330,26 @@ std::vector< double > SurfData::getPredictor(unsigned index) const
   return result;
 }
 
+const SurfPoint& SurfData::getConstraintPoint() const
+{
+  return constraintPoint;
+}
+
+/** Calculate the number of constraint data present in functions,
+    gradients, and Hessians in the constraintPoint. */
+unsigned SurfData::numConstraints() const
+{
+  unsigned num_constraints = 0;
+  if (constraintPoint.fSize() > 0)
+    num_constraints += 1; // value at a particular point
+  if (constraintPoint.fGradientsSize() > 0)
+    num_constraints += xsize; // gradient at a point
+  if (constraintPoint.fHessiansSize() > 0) 
+    num_constraints += (xsize*xsize+xsize)/2; // hessian at a point
+  return num_constraints;
+}
+
+
 /// Get default index
 unsigned SurfData::getDefaultIndex() const
 {
@@ -485,6 +505,29 @@ unsigned SurfData::addResponse(const vector<double>& newValues,
     fLabels.push_back(labelos.str());
   }
   return new_index;
+}
+
+void SurfData::setConstraintPoint(const SurfPoint& sp)
+{
+  // handle the case of this being the first point in the data set
+  if (points.empty()) { 
+    xsize = sp.xSize();
+    fsize = sp.fSize();
+    if (xLabels.empty()) { 
+      defaultLabels(); 
+    } 
+  } else { 
+    if (sp.xSize() != xsize || sp.fSize() != fsize) {
+      ostringstream errormsg;
+      errormsg << "Error in SurfData::setConstraintPoint.  Points in this data set "
+               << "have " << xsize << " dimensions and " << fsize
+               << " response values; point to be added has "
+               << sp.xSize() << " dimensions and " << sp.fSize() 
+               << " response values." << endl;
+      throw bad_surf_data(errormsg.str()); 
+    } 
+  } 
+  constraintPoint = sp;
 }
 
 /// Specify which points should be skipped.  This can be used when only a 

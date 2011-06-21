@@ -59,6 +59,10 @@ public:
   virtual SurfpackModel* Create(const SurfData& sd);
   virtual SurfpackModel* Create(const std::string& model_string);
   virtual void config();
+  /// Override since Kriging does allow constraints
+  virtual bool supports_constraints();
 protected:
+  /// For Kriging, sufficient data is assessed by the NKM submodel
+  virtual void sufficient_data(const SurfData& sd);
 };
 #endif

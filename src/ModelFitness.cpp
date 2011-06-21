@@ -199,7 +199,6 @@ double CrossValidationFitness::operator()(const SurfpackModel& sm, const SurfDat
     my_data.setExcludedPoints(excludedPoints);
     //cout << " excludes: " << excludedPoints.size() << endl;
     SurfpackModelFactory* factory = ModelFactory::createModelFactory(args);
-    assert(my_data.size() >= factory->minPointsRequired());
     SurfpackModel* model = factory->Build(my_data);
     my_data.setExcludedPoints(SetUns());
     for (unsigned k = low; k <= high; k++) {

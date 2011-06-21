@@ -171,6 +171,12 @@ SurfpackModel* LinearRegressionModelFactory::Create(const std::string& model_str
 
 SurfpackModel* LinearRegressionModelFactory::Create(const SurfData& sd)
 {
+  // historically the constraintPoint was not scaled and equality
+  // constraints were set before Build (therefore Create) was called,
+  // so we call here before other operations
+  // TODO: sort out scaling and make consistent across models
+  setEqualityConstraints(sd.getConstraintPoint());
+
   //ModelScaler* ms = NormalizingScaler::Create(sd);
   ModelScaler* ms = NonScaler::Create(sd);
   ScaledSurfData ssd(*ms,sd);
@@ -191,13 +197,32 @@ unsigned LinearRegressionModelFactory::minPointsRequired()
 {
   config();
   LRMBasisSet bs = CreateLRM(order,ndims);
-  return bs.size() - eqConRHS.size();
+  return bs.size();
 }
 
 unsigned LinearRegressionModelFactory::recommendedNumPoints()
 {
   return LinearRegressionModelFactory::minPointsRequired();
 }
+
+bool LinearRegressionModelFactory::supports_constraints()
+{
+  return true;
+}
+
+/// total data from points and constraint must be sufficient to build
+void LinearRegressionModelFactory::sufficient_data(const SurfData& sd)
+{
+  if (sd.size() + sd.numConstraints() < minPointsRequired()) {
+    std::ostringstream not_enough;
+    not_enough << "Not enough Points: ";
+    not_enough << "size of data = " << sd.size();
+    not_enough << ", size of constraints data = " << sd.numConstraints();
+    not_enough << ", minPointsRequired = " << minPointsRequired();
+    throw(not_enough.str());
+  }
+}
+
 
 LinearRegressionModelFactory::LinearRegressionModelFactory()
   : SurfpackModelFactory(), order(2)
@@ -219,14 +244,18 @@ void LinearRegressionModelFactory::config()
   if (strarg != "") order = std::atoi(strarg.c_str());
 }
 
-void LinearRegressionModelFactory::setEqualityConstraints(unsigned asv,const SurfPoint& sp,  double valuePtr, VecDbl* gradientPtr, MtxDbl* hessianPtr)
+void LinearRegressionModelFactory::setEqualityConstraints(const SurfPoint& sp)
 {
-  const VecDbl& gradient = *gradientPtr;
-  const MtxDbl& hessian = *hessianPtr;
-  if (!asv) return; // There are no constraints
+  unsigned short asv = 0;
+  if (sp.fSize() > 0) asv |= 1;
+  if (sp.fGradientsSize() > 0) asv |= 2;
+  if (sp.fHessiansSize() > 0) asv |= 4;
+  if (asv == 0) return; // There are no constraints
+
   config();
   LRMBasisSet bs = CreateLRM(order,ndims);
   VecDbl coefficients(bs.size());
+
   unsigned numConstraints = 0;
   if (asv & 1) numConstraints += 1; // value at a particular point
   if (asv & 2) numConstraints += ndims; // gradient at a point
@@ -245,13 +274,13 @@ void LinearRegressionModelFactory::setEqualityConstraints(unsigned asv,const Sur
     for (unsigned i = 0; i < bs.size(); i++) {
       eqConLHS(index,i) = bs.eval(i,sp.X());
     }
-    eqConRHS[index] = valuePtr;
+    eqConRHS[index] = sp.F();
     ++index;
   }
 
   // If requested, add the equality constraints for the gradient
   if (asv & 2) {
-    //const VecDbl& gradient = *gradientPtr;
+    const VecDbl& gradient = sp.fGradient();
     assert(gradient.size() == ndims);
     VecUns factorCounts;
     VecUns diff_vars(1); // Holds index of var to differentiate w.r.t.
@@ -267,7 +296,7 @@ void LinearRegressionModelFactory::setEqualityConstraints(unsigned asv,const Sur
 
   // If requested, add the equality constraints for the hessian
   if (asv & 4) {
-    //MtxDbl& hessian = *hessianPtr;
+    const MtxDbl& hessian = sp.fHessian();
     assert(hessian.getNCols() == ndims);
     assert(hessian.getNRows() == ndims);
     VecUns factorCounts;
