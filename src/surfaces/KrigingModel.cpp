@@ -23,6 +23,7 @@ surfdata_to_nkm_surfdata(const SurfData& sd, nkm::SurfData& nkm_sd)
 
   nkm::MtxDbl XR(num_points, x_size), Y(num_points, f_size);
   std::vector<std::vector<nkm::MtxDbl> > derY(f_size);
+  // track the active derivative order for each function
   nkm::MtxInt der_order(1,f_size); 
   der_order.zero(); //set contents to zero
 
@@ -109,6 +110,11 @@ surfdata_to_nkm_surfdata(const SurfData& sd, nkm::SurfData& nkm_sd)
 	assert(der_order(0,f_index)<2);
     }
   }
+
+  // If present, add constraintPoint as well, indicating index in
+  // arguments as needed, adding to f, grad, Hess
+  const SurfPoint& constraint_point = sd.getConstraintPoint();
+
 
   // TODO: populate with derY as well
   nkm_sd = nkm::SurfData(XR, Y, der_order, derY);
@@ -260,6 +266,7 @@ void KrigingModelFactory::config()
 bool KrigingModelFactory::supports_constraints()
 {
   // TODO: Kriging model will soon map the anchor point
+  //  return true;
   return false;
 }
 
