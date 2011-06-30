@@ -43,10 +43,3 @@ add_subdirectory(packages)
 add_subdirectory(src)
 #add_subdirectory(tests)
 
-#Keep track of what libraries should be included in libsurfpack
-set(SUBLIBS ${SUBLIBS} surfpack)
-
-#Descend into source subdirectories
-##SET(SUBLIBS ${SUBLIBS} mars surfaces conmin)
-set(SUBLIBS ${SUBLIBS} mars surfaces nkm)
-

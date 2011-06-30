@@ -1,11 +1,5 @@
-# CMakeLists.txt for Surfpack surfaces library.
-
-include_directories(${Surfpack_SOURCE_DIR}/src)
-
-subdirs(nkm)
-
-## surfaces library sources.
-set(surfaces_src
+## surfaces directory sources.
+set(surfaces_sources
    MovingLeastSquaresModel.cpp
    MovingLeastSquaresModel.h
    LinearRegressionModel.cpp
@@ -23,8 +17,4 @@ set(surfaces_src
    ModelScaler.cpp
    ModelScaler.h
 )
-
-add_library(surfaces ${surfaces_src})
-#target_link_libraries(surfaces ${LAPACK_LIBRARIES})
-install(TARGETS surfaces EXPORT ${ExportTarget} DESTINATION lib)
 

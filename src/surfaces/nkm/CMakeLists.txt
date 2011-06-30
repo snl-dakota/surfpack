@@ -1,8 +1,5 @@
-
-include_directories(${Surfpack_SOURCE_DIR}/src)
-
-## nkm library sources.
-set(nkm_src
+## nkm directory sources.
+set(nkm_sources
   NKM_GradKrigingModel.cpp
   NKM_KrigingModel.cpp
   NKM_LinearRegressionModel.cpp
@@ -12,8 +9,3 @@ set(nkm_src
   NKM_SurfMat.cpp
   NKM_PivotChol.f
 )
-
-add_library(nkm ${nkm_src})
-#target_link_libraries(surfaces ${LAPACK_LIBRARIES})
-install(TARGETS nkm EXPORT ${ExportTarget} DESTINATION lib)
-
