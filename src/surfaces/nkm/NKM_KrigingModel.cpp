@@ -2109,12 +2109,18 @@ void KrigingModel::masterObjectiveAndConstraints(const MtxDbl& theta, int obj_de
 	       dot_product(temp4,temp2))
 	 )/numPoints;
 
+      double trace_Rinv_dR_dthetai_Rinv_dR_dthetai=0.0;
+      for(int jpt=0; jpt<numPoints; ++jpt)
+	for(int ipt=0; ipt<numPoints; ++ipt)
+	  trace_Rinv_dR_dthetai_Rinv_dR_dthetai+=
+	    Rinv_dR_dthetai(jpt,ipt)*Rinv_dR_dthetai(ipt,jpt);
+
       //the sum of the dot products is the trace I was talking about above
       hessObj(i,j)=0.5*
 	(-destVarianceMLE_dtheta(i,0)*inv_est_variance_mle
 	 *destVarianceMLE_dtheta(j,0)*inv_est_variance_mle
 	 +d2est_variance_mle_dthetai_dthetaj*inv_est_variance_mle
-	 +(-dot_product(Rinv_dR_dthetai,Rinv_dR_dthetai) //i=j simplification
+	 +(-trace_Rinv_dR_dthetai_Rinv_dR_dthetai
 	   +dot_product(Rinv,d2R_dthetai_dthetaj)
 	   )/numPoints); //on a per point basis
 
@@ -2179,12 +2185,18 @@ void KrigingModel::masterObjectiveAndConstraints(const MtxDbl& theta, int obj_de
 		 dot_product(temp4,temp2))
 	   )/numPoints;
 
+	double trace_Rinv_dR_dthetaj_Rinv_dR_dthetai=0.0;
+	for(int jpt=0; jpt<numPoints; ++jpt)
+	  for(int ipt=0; ipt<numPoints; ++ipt)
+	    trace_Rinv_dR_dthetaj_Rinv_dR_dthetai+=
+	      Rinv_dR_dthetaj(jpt,ipt)*Rinv_dR_dthetai(ipt,jpt);
+
 	//the sum of the dot products is the trace I was talking about above
 	hessObj(i,j)=0.5*
 	  (-destVarianceMLE_dtheta(i,0)*inv_est_variance_mle
 	   *destVarianceMLE_dtheta(j,0)*inv_est_variance_mle
 	   +d2est_variance_mle_dthetai_dthetaj*inv_est_variance_mle
-	   +(-dot_product(Rinv_dR_dthetai,Rinv_dR_dthetaj) //for i!=j 
+	   +(-trace_Rinv_dR_dthetaj_Rinv_dR_dthetai 
 	     +dot_product(Rinv,d2R_dthetai_dthetaj)
 	     )/numPoints); //on a per point basis
 	hessObj(j,i)=hessObj(i,j);
