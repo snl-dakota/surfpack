@@ -11,20 +11,24 @@ include(FortranCInterface)
 
 if(WIN32)
   find_package(CLAPACK REQUIRED)
-else()
+
+elseif(NOT DEFINED BLAS_LIBS OR NOT DEFINED LAPACK_LIBS)
+
   # first check for a system blas and lapack
-  find_library(BLAS_LIBS blas)
-  find_library(LAPACK_LIBS lapack)
+  if(NOT DEFINED BLAS_LIBS)
+    find_library(BLAS_LIBS blas)
+  endif()
+  if(NOT DEFINED LAPACK_LIBS)
+    find_library(LAPACK_LIBS lapack)
+  endif()
   if(NOT BLAS_LIBS OR NOT LAPACK_LIBS)
-    # if not a system blas and lapack, then
-    # look for a cmake built LAPACK with
-    # find_package
+    # if not a system blas and lapack, then look for a cmake built LAPACK
+    # with find_package
     find_package(LAPACK REQUIRED NO_MODULE)
     set(BLAS_LIBS blas)
     set(LAPACK_LIBS lapack)
   endif()
-#  FIND_PACKAGE(BLAS REQUIRED)
-#  FIND_PACKAGE(LAPACK REQUIRED)
+
 endif() 
 
 remove_definitions("-DHAVE_CONFIG_H")
