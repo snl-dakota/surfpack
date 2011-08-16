@@ -756,12 +756,12 @@ void least_squares_with_equality_constraints(MtxDbl& A,
 ///finds the eigenvalues and optionally (by default) eigenvectors of a real symmetric matrix, returns a reference to the vector of eigenvalues, this function wraps the LAPACK subroutine DSYEV
 MtxDbl& eig_sym(MtxDbl& eigvect, MtxDbl& eigval, const MtxDbl& A, char jobz) {
   char uplo='L';
-  int nrowsA=static_cast<int>(A.getNRows());
-  int lda=static_cast<int>(A.getNRowsAct());
-#ifdef __SURFMAT_ERR_CHECK__
-  assert((0<nrowsA)&&(nrowsA==A.getNCols()));
-#endif
   eigvect.copy(A);
+  int nrowsA=static_cast<int>(eigvect.getNRows());
+  int lda=static_cast<int>(eigvect.getNRowsAct()); //because a matrix's apparent and actual (memory footprint) size can be different and "copy" only ensures that the apparent size is the same, we need to get lda from eigvect instead of A, getting lda from was causing a segfault when Pivoting Cholesky is used to discard points
+#ifdef __SURFMAT_ERR_CHECK__
+  assert((0<nrowsA)&&(nrowsA==eigvect.getNCols()));
+#endif
   eigval.newSize(nrowsA,1); eigval.zero(); //zero is for sanity check
   int info;
   int lwork=-1;
