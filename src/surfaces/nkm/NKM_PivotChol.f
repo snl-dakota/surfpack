@@ -64,9 +64,11 @@ C
 C PIV      (output) INTEGER array, dimension (N)
 C          PIV is such that the nonzero entries are P( PIV( K ), K ) = 1.
 C
-C RANK     (output) INTEGER
-C          The rank of A given by the number of steps the algorithm
-C          completed.
+C RANK     (INPUT/output) INTEGER
+C          On output, this is the rank of A given by the number of 
+c          steps the algorithm completed.
+C          RANK BEING NEGATIVE ON ENTRY IS A FLAG THAT MEANS THE USER
+C          ONLY WANTS THE FIRST -RANK VALUES (FOR SUBSET SELECTION)
 C
 C TOL      (input) DOUBLE PRECISION
 C          User defined tolerance. If TOL < 0, then N*U*MAX( A(k,k) )
@@ -89,7 +91,8 @@ C     ..
 C     .. Local Scalars ..
       DOUBLE PRECISION    PIVOT, TMPDBL, MXPVIN, TMPDBL2, ALPHA,
      $     BETA 
-      INTEGER             IPIV, ITOADD, I, J, TMPINT, INC1, M
+      INTEGER             IPIV, ITOADD, I, J, TMPINT, INC1, M,
+     $     NSTOP
       LOGICAL             UPNLOW
       CHARACTER           TRANS
 
@@ -109,6 +112,13 @@ C     ..
 C     
 C     Test the input parameters.
 C     
+
+C     RANK BEING NEGATIVE ON ENTRY IS A FLAG THAT MEANS THE USER
+C     ONLY WANTS THE FIRST -RANK VALUES (FOR SUBSET SELECTION)
+      NSTOP=-RANK
+      IF((RANK.GE.0).AND.(NSTOP.GT.N)) THEN
+         NSTOP=N
+      ENDIF
       INFO = 0
 C
 C     MAKE SURE WE HAVE BOTH HALVES OF THE SYMMETRIC MATRIX SO WE CAN
@@ -213,7 +223,7 @@ C     FIND THE NEXT LARGEST PIVOT
 C
 C     NOW DO THE PIVOTING CHOLESKY FOR THE REST OF THE ROWS/
 C     COLUMNS
-      DO ITOADD=2,N
+      DO ITOADD=2,NSTOP
 C     IF OUR PIVOT ESTIMATE OF "RCOND" IS LESS THAN THE TOLERANCE
 C     THEN EXIT THE SUBROUTINE
          TMPDBL=PIVOT*MXPVIN

@@ -530,6 +530,9 @@ public:
 	  data[i]=data[k];
 	  ++i; //make i the index of the element after the one we are keeping
 	}
+      //if data is unique run into a problem with the last element because k==i makes data[i]==data[k] the second to last time through k increases i doesn't so last element can get left off so we need to fix this
+      if((i<nelems)&&(data[i-1]<data[i]))
+	++i;
       reshape(i,1); //i is the index of the element after the last one we are keeping, i.e. the number of elements that we are keeping, this is just record keeping of the number of unique elements, it won't actually change the size of memory.
     }
     return;

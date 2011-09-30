@@ -118,6 +118,8 @@ KrigingModel::KrigingModel(const SurfData& sd, const ParamMap& params)
   
   scaler.scaleToDefault(); //scale outputs to -0.5<=Y<=0.5 and scale real inputs to volume 1 hyper-rectangle centered at 0 if real iputs dimensions are locked or the unit hypercube centered at 0 if no dimensions are locked.  The scaling is done to let us define the feasible region simply (done in create);
   
+  sdBuild.getY(Y);
+
   // *************************************************************
   // this starts the input section about optimizing or directly
   // scepcifying correlation lengths, it must come after the 
@@ -607,7 +609,7 @@ std::string KrigingModel::model_summary_string() const {
     else oss <<"full ";
   }
   oss << "polynomial of order=" << polyOrder << 
-    "; rcond(R)=" << rcondR << "; rcond(Gtran_Rinv_G)=" << rcondGtran_Rinv_G 
+    "; rcond(R)=" << rcondR << "; rcond(Gtran_Rinv_G)=" << rcond_Gtran_Rinv_G 
       << "; nugget=" << nug << ".\n";
 	
   oss << "Beta= (" << betaHat(0,0);
@@ -1539,8 +1541,8 @@ void KrigingModel::masterObjectiveAndConstraints(const MtxDbl& theta, int obj_de
     //solve_after_LU_fact(Rinv_G,RLU,ipvt_RLU,G,'N','N'); //O(N^3) ops
     Gtran_Rinv_G_Chol.newSize(ntrend,ntrend);
     matrix_mult(Gtran_Rinv_G_Chol,G,Rinv_G,0.0,1.0,'T','N');
-    //double rcondGtran_Rinv_G;
-    Chol_fact(Gtran_Rinv_G_Chol,chol_info,rcondGtran_Rinv_G);
+    //double rcond_Gtran_Rinv_G;
+    Chol_fact(Gtran_Rinv_G_Chol,chol_info,rcond_Gtran_Rinv_G);
 
     double log_determinant_Gtran_Rinv_G=0.0;
     for (int itrend = 0; itrend < ntrend; ++itrend)

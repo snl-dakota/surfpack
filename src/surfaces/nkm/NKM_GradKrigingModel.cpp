@@ -169,7 +169,7 @@ void GradKrigingModel::equationSelectingPrecondCholR(){
   char uplo='B'; //'B' means we have both halves of R in RChol so the 
   //fortran doesn't have to copy one half to the other
   MtxInt ipiv(num_eqn_test,1);  //make this a member variable
-  
+  numEqnKeep=numEqnAvail;
   PIVOTCHOL_F77(&uplo, &num_eqn_test, RChol.ptr(0,0), &ld_RChol,
     		ipiv.ptr(0,0), &numEqnKeep, &min_allowed_rcond, 
 		//&min_allowed_pivot_est_rcond, 
@@ -185,7 +185,8 @@ void GradKrigingModel::equationSelectingPrecondCholR(){
   oneNormPrecondR.newSize(numEqnAvail,1);
   sumAbsColPrecondR.newSize(numEqnAvail,1); //used in computing the one norm 
   iEqnKeep.newSize(numEqnAvail,1);
-  if(numEqnKeep<num_eqn_test) {
+  if(false) {
+    //if(numEqnKeep<num_eqn_test) {
     //printf("case 1\n");
 
     //for this set of correlation lengths, it was so poorly conditioned 
@@ -1425,7 +1426,7 @@ MtxDbl& GradKrigingModel::evaluate_d1y(MtxDbl& d1y, const MtxDbl& xr) const
   correlation_matrix(r, xr_scaled);
   apply_nugget_eval(r);
   MtxDbl d1r(nrowsxr,numRowsR);
-  MtxDbl work(nrowsxr,numPoints);
+  MtxDbl work(nrowsxr,numPoints); //should this numPoints be NumRowsR?
   MtxDbl temp_vec(nrowsxr,1);
 
 

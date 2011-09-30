@@ -249,6 +249,7 @@ public:
 private:
 
   // helper functions
+  void equationSelectingCholR();
 
   /// this function calculates the objective function (negative log
   /// likelihood) and/or the constraint functions and/or their analytical
@@ -365,6 +366,7 @@ private:
   double minNatLogCorrLen;
 
   int numPoints; 
+  int numRowsR;
   
   /** the number of constraint FUNTIONS (typically these are nonlinear), 
       this number does NOT include box edge constraints for the inputs,
@@ -403,7 +405,7 @@ private:
   /** the output the model was constructed from; convention is capital
       matrices are data model is built from, lower case matrices are
       arbitrary points to evaluate model at */
-  MtxDbl& Y;   
+  MtxDbl Y;   
 
   /** the polynomial powers for individual dimensions in each "basis 
       function" (for now the only choice of polynomial basis functions are
@@ -425,6 +427,18 @@ private:
       is built from, lower case matrices are for arbitrary points to 
       evaluate the model at */
   MtxDbl RChol;
+  MtxDbl scaleRChol;
+  MtxDbl sumAbsColR;
+  MtxDbl oneNormR;
+  MtxDbl lapackRcondR;
+  MtxDbl rcondDblWork;
+  MtxInt rcondIntWork;
+  MtxInt iEqnKeep;
+  int numEqnAvail;
+  int numEqnKeep;
+
+  MtxDbl Yall;
+  MtxDbl Gall;
 
   /** LU decomposition of R (the correlation matrix after possible
       modification by the inclusion of a nugget).  Keep this around to 
@@ -462,7 +476,7 @@ private:
   /** the rcond (estimated reciprocal of the condition number) of the 
       modified correlation matrix, R */
   double rcondR; 
-  double rcondGtran_Rinv_G;
+  double rcond_Gtran_Rinv_G;
 
   /** the matrix of trend function evaluations, G=G(XR); The convention is
       that capital matrices are for the data the model is built from, lower
@@ -495,7 +509,9 @@ private:
   /// keep around to evaluate adjusted variance
   //MtxDbl Gtran_Rinv_G_LU;
   MtxDbl Gtran_Rinv_G_Chol;
-
+  MtxDbl Gtran_Rinv_G_Chol_Scale;
+  MtxDbl Gtran_Rinv_G_Chol_DblWork;
+  MtxInt Gtran_Rinv_G_Chol_IntWork;
 
   /// keep around to evaluate adjusted variance
   //MtxInt ipvt_Gtran_Rinv_G_LU;

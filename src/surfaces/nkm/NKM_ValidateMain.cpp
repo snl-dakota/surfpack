@@ -28,6 +28,114 @@ void hack();
 void check_matrix();
 void compare_sample_designs();
 void compare_sample_designs_pav(int nvarsr);
+void nested_Krig_vs_GEK_herbie_smooth_herbie_2D_4D_8D();
+
+void gen_sample_design_by_pivoted_cholesky() {
+  int NumGuesses=100;
+  int Npts=2048;
+  int NptsGuess=4096;
+  int Ndim=2;
+  std::string filename="unit_hypercube_nested_design_2D_2048pts.txt";
+  int imod=104395303; //a large prime number
+  double dmod=static_cast<double>(imod);
+  double L=0.155*std::pow(1.0/static_cast<double>(Npts),1.0/static_cast<double>(Ndim));
+  double negtheta=-0.5/(L*L);
+  double dtemp;
+
+  nkm::MtxDbl x(NptsGuess,Ndim);
+  nkm::MtxDbl xfinal(Npts,Ndim);
+  nkm::MtxDbl R(NptsGuess,NptsGuess);
+  for(int idim=0; idim<Ndim; ++idim) {
+    x(0,idim)=0.5;
+    for(int i=1; i<NptsGuess; ++i)
+      x(i,idim)=static_cast<double>(std::rand()%imod)/dmod;
+  }
+  for(int j=0; j<NptsGuess-1; ++j)
+    for(int i=j+1; i<NptsGuess; ++i) {
+      dtemp=x(i,0)-x(j,0);
+      R(i,j)=dtemp*dtemp;
+    }
+  for(int idim=1; idim<Ndim-1; ++idim)
+    for(int j=0; j<NptsGuess-1; ++j)
+      for(int i=j+1; i<NptsGuess; ++i) {
+	dtemp=x(i,idim)-x(j,idim);
+	R(i,j)+=dtemp*dtemp;
+      }      
+  for(int j=0; j<NptsGuess; ++j) {
+    R(j,j)=1.0;
+    for(int i=j+1; i<NptsGuess; ++i) {
+      dtemp=x(i,Ndim)-x(j,Ndim);
+      R(j,i)=R(i,j)=std::exp(negtheta*(R(i,j)+dtemp*dtemp));
+    }
+  }
+  int info=0;
+  char uplo='B';
+  nkm::MtxInt ipiv(NptsGuess,1);  
+  int ld_R=R.getNRowsAct();
+  double min_allowed_rcond=std::pow(2.0,-40.0);
+  int rank=-Npts;
+
+  PIVOTCHOL_F77(&uplo, &NptsGuess, R.ptr(0,0), &ld_R,
+    		ipiv.ptr(0,0), &rank, &min_allowed_rcond, &info); 
+  printf("iLoop=0 rank=%d/%d\n",rank,NptsGuess);
+  if(rank>Npts)
+    rank=Npts;
+  for(int idim=0; idim<Ndim; ++idim)
+    for(int i=0; i<rank; ++i)
+      xfinal(i,idim)=x(ipiv(i,0)-1,idim);
+
+  for(int iLoop=1; iLoop<NumGuesses; ++iLoop) {
+
+    for(int idim=0; idim<Ndim; ++idim) {
+      //don't do i=0 because it doesn't change
+      for(int i=1; i<rank; ++i)
+	x(i,idim)=xfinal(i,idim);
+      for(int i=rank; i<NptsGuess; ++i)
+	x(i,idim)=static_cast<double>(std::rand()%imod)/dmod;
+    }
+    
+    for(int j=0; j<NptsGuess-1; ++j)
+      for(int i=j+1; i<NptsGuess; ++i) {
+	dtemp=x(i,0)-x(j,0);
+	R(i,j)=dtemp*dtemp;
+      }
+    for(int idim=1; idim<Ndim-1; ++idim)
+      for(int j=0; j<NptsGuess-1; ++j)
+	for(int i=j+1; i<NptsGuess; ++i) {
+	  dtemp=x(i,idim)-x(j,idim);
+	  R(i,j)+=dtemp*dtemp;
+	}      
+    for(int j=0; j<NptsGuess; ++j) {
+      R(j,j)=1.0;
+      for(int i=j+1; i<NptsGuess; ++i) {
+	dtemp=x(i,Ndim)-x(j,Ndim);
+	R(j,i)=R(i,j)=std::exp(negtheta*(R(i,j)+dtemp*dtemp));
+      }
+    }
+    
+    info=0; rank=-Npts;
+    PIVOTCHOL_F77(&uplo, &NptsGuess, R.ptr(0,0), &ld_R,
+		  ipiv.ptr(0,0), &rank, &min_allowed_rcond, &info); 
+    int itemp=rank;
+    if(rank>Npts)
+      rank=Npts;
+    for(int idim=0; idim<Ndim; ++idim)
+      for(int i=0; i<rank; ++i)
+	xfinal(i,idim)=x(ipiv(i,0)-1,idim);        
+    printf("iLoop=%d done rank=%d/%d\n",iLoop,itemp,NptsGuess);
+  }
+  
+  FILE* fpout=fopen(filename.c_str(),"w");
+  for(int i=0; i<Npts; ++i) {
+    fprintf(fpout,"%14.12f",xfinal(i,0));
+    for(int idim=1; idim<Ndim; ++idim)
+      fprintf(fpout," %14.12f",xfinal(i,idim));
+    fprintf(fpout,"\n");
+  }
+  fclose(fpout);
+
+  return;
+}
 
 void time_build_grad() {  
   std::map< std::string, std::string> gkm_params;
@@ -73,9 +181,11 @@ int main(int argc, char* argv[])
   //compare_sample_designs();
   //hack();
   //validate();
-  validate_grad();
+  //validate_grad();
   //validate_grad2();
   //check_matrix();
+  //gen_sample_design_by_pivoted_cholesky();
+  nested_Krig_vs_GEK_herbie_smooth_herbie_2D_4D_8D();
   return 0;
 }
 
@@ -456,6 +566,187 @@ void check_matrix()
 }
 
 
+void nested_Krig_vs_GEK_herbie_smooth_herbie_2D_4D_8D(){
+  //string build_herbie_2D="gradHerbie_NestedLHS_2D_2048pts.spd";
+  //string build_smooth_2D="gradSmoothHerbie_NestedLHS_2D_2048pts.spd";
+  string build_herbie_2D="gradHerbie_PivotChol_2D_1024pts.spd";
+  string build_smooth_2D="gradSmoothHerbie_PivotChol_2D_1024pts.spd";
+  string valid_herbie_2D="gradHerbie_NestedLHS_2D_16384pts.spd";
+  string valid_smooth_2D="gradSmoothHerbie_NestedLHS_2D_16384pts.spd";
+
+  //string build_herbie_4D="gradHerbie_NestedLHS_4D_1024pts.spd";
+  //string build_smooth_4D="gradSmoothHerbie_NestedLHS_4D_1024pts.spd";
+  //string build_herbie_4D="gradHerbie_NestedLHS_4D_4096pts.spd";
+  //string build_smooth_4D="gradSmoothHerbie_NestedLHS_4D_4096pts.spd";
+  string build_herbie_4D="gradHerbie_PivotChol_4D_2048pts.spd";
+  string build_smooth_4D="gradSmoothHerbie_PivotChol_4D_2048pts.spd";
+  string valid_herbie_4D="gradHerbie_NestedLHS_4D_16384pts.spd";
+  string valid_smooth_4D="gradSmoothHerbie_NestedLHS_4D_16384pts.spd";
+
+  //string build_herbie_8D="gradHerbie_NestedLHS_8D_512pts.spd";
+  //string build_smooth_8D="gradSmoothHerbie_NestedLHS_8D_512pts.spd";
+  //string build_herbie_8D="gradHerbie_NestedLHS_8D_2048pts.spd";
+  //string build_smooth_8D="gradSmoothHerbie_NestedLHS_8D_2048pts.spd";
+  string build_herbie_8D="gradHerbie_PivotChol_8D_1024pts.spd";
+  string build_smooth_8D="gradSmoothHerbie_PivotChol_8D_1024pts.spd";
+  string valid_herbie_8D="gradHerbie_NestedLHS_8D_16384pts.spd";
+  string valid_smooth_8D="gradSmoothHerbie_NestedLHS_8D_16384pts.spd";
+
+  string build_herbie_filename, valid_herbie_filename;
+  string build_smooth_filename, valid_smooth_filename;
+
+  FILE *fpout1=fopen("GradKrigingPaperHerbieEffectOfDimensionStudyTablePivotCholDesigns.txt","w");
+  FILE *fpout2=fopen("GradKrigingPaperSmoothHerbieEffectOfDimensionStudyTablePivotCholDesigns.txt","w");
+
+  std::map< std::string, std::string> km_params;    
+  km_params["order"] = "2";
+  km_params["reduced_polynomial"]=nkm::toString<bool>(true);
+
+  for(int ndimpow=1; ndimpow<=3; ++ndimpow) { //loop over the number of
+    //dimensions for the effect of dimension study
+    
+    int Ndim=static_cast<int> (std::pow(2.0,static_cast<double>(ndimpow)));
+    switch(Ndim){
+    case 2:
+      km_params["lower_bounds"]="-2.0 -2.0";
+      km_params["upper_bounds"]="2.0 2.0";
+      build_herbie_filename=build_herbie_2D;
+      build_smooth_filename=build_smooth_2D;
+      valid_herbie_filename=valid_herbie_2D;
+      valid_smooth_filename=valid_smooth_2D;
+      
+      break;
+    case 4:
+      km_params["lower_bounds"]="-2.0 -2.0 -2.0 -2.0";
+      km_params["upper_bounds"]="2.0 2.0 2.0 2.0";
+      build_herbie_filename=build_herbie_4D;
+      build_smooth_filename=build_smooth_4D;
+      valid_herbie_filename=valid_herbie_4D;
+      valid_smooth_filename=valid_smooth_4D;
+
+      break;
+    case 8:
+      km_params["lower_bounds"]="-2.0 -2.0 -2.0 -2.0 -2.0 -2.0 -2.0 -2.0";
+      km_params["upper_bounds"]="2.0 2.0 2.0 2.0 2.0 2.0 2.0 2.0";
+      build_herbie_filename=build_herbie_8D;
+      build_smooth_filename=build_smooth_8D;
+      valid_herbie_filename=valid_herbie_8D;
+      valid_smooth_filename=valid_smooth_8D;
+
+      break;
+    default:
+      std::cerr << "Error: haven't coded for the " << Ndim << " dimensional case." << std::endl;
+      assert(false);
+    } 
+    nkm::SurfData sd_build_herbie(build_herbie_filename, Ndim, 0, 1, 0, 1, 0);
+    nkm::SurfData sd_build_smooth(build_smooth_filename, Ndim, 0, 1, 0, 1, 0);
+    nkm::SurfData sd_valid_herbie(valid_herbie_filename, Ndim, 0, 1, 0, 1, 0);
+    nkm::SurfData sd_valid_smooth(valid_smooth_filename, Ndim, 0, 1, 0, 1, 0);
+    nkm::SurfData sd_build_temp;
+    
+    
+    int NptsBuild=sd_build_herbie.getNPts();
+    int NptsValid=sd_valid_herbie.getNPts();
+    assert((NptsBuild==sd_build_smooth.getNPts())&&
+	   (NptsValid==sd_valid_smooth.getNPts()));
+    int Nref=static_cast<int>(std::log(static_cast<double>(NptsBuild)/static_cast<double>(2*Ndim))/std::log(2.0));
+    //if(Nref>2) Nref=2; //fast test for debug
+    nkm::MtxDbl yeval(NptsValid,1);
+    nkm::MtxInt ipts(NptsBuild,1);
+    nkm::MtxDbl rmse(Nref+1,5);  rmse.zero();
+    for(int i=0; i<NptsBuild; ++i)
+      ipts(i,0)=i;
+    for(int iref=0; iref<=Nref; ++iref) { //nested sample design loop
+      int NptsThis=2*Ndim*static_cast<int>(std::pow(2.0,static_cast<double>(iref)));
+      rmse(iref,0)=static_cast<double>(NptsThis);
+      ipts.resize(NptsThis,1); //relies on actual and apparent sizes of the matrix 
+      //class being different and that resize() doesn't copy or overwrite or shrink 
+      //or enlarge unless it needs a bigger size than it actually has OR the user 
+      //"forces" it to resize, neither of these 2 cases are true in the original 
+      //implementation.of this function
+
+      {//limit km and gkm for herbie to this scope
+
+	sd_build_herbie.getPoints(sd_build_temp,ipts);
+	printf("Herbie: Ndim=%d Npts=%4d/%-4d Krig_rmse=",Ndim,NptsThis,NptsBuild);
+	fprintf(fpout1,"Herbie: Ndim=%d Npts=%4d/%-4d Krig_rmse=",Ndim,NptsThis,NptsBuild);
+
+	if(iref>0) { //if have enough equations for a reduced quadratic trend
+	  nkm::KrigingModel km(sd_build_temp,km_params); km.create();
+	  km.evaluate(yeval,sd_valid_herbie.xr);
+	  for(int i=0; i<NptsValid; ++i)
+	    rmse(iref,1)+=std::pow(yeval(i,0)-sd_valid_herbie.y(i,0),2.0);
+	  rmse(iref,1)=std::sqrt(rmse(iref,1)/static_cast<double>(NptsValid));
+	  printf("%12.6g GEK_rmse=",rmse(iref,1));
+	  fprintf(fpout1,"%12.6g GEK_rmse=",rmse(iref,1));
+	}
+	else{
+	  printf("NaN          GEK_rmse=");
+	  fprintf(fpout1,"NaN          GEK_rmse=");
+	}
+
+	if(iref<Nref) { //Npts*(1+Ndim) equations makes for a BIG correlation matrix 
+	  //(slow emulator construction) and I don't need the largest Npts for the
+	  //Gradient Enhanced Kriging Paper
+	  nkm::GradKrigingModel gkm(sd_build_temp,km_params); gkm.create();
+	  gkm.evaluate(yeval,sd_valid_herbie.xr);
+	  for(int i=0; i<NptsValid; ++i)
+	    rmse(iref,2)+=std::pow(yeval(i,0)-sd_valid_herbie.y(i,0),2.0);
+	  rmse(iref,2)=std::sqrt(rmse(iref,2)/static_cast<double>(NptsValid));	
+	  printf("%12.6g\n",rmse(iref,2));
+	  fprintf(fpout1,"%12.6g\n",rmse(iref,2));
+	}
+	else{
+	  printf("NaN\n");
+	  fprintf(fpout1,"NaN\n");
+	}	
+	fflush(fpout1);
+      } //end herbie scope
+
+      {//limit km and gkm for SMOOTH herbie to this scope
+	sd_build_smooth.getPoints(sd_build_temp,ipts);
+	printf("Smooth: Ndim=%d Npts=%4d/%-4d Krig_rmse=",Ndim,NptsThis,NptsBuild);
+	fprintf(fpout2,"Smooth: Ndim=%d Npts=%4d/%-4d Krig_rmse=",Ndim,NptsThis,NptsBuild);
+	
+	if(iref>0) { //if have enough equations for a reduced quadratic trend
+	  nkm::KrigingModel km(sd_build_temp,km_params); km.create();
+	  km.evaluate(yeval,sd_valid_smooth.xr);
+	  for(int i=0; i<NptsValid; ++i)
+	    rmse(iref,3)+=std::pow(yeval(i,0)-sd_valid_smooth.y(i,0),2.0);
+	  rmse(iref,3)=std::sqrt(rmse(iref,3)/static_cast<double>(NptsValid));
+	  printf("%12.6g GEK_rmse=",rmse(iref,3));
+	  fprintf(fpout2,"%12.6g GEK_rmse=",rmse(iref,3));
+	}
+	else{
+	  printf("NaN          GEK_rmse=");
+	  fprintf(fpout2,"NaN          GEK_rmse=");
+	}
+	
+	if(iref<Nref) { //Npts*(1+Ndim) equations makes for a BIG correlation matrix 
+	  //(slow emulator construction) and I don't need the largest Npts for the
+	  //Gradient Enhanced Kriging Paper
+	  nkm::GradKrigingModel gkm(sd_build_temp,km_params); gkm.create();
+	  gkm.evaluate(yeval,sd_valid_smooth.xr);
+	  for(int i=0; i<NptsValid; ++i)
+	    rmse(iref,4)+=std::pow(yeval(i,0)-sd_valid_smooth.y(i,0),2.0);
+	  rmse(iref,4)=std::sqrt(rmse(iref,4)/static_cast<double>(NptsValid));	
+	  printf("%12.6g\n",rmse(iref,4));
+	  fprintf(fpout2,"%12.6g\n",rmse(iref,4));
+	}
+	else{
+	  printf("NaN\n");
+	  fprintf(fpout2,"NaN\n");
+	}	
+	fflush(fpout2);
+      } //end SMOOTH herbie scope
+    } //for(int iref=0; iref<=Nref; ++iref)
+    
+  } //for(int ndimpow=1; ndimpow<3; ++ndimpow)
+
+  fclose(fpout1);
+  fclose(fpout2);
+  return;
+} //end of function
 
 void hack()
 {
@@ -591,8 +882,12 @@ void compare_sample_designs_pav(int nvarsr) {
 
 void validate_grad2() {
   printf("validating Gradient Enhanced Kriging Model\n");
-  string buildfilename ="dakota_sbo_rosen_10_first11.spd";
-  nkm::SurfData sdbuild(buildfilename, 2, 0, 1, 0, 1, 0);
+  //string buildfilename ="grad_validate2d_8a.spd";
+  //string buildfilename ="grad_validate2d_16a.spd";
+  string buildfilename ="grad_validate2d_32a.spd";
+  //string buildfilename ="dakota_sbo_rosen_10_first11.spd";
+  //nkm::SurfData sdbuild(buildfilename, 2, 0, 1, 0, 1, 0);
+  nkm::SurfData sdbuild(buildfilename, 2, 0, 3, 0, 1, 0);
   string validfilename="grad_validate2d_10K.spd";
   nkm::SurfData sdvalid(validfilename, 2, 0, 3, 0, 1, 0);
   
@@ -600,17 +895,24 @@ void validate_grad2() {
   nkm::MtxDbl yevalbuild(NptsBuild,1);
   nkm::MtxDbl yeval10K(10000,1);
   int jout=0; //the 0th output column is Rosenbrock  
+  //int jout=2; //the 2nd output column is herbie  
   
   nkm::MtxDbl roserror_grad(1,4); roserror_grad.zero();
+  nkm::MtxDbl roserror(1,4); roserror.zero();
+  sdbuild.setJOut(jout);
   sdvalid.setJOut(jout);
   
   std::map< std::string, std::string> km_params;
-  km_params["lower_bounds"]="-1.4 0.8";
-  km_params["upper_bounds"]="-1.0 1.2";
+  //km_params["lower_bounds"]="-1.4 0.8";
+  //km_params["upper_bounds"]="-1.0 1.2";
+  km_params["lower_bounds"]="-2 -2";
+  km_params["upper_bounds"]= "2 2";
   km_params["order"] = "2";
   km_params["reduced_polynomial"]=nkm::toString<bool>(true);
   
   nkm::GradKrigingModel gkmros(sdbuild, km_params); gkmros.create();
+  nkm::KrigingModel kmros(sdbuild, km_params); kmros.create();
+
   
   //evaluate error the NptsBuild pt rosenbrock grad kriging model at 10K points
   gkmros.evaluate(yeval10K,sdvalid.xr);
@@ -624,11 +926,27 @@ void validate_grad2() {
     roserror_grad(0,0)+=std::pow(yevalbuild(i,0)-sdbuild.y(i,0),2);
   roserror_grad(0,1)=std::sqrt(roserror_grad(0,0)/NptsBuild);
 
+  //evaluate error the NptsBuild pt rosenbrock grad kriging model at 10K points
+  kmros.evaluate(yeval10K,sdvalid.xr);
+  for(int i=0; i<10000; ++i)
+    roserror(0,2)+=std::pow(yeval10K(i,0)-sdvalid.y(i,jout),2);
+  roserror(0,3)=std::sqrt(roserror(0,2)/10000.0);
+
+  //evaluate error the NptsBuild pt rosenbrock Grad kriging model at build points  
+  kmros.evaluate(yevalbuild,sdbuild.xr);
+  for(int i=0; i<NptsBuild; ++i)
+    roserror(0,0)+=std::pow(yevalbuild(i,0)-sdbuild.y(i,0),2);
+  roserror(0,1)=std::sqrt(roserror(0,0)/NptsBuild);
+
+
   FILE *fpout=fopen("grad_Kriging.validate","w");
   
   fprintf(fpout,"rosenbrock\n");
   fprintf(fpout,"Grad Kriging:\n");
   fprintf(fpout,"%12d, %19.6g, %20.6g, %17.6g, %18.6g\n",NptsBuild,roserror_grad(0,0),roserror_grad(0,1),roserror_grad(0,2),roserror_grad(0,3));
+  fprintf(fpout,"Kriging:\n");
+  fprintf(fpout,"%12d, %19.6g, %20.6g, %17.6g, %18.6g\n",NptsBuild,roserror(0,0),roserror(0,1),roserror(0,2),roserror(0,3));
+
   
   fclose(fpout);
 

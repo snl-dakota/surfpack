@@ -552,12 +552,15 @@ MtxDbl& solve_after_Chol_fact(MtxDbl& result, const MtxDbl& AChol, const MtxDbl&
 {
   int n   = static_cast<int>(AChol.getNRows());
 #ifdef __SURFMAT_ERR_CHECK__
-  //printf("solve_after_Chol_fact transB='%c' size(Achol)=[%d x %d] size(BRHS)=[%d x %d]",
-  //transB,n,n,BRHS.getNRows(),BRHS.getNCols());
-  //fflush(stdout);
-  //printf("\n");
-  assert(((transB=='N') && (BRHS.getNRows()==n)) ||
-	 ((transB=='T') && (BRHS.getNCols()==n)));
+  if(!(((transB=='N') && (BRHS.getNRows()==n)) ||
+       ((transB=='T') && (BRHS.getNCols()==n)))) {
+    printf("solve_after_Chol_fact transB='%c' size(Achol)=[%d x %d] size(BRHS)=[%d x %d]",
+	   transB,n,n,BRHS.getNRows(),BRHS.getNCols());
+    fflush(stdout);
+    printf("\n");
+    assert(((transB=='N') && (BRHS.getNRows()==n)) ||
+	   ((transB=='T') && (BRHS.getNCols()==n)));
+  }
 #endif
   int lda = static_cast<int>(AChol.getNRowsAct());
   char uplo='L';

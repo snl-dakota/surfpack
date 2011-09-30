@@ -1940,9 +1940,14 @@ SurfData& SurfData::getPoints(SurfData& result, int ipt) {
 ///retrieve multiple points (the ones whose indices are stored in ipts), pass them back as a reference to a SurfData object
 SurfData& SurfData::getPoints(SurfData& result, MtxInt& ipts) {
   int nget=ipts.getNRows();
+  //printf("ipts=[%d %d %d %d]\n",ipts(0,0),ipts(1,0),ipts(2,0),ipts(3,0));
   assert(ipts.getNCols()==1);
   ipts.uniqueElems();
+  //printf("nget=%d ipts.getNRows=%d\n",nget,ipts.getNRows());
+  //printf("ipts=[%d %d %d]\n",ipts(0,0),ipts(1,0),ipts(2,0));
+  //fflush(stdout);
   assert(nget==ipts.getNRows());
+  //assert(false);
   assert((0<=ipts(0,0))&&(ipts(nget-1,0)<npts));
   result.npts     =nget;
   result.nvarsr   =nvarsr;
