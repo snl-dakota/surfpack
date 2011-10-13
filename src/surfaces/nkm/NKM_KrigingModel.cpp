@@ -17,6 +17,262 @@ using std::ostringstream;
 
 //#define __KRIGING_DER_TEST__
 
+
+void KrigingModel::preAllocateMaxMemory() {
+  //this preallocates the maximum size of arrays whose size depends on how many equations were discarded by pivoted Cholesky and they could possibly be allocated to a different size than their maximum the first time they are allocated.
+  
+  nTrend=numTrend(polyOrderRequested,0);
+  Y.newSize(numEqnAvail,1);
+  G.newSize(numEqnAvail,nTrend);
+  Rinv_G.newSize(numEqnAvail,nTrend);
+  Gtran_Rinv_G_Chol.newSize(nTrend,nTrend);
+  rhs.newSize(numEqnAvail,1);
+  betaHat.newSize(nTrend,1);
+  temp.newSize(nTrend,1);
+  temp2.newSize(numEqnAvail,1);
+
+  return;
+}
+
+void KrigingModel::equationSelectingCholR(){ 
+  polyOrder=polyOrderRequested;
+  
+  //printf("Entered equationSelectingCholR()\n");
+  double min_allowed_rcond=1.0/maxCondNum;
+  //printf("min_allowed_rcond=%g\n",min_allowed_rcond);
+  //exit(0);
+  //double min_allowed_pivot_est_rcond=256.0/maxCondNum;
+
+
+  RChol.copy(R);  //This is of size numEqnAvail by numEqnAvail
+  int ld_RChol=RChol.getNRowsAct();
+  int chol_info;
+  scaleRChol.newSize(numEqnAvail,1); //no scaling is necessary since have
+  //all ones on the diagonal of R but the generic preconditioned cholesky 
+  //factoriztion function doesn't know that in advance
+  rcondDblWork.newSize(3*ld_RChol,1);
+  rcondIntWork.newSize(ld_RChol,1);
+  Chol_fact_workspace(RChol,scaleRChol,rcondDblWork,rcondIntWork,
+		      chol_info,rcondR);
+  //printf("rcondR=%g",rcondR);
+  iEqnKeep.newSize(numEqnAvail,1);
+  if(min_allowed_rcond<rcondR) {
+    //printf("numEqnAvail=%d\n",numEqnAvail);
+    numRowsR=numEqnKeep=numEqnAvail;
+    G.copy(Gall);
+    Y.copy(Yall);
+    for(int i=0; i<numPoints; ++i)
+      iEqnKeep(i,0)=i;
+    //printf("\n");
+    return;
+  }
+
+  RChol.copy(R);
+  if(ifHaveAnchorPoint&&(iAnchorPoint!=0)) {
+    //printf("iAnchorPoint=%d\n",iAnchorPoint);
+    double dswap;
+    for(int i=0; i<numPoints; ++i) {
+      dswap=RChol(i,0);
+      RChol(i,0)=RChol(i,iAnchorPoint);
+      RChol(i,iAnchorPoint)=dswap;
+    }
+    for(int j=0; j<numPoints; ++j) {
+      dswap=RChol(0,j);
+      RChol(0,j)=RChol(iAnchorPoint,j);
+      RChol(iAnchorPoint,j)=dswap;
+    }    
+  }
+
+  ld_RChol=RChol.getNRowsAct();
+  rcondDblWork.newSize(3*ld_RChol,1);
+  rcondIntWork.newSize(ld_RChol,1);
+
+  //if the user specifies an anchor point it must be the first point
+  int info=0;
+  char uplo='B'; //'B' means we have both halves of R in RChol so the 
+  //fortran doesn't have to copy one half to the other
+  
+  numEqnKeep=numEqnAvail; //=numPoints
+  //printf("b4PC numEqnKeep=%d",numEqnKeep);
+  double min_allowed_rcond2=0.0;
+  PIVOTCHOL_F77(&uplo, &numEqnAvail, RChol.ptr(0,0), &ld_RChol,
+    		iEqnKeep.ptr(0,0), &numEqnKeep, &min_allowed_rcond, 
+		//&min_allowed_pivot_est_rcond, 
+		&info); 
+  //printf("Pivoting Cholesky: says numEqnAvail=%d numEqnKeep=%d info=%d",numEqnAvail,numEqnKeep,info);
+  //exit(0);
+  //if(numEqnKeep<numNeededEqn) {
+  //numEqnKeep=numNeededEqn;
+
+  //for(int i=0; i<numEqnAvail; ++i) 
+  //iEqnKeep(i,0)-=1;
+  
+  if(ifHaveAnchorPoint&&(iAnchorPoint!=0)) {
+    //printf("have nonzero AnchorPoint\n");
+    //convert from fortran indices (starts from 1) to C indices (starts from 0)
+    //BUT we swapped point zero and point iAnchorPoint before doing the pivoted Cholesky
+    //we have to make sure that change is reflected in iEqnKeep
+
+    iEqnKeep(0,0)=iAnchorPoint; //since there are all ones on the diagonal the first 
+    //element would not be pivoted, so we know that this is the AnchorPoint we swapped 
+    //to the first/zeroth spot before doing the pivoted Cholesky
+
+    for(int i=1; i<numPoints; ++i) {      
+      iEqnKeep(i,0)-=1; 
+      if(iEqnKeep(i,0)==iAnchorPoint) //the point that was in AnchorPoint position is
+	//really the first/zeroth point
+	iEqnKeep(i,0)=0;      
+    }
+  }
+  else {
+    //convert from fortran indices (starts from 1) to C indices (starts from 0)    
+    for(int i=0; i<numPoints; ++i) 
+      iEqnKeep(i,0)-=1;
+  }
+  
+  oneNormR.newSize(numEqnAvail,1);
+  sumAbsColR.newSize(numEqnAvail,1); //used in computing the one norm 
+
+  //precompute and store the one norm after adding every equation 
+  //in the pivoted Cholesky order, this is prepwork for the 
+  //bisection search
+  int jeqn=iEqnKeep(0,0);
+  for(int i=0; i<numEqnAvail; ++i) {
+    sumAbsColR(i,0)=std::fabs(R(iEqnKeep(i,0),jeqn));
+  }
+  oneNormR(0,0)=sumAbsColR(0,0);
+    
+  double tempdouble;
+  for(int j=1; j<numEqnKeep; ++j) {
+    jeqn=iEqnKeep(j,0);
+    for(int i=0; i<numEqnAvail; ++i) 	
+      sumAbsColR(i,0)+=std::fabs(R(iEqnKeep(i,0),jeqn));
+    tempdouble=sumAbsColR(0,0);
+    for(int i=1; i<=j; ++i) 
+      if(tempdouble<sumAbsColR(i,0))
+	tempdouble=sumAbsColR(i,0);
+    oneNormR(j,0)=tempdouble;
+    //printf("oneNormR(%d,0)=%g\n",j,oneNormR(j,0));
+  }
+  //exit(0);
+  //at this point numEqnKeep is not YET the final number of equations 
+  //we will keep, only the maximum number of candidates to keep
+  //
+  //we will use the LAPACK rcond function with a bisection search to
+  //find the last equation that isn't too poorly conditioned, but 
+  //first we need the rcond at the point the Cholesky decomposition 
+  //terminated.
+
+  uplo='L';
+  rcondDblWork.newSize(3*ld_RChol,1);
+  rcondIntWork.newSize(ld_RChol,1);
+  int icurr_lapack_rcondR=numEqnKeep-1;
+  DPOCON_F77(&uplo,&numEqnKeep,RChol.ptr(0,0),&ld_RChol,
+	     oneNormR.ptr(icurr_lapack_rcondR,0),
+	     &rcondR,rcondDblWork.ptr(0,0),rcondIntWork.ptr(0,0),
+	     &info);  
+  lapackRcondR.newSize(numEqnAvail,1);
+  lapackRcondR.zero(); 
+  lapackRcondR(0,0)=1.0; 
+  lapackRcondR(icurr_lapack_rcondR,0)=rcondR;
+  
+
+  int inext_lapack_rcondR=icurr_lapack_rcondR;
+  int iprev_lapack_rcondR;
+  if(rcondR<=min_allowed_rcond) {
+    icurr_lapack_rcondR=numTrend(polyOrder,0);
+    int num_needed_eqn=icurr_lapack_rcondR+1;
+    DPOCON_F77(&uplo,&num_needed_eqn,RChol.ptr(0,0),&ld_RChol,
+	       oneNormR.ptr(icurr_lapack_rcondR,0),
+	       &rcondR,rcondDblWork.ptr(0,0),rcondIntWork.ptr(0,0),
+	       &info);  
+    lapackRcondR(icurr_lapack_rcondR,0)=rcondR;
+
+    if((rcondR==min_allowed_rcond)||
+       ((min_allowed_rcond<rcondR)&&(inext_lapack_rcondR==iprev_lapack_rcondR+1))
+       ) {
+      numEqnKeep=num_needed_eqn; //number of trend function +1 set above
+    }
+    else{      
+      if(rcondR<min_allowed_rcond) {
+	inext_lapack_rcondR=icurr_lapack_rcondR;
+	iprev_lapack_rcondR=1;
+      }
+      else{
+	iprev_lapack_rcondR=icurr_lapack_rcondR;
+      }
+
+      //need at most ceil(log2()) more calls to rcond... this many
+      int max_rcond_iter=
+	std::ceil(std::log(static_cast<double>
+			   (inext_lapack_rcondR-iprev_lapack_rcondR))
+		  /std::log(2.0));
+        
+      //do the bisection search if necessary, at most ceil(log2()) more 
+      //calls to rcond
+      int rcond_iter=0;
+      while((lapackRcondR(inext_lapack_rcondR,0)<=min_allowed_rcond)&&
+	    (inext_lapack_rcondR>iprev_lapack_rcondR)) {
+	++rcond_iter;
+	icurr_lapack_rcondR=(iprev_lapack_rcondR+inext_lapack_rcondR)/2;
+	numEqnKeep=icurr_lapack_rcondR+1;
+	
+	DPOCON_F77(&uplo,&numEqnKeep,RChol.ptr(0,0),&ld_RChol,
+		   oneNormR.ptr(icurr_lapack_rcondR,0),
+		   &rcondR,rcondDblWork.ptr(0,0),rcondIntWork.ptr(0,0),
+		   &info);
+	lapackRcondR(icurr_lapack_rcondR,0)=rcondR;
+	//printf("rcond_iter=%d icurr_lapack_rcondR=%d rcondR=%g\n",
+	//rcond_iter,icurr_lapack_rcondR,rcondR);
+	
+	if(rcondR<min_allowed_rcond)
+	  inext_lapack_rcondR=icurr_lapack_rcondR;
+	else if(min_allowed_rcond<rcondR)
+	  iprev_lapack_rcondR=icurr_lapack_rcondR;
+	else if(min_allowed_rcond==rcondR) {
+	  numEqnKeep=icurr_lapack_rcondR+1;
+	  break;
+	}
+	if((inext_lapack_rcondR-iprev_lapack_rcondR==1)||
+	   (max_rcond_iter<rcond_iter)) {
+	  numEqnKeep=iprev_lapack_rcondR+1;
+	  rcondR=lapackRcondR(iprev_lapack_rcondR,0);
+	  break;
+	}
+      }
+    }
+  }
+  //printf(" pivoted_rcondR=%g numRowsR=%d\n",rcondR,numEqnKeep);
+  
+  numRowsR=numEqnKeep;
+  polyOrder=polyOrderRequested;
+  while((numRowsR<=numTrend(polyOrder,0))&&(polyOrder>0))
+    --polyOrder;
+  nTrend=numTrend(polyOrder,0);
+  Poly.resize(nTrend,numVarsr); //I am relying on the matrix class's actual 
+  //size not changing and that it's contents aren't being written over, so 
+  //that when I enlarge the matrix up to polyOrderRequested I recover all 
+  //the polynomial powers up to polyOrderRequested
+
+  RChol.resize(numRowsR,numRowsR); //resize() instead of newSize() 
+  //because we want to keep the current contents in the same 2D 
+  //order
+  
+  Y.newSize(numEqnKeep,1); //newSize() because we don't care about 
+  //the current contents of Y
+  G.newSize(numEqnKeep,nTrend);
+  iEqnKeep.newSize(numEqnKeep,1);
+
+  for(int i=0; i<numEqnKeep; ++i) 
+    Y(i,0)=Yall(iEqnKeep(i,0),0);
+
+  for(int itrend=0; itrend<nTrend; ++itrend) 
+    for(int i=0; i<numEqnKeep; ++i) 
+      G(i,itrend)=Gall(iEqnKeep(i,0),itrend);
+    
+}
+
+
 /***********************************************************************/
 /***********************************************************************/
 /**** Unit Test functions for Kriging start here                    ****/
@@ -54,8 +310,11 @@ using std::ostringstream;
 // typical constructor
 KrigingModel::KrigingModel(const SurfData& sd, const ParamMap& params)
   : SurfPackModel(sd,sd.getJOut()), numVarsr(sd.getNVarsr()), 
-    numTheta(numVarsr), numPoints(sd.getNPts()), XR(sdBuild.xr), Y(sdBuild.y)
+    numTheta(numVarsr), numPoints(sd.getNPts()), XR(sdBuild.xr), 
+    Yall(sdBuild.y)
 {
+  //Yall.copy(Y);
+  numEqnAvail=numPoints;
 
   //printf("calling the right KrigingModel constructor\n"); fflush(stdout);
 
@@ -66,6 +325,23 @@ KrigingModel::KrigingModel(const SurfData& sd, const ParamMap& params)
   // BMA TODO: max_trials, lower/upper bounds (use toVec helper),
   //           correlation_lengths, optimizationMethod
   ParamMap::const_iterator param_it;
+
+  //TODO: add logic that checks for an anchor point and swaps it with
+  //the first zeroth, index, could put the swaping in the 
+  //equationSelectingCholR() function.
+
+  iAnchorPoint=0;
+  ifHaveAnchorPoint=false;
+  param_it = params.find("anchor_index");
+  if (param_it != params.end() && param_it->second.size() > 0) {
+    ifHaveAnchorPoint=true;
+    //printf("GradKrigingModel() sees an anchor point\n");
+    //fflush(stdout);
+    iAnchorPoint=std::atoi(param_it->second.c_str());
+    //printf("iAnchorPoint=%d\n",iAnchorPoint);
+    //fflush(stdout);
+    assert((0<=iAnchorPoint)&&(iAnchorPoint<numPoints));
+  }
 
   // *************************************************************
   // this starts the input section about scaling the data
@@ -117,8 +393,8 @@ KrigingModel::KrigingModel(const SurfData& sd, const ParamMap& params)
   }
   
   scaler.scaleToDefault(); //scale outputs to -0.5<=Y<=0.5 and scale real inputs to volume 1 hyper-rectangle centered at 0 if real iputs dimensions are locked or the unit hypercube centered at 0 if no dimensions are locked.  The scaling is done to let us define the feasible region simply (done in create);
-  
-  sdBuild.getY(Y);
+
+  sdBuild.getY(Yall);  
 
   // *************************************************************
   // this starts the input section about optimizing or directly
@@ -231,19 +507,24 @@ KrigingModel::KrigingModel(const SurfData& sd, const ParamMap& params)
   // *************************************************************
   // this starts the input section about the trend function 
   // *************************************************************
-  polyOrder = 1;
+  polyOrderRequested = 2;
+  ifReducedPoly=false;
   param_it = params.find("order");
   if (param_it != params.end() && param_it->second.size() > 0) {
-    polyOrder = std::atoi(param_it->second.c_str()); 
-    assert (polyOrder >= 0);
+    polyOrderRequested = std::atoi(param_it->second.c_str()); 
+    assert (polyOrderRequested >= 0);
   }
-  
+  else{
+    ifReducedPoly=true;
+  }
+  numTrend.newSize(polyOrderRequested+1,1);
+
   //cout << "order=" << polyOrder << "\n";
 
   //polyOrder = 2; //for debug
   //main_effects_poly_power(Poly, numVarsr, polyOrder); //for debug
   //commented out for debug
-  ifReducedPoly=false;
+
   param_it = params.find("reduced_polynomial");
   if (param_it != params.end() && param_it->second.size() > 0) 
     if((std::atoi(param_it->second.c_str()))!=0) 
@@ -251,70 +532,30 @@ KrigingModel::KrigingModel(const SurfData& sd, const ParamMap& params)
       
   //cout << "ifReducedPoly=" << ifReducedPoly << "\n";
 
-  if(ifReducedPoly)
-    main_effects_poly_power(Poly, numVarsr, polyOrder);
-  else
-    multi_dim_poly_power(Poly, numVarsr, polyOrder);  
-
-  //check that we have enough data for the selected trend functions
-  int needed_points = getNTrend()+1; //+numVarsr;
-  if( !(needed_points <= numPoints) ) {
-    cerr << "With the selected set of trend functions there are more unknown parameters (" <<  needed_points << ") than there are data points (" << numPoints << ") for the Kriging Model. For the current set of trend functions, you need at least " << needed_points << "data points and twice that is strongly recommended.\n";
-    assert(needed_points <= numPoints);
+  if(ifReducedPoly) {
+    main_effects_poly_power(Poly, numVarsr, polyOrderRequested);
+    for(polyOrder=0; polyOrder<=polyOrderRequested; ++polyOrder) 
+      numTrend(polyOrder,0)=polyOrder*numVarsr+1;
+  }
+  else{
+    multi_dim_poly_power(Poly, numVarsr, polyOrderRequested);  
+    for(polyOrder=0; polyOrder<=polyOrderRequested; ++polyOrder) 
+      numTrend(polyOrder,0)=num_multi_dim_poly_coef(numVarsr, polyOrder);
   }
 
+
+  preAllocateMaxMemory();
   // *************************************************************
   // this starts the input section HOW to bound the condition 
   // number, this determines which derivatives of the constraint
   // function can be computed analytically so handle that here too
   // *************************************************************
   constraintType="rcond";
-  param_it = params.find("constraint_type");
-  if (param_it != params.end() && param_it->second.size() > 0)
-    if(tolower(param_it->second[0])=='e') //should I use better (whole word) error checking?
-      constraintType="eig"; 
-
-  //cout << "contraintType=\"" << constraintType << "\"\n";
-
-  //default orders of analytical derivatives of objective and constraint 
-  //functions, eventually (Surfpack release) we will expose this to the
-  //user directly
-  int num_analytic_obj_ders_in = 0, num_analytic_con_ders_in = 0; 
-  //0 = analytic function values
-  //1 = analytic function values + first derivatives
-  //2 = values + 1st ders + 2nd ders ...
-  //currently masterObjectiveAndConstraints only does analytic derivatives
-  //up to order 2 (values, and first and second derivatives) of the objective 
-  //function. And the method of bounding the condition number determines 
-  //the order of analytical derivatives available for the constraints: 
-  //eigen values = 1st order analytic derivatives
-  //rcond=0th order (values only) analytical derivatives
-
-  assert((0<=num_analytic_obj_ders_in)&&(num_analytic_obj_ders_in<=2)
-	 &&(0<=num_analytic_con_ders_in));
-
-  //upper limit to order of analytic derivatives for constraints depends
-  //on HOW you want to bound the condition number
-  if(constraintType.compare("eig")==0) { //eigenvalue constraint type
-
-    //have implemented analytical first derivatives of eigenvalues
-    assert(num_analytic_con_ders_in<=1); 
-
-    numConFunc=numPoints/2; 
-    if (numConFunc > 10)
-      numConFunc=10;
-  }
-  else if(constraintType.compare("rcond")==0) { //rcond constraint type    
-
-    //can't do any analytical derivatives (only function values) of rcond
-    assert(num_analytic_con_ders_in==0); 
-    numConFunc=1;
-  }
-  else //catch bogus constraint type
-    assert((constraintType.compare("eig")==0)||
-	   (constraintType.compare("rcond")==0)); 
+  numConFunc=1;
   
   //convert to the Dakota bitflag convention for derivative orders
+  int num_analytic_obj_ders_in=0;
+  int num_analytic_con_ders_in=0;
   maxObjDerMode=(static_cast<int>(std::pow(2.0,num_analytic_obj_ders_in+1)))-1; //analytical gradients of objective function
   maxConDerMode=(static_cast<int> (std::pow(2.0,num_analytic_con_ders_in+1)))-1; //analytical gradients of constraint function(s)
 
@@ -328,7 +569,7 @@ KrigingModel::KrigingModel(const SurfData& sd, const ParamMap& params)
   // number
   // *************************************************************
 
-  nug=(2*getNTrend()+1.0)/maxCondNum;
+  nug=(2*nTrend+1.0)/maxCondNum;
   //nug=2*numPoints/maxCondNum;
 
 
@@ -354,7 +595,7 @@ KrigingModel::KrigingModel(const SurfData& sd, const ParamMap& params)
     if(nuggetFormula!=0) {
       switch(nuggetFormula) {
       case 1:
-	nug=(2*getNTrend()+1.0)/maxCondNum;
+	nug=(2*nTrend+1.0)/maxCondNum;
 	break;
       case 2:
 	nug=2*numPoints/maxCondNum;
@@ -397,7 +638,7 @@ KrigingModel::KrigingModel(const SurfData& sd, const ParamMap& params)
   EulAng.newSize(nchoosek(numVarsr, 2),1); 
   EulAng.zero();
   gen_rot_mat(Rot, EulAng, numVarsr);
-  eval_trend_fn(G, Poly, Rot, XR);
+  eval_trend_fn(Gall, Poly, Rot, XR);
   //LinearRegressionModel::evalBasis(G,poly,Rot,XR);
 
   gen_Z_matrix();  
@@ -554,38 +795,21 @@ void KrigingModel::create()
 
   masterObjectiveAndConstraints(correlations, 1, 0);
   cout << model_summary_string();
+
   //deallocate matrices we no longer need after emulator has been created
 
   //temporary variables used by masterObjectiveAndConstraints
-  dNbetaHat_dthetaN.clear(); //vector
-  temp.clear(); //vector
-  temp2.clear(); //vector
-  temp3.clear(); //vector
-  temp4.clear(); //vector
-  temp5.clear(); //vector used to compute hessObj
-  d2eps_dthetai_dthetaj.clear(); //vector
-  dR_dthetai.clear(); //matrix
-  dR_dthetaj.clear(); //matrix used to compute hessObj
-  Rinv_dR_dthetai.clear(); //matrix used to compute hessObj
-  Rinv_dR_dthetaj.clear(); //matrix used to compute hessObj
-  d2R_dthetai_dthetaj.clear(); //matrix used to compute hessObj
-  dR_dthetai_Rinv_eps_minus_deps_dthetai.clear(); //matrix used to compute hessObj
-  Rinv_dR_dthetai_Rinv_eps_minus_deps_dthetai.clear(); //matrix used to compute hessObj
-  Gtran_Rinv_G_inv.clear(); //need this for derivatives of log(det(Gtran_Rinv_G)) but could use it to replace the permanent copy of Gtran_Rinv_G_Chol
-  Gtran_Rinv_dR_thetai.clear(); //need this for derivatives of log(det(Gtran_Rinv_G))
-  Gtran_Rinv_dR_thetai_Rinv_G.clear(); //need this for derivatives of log(det(Gtran_Rinv_G))
+
+  temp.clear();
+  temp2.clear();
 
   //variables whose values needed to be retained between sequential call to masterObjectiveAndConstraints for precompute and store strategy to work
   prevObjDerMode=prevConDerMode=0;
   prevTheta.clear(); //row vector 
-  allEigVect.clear(); //matrix 
-  allEigVal.clear(); //vector
   Z.clear(); //matrix
   R.clear(); //matrix
   G.clear(); //matrix
-  deps_dtheta.clear(); //matrix used to compute hessObj
-  dR_dtheta_Rinv_eps.clear(); //matrix used to compute hessObj
-  destVarianceMLE_dtheta.clear(); //vector
+
   con.clear(); //vector
   gradObj.clear(); //vector
   gradCon.clear(); //matrix
@@ -598,8 +822,10 @@ std::string KrigingModel::model_summary_string() const {
     temp_out_corr_lengths(0,i)=std::sqrt(0.5/correlations(0,i));
   scaler.unScaleXrDist(temp_out_corr_lengths);
   
+  printf("numPoints=%d numTrend=%d numEqnKeep=%d\n",numPoints,numTrend(polyOrder,0),numEqnKeep);
+
   std::ostringstream oss;
-  oss << "KM: #pts=" << numPoints <<"; Correlation lengths=(" << temp_out_corr_lengths(0,0);
+  oss << "KM: #pts=" << numPoints << "; used " << numEqnKeep << "/" << numEqnAvail << " pts; Correlation lengths=(" << temp_out_corr_lengths(0,0);
   for(int i=1; i<numVarsr; ++i)
     oss << ", " << temp_out_corr_lengths(0,i);
   oss << "); unadjusted variance=" << estVarianceMLE * scaler.unScaleFactorVarY() << "; log(likelihood)=" << likelihood << "; the trend is a ";
@@ -608,13 +834,12 @@ std::string KrigingModel::model_summary_string() const {
       oss << "reduced_";
     else oss <<"full ";
   }
-  oss << "polynomial of order=" << polyOrder << 
-    "; rcond(R)=" << rcondR << "; rcond(Gtran_Rinv_G)=" << rcond_Gtran_Rinv_G 
+  oss << "polynomial of order=" << polyOrder << "(order " << polyOrderRequested << 
+    " was desired); rcond(R)=" << rcondR << "; rcond(Gtran_Rinv_G)=" << rcond_Gtran_Rinv_G 
       << "; nugget=" << nug << ".\n";
 	
   oss << "Beta= (" << betaHat(0,0);
-  int ntrend=getNTrend(); 
-  for(int i=1; i<ntrend; ++i)
+  for(int i=1; i<nTrend; ++i)
     oss << "," << betaHat(i,0);
   oss << ")\n";
 
@@ -634,8 +859,7 @@ double KrigingModel::evaluate(const MtxDbl& xr) const
   }
 
   //assert( (numVarsr == xr.getNCols()) && (xr.getNRows() == 1) );
-  int ntrend = getNTrend(); 
-  MtxDbl g(1, ntrend), r(1, numPoints);
+  MtxDbl g(1, nTrend), r(1, numRowsR);
 
   /*
   printf("double evaluate()\n");
@@ -687,8 +911,7 @@ MtxDbl& KrigingModel::evaluate(MtxDbl& y, const MtxDbl& xr) const
   }
   
   //assert( (numVarsr == xr.getNCols()) && (xr.getNRows() == 1) );
-  int ntrend = getNTrend(); 
-  MtxDbl g(nrowsxr, ntrend), r(nrowsxr, numPoints);
+  MtxDbl g(nrowsxr, nTrend), r(nrowsxr, numRowsR);
 
   if(scaler.isUnScaled()) {
     eval_trend_fn(g, xr);
@@ -774,10 +997,10 @@ MtxDbl& KrigingModel::evaluate_d1y(MtxDbl& d1y, const MtxDbl& xr) const
   printf("\n");
 #endif
   
-  MtxDbl r(nrowsxr,numPoints);
+  MtxDbl r(nrowsxr,numRowsR);
   correlation_matrix(r, xr_scaled);
   apply_nugget_eval(r);
-  MtxDbl d1r(nrowsxr,numPoints);
+  MtxDbl d1r(nrowsxr,numRowsR);
   MtxDbl temp_vec(nrowsxr,1);
 
 
@@ -850,11 +1073,11 @@ MtxDbl& KrigingModel::evaluate_d2y(MtxDbl& d2y, const MtxDbl& xr) const
   printf("\n");
 #endif
 
-  MtxDbl r(nrowsxr,numPoints);
+  MtxDbl r(nrowsxr,numRowsR);
   correlation_matrix(r, xr);
   apply_nugget_eval(r);
-  MtxDbl d1r(nrowsxr,numPoints);
-  MtxDbl d2r(nrowsxr,numPoints);
+  MtxDbl d1r(nrowsxr,numRowsR);
+  MtxDbl d2r(nrowsxr,numRowsR);
   MtxDbl temp_vec(nrowsxr,1);
 
   int ivar, ivarold=-1, jvar;
@@ -907,8 +1130,7 @@ double KrigingModel::eval_variance(const MtxDbl& xr) const
   }
 
   //assert( (numVarsr == xr.getNCols()) && (xr.getNRows() == 1) );
-  int ntrend = getNTrend(); 
-  MtxDbl g_minus_r_Rinv_G(1, ntrend), r(1, numPoints);
+  MtxDbl g_minus_r_Rinv_G(1, nTrend), r(1, numRowsR);
 
   if(scaler.isUnScaled()) {
     eval_trend_fn(g_minus_r_Rinv_G, xr);
@@ -921,8 +1143,8 @@ double KrigingModel::eval_variance(const MtxDbl& xr) const
     correlation_matrix(r, xr_scaled);
   }
 
-  MtxDbl tempa(numPoints,1);
-  MtxDbl tempb(ntrend,1);
+  MtxDbl tempa(numRowsR,1);
+  MtxDbl tempb(nTrend,1);
 
   if(nug>0.0) 
     apply_nugget_eval(r);
@@ -966,8 +1188,7 @@ MtxDbl& KrigingModel:: eval_variance(MtxDbl& adj_var, const MtxDbl& xr) const
   }
 
   //assert( (numVarsr == xr.getNCols()) && (xr.getNRows() == 1) );
-  int ntrend = getNTrend(); 
-  MtxDbl g_minus_r_Rinv_G(nrowsxr, ntrend), r(nrowsxr, numPoints);
+  MtxDbl g_minus_r_Rinv_G(nrowsxr, nTrend), r(nrowsxr, numRowsR);
 
   if(scaler.isUnScaled()) {
     eval_trend_fn(g_minus_r_Rinv_G, xr);
@@ -981,8 +1202,8 @@ MtxDbl& KrigingModel:: eval_variance(MtxDbl& adj_var, const MtxDbl& xr) const
   }
 
   int i,j;
-  MtxDbl tempa(numPoints,nrowsxr); 
-  MtxDbl tempb(ntrend,nrowsxr);
+  MtxDbl tempa(numRowsR,nrowsxr); 
+  MtxDbl tempb(nTrend,nrowsxr);
   double var_unscale_factor=scaler.unScaleFactorVarY();
 
   if(nug>0.0)
@@ -997,10 +1218,10 @@ MtxDbl& KrigingModel:: eval_variance(MtxDbl& adj_var, const MtxDbl& xr) const
     //saved 2*nrowsxr loops
     adj_var(i,0)=1.0-r(i,0)*tempa(0,i)+g_minus_r_Rinv_G(i,0)*tempb(0,i);
 
-    for(j=1; j<numPoints; ++j)
+    for(j=1; j<numRowsR; ++j)
       adj_var(i,0)-=r(i,j)*tempa(j,i); //looks a lot like matrix mult but only N^2 ops
 
-    for(j=1; j<ntrend; ++j)
+    for(j=1; j<nTrend; ++j)
       adj_var(i,0)+=g_minus_r_Rinv_G(i,j)*tempb(j,i); //looks a lot like matrix mult but only N^2 ops
 
     adj_var(i,0)*=estVarianceMLE*var_unscale_factor;
@@ -1070,7 +1291,7 @@ MtxDbl& KrigingModel::apply_nugget_eval(MtxDbl& r) const {
   int nrowsr=r.getNRows();
   double temp_dbl=1.0/(1.0+nug);
 
-  for(int j=0; j<numPoints; ++j)
+  for(int j=0; j<numRowsR; ++j)
     for(int i=0; i<nrowsr; ++i)
       r(i,j)*=temp_dbl;
   //for(int ij=0; ij<nelem; ++ij) 
@@ -1125,19 +1346,19 @@ void KrigingModel::apply_nugget_build() {
     wrote this */
 MtxDbl& KrigingModel::correlation_matrix(MtxDbl& r, const MtxDbl& xr) const
 {
-  int nrowsXR=XR.getNRows(); //data points used to build model
+  //int nrowsXR=XR.getNRows(); //data points used to build model
   int nrowsxr=xr.getNRows(); //points at which we are evalutating the model
   //assert(xr.getNCols()==numVarsr);
-  r.newSize(nrowsxr,nrowsXR);
-  int i,j,k;
+  r.newSize(nrowsxr,numRowsR);
+  int i,j,k, jeqn;
   double temp_double;
 
   /*
   printf("**********************************************************\n");
   printf("**********************************************************\n");
-  for(i=0; i<nrowsXR; i++) {
+  for(i=0; i<nrowsXR; ++i) {
     printf("XR(%d,:)={",i);
-    for(j=0; j<numVarsr; j++) printf(" %g",XR(i,j));
+    for(j=0; j<numVarsr; ++j) printf(" %g",XR(i,j));
     printf(" }; Y(%d)=%g\n",i,Y(i,0));
   }
   printf("**********************************************************\n");
@@ -1146,33 +1367,35 @@ MtxDbl& KrigingModel::correlation_matrix(MtxDbl& r, const MtxDbl& xr) const
   
   if(numVarsr==1) {
     //optimized for when there is only 1 output variable
-    for(j=0; j<nrowsXR; j++)
-      for(i=0; i<nrowsxr; i++){
-	temp_double=xr(i,0)-XR(j,0);
+    for(j=0; j<numRowsR; ++j) {
+      jeqn=iEqnKeep(j,0);
+      for(i=0; i<nrowsxr; ++i) {
+	temp_double=xr(i,0)-XR(jeqn,0);
 	r(i,j)=std::exp(-correlations(0,0)*temp_double*temp_double); 
+      }
     }
   } else if(nrowsxr==1) {
     //"optimized" for when there is only 1 evaluation point (Save loops, save dereferences)
     
     //k=0 was pulled out from below to avoid doing an extra loop just to 
     //initialize all of r to zero
-    for(j=0; j<nrowsXR; j++) {
-      temp_double=xr(0,0)-XR(j,0);
+    for(j=0; j<numRowsR; ++j) {
+      temp_double=xr(0,0)-XR(iEqnKeep(j,0),0);
       r(0,j)=-correlations(0,0)*temp_double*temp_double; //=- is correct
     }
   
     //all but first and last k
-    for(k=1;k<numVarsr-1;k++)
-      for(j=0; j<nrowsXR; j++) {
-	temp_double=xr(0,k)-XR(j,k);
+    for(k=1;k<numVarsr-1;++k)
+      for(j=0; j<numRowsR; ++j) {
+	temp_double=xr(0,k)-XR(iEqnKeep(j,0),k);
 	r(0,j)-=correlations(0,k)*temp_double*temp_double; //-= is correct
       }
   
     //this value of k was pulled out of above to save doing an extra loop 
     //for just the exp() operation
     k=numVarsr-1; 
-    for(j=0; j<nrowsXR; j++) {
-      temp_double=xr(0,k)-XR(j,k);
+    for(j=0; j<numRowsR; ++j) {
+      temp_double=xr(0,k)-XR(iEqnKeep(j,0),k);
       r(0,j)=std::exp(r(0,j)-correlations(0,k)*temp_double*temp_double); 
     }
   } else {
@@ -1180,28 +1403,33 @@ MtxDbl& KrigingModel::correlation_matrix(MtxDbl& r, const MtxDbl& xr) const
     
     //k=0 was pulled out from below to avoid doing an extra loop just to 
     //initialize all of r to zero
-    for(j=0; j<nrowsXR; j++)
-      for(i=0; i<nrowsxr; i++){
-	temp_double=xr(i,0)-XR(j,0);
+    for(j=0; j<numRowsR; ++j) {
+      jeqn=iEqnKeep(j,0);
+      for(i=0; i<nrowsxr; ++i) {
+	temp_double=xr(i,0)-XR(jeqn,0);
 	r(i,j)=-correlations(0,0)*temp_double*temp_double; //=- is correct
       }
-  
+    }
     //all but first and last k
-    for(k=1;k<numVarsr-1;k++)
-      for(j=0; j<nrowsXR; j++)
-	for(i=0; i<nrowsxr; i++){
-	  temp_double=xr(i,k)-XR(j,k);
+    for(k=1;k<numVarsr-1;++k)
+      for(j=0; j<numRowsR; ++j) {
+	jeqn=iEqnKeep(j,0);
+	for(i=0; i<nrowsxr; ++i) {
+	  temp_double=xr(i,k)-XR(jeqn,k);
 	  r(i,j)-=correlations(0,k)*temp_double*temp_double; //-= is correct
 	}
-  
+      }
+
     //this value of k was pulled out of above to save doing an extra loop 
     //for just the exp() operation
     k=numVarsr-1; 
-    for(j=0; j<nrowsXR; j++)
-      for(i=0; i<nrowsxr; i++){
-	temp_double=xr(i,k)-XR(j,k);
+    for(j=0; j<numRowsR; ++j) {
+      jeqn=iEqnKeep(j,0);
+      for(i=0; i<nrowsxr; ++i) {
+	temp_double=xr(i,k)-XR(jeqn,k);
 	r(i,j)=std::exp(r(i,j)-correlations(0,k)*temp_double*temp_double); 
       }
+    }
   }
   return r;
 }
@@ -1211,38 +1439,44 @@ MtxDbl& KrigingModel::dcorrelation_matrix_dxI(MtxDbl& dr, const MtxDbl& r,
 					      const MtxDbl& xr, int Ider) const
 {
   int nrowsxr=xr.getNRows();
-  assert((r.getNRows()==nrowsxr)&&(r.getNCols()==numPoints)&&
+  assert((r.getNRows()==nrowsxr)&&(r.getNCols()==numRowsR)&&
 	 (xr.getNCols()==numVarsr)&&(0<=Ider)&&(Ider<numVarsr));
-  dr.newSize(nrowsxr,numPoints);
+  dr.newSize(nrowsxr,numRowsR);
 
+  int jeqn;
   double temp_dbl=-2.0*correlations(0,Ider);
-  for(int jpt=0; jpt<numPoints; ++jpt)
+  for(int j=0; j<numRowsR; ++j) {
+    jeqn=iEqnKeep(j,0);
     for(int ipt=0; ipt<nrowsxr; ++ipt)
-      dr(ipt,jpt)=temp_dbl*r(ipt,jpt)*(xr(ipt,Ider)-XR(jpt,Ider));
-
+      dr(ipt,j)=temp_dbl*r(ipt,j)*(xr(ipt,Ider)-XR(jeqn,Ider));
+  }
   return dr;
 }
 
 MtxDbl& KrigingModel::d2correlation_matrix_dxIdxK(MtxDbl& d2r, const MtxDbl& drI, const MtxDbl& r, const MtxDbl& xr, int Ider, int Kder) const
 {
-  int nrowsXR=XR.getNRows(); //data points used to build model
+  //int nrowsXR=XR.getNRows(); //data points used to build model
   int nrowsxr=xr.getNRows(); //points at which we are evalutating the model
-  d2r.newSize(nrowsxr,nrowsXR);
+  d2r.newSize(nrowsxr,numRowsR);
 ///k is the variable/dimension not the point
 
-  assert((r.getNRows()==nrowsxr)&&(r.getNCols()==numPoints)&&
+  assert((r.getNRows()==nrowsxr)&&(r.getNCols()==numRowsR)&&
 	 (xr.getNCols()==numVarsr)&&(0<=Kder)&&(Kder<numVarsr));
 
   double neg_two_theta_K=-2.0*correlations(0,Kder);
+  int jeqn;
   if(Ider==Kder) 
-    for(int jpt=0; jpt<numPoints; ++jpt)
+    for(int j=0; j<numRowsR; ++j) {
+      jeqn=iEqnKeep(j,0);
       for(int ipt=0; ipt<nrowsxr; ++ipt)
-	d2r(ipt,jpt)=neg_two_theta_K*((xr(ipt,Kder)-XR(jpt,Kder))*drI(ipt,jpt)+r(ipt,jpt));
+	d2r(ipt,j)=neg_two_theta_K*((xr(ipt,Kder)-XR(jeqn,Kder))*drI(ipt,j)+r(ipt,j));
+    }
   else
-    for(int jpt=0; jpt<numPoints; ++jpt)
+    for(int j=0; j<numRowsR; ++j) {
+      jeqn=iEqnKeep(j,0);
       for(int ipt=0; ipt<nrowsxr; ++ipt)
-	d2r(ipt,jpt)=neg_two_theta_K*(xr(ipt,Kder)-XR(jpt,Kder))*drI(ipt,jpt);
-
+	d2r(ipt,j)=neg_two_theta_K*(xr(ipt,Kder)-XR(jeqn,Kder))*drI(ipt,j);
+    }
   return d2r;
 }
 
@@ -1267,6 +1501,7 @@ void KrigingModel::correlation_matrix(const MtxDbl& theta)
 
   Ztheta.newSize(nrowsZ,1);
   matrix_mult(Ztheta,Z,theta,0.0,1.0,'N','T');
+  numRowsR=numEqnAvail; //numEqnAvail=numPoints for regular (not derivative enhanced Kriging)
   R.newSize(numPoints,numPoints);
 
   double Rij_temp;
@@ -1330,39 +1565,6 @@ MtxDbl& KrigingModel::gen_Z_matrix()
   return Z;
 }
 
-/** Warning it's up to the person calling this function to ensure that
-    R is the correlation Matrix generated as R=exp(Z*theta) where
-    theta is the correlation vector and Z(ij,k)=-(XR(i,k)-XR(j,k))^2. I
-    (KRD) did it this way because it is faster and the only place it
-    is currently being used is in void
-    KrigingProblem::objectiveAndGradient().  the Z matrix is produced
-    by KrigingModel::gen_Z_matrix() and R is produced by MtxDbl
-    KrigingModel::corrMtx(const int nrowsXR, const MtxDbl& Z, const
-    VecDbl& theta) KRD wrote this. Z is a member variables so it doesn't 
-    need to be passed in, R needs to be passed in so we can evaluate 
-    second derivatives with the same function... dR_dthetak=-Z(:,k).*R(:) 
-    (MATLAB notation), and d2R_dthetai_dthetaj=-Z(:,j).*dR_dthetai;*/
-MtxDbl& KrigingModel::dcorrMtx_dthetak(MtxDbl& dR_dthetak, const MtxDbl& R_local, 
-				       const int k)
-{
-  dR_dthetak.newSize(numPoints,numPoints);
-  double dRij_dthetak_temp;
-  const double *Zk_ptr=Z.ptr(0,k); //do this to avoid one extra dereference per element of R_local
-  int ij=0;
-  for(int j=0; j<numPoints-1; ++j) {
-    dR_dthetak(j,j)=0.0;
-    for(int i=j+1; i<numPoints; ++i, ++ij) {
-      dRij_dthetak_temp=Zk_ptr[ij]*R_local(i,j);
-      dR_dthetak(i,j)=dRij_dthetak_temp;
-      dR_dthetak(j,i)=dRij_dthetak_temp;
-    }      
-  }
-  dR_dthetak(numPoints-1,numPoints-1)=0.0;
-
-  return dR_dthetak;
-}
-
-
 // BMA TODO: combine shared code from these various functions?
 // (consider initializing class members R1 and R2 or something once
 // per eval and reusing)
@@ -1400,59 +1602,26 @@ void KrigingModel::masterObjectiveAndConstraints(const MtxDbl& theta, int obj_de
 
   //next 5 or 6 must be copied out (can't allow external code to change these or have no guarantee that we can reuse "previous" values)
   //member variable: double obj;
-  //member variable: MtxDbl gradObj(numTheta,1);
-  //member variable: MtxDbl hessObj(numTheta,numTheta);
   //member variable: MtxDbl con(numConFunc);
-  //member variable: MtxDbl gradCon(numConFunc,numTheta);
-  //???member variable: vector<MtxDbl(numTheta,numTheta)> hessCon(numConFunc) ..hessians of the constraints are also a bit more expensive to copy out, might be better to use finite difference hessians of the constraint functions, analytical hessians of the constraint functions are not yet implemented
-  //end of variables to copy out
 
   //these 2 are set by choice of optimizer and are not changed inside this function
   //member variable: int maxObjDerMode;
   //member variable: int maxConDetMode;
 
-  //these are temporary variables that we keep around during emulator 
-  //creation so we don't have to constantly allocate and deallocate them, 
-  //these get deallocated at the end of create
-  //member variable: MtxDbl dNbetaHat_dthetaN(ntrend)
-  //member variable: MtxDbl temp(ntrend)
-  //member variable: MtxDbl temp2(numPoints)
-  //member variable: MtxDbl temp3(numPoints)
-  //member variable: MtxDbl temp4(numPoints)
-  //member variable: MtxDbl temp5(numPoints)
-  //member variable: MtxDbl d2eps_dthetai_dthetaj(numPoints)
-  //member variable: MtxDbl dR_dthetai(numPoints,numPoints)
-  //member variable: MtxDbl dR_dthetaj(numPoints,numPoints)
-  //member variable: MtxDbl Rinv_dR_dthetai(numPoints,numPoints)
-  //member variable: MtxDbl Rinv_dR_dthetaj(numPoints,numPoints)  
-  //member variable: MtxDbl d2R_dthetai_dthetaj(numPoints,numPoints)
-  //member variable: MtxDbl dR_dthetai_Rinv_eps_minus_deps_dthetai(numPoints,numTheta)
-  //member variable: MtxDbl Rinv_dR_dthetai_Rinv_eps_minus_deps_dthetai(numPoints,numTheta)
-  
-
-
   //these are private and their values need to be retained between sequential calls to masterObjectiveAndConstraints, that is no other function (other than the create) can access them, these get deallocated at the end of create
   //member variable: int prevObjDerMode
   //member variable: int prevConDerMode
   //member variable: MtxDbl prevTheta(1,numTheta)
-  //member variable: MtxDbl allEigVect(numPoints,numPoints)
-  //member variable: MtxDbl allEigVal(numPoints)
   //member variable: MtxDbl Z(numPoints*numPoints,numTheta)
   //member variable: MtxDbl R(numPoints,numPoints)
-  //member variable: MtxDbl G(numPoints,ntrend)
-  //member variable: MtxDbl deps_dtheta(numPoints,numTheta)
-  //member variable: MtxDbl dR_dtheta_Rinv_eps(numPoints,numTheta)
-  //member variable: MtxDbl destVarianceMLE_dtheta(numTheta,1)
-
+  //member variable: MtxDbl G(numPoints,nTrend)
 
   //keep these around after emulator creation so we can evaluate the emulator
   //member variable: MtxDbl rhs(numPoints)
-  //member variable: MtxDbl RLU(numPoints,numPoints)
-  //member variable: MtxInt ipvt_RLU
+  //member variable: MtxDbl RChol(numPoints,numPoints)
   //member variable: MtxDbl Rinv(numPoints,numPoints) //needed to eval integral of adjusted variance, capability not yet added
-  //member variable: MtxDbl Rinv_G(numPoints,ntrend)
-  //member variable: MtxDbl Gtran_Rinv_G_LU(ntrend,ntrend)
-  //member variable: MtxInt ipvt_Gtran_Rinv_G_LU(ntrend)
+  //member variable: MtxDbl Rinv_G(numPoints,nTrend)
+  //member variable: MtxDbl Gtran_Rinv_G_Chol(nTrend,nTrend)
 
   //if theta was the same as the last time we called this function than we can reuse some of the things we calculated last time
   
@@ -1481,12 +1650,10 @@ void KrigingModel::masterObjectiveAndConstraints(const MtxDbl& theta, int obj_de
     for(i=0; i<numTheta; ++i) 
       prevTheta(0,i)=theta(0,i); 
 
-
-  int ntrend=Poly.getNRows();
   int chol_info;
 
   if((prevObjDerMode==0)&&(prevConDerMode==0)) {
-    R.newSize(numPoints,numPoints);
+    R.newSize(numEqnAvail,numEqnAvail);
     correlation_matrix(theta); //fills member variable R as exp(Z*theta) where Z is a member variable
     apply_nugget_build(); //modify R by nug in place
   }
@@ -1496,18 +1663,33 @@ void KrigingModel::masterObjectiveAndConstraints(const MtxDbl& theta, int obj_de
 
     //perform LU decomposition of R and calculate the determinant of R, replaced LU with Cholesky
     //http://en.wikipedia.org/wiki/Determinant#Determinant_from_LU_decomposition
-    RChol.copy(R);
-    chol_info=0;
-    Chol_fact(RChol,chol_info,rcondR); //preconditioned Cholesky, when Kriging is not gradient enhaced R won't need preconditiong since it has all 1's on the diagonals
+    equationSelectingCholR();
+    if((rcondR==0.0)||(numRowsR<=numTrend(polyOrder,0))) {
+      //nTrend=numTrend(polyOrder,0);
+      printf("singular correlation matrix rcondR=%g numRowsR=%d numTrend=%d",
+	     rcondR,numRowsR,numTrend(polyOrder,0));
+      obj=HUGE_VAL;
+      con.newSize(numConFunc,1);
+      for(int i=0; i<numConFunc; ++i)
+	con(i,0)=1.0; //say the constraints are violated
+      return;
+    }
+
+    //RChol.copy(R);
+    //chol_info=0;
+    //Chol_fact(RChol,chol_info,rcondR); //preconditioned Cholesky, when Kriging is not gradient enhaced R won't need preconditiong since it has all 1's on the diagonals
     //printf("Chol\n");
     //assert(chol_info==0);  //here for debug, decide what to do about it later
 
     double log_determinant_R = 0.0; //need to do this to avoid underflow error for large numbers of points, log(0)=-inf
-    for (int ipt = 0; ipt < numPoints; ++ipt) 
-      log_determinant_R += std::log(RChol(ipt,ipt)); 
-    log_determinant_R *= 2.0; //only for Cholesky factorization of R 
+    for (int i = 0; i < numRowsR; ++i) 
+      log_determinant_R += std::log(RChol(i,i)); 
+    log_determinant_R *= 2.0; //only multiply by 2 for Cholesky factorization 
+    //of R because det(L)=det(U) and det(R)=det(L)*det(U)=det(L)^2
+    //so log(det(R))=2*log(det(L))
 
-    //determinant_R=fabs(determinant_R); //KRD added fabs because "The determinant of a positive definite matrix is always positive" http://mathworld.wolfram.com/PositiveDefiniteMatrix.html and det(R)=det(pivot Mtx)*det(L)*det(U); det(L)=1, det(U) is what we calculated above and det(pivot Mtx)=+/- 1
+    //determinant_R=fabs(determinant_R); //KRD added fabs for LU factorization
+    //because "The determinant of a positive definite matrix is always positive" http://mathworld.wolfram.com/PositiveDefiniteMatrix.html and det(R)=det(pivot Mtx)*det(L)*det(U); det(L)=1, det(U) is what we calculated above and det(pivot Mtx)=+/- 1, left this comment in, in case someone decides to switch back to LU decomposition
 
     // precompute, O(M^3) ops, and store quantities so(when give the 
     // derivative of the correlation matrix, R, with respect to a scalar 
@@ -1536,31 +1718,34 @@ void KrigingModel::masterObjectiveAndConstraints(const MtxDbl& theta, int obj_de
     //  will loop over k to fill up the gradient of the objective function
     
     //Do the generalized (by R^-1) least squares using min # of ops
-    Rinv_G.newSize(numPoints,ntrend); //precompute and store
+    Rinv_G.newSize(numRowsR,nTrend); //precompute and store
     solve_after_Chol_fact(Rinv_G,RChol,G);
     //solve_after_LU_fact(Rinv_G,RLU,ipvt_RLU,G,'N','N'); //O(N^3) ops
-    Gtran_Rinv_G_Chol.newSize(ntrend,ntrend);
+
+    Gtran_Rinv_G_Chol.newSize(nTrend,nTrend);
     matrix_mult(Gtran_Rinv_G_Chol,G,Rinv_G,0.0,1.0,'T','N');
     //double rcond_Gtran_Rinv_G;
-    Chol_fact(Gtran_Rinv_G_Chol,chol_info,rcond_Gtran_Rinv_G);
+    //Chol_fact(Gtran_Rinv_G_Chol,chol_info,rcond_Gtran_Rinv_G);
+    Chol_fact_workspace(Gtran_Rinv_G_Chol,Gtran_Rinv_G_Chol_Scale,Gtran_Rinv_G_Chol_DblWork,Gtran_Rinv_G_Chol_IntWork,chol_info,rcond_Gtran_Rinv_G);
 
     double log_determinant_Gtran_Rinv_G=0.0;
-    for (int itrend = 0; itrend < ntrend; ++itrend)
+    for (int itrend = 0; itrend < nTrend; ++itrend)
       log_determinant_Gtran_Rinv_G += std::log(Gtran_Rinv_G_Chol(itrend,itrend)); 
     log_determinant_Gtran_Rinv_G *= 2.0; //only for Cholesky factorization of R 
     //if(~(chol_info==0)) assert(chol_info==0);  //for debug, do something else for production
 
-    temp.newSize(ntrend,1);
+    temp.newSize(nTrend,1);
     matrix_mult(temp, Rinv_G, Y, 0.0, 1.0, 'T', 'N');
-    betaHat.newSize(ntrend,1);
-    solve_after_Chol_fact(betaHat,Gtran_Rinv_G_Chol,temp); //O(ntrend^2) ops
+    betaHat.newSize(nTrend,1);
 
+
+    solve_after_Chol_fact(betaHat,Gtran_Rinv_G_Chol,temp); //O(nTrend^2) ops
     temp2.copy(Y); //this will be eps=epsilon=Y-G(XR)*betaHat, but use 
     //variable temp2 because we would only need the variable "eps" for these 
     //5 lines of code (not counting comments) and we want to save space, 
     //afterwards we will only need R^-1*eps which is stored in "rhs"
     matrix_mult(temp2, G, betaHat, 1.0, -1.0, 'N', 'N'); //eps=Y-G(XR)*betaHat
-    rhs.newSize(numPoints,1);
+    rhs.newSize(numRowsR,1);
     solve_after_Chol_fact(rhs,RChol,temp2);
 
 
@@ -1574,18 +1759,18 @@ void KrigingModel::masterObjectiveAndConstraints(const MtxDbl& theta, int obj_de
     //derived following: C. E. Rasmussen & C. K. I. Williams, Gaussian Processes for Machine Learning, the MIT Press, 2006, ISBN 026218253X. c 2006 Massachusetts Institute of Technology. www.GaussianProcess.org/gpml...  we assume a "vague prior" (i.e. that we don't know anything) for betaHat, then like "Koehler and Owen" we replace the covariance matrix K with (unadjusted variance)*R (where R is the correlation matrix) and find unadjusted variance and betaHat through maximum likelihood.
 
     //the unbiased estimate of unadjusted variance
-    estVarianceMLE = dot_product(temp2,rhs)/(numPoints-ntrend); 
+    estVarianceMLE = dot_product(temp2,rhs)/(numRowsR-nTrend); 
 
     //the "per point" unbiased log(likelihood)
-    likelihood = -0.5*(std::log(estVarianceMLE)+(log_determinant_R+log_determinant_Gtran_Rinv_G)/(numPoints-ntrend)); 
+    likelihood = -0.5*(std::log(estVarianceMLE)+(log_determinant_R+log_determinant_Gtran_Rinv_G)/(numRowsR-nTrend)); 
 #else
     //derived the "Koehler and Owen" way (assumes we know the trend function, and is therefore biased, but usally seems to work better for surrogate based optimization)
 
     //the estimate of unadjusted variance
-    estVarianceMLE = dot_product(temp2,rhs)/numPoints; //the "Koehler and Owen" way
+    estVarianceMLE = dot_product(temp2,rhs)/numRowsR; //the "Koehler and Owen" way
 
     //the "per point" log(likelihood)
-    likelihood = -0.5*(std::log(estVarianceMLE)+log_determinant_R/numPoints); 
+    likelihood = -0.5*(std::log(estVarianceMLE)+log_determinant_R/numRowsR); 
 #endif
 
     //if(likelihood>=DBL_MAX)
@@ -1621,20 +1806,11 @@ void KrigingModel::masterObjectiveAndConstraints(const MtxDbl& theta, int obj_de
       //con(0,0)=1.0-rcondR*3.0*maxCondNum;  //have seen rcond as low as about 1/3 of the true value
       con(0,0)=1.0-rcondR*maxCondNum;  //have seen rcond as low as about 1/3 of the true value
     }
-    else if(constraintType.compare("eig")==0) { //use eigenvalues (and maybe their analytical derivatives) to
-      //bound the condition number
-      allEigVect.newSize(numPoints,numPoints);
-      allEigVal.newSize(numPoints,1);
-
-      eig_sym(allEigVect, allEigVal, R); //R is correct
-      for(int icon=0; icon<numConFunc; ++icon)
-	con(icon,0)=(allEigVal(numPoints-1,0)+nug)/maxCondNum-(allEigVal(icon,0)+nug);
-        //con(icon,0)=1.0-maxCondNum*(allEigVal(icon,0)+nug)/(allEigVal(numPoints-1,0)+nug);
-        //con(icon,0)=1.0/maxCondNum-(allEigVal(icon,0)+nug);
+    else{
+      printf("Error:  the only current option for constraint type is \"rcond\"\n");
+      assert(constraintType.compare("rcond")==0);
     }
-    else
-      assert((constraintType.compare("eig")==0)||(constraintType.compare("rcond")==0));
-    
+
     prevConDerMode=1; //increase prevConDerMode to current value
     if((con_der_mode==1)&&(obj_der_mode<=prevObjDerMode)) {
       //we have everything we need so exit early
@@ -1642,590 +1818,6 @@ void KrigingModel::masterObjectiveAndConstraints(const MtxDbl& theta, int obj_de
     }
   }
   
-
-
-
-  
-  //******************************************************************
-  //******************************************************************
-  // calculating the gradients of the constraint functions (when we 
-  // don't need the gradient of the objective function) starts here
-  //******************************************************************
-  //******************************************************************
-  if(((obj_der_mode<2)||(2<=prevObjDerMode))&&
-     ((prevConDerMode<2)&&(2<=con_der_mode))) {
-    //if you want gradients of the objective AND constraint functions 
-    //do them together below, so they can share the calculation of 
-    //dR_thethai.  However if you want gradients of the contraint 
-    //functions BUT DO NOT WANT the gradient of the objective function 
-    //THEN calculate the gradients of the constraints here
-    assert(constraintType.compare("eig")==0); //we can compute analytical 
-    //derivatives of only the eigenvalues (we can't compute analytical
-    //derivatives of rcondR)
-
-    gradCon.newSize(numConFunc,numTheta);
-    dR_dthetai.newSize(numPoints,numPoints);
-    temp2.newSize(numPoints,1);
-    temp3.newSize(numPoints,1);
-    temp4.newSize(numPoints,1); //FOR CALCULATION OF THE GRADIENTS OF THE 
-    //CONSTRAINT FUNCTIONS this holds the eigenvector corresponding to the
-    //the largest eigenvalue    
-    allEigVect.getCols(temp4,numPoints-1); 
-
-    double temp_con;
-    //caclulate the gradient of the constraints...
-    //constraint(i,0)=(largest_eigenvalue/Condition_number_bound - 
-    //               the_ith_smallest_eigenvalue) < 0 
-    //obviously if this holds true for the first smallest eigenvalue 
-    //it will hold true for the 2nd, 3rd, etc smallest eigenvalues 
-    //but I use i=1->numConFunc in case any of the small eigenvalues 
-    //trade positions (note that C arrays start at 0 instead of 1)
-    //where numConFunc=min(numPoints/2,10) (a heuristic).  Of course we 
-    //need the analytical derivatives of the eigenvalues.  The formula 
-    //for exact arbitray order derivatives is found in 
-    //  Jankovic, Exact nth Derivatives of Eigenvalues and Eigenvectors.
-    //     Journal of Guidance, Control, and Dynamics, Vol 17. No 1,
-    //     January-February 1994 pp 136-144
-    //I (KRD) found this paper to be difficult to read but highly useful 
-    //once it is deciphered.  To help with the deciphering, Eqns {1, 
-    //20, and 22->24} are the only ones you will typically need for 
-    //_linear_ algebra (example 1 is useful too), if your eigenvectors 
-    //are normalized, then the denominator in equation 24 is -1 for 
-    //linear algebra
-    double dlarge_eigval_dthetai; //, dsmall_eigval_dthetai;
-    for(i=0; i<numTheta; ++i) {
-      dcorrMtx_dthetak(dR_dthetai, R, i);
-      apply_nugget_eval(dR_dthetai); //apply nugget EVAL is correct, the additive term is constant with respect to theta so drops out
-
-      dlarge_eigval_dthetai=
-	dot_product(temp4,matrix_mult(temp2,dR_dthetai,temp4,0.0,1.0));
-      
-      temp_con=	dot_product(temp4,
-      	    matrix_mult(temp2,dR_dthetai,temp4,0.0,1.0))/
-      maxCondNum;
-      for(int icon=0; icon<numConFunc; icon++) {
-	allEigVect.getCols(temp3,icon);
-	//dsmall_eigval_dthetai=
-	//dot_product(temp3,matrix_mult(temp2,dR_dthetai,temp3,0.0,1.0));
-	//gradCon(icon,i)=-dsmall_eigval_dthetai;
-	//gradCon(icon,i)=-maxCondNum*
-	//(dsmall_eigval_dthetai*(allEigVal(numPoints-1)+nug)-
-	// dlarge_eigval_dthetai*(allEigVal(icon,0)+nug))/
-	//((allEigVal(numPoints-1)+nug)*(allEigVal(numPoints-1)+nug));
-		gradCon(icon,i)=temp_con-
-	dot_product(temp3,
-	      matrix_mult(temp2,dR_dthetai,temp3,0.0,1.0));
-      }
-    }
-
-    prevConDerMode=2; //increase prevConDerMode to current value
-    if((obj_der_mode<=prevObjDerMode)&&(con_der_mode==2)) {
-      //early exit because we have everything we need
-      return;
-    }
-  }
-
-  //******************************************************************
-  //******************************************************************
-  // calculating the gradient of the objective function (and optionally
-  // the constraint functions) starts here
-  //******************************************************************
-  //******************************************************************
-  if((prevObjDerMode<2)&&(2<=obj_der_mode)) {
-    gradObj.newSize(numTheta,1); 
-
-    if(2<=con_der_mode) 
-      gradCon.newSize(numConFunc,numTheta);
-
-    dR_dthetai.newSize(numPoints,numPoints);
-
-    destVarianceMLE_dtheta.newSize(numTheta,1);
-    //since we only need the TRACE of the product of R^-1*dR_dthetai we 
-    //can reshape R^-1 and dR_dtheta into vectors and take their dot 
-    //product consting a N^3+numTheta*N^2 ops (this N^3 comes from 
-    //inverting R) instead of numTheta*N^3 ops (these N^3 comes from 
-    //LU_solve(R\dR_dthetai) for each i=0->numTheta)    
-    //Rinv.copy(RLU); //Rinv=R^-1, NOT a pseudo inverse
-    //inverse_after_LU_fact(Rinv, ipvt_RLU); //the only O(N^3) operarion
-    Rinv.copy(RChol);
-    inverse_after_Chol_fact(Rinv);
-    Gtran_Rinv_G_inv.copy(Gtran_Rinv_G_Chol);
-    inverse_after_Chol_fact(Gtran_Rinv_G_inv);
-    //needed to calculate the gradients of the objective function
-    
-    assert(ntrend>0); //for debug
-    temp.newSize(ntrend,1); //FOR CALCULATION OF THE GRADIENT OF THE OBJECTIVE 
-    //FUNCTION this holds -G^T*R^-1*dR_dthetai*R^-1*(Y-G*betaHat)
-    //for calculation of the hessian of the objective function it holds 
-    //something different.  To avoid the cost of constantly allocating and 
-    //deallocating memory, it should ALWAYS be a vector with numPoints elements
-
-    temp2.newSize(numPoints,1); //FOR CALCULATION OF THE GRADIENT OF THE 
-    //CONSTRAINT functions this holds dR_dthetai times the largest eigenvector
-    //FOR CALCULATION OF THE GRADIENT OF THE OBJECTIVE FUNCTION this holds 
-    //dR_dthetai*R^-1*eps where eps=Y-G*betaHat. For calculation of the 
-    //hessian of the objective function this holds something different.  To 
-    //avoid the cost of constantly allocating and deallocating memory, it 
-    //should ALWAYS be a vector with numPoints elements
-    
-    temp3.newSize(numPoints,1); //FOR CALCULATION OF THE GRADIENT OF THE 
-    //CONSTRAINT FUNCTION this holds the eigen vector corresponding to
-    //a small eigenvalue (ratio of largest to smallest eigenvalue is 
-    //constrained but small eigenvalues can swap places) FOR CALCULATION OF 
-    //THE GRADIENT OF THE OBJECTIVE FUNCTION temp3 holds a column of 
-    //deps_dtheta. FOR CALCULATION OF THE HESSIAN OF THE OBJECTIVE FUNCTION 
-    //temp3 holds something else.  To avoid the cost of constantly allocating 
-    //and deallocating memory, it should ALWAYS be a vector with numPoints 
-    //elements
-
-    if((prevConDerMode<2)&&(2<=con_der_mode)) {
-      temp4.newSize(numPoints,1); //FOR CALCULATION OF THE GRADIENTS OF THE 
-      //CONSTRAINT FUNCTIONS this holds the eigenvector corresponding to the
-      //the largest eigenvalue
-    }
-
-    dNbetaHat_dthetaN.newSize(ntrend,1); //This is another temporary variable 
-    //(we do not need to retain its state between sequential calls to this 
-    //function) but I gave it a name reflecting its contents. FOR CALCULATION 
-    //OF THE GRADIENT OF THE OBJECTIVE FUNCTION dNbetaHat_dthetaN holds the 
-    //first derivative of the vector of least squares coefficients with 
-    //respect to theta(0,i). FOR CALCULATION OF THE HESSIAN OF THE OBJECTIVE 
-    //FUNCTION it holds the mixed second derivative of the least squares 
-    //coefficients with respect to theta(0,i) and theta(0,j).  
-
-    dR_dthetai.newSize(numPoints,numPoints); //you can consider this a temp 
-    //matrix, newSize()-ing is either cheap (if it's already the right size)
-    //or necessary, we declared this MtxDbl to be a member variable because
-    //we will often needed it and that let's us avoid constantly allocating 
-    //and deallocating memory.
-
-    if(4<=maxObjDerMode) {
-      //if we are eventually going to calculate hessian of the objective 
-      //function then I want to save some gradient information for use in
-      //calculating the hessian, and I need to allocate space for it
-      dR_dtheta_Rinv_eps.newSize(numPoints,numTheta);
-      deps_dtheta.newSize(numPoints,numTheta);
-    }
-
-    double trace_Rinv_dR_dthetai;
-    double trace_Gtran_Rinv_G_inv_Gtran_Rinv_dR_dthetai_Rinv_G;
-    double temp_con;
-    //double dlarge_eigval_dthetai, dsmall_eigval_dthetai;
-    if((prevConDerMode<2)&&(2<=con_der_mode)) {
-      //only do this if we also need the gradients of the constraint functions
-      allEigVect.getCols(temp4,numPoints-1); //temp4 is the eigenvector with 
-      //the largest eigenvalue, hereafter refered to as the largest eigenvector
-    }
-
-    //use the precomputed and stored quantities to quickly calculate the 
-    //gradient of the objective and constraint functions
-    for (i = 0; i<numTheta; i++) {
-      dcorrMtx_dthetak(dR_dthetai, R, i); //dR_dthetai and R are correct, at this point dR_dthetai is dR_dthetai
-      apply_nugget_eval(dR_dthetai); //apply nugget EVAL is correct, the additive term is constant with respect to theta so drops out
-      
-      if((prevConDerMode<2)&&(2<=con_der_mode)) {
-	assert(constraintType.compare("eig")==0); //we can compute analytical 
-	//derivatives of only the eigenvalues (we can't compute analytical
-	//derivatives of rcondR)
-
-	//caclulate the gradient of the constraints...
-	//constraint(i)=(largest_eigenvalue/Condition_number_bound - 
-	//               the_ith_smallest_eigenvalue) < 0 
-	//obviously if this holds true for the first smallest eigenvalue 
-	//it will hold true for the 2nd, 3rd, etc smallest eigenvalues 
-	//but I use i=1->numConFunc in case any of the small eigenvalues 
-	//trade positions (note that C arrays start at 0 instead of 1)
-	//where numConFunc=min(numPoints/2,10) (a heuristic).  Of course we 
-	//need the analytical derivatives of the eigenvalues.  The formula 
-	//for exact arbitray order derivatives is found in 
-	//  Jankovic, Exact nth Derivatives of Eigenvalues and Eigenvectors.
-	//     Journal of Guidance, Control, and Dynamics, Vol 17. No 1,
-	//     January-February 1994 pp 136-144
-	//I (KRD) found this paper to be difficult to read but highly useful 
-	//once it is deciphered.  To help with the deciphering, Eqns {1, 
-	//20, and 22->24} are the only ones you will typically need for 
-	//_linear_ algebra (example 1 is useful too), if your eigenvectors 
-	//are normalized, then the denominator in equation 24 is -1 for 
-	//linear algebra
-
-	//dlarge_eigval_dthetai=
-	//dot_product(temp4,matrix_mult(temp2,dR_dthetai,temp4,0.0,1.0));
-	//	for(int icon=0; icon<numConFunc; icon++) {
-	//allEigVect.getCols(temp3,icon);
-	//dsmall_eigval_dthetai=
-	//  dot_product(temp3,matrix_mult(temp2,dR_dthetai,temp3,0.0,1.0));
-	//gradCon(icon,i)=-dsmall_eigval_dthetai;
-	  //gradCon(icon,i)=-maxCondNum*
-	  //(dsmall_eigval_dthetai*(allEigVal(numPoints-1)+nug)-
-	  // dlarge_eigval_dthetai*(allEigVal(icon)+nug))/
-	  //((allEigVal(numPoints-1)+nug)*(allEigVal(numPoints-1)+nug));
-	//}
-
-	temp_con=
-	dot_product(temp4,
-	      matrix_mult(temp2,dR_dthetai,temp4,0.0,1.0))/
-	maxCondNum;
-	for(int icon=0; icon<numConFunc; icon++) {
-	allEigVect.getCols(temp3,icon); //temp3 is a "small eigen vector"
-	gradCon(icon,i)=temp_con-
-	  dot_product(temp3,
-		matrix_mult(temp2,dR_dthetai,temp3,0.0,1.0));
-	}
-      }
-
-      //  the math
-      //  R=(1+nug)^-1*(R+nug*I), typically nug=0
-      //  betaHat=(G^T*R^-1*G)^-1*(G^T*R^-1*Y)
-      //  d(A^-1)_dthetai=-A^-1*dA_dthetai*A^-1 (where A is either R or G^T*R^-1*G)
-      //  dbetaHat_dthetai=-(G^T*R^-1*G)^-1*G^T*R^-1*dR_dthetai*R^-1*eps
-      //  eps=Y-G*betaHat
-      //  deps_dthetai=-G*dbetaHat_dthetai
-      //  estVarMLE=1/N*eps^T*R^-1*eps
-      //  destVarMLE_dthetai=1/N*[2*deps_dthetai^T*R^-1*eps-eps^T*R^-1*dR_dthetai*R^-1*eps]
-      //  ddetR_dthetai=det(R)*Trace[R^-1*dR_dthetai]
-      //  dlogdetR_dthetai=Trace[R^-1*dR_dthetai] (store R^-1 so can evaluate this in O(N^2) instead of O(N^3) ops)
-      //  obj=0.5*[N*(log(2*pi)+log(estVarMLE)+1)+log(det(R))]
-      //  dobj_dthetai=0.5*[N*destVarMLE_dthetai/estVarMLE+dlogdetR_dthetai]
-      //
-      //  we have already precomputed and stored
-      //  G^T*R^-1
-      //  (G^T*R^-1*G)^-1
-      //  R^-1*G*betaHat-R^-1*Y
-      //  R^-1*eps
-      //  R^-1
-      //
-      //  will loop over i to fill up the gradient of the objective function
-
-      //dR_dthetai*R^-1*(Y-G*betaHat)
-      matrix_mult(temp2, dR_dthetai, rhs, 0.0, 1.0); 
-      if(4<=maxObjDerMode) {
-	//only store this if we're going to calculate the objective 
-	//function's hessian
-	dR_dtheta_Rinv_eps.putCols(temp2,i);
-      }
-      
-      //-G^T*R^-1*dR_dthetai*R^-1*(Y-G*betaHat)
-      matrix_mult(temp, Rinv_G, temp2, 0.0, -1.0, 'T', 'N');  
-      
-      //-(G^T*R^-1*G)^-1*G^T*R^-1*dR_dthetai*R^-1*(Y-G*betaHat)
-      //temp is a vector so solve only costs O(ntrend^2) ops
-      solve_after_Chol_fact(dNbetaHat_dthetaN, Gtran_Rinv_G_Chol,temp);
-
-      //temp3 is deps_dthetai
-      matrix_mult(temp3, G, dNbetaHat_dthetaN, 0.0, -1.0);
-      if(4<=maxObjDerMode) {
-	//only store this if we're going to calculate the objective 
-	//function's hessian
-	deps_dtheta.putCols(temp3,i);
-      }
-      
-      destVarianceMLE_dtheta(i,0)=(2.0*dot_product(rhs,temp3)-
-                  		 dot_product(rhs,temp2))/numPoints;
-
-      //this is correct _BECAUSE_ R^-1 and/or (and) dR_dthetai is/are _SYMMETRIC_
-      trace_Rinv_dR_dthetai=dot_product(Rinv,dR_dthetai);
-
-      matrix_mult(Gtran_Rinv_dR_thetai,Rinv_G,dR_dthetai,0.0,1.0,'T','N');
-      matrix_mult(Gtran_Rinv_dR_thetai_Rinv_G,Gtran_Rinv_dR_thetai,Rinv_G,0.0,1.0,'N','N');
-      trace_Gtran_Rinv_G_inv_Gtran_Rinv_dR_dthetai_Rinv_G=
-	dot_product(Gtran_Rinv_G_inv,Gtran_Rinv_dR_thetai_Rinv_G);
-
-
-      //We want the gradient of the negative of the log likelihood
-      //gradObj(i,0)=0.5*(numPoints*destVarianceMLE_dtheta/estVarianceMLE+
-      //	        trace_Rinv_dR_dthetai); 
-      gradObj(i,0)=0.5*(destVarianceMLE_dtheta(i,0)/estVarianceMLE+
-		      trace_Rinv_dR_dthetai/numPoints); //on a per point basis
-    }
-
-    prevObjDerMode=2;  //increase prevObjDerMode to the current value
-    if((obj_der_mode==2)&&(con_der_mode<=prevConDerMode)) {
-      //early exit because we have everything we need
-      return;
-    }
-  }
-  
-
-  //******************************************************************
-  //******************************************************************
-  // calculating the hessian of the objective function starts here
-  //******************************************************************
-  //******************************************************************
-  if((prevObjDerMode<4)&&(4<=obj_der_mode)) {
-    hessObj.newSize(numTheta,numTheta);
-    dR_dthetai.newSize(numPoints,numPoints);
-
-    if(numTheta>1) {
-      //consider this to be a temp variable, we do not need to retain its state
-      //between sequential calls to this function only needed for j!=i
-      dR_dthetaj.newSize(numPoints,numPoints);
-    }
-
-    dNbetaHat_dthetaN.newSize(ntrend,1); //This is another temporary variable 
-    //(we do not need to retain its state between sequential calls to this 
-    //function) but I gave it a name reflecting its contents. FOR 
-    //CALCULATION OF THE HESSIAN OF THE OBJECTIVE FUNCTION it holds the 
-    //mixed second derivative of the least squares coefficients with respect 
-    //to theta(0,i) and theta(0,j).  FOR CALCULATION OF THE GRADIENT OF THE 
-    //OBJECTIVE FUNCTION dNbetaHat_dthetaN holds the first derivative of the
-    //vector of least squares coefficients with respect to theta(0,i)
-
-    //consider this to be a temp variable, we do not need to retain its state
-    //between sequential calls to this function
-    d2eps_dthetai_dthetaj.newSize(numPoints,1);
-
-    //consider this to be a temp variable, we do not need to retain its state
-    //between sequential calls to this function
-    d2R_dthetai_dthetaj.newSize(numPoints,numPoints);
-
-    //consider this to be a temp variable, we do not need to retain its state
-    //between sequential calls to this function
-    dR_dthetai_Rinv_eps_minus_deps_dthetai.newSize(numPoints,numTheta);
-
-    //consider this to be a temp variable, we do not need to retain its state
-    //between sequential calls to this function
-    Rinv_dR_dthetai_Rinv_eps_minus_deps_dthetai.newSize(numPoints,numTheta);
-
-    temp.newSize(ntrend,1); //FOR THE OBJECTIVE'S HESSIAN this holds
-    //G^T*R^-1*(-d2R/dtidtj*Rinv*eps
-    //          +dR/dtj*R^-1*(dR/dti*R^-1*eps-deps/dti)
-    //          +dR/dti*R^-1*(dR/dtj*R^-1*eps-deps/dtj))
-    //it is something else for the objective's gradient. temp should always
-    //be a vector of ntrend elements to avoid allocation and deallocation costs
-
-    temp2.newSize(numPoints,1); //FOR THE OBJECTIVE'S HESSIAN this always holds
-    //the j column of Rinv_dR_dthetai_Rinv_eps_minus_deps_dthetai, if we had 
-    //data slicing we wouldn't have to copy this out, it is something else for
-    //the objective's gradient. temp2 should already be the correct size
-
-    temp3.newSize(numPoints,1);//FOR THE OBJECTIVE'S HESSIAN this holds
-    //the j column of Rinv_dR_dthetai_Rinv_eps_minus_deps_dthetai, if we had 
-    //data slicing we wouldn't have to copy this out, it is something else for
-    //the objective's gradient
-
-    temp4.newSize(numPoints,1);//always holds the j column of 
-    //dR_dthetai_Rinv_eps_minus_deps_dthetai, if had data slicing we wouldn't
-    //have to copy this out
-
-    temp5.newSize(numPoints,1); //an honest to goodness temporary variable 
-    //starts as temp5=-d2R/dtidtj*Rinv*eps and progresses to
-    //temp5=-d2R/dtidtj*Rinv*eps
-    //      +dR/dtj*R^-1*(dR/dti*R^-1*eps-deps/dti)
-    //      +dR/dti*R^-1*(dR/dtj*R^-1*eps-deps/dtj)
-
-    //a single loop over numPoints*numTheta elements should be slightly 
-    //faster than nested loops over numTheta and numPoints
-    //int nk=numPoints*numTheta;
-    //for(int k=0; k<nk; ++k) {
-    //dR_dthetai_Rinv_eps_minus_deps_dthetai(k)=
-    //dR_dtheta_Rinv_eps(k)-deps_dtheta(k); //stored these when computed 
-    //the gradient of the objective function
-    //}
-    //double loop is now faster because single index matrix look up requires division and mod, 2011.06.01
-    for(i=0; i<numTheta; ++i)
-      for(int k=0; k<numPoints; ++k) {
-	dR_dthetai_Rinv_eps_minus_deps_dthetai(k,i)=
-	  dR_dtheta_Rinv_eps(k,i)-deps_dtheta(k,i);//stored these when computed 
-	//the gradient of the objective function
-      }
-
-    //precompute and store O(numPoints^2*numTheta) ops
-    solve_after_Chol_fact(Rinv_dR_dthetai_Rinv_eps_minus_deps_dthetai,RChol,
-			  dR_dthetai_Rinv_eps_minus_deps_dthetai);
-    //solve_after_LU_fact(Rinv_dR_dthetai_Rinv_eps_minus_deps_dthetai,RLU,
-    //		ipvt_RLU,dR_dthetai_Rinv_eps_minus_deps_dthetai);
-
-    double d2est_variance_mle_dthetai_dthetaj;
-    double inv_est_variance_mle=1.0/estVarianceMLE;
-    
-    //******************************************************************
-    //by doing j in reverse order, these quantities for next i can be 
-    //reused from previous j, but since we haven't looped over j yet we
-    //have to set them for the first i (i=0);
-    //do the diagonal separate, a few simplifcations to save work
-    j=i=0; 
-    dcorrMtx_dthetak(dR_dthetai, R, i);
-    apply_nugget_eval(dR_dthetai); //apply nugget EVAL is correct, the additive term is constant with respect to theta so drops out
-    Rinv_dR_dthetai_Rinv_eps_minus_deps_dthetai.getCols(temp2,i);
-    dR_dthetai_Rinv_eps_minus_deps_dthetai.getCols(temp4,j);
-
-    //the reasons I'm multiplying Rinv*dR_dthetai instead of doing 
-    //LUsolve(R\dR_dthetai) are
-    //1) we are only going to use this as part of a trace (in hessObj) so 
-    //   there is less danger from round off error in the scalar quantity
-    //2) it's significantly faster
-    matrix_mult(Rinv_dR_dthetai,Rinv,dR_dthetai,0.0,1.0);
-    //******************************************************************
-    for(i=0; i<numTheta; ++i) {
-      j=i; //do the diagonal separate, why 2 simplifcations to save work plus 
-      //by doing j in reverse order can reuse some quanties from previous j 
-      //(which was previous i+1, current i = previous i+1)
-
-      //dcorrMtx_dthetak(dR_dthetaj, R, j); //don't need because of i=j simplification
-      //apply_nugget_eval(dR_dthetai); //apply nugget EVAL is correct, the additive term is constant with respect to theta so drops out
-
-      dcorrMtx_dthetak(d2R_dthetai_dthetaj, dR_dthetai, j); //nugget applied to dR_dthetai carries over to d2R_dthetai_dthetaj
-      //Rinv_dR_dthetai_Rinv_eps_minus_deps_dthetai.getCols(temp3,j); //for i!=j
-
-      //set temp5=-d2R/dtidtj*Rinv*eps
-      matrix_mult(temp5,d2R_dthetai_dthetaj,rhs,0.0,-1.0);
-
-      //set d2est_variance_mle_dthetai_dthetaj=
-      //                         -eps^T*R^-1*d2R/dtidtj*R^-1*eps 
-      //will have additional terms added below
-      d2est_variance_mle_dthetai_dthetaj=dot_product(rhs,temp5);
-
-      //before this line temp5=-d2R/dtidtj*Rinv*eps
-      //set temp5=-d2R/dtidtj*Rinv*eps
-      //          +dR/dtj*R^-1*(dR/dti*R^-1*eps-deps/dti)
-      //          +dR/dti*R^-1*(dR/dtj*R^-1*eps-deps/dtj)
-      //matrix_mult(temp5,dR_dthetai,temp3,1.0,1.0); //for i!=j
-      //matrix_mult(temp5,dR_dthetaj,temp2,1.0,1.0); //for i!=j
-      matrix_mult(temp5,dR_dthetai,temp2,1.0,2.0); //i=j simplification 
-
-      //set temp=G^T*R^-1*(-d2R/dtidtj*Rinv*eps
-      //                   +dR/dtj*R^-1*(dR/dti*R^-1*eps-deps/dti)
-      //                   +dR/dti*R^-1*(dR/dtj*R^-1*eps-deps/dtj))
-      matrix_mult(temp,Rinv_G,temp5,0.0,1.0,'T','N');
-
-      //set d2betaHat/dtidtj=(G^T*R^-1*G)^-1*G^T*R^-1* 
-      //                     (-d2R/dtidtj*Rinv*eps
-      //                      +dR/dtj*R^-1*(dR/dti*R^-1*eps-deps/dti)
-      //                      +dR/dti*R^-1*(dR/dtj*R^-1*eps-deps/dtj))
-      //O(numPoints^2) ops
-      solve_after_Chol_fact(dNbetaHat_dthetaN,Gtran_Rinv_G_Chol,temp);
-
-      //set d2eps/dtidtj=-G*d2betaHat/dtidtj
-      matrix_mult(d2eps_dthetai_dthetaj,G,dNbetaHat_dthetaN,0.0,-1.0);
-
-      //before this line ...
-      //d2estVarianceMLE_dthetai_dthetaj(i,j)=-eps^T*R^-1*d2R/dtidtj*R^-1*eps 
-      //now set d2estVarianceMLE_dthetai_dthetaj(i,j) equal to
-      //=(-eps^T*R^-1*d2R/dtidtj*R^-1*eps 
-      //  +2.0*d2eps/dtidtj*R^-1*eps
-      //  +2.0*(dR/dtj*p^-1*eps-deps/dtj)^T*R^-1*(dR/dti*p^-1*eps-deps/dti)
-      // )/numPoints
-      d2est_variance_mle_dthetai_dthetaj=
-	(d2est_variance_mle_dthetai_dthetaj
-	 +2.0*(dot_product(d2eps_dthetai_dthetaj,rhs)+
-	       dot_product(temp4,temp2))
-	 )/numPoints;
-
-      double trace_Rinv_dR_dthetai_Rinv_dR_dthetai=0.0;
-      for(int jpt=0; jpt<numPoints; ++jpt)
-	for(int ipt=0; ipt<numPoints; ++ipt)
-	  trace_Rinv_dR_dthetai_Rinv_dR_dthetai+=
-	    Rinv_dR_dthetai(jpt,ipt)*Rinv_dR_dthetai(ipt,jpt);
-
-      //the sum of the dot products is the trace I was talking about above
-      hessObj(i,j)=0.5*
-	(-destVarianceMLE_dtheta(i,0)*inv_est_variance_mle
-	 *destVarianceMLE_dtheta(j,0)*inv_est_variance_mle
-	 +d2est_variance_mle_dthetai_dthetaj*inv_est_variance_mle
-	 +(-trace_Rinv_dR_dthetai_Rinv_dR_dthetai
-	   +dot_product(Rinv,d2R_dthetai_dthetaj)
-	   )/numPoints); //on a per point basis
-
-
-      //******************************************************************
-      //do reverse order j so can reuse lowest j work for next i
-      //******************************************************************
-      for(j=numTheta-1; i<j; --j) {
-	dcorrMtx_dthetak(dR_dthetaj, R, j);
-	apply_nugget_eval(dR_dthetai); //apply nugget EVAL is correct, the additive term is constant with respect to theta so drops out
-
-	dcorrMtx_dthetak(d2R_dthetai_dthetaj, dR_dthetai, j); //nugget applied to dR_dthetai carries over to d2R_dthetai_dthetaj
-	Rinv_dR_dthetai_Rinv_eps_minus_deps_dthetai.getCols(temp3,j); //for i!=j
-
-	//the reasons I'm multiplying Rinv*dR_dthetaj instead of doing 
-	//LUsolve(R\dR_dthetaj) are
-	//1) we are only going to use this as part of a trace (in hessObj) so 
-	//   there is less danger from round off error in the scalar quantity
-	//2) it's significantly faster
-	matrix_mult(Rinv_dR_dthetaj,Rinv,dR_dthetaj,0.0,1.0);
-	
-	//set temp5=-d2R/dtidtj*Rinv*eps
-	matrix_mult(temp5,d2R_dthetai_dthetaj,rhs,0.0,-1.0);
-
-	//set d2est_variance_mle_dthetai_dthetaj=
-	//                         -eps^T*R^-1*d2R/dtidtj*R^-1*eps 
-        //will have additional terms added below
-	d2est_variance_mle_dthetai_dthetaj=dot_product(rhs,temp5);
-
-	//before this line temp5=-d2R/dtidtj*Rinv*eps
-	//set temp5=-d2R/dtidtj*Rinv*eps
-	//          +dR/dtj*R^-1*(dR/dti*R^-1*eps-deps/dti)
-	//          +dR/dti*R^-1*(dR/dtj*R^-1*eps-deps/dtj)
-	matrix_mult(temp5,dR_dthetai,temp3,1.0,1.0); //for i!=j
-	matrix_mult(temp5,dR_dthetaj,temp2,1.0,1.0); //for i!=j
-
-	//set temp=G^T*R^-1*(-d2R/dtidtj*Rinv*eps
-	//                   +dR/dtj*R^-1*(dR/dti*R^-1*eps-deps/dti)
-	//                   +dR/dti*R^-1*(dR/dtj*R^-1*eps-deps/dtj))
-	matrix_mult(temp,Rinv_G,temp5,0.0,1.0,'T','N');
-
-	//set d2betaHat/dtidtj=(G^T*R^-1*G)^-1*G^T*R^-1* 
-	//                     (-d2R/dtidtj*Rinv*eps
-	//                      +dR/dtj*R^-1*(dR/dti*R^-1*eps-deps/dti)
-	//                      +dR/dti*R^-1*(dR/dtj*R^-1*eps-deps/dtj))
-	//O(numPoints^2) ops
-	solve_after_Chol_fact(dNbetaHat_dthetaN, Gtran_Rinv_G_Chol,temp);
-
-	//set d2eps/dtidtj=-G*d2betaHat/dtidtj
-	matrix_mult(d2eps_dthetai_dthetaj,G,dNbetaHat_dthetaN,0.0,-1.0);
-	dR_dthetai_Rinv_eps_minus_deps_dthetai.getCols(temp4,j);
-	//before this line ...
-	//d2estVarianceMLE_dthetai_dthetaj=-eps^T*R^-1*d2R/dtidtj*R^-1*eps
-	//now set d2estVarianceMLE_dthetai_dthetaj(i,j) equal to
-	//=(-eps^T*R^-1*d2R/dtidtj*R^-1*eps 
-	//  +2.0*d2eps/dtidtj*R^-1*eps
-	//  +2.0*(dR/dtj*p^-1*eps-deps/dtj)^T*R^-1*(dR/dti*p^-1*eps-deps/dti)
-	// )/numPoints
-	d2est_variance_mle_dthetai_dthetaj=
-	  (d2est_variance_mle_dthetai_dthetaj 
-	   +2.0*(dot_product(d2eps_dthetai_dthetaj,rhs)+
-		 dot_product(temp4,temp2))
-	   )/numPoints;
-
-	double trace_Rinv_dR_dthetaj_Rinv_dR_dthetai=0.0;
-	for(int jpt=0; jpt<numPoints; ++jpt)
-	  for(int ipt=0; ipt<numPoints; ++ipt)
-	    trace_Rinv_dR_dthetaj_Rinv_dR_dthetai+=
-	      Rinv_dR_dthetaj(jpt,ipt)*Rinv_dR_dthetai(ipt,jpt);
-
-	//the sum of the dot products is the trace I was talking about above
-	hessObj(i,j)=0.5*
-	  (-destVarianceMLE_dtheta(i,0)*inv_est_variance_mle
-	   *destVarianceMLE_dtheta(j,0)*inv_est_variance_mle
-	   +d2est_variance_mle_dthetai_dthetaj*inv_est_variance_mle
-	   +(-trace_Rinv_dR_dthetaj_Rinv_dR_dthetai 
-	     +dot_product(Rinv,d2R_dthetai_dthetaj)
-	     )/numPoints); //on a per point basis
-	hessObj(j,i)=hessObj(i,j);
-      } //for(j=numTheta-1; i<j; --j)
-
-      if(i<numTheta-1) {
-	//by doing j in reverse order, these quantities for next i (that is 
-	//current i+1) can be reused from previous j (which is current i+1) 
-	j=i+1;
-	dR_dthetai.copy(dR_dthetaj); //nugget was already applied
-	temp2.copy(temp3);
-	Rinv_dR_dthetai_Rinv_eps_minus_deps_dthetai.getCols(temp2,i);
-	Rinv_dR_dthetai.copy(Rinv_dR_dthetaj);
-	//want next i=j temp4 to equal current i+1=j temp4 which, and since 
-	//next i=currenty i+1 it already has the right value
-      } //if(i<numTheta-1)
-    } //for(i=0; i<numTheta; ++i)
-   
-    prevObjDerMode=2; 
-    if((obj_der_mode==4)&&(con_der_mode<=prevConDerMode)) {
-      //"early" exit because we have everything we need 
-      //note that this should be the last loop but have this here to 
-      //accomodate future expansion
-      return;
-    }
-  }//if((prevObjDerMode<4)&&(4<=obj_der_mode))
-
   return;
 }
 
@@ -2270,9 +1862,8 @@ MtxDbl& KrigingModel::makeGuessFeasible(MtxDbl& nat_log_corr_len, OptimizationPr
   for(k=0; k<numTheta; ++k)
     theta(0,k)=0.5*std::exp(-2.0*nat_log_corr_len(0,k));
 
-  R.newSize(numPoints,numPoints);
+  R.newSize(numEqnAvail,numEqnAvail);
   
-  temp.newSize(numPoints,1);
   correlation_matrix(theta); //assigns to member variable R
 
   if((ifChooseNug==true)||(nug<0.0))
@@ -2281,7 +1872,12 @@ MtxDbl& KrigingModel::makeGuessFeasible(MtxDbl& nat_log_corr_len, OptimizationPr
   apply_nugget_build();
   RChol.copy(R);
   double best_rcond;
-  Chol_fact(RChol,chol_info,best_rcond);
+  equationSelectingCholR();
+  if(numRowsR<=numTrend(polyOrder,0)) 
+    best_rcond=0;
+  else
+    best_rcond=rcondR;
+  //Chol_fact(RChol,chol_info,best_rcond);
   //if(~(chol_info==0)) assert(chol_info==0); //for debug, do something different for production
   //RLU.copy(R);
   //LU_fact(RLU,ipvt_RLU);
@@ -2303,7 +1899,12 @@ MtxDbl& KrigingModel::makeGuessFeasible(MtxDbl& nat_log_corr_len, OptimizationPr
     correlation_matrix(guess_theta); //assigns to member variable R
     apply_nugget_build();
     RChol.copy(R);
-    Chol_fact(RChol,chol_info,rcond);
+    equationSelectingCholR();
+    if(numRowsR<=numTrend(polyOrder,0)) 
+      rcond=0;
+    else
+      rcond=rcondR;
+    //Chol_fact(RChol,chol_info,rcond);
     //if(~(chol_info==0)) assert(chol_info==0); //for debug, do something else for production
     //rcond=rcond_after_Chol_fact(R,RChol);
     //RLU.copy(R);
@@ -2319,121 +1920,10 @@ MtxDbl& KrigingModel::makeGuessFeasible(MtxDbl& nat_log_corr_len, OptimizationPr
     
     return nat_log_corr_len; //we can't compute analytical derivatives of rcond only the eigenvalues
   }
-
-  if(best_rcond>rcond) {
-    correlation_matrix(theta); //assigns to member variable R
-    rcond=best_rcond;
+  else{
+    printf("currently the only option for constraint type is \"rcond\"\n");
+    assert(constraintType.compare("rcond")==0);
   }
-
-  MtxDbl best_theta(theta);
-
-  //calculate the constraint that ensures that the correlation matrix is well conditioned
-  //conceputally: condition_number < maxCondNum  
-  //implemented as: largest_eigenvalue / maxCondNum - smallest_eigenvalue(s) < 0 (so we don't have to worry about dividing by zero when the smallest eigenvalue is zero and the scaling should be roughly consistant regardless of the number of points)
-  MtxDbl all_eigvect(numPoints,numPoints), all_eigval(numPoints,1);
-
-  eig_sym(all_eigvect, all_eigval, R);
-  double small_eigval     = all_eigval(0,0); //smallest
-  double large_eigval     = all_eigval(numPoints-1,0); //largest
-  double constraint_value = (large_eigval+nug)/maxCondNum - (small_eigval+nug);
-
-  if(constraint_value<=0){
-    //printf("\n"); //for debug only
-    return nat_log_corr_len;
-  }
-  
-  MtxDbl small_eigvect(numPoints,1), large_eigvect(numPoints,1);
-  MtxDbl dR_dthetak(numPoints,numPoints);
-  MtxDbl grad_con(numTheta,1);
-  double grad_con_dot_grad_con;
-
-
-  double small_diff=0.00001;
-  double prev_constraint_value=9999.9;
-  int loopcount=0;
-  int num_times_same_constraint=0;
-  
-  for(loopcount=0; loopcount<15; ++loopcount){
-    
-    if(fabs(constraint_value/prev_constraint_value-1.0)<small_diff)
-      num_times_same_constraint++;
-    else
-      num_times_same_constraint=0;
-
-    if((constraint_value<=0.0)||(num_times_same_constraint>=4))
-	break;
-
-    prev_constraint_value=constraint_value;
-    //iteratively improve the condition number of the correlation matrix by taking a step in the opposite direction of the gradient of the constraint function with a step size that WOULD take the constraint to zero IF the constraint function was a linear function
-    all_eigvect.getCols(small_eigvect,0);
-    all_eigvect.getCols(large_eigvect,numPoints-1);
-    grad_con_dot_grad_con=0.0;
-    double dlarge_eigval_dthetak,dsmall_eigval_dthetak;
-    double dlarge_eigval_dnat_log_corr_lenk, dsmall_eigval_dnat_log_corr_lenk;
-    for(k=0; k<numTheta; k++) {
-      dcorrMtx_dthetak(dR_dthetak, R, k);
-    
-      //caclulate the gradient of the constraint... 
-      //using analytical derivatives of eigenvalues, the formula for 
-      //exact arbitray order derivatives is found in 
-      //  Jankovic, Exact nth Derivatives of Eigenvalues and Eigenvectors.
-      //     Journal of Guidance, Control, and Dynamics, Vol 17. No 1,
-      //     January-February 1994 pp 136-144
-      //I (KRD) found this paper difficult to read but highly useful 
-      //once it is deciphered.  To help with the deciphering, Eqns {1, 
-      //20, and 22-24} are the only ones you will typically need for 
-      //_linear_ algebra (example 1 is useful too).
-      dlarge_eigval_dthetak=
-	dot_product(large_eigvect,matrix_mult(temp,dR_dthetak,large_eigvect,0.0,1.0));
-      dsmall_eigval_dthetak=
-	dot_product(small_eigvect,matrix_mult(temp,dR_dthetak,small_eigvect,0.0,1.0));
-      
-      //grad_con(k,0)=dlarge_eigval_dthetak/maxCondNum-dsmall_eigval_dthetak;
-      
-      dlarge_eigval_dnat_log_corr_lenk=dlarge_eigval_dthetak*-2.0*theta(0,k);
-      dsmall_eigval_dnat_log_corr_lenk=dsmall_eigval_dthetak*-2.0*theta(0,k);
-      grad_con(k,0)=dlarge_eigval_dnat_log_corr_lenk/maxCondNum-dsmall_eigval_dnat_log_corr_lenk;
-
-      if((nat_log_corr_len(0,k)<=minNatLogCorrLen)&&(grad_con(k,0)>0))
-	grad_con(k,0)=0.0;
-  
-      grad_con_dot_grad_con+=grad_con(k,0)*grad_con(k,0);
-    }
-    
-    
-
-    double fraction=1.0, temp_double;
-    for(k=0;k<numTheta;k++) {
-      temp_double=(nat_log_corr_len(0,k)-minNatLogCorrLen)/(constraint_value/grad_con_dot_grad_con*grad_con(k,0));
-      if(temp_double<0.0) {
-	printf("temp_double=%g\n",temp_double);
-	assert(!(temp_double<0.0));
-      }
-      if(temp_double<fraction)
-	fraction=temp_double;
-    }
-
-    for(k=0;k<numTheta;k++) {
-      //theta(0,k)-=constraint_value/grad_con_dot_grad_con*grad_con(k,0);
-      nat_log_corr_len(0,k)-=fraction*constraint_value/grad_con_dot_grad_con*grad_con(k,0);
-      theta(0,k)=0.5*std::exp(-2.0*nat_log_corr_len(0,k));
-    }
-
-    correlation_matrix(theta); //fills member variable R
-    eig_sym(all_eigvect, all_eigval, R);
-    small_eigval     = all_eigval(0,0);
-    large_eigval     = all_eigval(numPoints-1,0);
-    constraint_value = (large_eigval+nug)/maxCondNum - (small_eigval+nug);
-  }
-
-  if((constraint_value>0.0)&&(ifChooseNug==true)){
-    nug=(large_eigval-maxCondNum*small_eigval)/(maxCondNum-1.0);
-    //nug=constraint_value*maxCondNum/(maxCondNum-1.0); //would also work but is less clear
-    if(nug>maxChooseNug)
-      nug=maxChooseNug;      
-  }
-
-  //printf("makeGuessFeasible loopcount=%d constraint_value=%g nug=%g\n",loopcount,constraint_value,nug);
   
   return nat_log_corr_len;
 }
@@ -2486,13 +1976,12 @@ void KrigingModel::set_conmin_parameters(OptimizationProblem& opt) const
 {
   //set conmin specific parameters for this problem
   //in dot 4.2 the analytical derivative order of objective and constraints must be the same
-  if(constraintType.compare("eig")==0) //eigenvalue constraints can do analytical 1st derivatives
-    assert(((maxObjDerMode==1)||(maxObjDerMode==3))&&((maxConDerMode==1)||(maxConDerMode==3))&&(maxConDerMode<=maxObjDerMode));
-  else if(constraintType.compare("rcond")==0) //rcond constraint can NOT do analytical 1st derivatives
-    assert(((maxObjDerMode==1)||(maxObjDerMode==3))&&(maxConDerMode==1));
-  else
-    assert((constraintType.compare("eig")==0)||(constraintType.compare("rcond")==0));
-
+  if(constraintType.compare("rcond")==0) //rcond constraint can NOT do analytical 1st derivatives
+    assert((maxObjDerMode==1)&&(maxConDerMode==1)); //||(maxObjDerMode==3))&&(maxConDerMode==1));
+  else {
+    printf("currently the only option for constraint type is \"rcond\"\n");
+    assert(constraintType.compare("rcond")==0);
+  }
   if((maxObjDerMode==1)&&(maxConDerMode==1))
     opt.conminData.nfdg = 0; //use numerical  gradients of objective and constraints
   else if((maxObjDerMode==3)&&(maxConDerMode==3))

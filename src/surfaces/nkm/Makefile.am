@@ -20,7 +20,8 @@ libnkm_la_SOURCES = NKM_GradKrigingModel.cpp \
 	NKM_SurfPack.cpp \
 	NKM_SurfPack.hpp \
 	NKM_SurfPackModel.hpp \
-	NKM_PivotChol.f
+	NKM_PivotChol.f 
+#	NKM_BlockPivotChol.f
 #	NKM_SurfMat_Teuchos.hpp
 
 noinst_PROGRAMS = TestMain ValidateMain

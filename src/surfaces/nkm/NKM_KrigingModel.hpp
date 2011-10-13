@@ -150,6 +150,9 @@ public:
   inline void objectiveAndGradient(double& obj_out, MtxDbl& grad_obj_out,
 				   const MtxDbl& nat_log_corr_len) {
 
+    printf("currently you can't calculate analytical gradients of the objective function or constraints\n");
+    assert(false);
+
     grad_obj_out.newSize(numTheta,1);
     correlations.newSize(1,numTheta);
     //MtxDbl theta(1,numTheta);
@@ -201,6 +204,9 @@ public:
 						  MtxDbl& grad_obj_out, 
 						  MtxDbl& grad_con_out, 
 						  const MtxDbl& nat_log_corr_len) {
+    printf("currently you can't calculate analytical gradients of the objective function or constraints\n");
+    assert(false);
+
     con_out.newSize(numConFunc,1);
     grad_obj_out.newSize(numTheta,1);
     grad_con_out.newSize(numConFunc,numTheta);
@@ -232,8 +238,7 @@ public:
   /// arbitrary order multidimensional polynomial, individual trend functions
   /// are the separate additive terms in that multidimensional polynomial
   inline int getNTrend() const
-  { return (Poly.getNRows()); //XR.getNCols()+1); 
-	    } 
+  { return (Poly.getNRows());   } 
 
   // return the likelihood of this model
   inline double getLikelihood()
@@ -249,6 +254,7 @@ public:
 private:
 
   // helper functions
+  void preAllocateMaxMemory();
   void equationSelectingCholR();
 
   /// this function calculates the objective function (negative log
@@ -318,18 +324,6 @@ private:
       evaluate the model at, the Z and XR matrices are member variables so 
       they don't need to be passed in */
   MtxDbl& gen_Z_matrix();
-
-  /** dR_dthetak=-Z(:,k).*R(:) (MATLAB notation), and 
-      d2R_dthetai_dthetaj=-Z(:,j).*dR_dthetai; The convention is that
-      capital matrices are for the data the model is built from, lower
-      case matrices are for arbitrary points to evaluate the model at. 
-      Z is a member variables so it doesn't need to be passed in, R needs 
-      to be passed in so we can evaluate second derivatives with the same
-      function
-  */
-  MtxDbl& dcorrMtx_dthetak(MtxDbl& dR_dthetak, const MtxDbl& R, const int k);
-
-  // data
 
   
   std::string optimizationMethod;
@@ -413,7 +407,10 @@ private:
       arbitrary order */
   MtxInt Poly;  
   bool ifReducedPoly; /// only use main effects (no interaction/mixed terms) in the polynomial basis
-  int polyOrder; /// highest total order of any term in the polynomial basis
+  int polyOrderRequested; /// this is what the user asked for, highest total order of any term in the polynomial basis
+  int polyOrder; /// this is what was actually used, can be less than what the user asked for if the correlation matrix was ill conditioned and we had to drop points to fix the ill conditioning and had to drop trend order to make it less than the remaining points.
+  MtxInt numTrend; //the number of equations needed for trend functions of order 0 through polyOrderRequested
+  int nTrend;
 
   /** the Euler angles to generate the input dimensions' Rotation matrix */
   MtxDbl EulAng; 
@@ -434,6 +431,8 @@ private:
   MtxDbl rcondDblWork;
   MtxInt rcondIntWork;
   MtxInt iEqnKeep;
+  bool ifHaveAnchorPoint;
+  int  iAnchorPoint;
   int numEqnAvail;
   int numEqnKeep;
 
@@ -514,41 +513,16 @@ private:
   MtxInt Gtran_Rinv_G_Chol_IntWork;
 
   /// keep around to evaluate adjusted variance
-  //MtxInt ipvt_Gtran_Rinv_G_LU;
-
   double estVarianceMLE;
 
+  MtxDbl temp;
+  MtxDbl temp2;
 
-  MtxDbl dNbetaHat_dthetaN; //(ntrend)
-  MtxDbl temp; //(ntrend)
-  MtxDbl temp2; //(numPoints)
-  MtxDbl temp3; //(numPoints)
-  MtxDbl temp4; //(numPoints)
-  MtxDbl temp5; //(numPoints)
-  MtxDbl d2eps_dthetai_dthetaj; //(numPoints)
-  //MtxDbl P; //(numPoints,numPoints)
-  MtxDbl dR_dthetai; //(numPoints,numPoints)
-  MtxDbl dR_dthetaj; //(numPoints,numPoints)
-  MtxDbl Rinv_dR_dthetai; //(numPoints,numPoints)
-  MtxDbl Rinv_dR_dthetaj; //(numPoints,numPoints)  
-  MtxDbl d2R_dthetai_dthetaj; //(numPoints,numPoints)
-  MtxDbl dR_dthetai_Rinv_eps_minus_deps_dthetai; //(numPoints,numTheta)
-  MtxDbl Rinv_dR_dthetai_Rinv_eps_minus_deps_dthetai; //(numPoints,numTheta)
-  MtxDbl Gtran_Rinv_G_inv; //(ntrend,ntrend)//maybe I ought to keep this instead of Gtran_Rinv_G_Chol but the only reason I actually need the inverse is if I'm calculating Gradients of the objective function and it's a "little" (order ntrend^3) extra work to calculate the inverse, and our default method of optimization is to use the DIRECT optimizer
-  MtxDbl Gtran_Rinv_dR_thetai; //(ntrend,numPoints);
-  MtxDbl Gtran_Rinv_dR_thetai_Rinv_G; //(ntrend,ntrend)
 
-  
   int prevObjDerMode;
   int prevConDerMode;
   MtxDbl prevTheta; //(1,numTheta)
-  MtxDbl allEigVect; //(numPoints,numPoints)
-  MtxDbl allEigVal; //(numPoints)
-  //MtxDbl Z; //(numPoints*numPoints,numTheta)
-  //MtxDbl G; //(numPoints,ntrend)
-  MtxDbl deps_dtheta; //(numPoints,numTheta)
-  MtxDbl dR_dtheta_Rinv_eps; //(numPoints,numTheta)
-  MtxDbl destVarianceMLE_dtheta; //(numTheta)
+
 
   int maxObjDerMode;
   int maxConDerMode;

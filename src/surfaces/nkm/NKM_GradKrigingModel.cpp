@@ -19,6 +19,8 @@ using std::ostringstream;
 //#define __DEBUG_MY_CHOL__
 //#define __DEBUG_MY_CHOL2__
 //#define __NKM_UNBIASED_LIKE__
+#define __PIVOT_CHOL_KRIGING_R__
+//#define __PIVOT_CHOL_GEK_R__
 
 //#define __GRADKRIGING_DER_TEST__
 
@@ -55,8 +57,8 @@ void GradKrigingModel::getBaseIEqnKeep() {
   iptIderKeep.newSize(numEqnAvail,2);
 }
 
-
-/// select which derivative equations to add based on whether that information is already present in R, if the information is already present in R then adding the equation will make R poorly conditioned which means we can use rcond(R) as a criteria whether to accept or reject equations.  But to speed things up (check rcond for all possible next equations would be FAR too slow) we'll use a pivoting Cholesky algorithm (I modified the one by: C. Lucas, "LAPACK-style Codes for Level2 and 3 Pivoted Cholesky Factorizations", Numerical Analysis Report No. 442, February 2004, from the Manchester Center for Computational Mathematics, I downloaded it from http://www.maths.manchester.ac.uk/~nareports/narep442.pdf ... which is the best pivoting Cholesky algorithm known to David Day, note that a complicated definition of "swap" in algorithm 3.1 hides/avoids a "problem," but for straighforward implementation L should be intialized to A, and the lower triangular part taken as the last step before exiting the function.  I think Lucas' level 3 implementation was ALWAYS defaulting to the level 2 version, and my modifications to his implementation sped that up by about 5% to 10%, basically I did it by making read memory access more sequential by keeping a mirror reflection of the upper/lower triangular matrix in the other half and then replacing loops across columns with loops down rows [fortran memory layout for matrices]) but since pivoting cholesky is far slower than the highly optimized LAPACK non-pivoting cholesky, I (1) use the pivoting cholesky on only the function values (plus the derivatives of just the anchor point if the user specified an anchor point) and (2) if that isn't too poorly conditioned I apply that ordering to points as a whole (the function value plus derivatives at an individual point are sequential) and then do LAPACK cholesky on the reordered "R" matrix and (3) do a bisection search (at least 1 and at most log2() calls to rcond) for the last equation (in the pivoted order) that doesn't make R too poorly conditioned
+#if defined(__PIVOT_CHOL_KRIGING_R__)
+/// select which derivative equations to add based on whether that information is already present in R, if the information is already present in R then adding the equation will make R poorly conditioned which means we can use rcond(R) as a criteria whether to accept or reject equations.  This function uses pivoted Cholesky to reorder points in Kriging's (not GEK's) R matrix so that the points with the most "new" information come first and the points that contain the least new information come last.  This reordering is then applied to WHOLE POINTS (a whole point is a function value at a point immediately followed by the derivatives at the same point) in GEK's R, LAPACK's highly efficient LEVEL3 BLAS non-pivoted Cholesky is used on the reordered GEK R matrix, and equations are dropped of the end of R until it is not "too ill-conditioned" (until 2^-40<rcond(GEK R)). A bisection search, at most ceil(log2(# of equations)) evaluations of rcond, is then used to efficiently find the last equation in R that can be retained (this is all based of the same Cholesky factorization of the reordered GEK R but uses a different number of equations to compute rcond).  Since the points/equations dropped are the ones with the least new information they should be the ones that when dropped are both the easiest to predict AND the ones that most improve the conditioning of R. The pivoted Cholesky implementation used is located in NKM_PivotChol.f, it's a modification of the implementation found in C. Lucas, "LAPACK-style Codes for Level2 and 3 Pivoted Cholesky Factorizations", Numerical Analysis Report No. 442, February 2004, from the Manchester Center for Computational Mathematics. I KRD downloaded it from http://www.maths.manchester.ac.uk/~nareports/narep442.pdf. C Lucas's implementation was the best pivoting Cholesky algorithm known to David Day.  I modified it to improve efficiency, in tests the modified version was between 5% and 10% faster than Lucas's level 2 (and level 3) implementation and I (KRD) believe that Lucas's Level 3 implementation was ALWAYS defaulting to his level 2 implementation.  Note that perfoming pivoted Cholesky on Kriging's R is about (1+numVarsr)^3 (assuming that a function value plus gradient is used for GEK) than doing so for GEK's R __AND__ it produces more accurate GEK emulators.  Doing pivoted Cholesky on GEK's R tends to sort function values to the end, which get dropped, while some derivative equations at the same points are retained (that had a detrimental effect on emulator prediction accuracy)
 void GradKrigingModel::equationSelectingPrecondCholR(){ 
 #ifdef __TIME_PIVOT_CHOLESKY__
   ++n_pivot_cholesky_calls;
@@ -167,25 +169,37 @@ void GradKrigingModel::equationSelectingPrecondCholR(){
 
   int info=0;
   char uplo='B'; //'B' means we have both halves of R in RChol so the 
-  //fortran doesn't have to copy one half to the other
-  MtxInt ipiv(num_eqn_test,1);  //make this a member variable
+  //fortran doesn't have to copy one half to the other (NKM_PivotChol.f was faster than lucas's implentation because having both halves of R allowed more sequential access of memory, which improves cache access performance)
+  iPivot.newSize(num_eqn_test,1);  
   numEqnKeep=numEqnAvail;
   PIVOTCHOL_F77(&uplo, &num_eqn_test, RChol.ptr(0,0), &ld_RChol,
-    		ipiv.ptr(0,0), &numEqnKeep, &min_allowed_rcond, 
+    		iPivot.ptr(0,0), &numEqnKeep, &min_allowed_rcond, 
 		//&min_allowed_pivot_est_rcond, 
 		&info); 
   //printf("Pivoting Cholesky: says num_eqn_test=%d numEqnKeep=%d\n",num_eqn_test,numEqnKeep);
 
   //for(int i=0; i<numEqnKeep; ++i)
   for(int i=0; i<num_eqn_test; ++i) {
-    ipiv(i,0)-=1;
-    //printf("ipiv(%d)=%d\n",i,ipiv(i,0));
+    iPivot(i,0)-=1;
+    //printf("iPivot(%d)=%d\n",i,iPivot(i,0));
   }
 
   oneNormPrecondR.newSize(numEqnAvail,1);
   sumAbsColPrecondR.newSize(numEqnAvail,1); //used in computing the one norm 
   iEqnKeep.newSize(numEqnAvail,1);
   if(false) {
+    //if(false) => do not give special treatment to the case where the 
+    //__Kriging__ (as opposed to GEK)  R matrix is singular.  Inside this
+    //if statement meant that derivative equations would not be used when
+    //the __Kriging__ R was singular, test showed that prediction accuracy
+    //is better with the default behavior.  The default behavior is to 
+    //pivot Kriging R, use the same reordering for WHOLE points (a function 
+    //value at a point is immediately followed by the derivatives at the 
+    //same point) in GEK R, and then equations at the end of the reordered 
+    //GEK R are dropped off until it is not "too ill-conditioned".  
+    //The default behavior will not happen if the code enters this if 
+    //statement
+
     //if(numEqnKeep<num_eqn_test) {
     //printf("case 1\n");
 
@@ -195,7 +209,7 @@ void GradKrigingModel::equationSelectingPrecondCholR(){
     //end until it isn't poorly conditioned
 
     for(int i=0; i<numEqnKeep; ++i)
-      iEqnKeep(i,0)=iOrderEqnTest(ipiv(i,0),0);
+      iEqnKeep(i,0)=iOrderEqnTest(iPivot(i,0),0);
 
     //precompute and store the one norm after adding every equation 
     //in the pivoted Cholesky order, this is prepwork for the 
@@ -242,7 +256,7 @@ void GradKrigingModel::equationSelectingPrecondCholR(){
       ieqn=jeqn; //inside the commented out (for debug) if
 
     for(; ieqn<num_eqn_test; ++ieqn) {
-      ipt=iOrderEqnTest(ipiv(ieqn,0),0);
+      ipt=iOrderEqnTest(iPivot(ieqn,0),0);
       for(int j=0; j<num_eqn_in_grp; ++j, ++jeqn) {
 	iEqnKeep(jeqn,0)=numPoints*j+ipt;
 	//if(iEqnKeep(jeqn,0)>=numEqnAvail){
@@ -366,7 +380,17 @@ void GradKrigingModel::equationSelectingPrecondCholR(){
     (static_cast<double>(stop_sec_rcond -start_sec_rcond )+
      static_cast<double>(stop_usec_rcond-start_usec_rcond)/1000000.0);
 #endif
+
   numRowsR=numEqnKeep;
+  polyOrder=polyOrderRequested;
+  while((numRowsR<=numTrend(polyOrder,0))&&(polyOrder>0))
+    --polyOrder;
+  nTrend=numTrend(polyOrder,0);
+  Poly.resize(nTrend,numVarsr); //I am relying on the matrix class's actual 
+  //size not changing and that it's contents aren't being written over, so 
+  //that when I enlarge the matrix up to polyOrderRequested I recover all 
+  //the polynomial powers up to polyOrderRequested
+
   //printf("numRowsR=%d rcondR=%g, time_spent_on_rcond=%g max_rcond_iter=%d rcond_iter=%d\n",
   //numRowsR,rcondR,time_spent_on_rcond_in_pivot_cholesky,max_rcond_iter,rcond_iter);
 
@@ -376,8 +400,7 @@ void GradKrigingModel::equationSelectingPrecondCholR(){
 
   Y.newSize(numEqnKeep,1); //newSize() because we don't care about 
   //the current contents of Y
-  int ntrend=getNTrend();
-  G.newSize(numEqnKeep,ntrend);
+  G.newSize(numEqnKeep,nTrend);
   iEqnKeep.newSize(numEqnKeep,1);
   iptIderKeep.newSize(numEqnKeep,2);
   //ifPointUsed.newSize(numPoints,1);
@@ -399,11 +422,9 @@ void GradKrigingModel::equationSelectingPrecondCholR(){
       RChol(i,j)*=scaleRChol(iEqnKeep(i,0),1);
   
 
-  for(int itrend=0; itrend<ntrend; ++itrend) 
-    for(int i=0; i<numEqnKeep; ++i) {      
-      int ieqn=iEqnKeep(i,0);
-      G(i,itrend)=Gall(ieqn,itrend);
-    }
+  for(int itrend=0; itrend<nTrend; ++itrend) 
+    for(int i=0; i<numEqnKeep; ++i)       
+      G(i,itrend)=Gall(iEqnKeep(i,0),itrend);
   
 
 #ifdef __DEBUG_MY_CHOL2__
@@ -543,7 +564,7 @@ void GradKrigingModel::equationSelectingPrecondCholR(){
   time_spent_on_pivot_cholesky+=
     (static_cast<double>(stop_sec_cholesky -start_sec_cholesky )+
      static_cast<double>(stop_usec_cholesky-start_usec_cholesky)/1000000.0);
-  //printf("GKM: numVarsr=%d numPoints=%d numEqnAvail=%d numEqnKeep=%d\ntime_spent_on_pivot_cholesky=%g,rcondR=%g\n",  
+  //printf("GEK: numVarsr=%d numPoints=%d numEqnAvail=%d numEqnKeep=%d\ntime_spent_on_pivot_cholesky=%g,rcondR=%g\n",  
   //numVarsr, numPoints, numEqnAvail, numEqnKeep,
   // time_spent_on_pivot_cholesky,rcondR);
   //exit(0);
@@ -551,6 +572,449 @@ void GradKrigingModel::equationSelectingPrecondCholR(){
   //exit(0);
   return;
 }
+#elif defined(__PIVOT_CHOL_GEK_R__) 
+void GradKrigingModel::equationSelectingPrecondCholR(){ 
+#ifdef __TIME_PIVOT_CHOLESKY__
+  ++n_pivot_cholesky_calls;
+  struct timeval tv;
+  gettimeofday(&tv, NULL); 
+  long int start_sec_block4, start_usec_block4;
+  long int start_sec_cholesky=tv.tv_sec;
+  long int start_usec_cholesky=tv.tv_usec;
+  long int stop_sec_cholesky, stop_usec_cholesky;
+  long int start_sec_rcond, start_usec_rcond;
+  long int stop_sec_rcond, stop_usec_rcond;
+#endif  
+  double min_allowed_rcond=1.0/maxCondNum;
+  //double min_allowed_pivot_est_rcond=256.0/maxCondNum;
+
+  scaleRChol.newSize(numEqnAvail,2); 
+  for(int i=0; i<numEqnAvail; ++i) {
+    scaleRChol(i,1)=std::sqrt(R(i,i));
+    scaleRChol(i,0)=1.0/scaleRChol(i,1);
+  }
+  //precondition R
+  for(int j=0; j<numEqnAvail; ++j) {
+    for(int i=0; i<numEqnAvail; ++i)
+      R(i,j)*=scaleRChol(i,0)*scaleRChol(j,0);
+    R(j,j)=1.0; //round off error on the diagonal can screw up pivoting 
+    //cholesky... since there is zero correlation between an individual 
+    //point's function value and its derivatives and since there are 
+    //only ones on the diagonal of the preconditioned R, then pivoting
+    //cholesky will not pivot the first point's function value or 
+    //derivatives (because there won't be any diagonal entries larger 
+    //than one, and the preconditioned correlation between first point's 
+    //function value and derivatives is the identity matrix) round off
+    //error on the diagonal can screw with that and I rely on those 
+    //assumptions to ensure that the anchor point's derivatives won't be
+    //"dropped"
+  }
+
+  RChol.newSize(numEqnAvail,numEqnAvail);
+  int ld_RChol=RChol.getNRowsAct();
+
+  //if the user specifies an anchor point we will do an initial 
+  //pivoting cholesky with the anchor point's function value and 
+  //derivatives first, followed by the function values only at 
+  //the rest of the data points
+  //
+  //if the user doesn't specify an anchor point we will do an 
+  //initial pivoting with only the function values
+  //
+  //the purpose is to pivot/order the points in a good way, i.e.
+  //by pivoting Cholesky, based on a small number of equations, 
+  //rather than all equations, because pivoting Cholesky is 
+  //significantly more expensive than the highly optimized 
+  //non-pivoting LAPACK Cholesky which (if needed) will be 
+  //applied to the full set of equations after the points have 
+  //been ordered according to the previous pivoting.
+  //
+  //because the function value and its derivatives at an 
+  //individual point are uncorrelated with each other and we
+  //have normalized R so it has all ones on it's diagonals,
+  //pivoting Cholesky WILL NOT PIVOT the first point's 
+  //function values or derivatives (the first equation that 
+  //can be pivoting is the second point's function value, read
+  //as the firs equation that does not have zero correlation
+  //with the first point or any of its derivatives)
+
+  int num_eqn_in_grp=numVarsr+1; 
+  int num_eqn_test=0;
+  iOrderEqnTest.newSize(numEqnAvail,1);
+
+  if((ifHaveAnchorPoint==true)&&(iAnchorPoint!=0)){
+    iOrderEqnTest(0,0)=iAnchorPoint;
+    int ieqn=1;
+    for(int ivar=0; ivar<numVarsr; ++ivar, ++ieqn) 
+      iOrderEqnTest(ieqn,0)=iAnchorPoint+(ivar+1)*numPoints;      
+    for(int ipt=0; ipt<iAnchorPoint; ++ipt) {
+      iOrderEqnTest(ieqn,0)=ipt;
+      ++ieqn;
+      for(int ivar=0; ivar<numVarsr; ++ivar, ++ieqn)
+	iOrderEqnTest(ieqn,0)=ipt+(ivar+1)*numPoints;
+    }
+    for(int ipt=iAnchorPoint+1; ipt<numPoints; ++ipt) {
+      iOrderEqnTest(ieqn,0)=ipt;
+      ++ieqn;
+      for(int ivar=0; ivar<numVarsr; ++ivar, ++ieqn)
+	iOrderEqnTest(ieqn,0)=ipt+(ivar+1)*numPoints;
+    }
+  }
+  else{
+    int ieqn=0;
+    for(int ipt=0; ipt<numPoints; ++ipt) {
+      iOrderEqnTest(ieqn,0)=ipt;
+      ++ieqn;
+      for(int ivar=0; ivar<numVarsr; ++ivar, ++ieqn)
+	iOrderEqnTest(ieqn,0)=ipt+(ivar+1)*numPoints;
+    }
+  }
+
+  //copy reordered R to RChol
+  for(int j=0; j<numEqnAvail; ++j) {
+    int jeqn=iOrderEqnTest(j,0);
+    for(int i=0; i<numEqnAvail; ++i) 
+      RChol(i,j)=R(iOrderEqnTest(i,0),jeqn);
+  }
+
+  int info=0;
+  char uplo='B'; //'B' means we have both halves of R in RChol so the 
+  //fortran doesn't have to copy one half to the other
+  iPivot.newSize(numEqnAvail,1);  
+  numEqnKeep=numEqnAvail;
+  int blocksize=1+numVarsr;
+  MtxDbl dwork(blocksize,3*blocksize);
+  BLOCKPIVOTCHOL_F77(&uplo, &numEqnAvail, RChol.ptr(0,0), &ld_RChol,
+		     &blocksize, iPivot.ptr(0,0), &numEqnKeep, dwork.ptr(0,0),
+		     &min_allowed_rcond, &info); 
+  //printf("numEqnAvail=%d numEqnKeep=%d\n",numEqnAvail,numEqnKeep);
+  //for(int i=0; i<numEqnKeep; ++i) {
+  //printf("i=%d iPivot=%d\n",i,iPivot(i,0));
+  //}
+  //exit(0);
+  
+  iEqnKeep.newSize(numEqnAvail,1);
+  for(int i=0; i<numEqnKeep; ++i) {
+    iEqnKeep(i,0)=iOrderEqnTest(iPivot(i,0)-1,0);
+    //printf("i=%d iPivot=%d iEqnKeep=%d\n",i,iPivot(i,0),iEqnKeep(i,0));
+  }
+
+  lapackRcondR.newSize(numEqnAvail,1);
+  lapackRcondR.zero(); 
+  //the normalized correlation matrix for 1 point (function value plus first
+  //derivatives) is the identity matrix which has a condition number of 1
+  for(int i=0; i<numVarsr+1; ++i)
+    lapackRcondR(i,0)=1.0;
+  int iprev_lapack_rcondR=numVarsr;
+
+  oneNormPrecondR.newSize(numEqnAvail,1);
+  sumAbsColPrecondR.newSize(numEqnAvail,1); //used in computing the one norm 
+
+  //precompute and store the one norm after adding every equation 
+  //in the pivoted Cholesky whole-point at a time order (where a 
+  //whole-point is the function value and its derivatives at an
+  //individual point) this is prepwork for the bisection search for the
+  //last equation for which the reordered R is not too ill-conditioned
+  for(int i=0; i<numEqnKeep; ++i)
+    sumAbsColPrecondR(i,0)=std::fabs(R(iEqnKeep(i,0),0));
+  oneNormPrecondR(0,0)=sumAbsColPrecondR(0,0);
+  
+  double tempdouble;
+  for(int j=1; j<numEqnKeep; ++j) {
+    int jeqn=iEqnKeep(j,0);
+    for(int i=0; i<numEqnKeep; ++i)
+      sumAbsColPrecondR(i,0)+=std::fabs((iEqnKeep(i,0),jeqn));
+    tempdouble=sumAbsColPrecondR(0,0);
+    for(int i=1; i<=j; ++i) 
+      if(tempdouble<sumAbsColPrecondR(i,0))
+	tempdouble=sumAbsColPrecondR(i,0);
+    oneNormPrecondR(j,0)=tempdouble;
+  }
+
+  //find the last equation that isn't too poorly conditioned, but 
+  //first we need the rcond at the point the Cholesky decomposition 
+  //terminated.
+  uplo='L';
+  rcondDblWork.newSize(3*ld_RChol,1);
+  rcondIntWork.newSize(ld_RChol,1);
+  int icurr_lapack_rcondR=numEqnKeep-1;
+  DPOCON_F77(&uplo,&numEqnKeep,RChol.ptr(0,0),&ld_RChol,
+	     oneNormPrecondR.ptr(icurr_lapack_rcondR,0),
+	     &rcondR,rcondDblWork.ptr(0,0),rcondIntWork.ptr(0,0),
+	     &info);
+  lapackRcondR(icurr_lapack_rcondR,0)=rcondR;
+  //printf("ilasteqn=%d rcondR=%g\n",icurr_lapack_rcondR,rcondR);
+
+  int inext_lapack_rcondR=icurr_lapack_rcondR;
+  if((rcondR<=min_allowed_rcond)&&
+     (inext_lapack_rcondR-iprev_lapack_rcondR==1)) {
+    //at this point the previous lapack rcondR==1.0
+    rcondR=1.0;
+    inext_lapack_rcondR=iprev_lapack_rcondR;
+  }
+
+  //do the bisection search if necessary, at most ceil(log2()) more 
+  //calls to rcond
+  int rcond_iter=0;
+  int max_rcond_iter=
+    std::ceil(std::log(static_cast<double>
+		       (inext_lapack_rcondR-iprev_lapack_rcondR))
+	      /std::log(2.0));
+  while((lapackRcondR(inext_lapack_rcondR,0)<=min_allowed_rcond)&&
+        (inext_lapack_rcondR>iprev_lapack_rcondR)) {
+    ++rcond_iter;
+    icurr_lapack_rcondR=(iprev_lapack_rcondR+inext_lapack_rcondR)/2;
+    numEqnKeep=icurr_lapack_rcondR+1;
+
+    DPOCON_F77(&uplo,&numEqnKeep,RChol.ptr(0,0),&ld_RChol,
+	       oneNormPrecondR.ptr(icurr_lapack_rcondR,0),
+	       &rcondR,rcondDblWork.ptr(0,0),rcondIntWork.ptr(0,0),
+	       &info);
+    lapackRcondR(icurr_lapack_rcondR,0)=rcondR;
+    //printf("rcond_iter=%d icurr_lapack_rcondR=%d rcondR=%g\n",
+    //rcond_iter,icurr_lapack_rcondR,rcondR);
+
+    if(rcondR<min_allowed_rcond)
+      inext_lapack_rcondR=icurr_lapack_rcondR;
+    else if(min_allowed_rcond<rcondR)
+      iprev_lapack_rcondR=icurr_lapack_rcondR;
+    else if(min_allowed_rcond==rcondR) {
+      //numEqnKeep=icurr_lapack_rcondR+1;
+      break;
+    }
+    if((inext_lapack_rcondR-iprev_lapack_rcondR==1)||
+       (max_rcond_iter<rcond_iter)) {
+      numEqnKeep=iprev_lapack_rcondR+1;
+      rcondR=lapackRcondR(iprev_lapack_rcondR,0);
+      break;
+    }
+  }
+#ifdef __TIME_PIVOT_CHOLESKY__
+  gettimeofday(&tv, NULL); 
+  stop_sec_rcond=tv.tv_sec;
+  stop_usec_rcond=tv.tv_usec;
+  time_spent_on_rcond_in_pivot_cholesky+=
+    (static_cast<double>(stop_sec_rcond -start_sec_rcond )+
+     static_cast<double>(stop_usec_rcond-start_usec_rcond)/1000000.0);
+#endif
+  numRowsR=numEqnKeep;
+  //printf("numRowsR=%d rcondR=%g, time_spent_on_rcond=%g max_rcond_iter=%d rcond_iter=%d\n",
+  //numRowsR,rcondR,time_spent_on_rcond_in_pivot_cholesky,max_rcond_iter,rcond_iter);
+
+  polyOrder=polyOrderRequested;
+  while((numRowsR<=numTrend(polyOrder,0))&&(polyOrder>0))
+    --polyOrder;
+  nTrend=numTrend(polyOrder,0);
+  Poly.resize(nTrend,numVarsr); //I am relying on the matrix class's actual 
+  //size not changing and that it's contents aren't being written over, so 
+  //that when I enlarge the matrix up to polyOrderRequested I recover all 
+  //the polynomial powers up to polyOrderRequested
+
+  RChol.resize(numRowsR,numRowsR); //resize() instead of newSize() 
+  //because we want to keep the current contents in the same 2D 
+  //order
+
+  Y.newSize(numEqnKeep,1); //newSize() because we don't care about 
+  //the current contents of Y
+  //int ntrend=getNTrend();
+  G.newSize(numEqnKeep,nTrend);
+  iEqnKeep.newSize(numEqnKeep,1);
+  iptIderKeep.newSize(numEqnKeep,2);
+  //ifPointUsed.newSize(numPoints,1);
+  //ifPointUsed.zero();
+  //int used=1;  
+
+  for(int j=0; j<numEqnKeep; ++j) {
+    int jeqn=iEqnKeep(j,0);
+    int jpt=jeqn%numPoints;
+    //ifPointUsed(jpt,0)=used; 
+    iptIderKeep(j,0)=jpt;
+    iptIderKeep(j,1)=jeqn/numPoints-1;
+    Y(j,0)=Yall(jeqn,0);
+  }
+
+  //scale (unprecondition) RChol
+  for(int j=0; j<numEqnKeep; ++j) 
+    for(int i=j; i<numEqnKeep; ++i)
+      RChol(i,j)*=scaleRChol(iEqnKeep(i,0),1);
+  
+
+  for(int itrend=0; itrend<nTrend; ++itrend) 
+    for(int i=0; i<numEqnKeep; ++i) {      
+      int ieqn=iEqnKeep(i,0);
+      G(i,itrend)=Gall(ieqn,itrend);
+    }
+  
+
+#ifdef __DEBUG_MY_CHOL2__
+  {
+  FILE* fp=fopen("R_from_eqn_selecting_chol.txt","w");
+  fprintf(fp,"\n\nRChol=");
+  for(int i=0; i<numEqnKeep; ++i) {
+    fprintf(fp,"\n%-2d ",i);
+    for(int j=0; j<=i; ++j) 
+      fprintf(fp,"%-12.6g ",RChol(i,j)); 
+  }
+
+  /*
+  MtxDbl rr;
+  correlation_matrix(rr, XR);
+
+  fprintf(fp,"nrows=%d\n\nR=",numEqnKeep);
+
+  for(int i=0; i<numEqnKeep; ++i){
+    int iek=iEqnKeep(i,0);
+    int jek=iEqnKeep(0,0);
+    fprintf(fp,"\n%-22.16g",R(iek,jek)*scaleRChol(iek,1)*scaleRChol(jek,1));
+    for(int j=1; j<numEqnKeep; ++j) {
+      jek=iEqnKeep(j,0);
+      fprintf(fp," %-22.16g",R(iek,jek)*scaleRChol(iek,1)*scaleRChol(jek,1));
+    }
+  }
+
+  fprintf(fp,"\n\nr=");
+  for(int i=0; i<rr.getNRows(); ++i){
+    fprintf(fp,"\n%-22.16g",rr(i,0));
+    for(int j=1; j<rr.getNCols(); ++j)
+      fprintf(fp," %-22.16g",rr(i,j));
+  }
+
+  MtxDbl Ichop;
+  solve_after_Chol_fact(Ichop,RChol,rr,'T');
+  //assert(false);
+
+  fprintf(fp,"\n\nIchop=");  
+  for(int i=0; i<Ichop.getNRows(); ++i){
+    fprintf(fp,"\n%-22.16g",Ichop(i,0));
+    for(int j=1; j<Ichop.getNCols(); ++j)
+      fprintf(fp," %-22.16g",Ichop(i,j));
+  }
+
+  */
+
+  //RChol.resize(numEqnKeep,numEqnKeep);
+  MtxDbl I(numEqnKeep,numEqnKeep);
+  MtxDbl RRR(numEqnKeep,numEqnKeep);
+  for(int j=0; j<numEqnKeep; ++j) {
+    int jek=iEqnKeep(j,0);
+    for(int i=0; i<numEqnKeep; ++i) {
+      int iek=iEqnKeep(i,0);
+      RRR(i,j)=R(iek,jek)*scaleRChol(iek,1)*scaleRChol(jek,1);
+    }
+  }
+  int inforrr;
+  double rcondRRR;
+  MtxDbl rrrchol(RRR);
+  Chol_fact(rrrchol,inforrr,rcondRRR);
+  solve_after_Chol_fact(I,RChol,RRR);
+
+  //Rinv.copy(rchol);
+  //Rinv.newSize(numEqnKeep,numEqnKeep);
+  //inverse_after_Chol_fact(Rinv);
+
+  fprintf(fp,"\n\nrrrChol=");
+  for(int i=0; i<numEqnKeep; ++i) {
+    fprintf(fp,"\n%-2d ",i);
+    for(int j=0; j<=i; ++j) 
+      fprintf(fp,"%-12.6g ",rrrchol(i,j)); 
+  }
+
+  for(int j=0; j<numEqnKeep; ++j)
+    for(int i=0; i<numEqnKeep; ++i)
+      R(i,j)*=scaleRChol(i,1)*scaleRChol(j,1);
+  Chol_fact(R,inforrr,rcondRRR);
+  
+  fprintf(fp,"\n\nChol(R)=");
+  for(int i=0; i<numEqnKeep; ++i) {
+    fprintf(fp,"\n%-2d ",i);
+    for(int j=0; j<=i; ++j) 
+      fprintf(fp,"%-12.6g ",R(i,j)); 
+  }
+
+  fprintf(fp,"\n\nI=");
+  for(int i=0; i<numEqnKeep; ++i) {
+    fprintf(fp,"\n%-2d ",i);
+    for(int j=0; j<numEqnKeep; ++j) 
+      fprintf(fp,"%-22.16g ",I(i,j));
+  }
+  /*
+  fprintf(fp,"\n\nI=");
+  for(int i=0; i<numEqnKeep; ++i) {
+    fprintf(fp,"\n");
+    for(int j=0; j<numEqnKeep; ++j) {
+      int jek=iEqnKeep(j,0);
+      tempdouble2=0.0;
+      for(int k=0; k<numEqnKeep; ++k) {
+	int kek=iEqnKeep(k,0);
+	tempdouble2+=Rinv(i,k)*R(kek,jek);
+      }
+      fprintf(fp,"%-22.16g ",tempdouble2);
+    }
+  }
+  */
+  fflush(fp);
+  fclose(fp);
+
+  assert(false);
+  }
+#endif
+    
+#ifdef __DEBUG_MY_CHOL__
+  {
+  FILE* fp=fopen("Check_my_precond_chol2.txt","w");
+  fprintf(fp,"nrows=%d\n\nR=",numEqnKeep);
+
+  for(int i=0; i<numEqnKeep; ++i){
+    fprintf(fp,"\n%-22.16g",R(i,0));
+    for(int j=1; j<numEqnKeep; ++j)
+      fprintf(fp," %-22.16g",R(i,j));
+  }
+  
+  double rcondR_ref;
+  MtxDbl RCholDebug(R);
+  Chol_fact(RCholDebug, info_local, rcondR_ref);
+
+  fprintf(fp,"\n\nrcondR_ref=%-22.16g\nrcondR_my=%-22.16g\n\nL_ref=",
+	  rcondR_ref,rcondR);
+
+  for(int i=0; i<numEqnKeep; ++i){
+    fprintf(fp,"\n%-22.16g",RCholDebug(i,0));
+    for(int j=1; j<=i; ++j)
+      fprintf(fp," %-22.16g",RCholDebug(i,j));
+    for(int j=i+1; j<numEqnKeep; ++j)
+      fprintf(fp," %-22.16g",0.0);
+  }  
+  
+  fprintf(fp,"\n\nL_my=");
+  
+  for(int i=0; i<numEqnKeep; ++i){
+    fprintf(fp,"\n%-22.16g",RChol(i,0));
+    for(int j=1; j<=i; ++j)
+      fprintf(fp," %-22.16g",RChol(i,j));
+    for(int j=i+1; j<numEqnKeep; ++j)
+      fprintf(fp," %-22.16g",0.0);
+  }  
+
+  fclose(fp);  
+  }
+  //assert(false);
+#endif
+#ifdef __TIME_PIVOT_CHOLESKY__
+  gettimeofday(&tv, NULL); 
+  stop_sec_cholesky=tv.tv_sec;
+  stop_usec_cholesky=tv.tv_usec;
+  time_spent_on_pivot_cholesky+=
+    (static_cast<double>(stop_sec_cholesky -start_sec_cholesky )+
+     static_cast<double>(stop_usec_cholesky-start_usec_cholesky)/1000000.0);
+  //printf("GEK: numVarsr=%d numPoints=%d numEqnAvail=%d numEqnKeep=%d\ntime_spent_on_pivot_cholesky=%g,rcondR=%g\n",  
+  //numVarsr, numPoints, numEqnAvail, numEqnKeep,
+  // time_spent_on_pivot_cholesky,rcondR);
+  //exit(0);
+#endif
+  //exit(0);
+  return;
+}
+#endif
 
 
 
@@ -827,19 +1291,21 @@ GradKrigingModel::GradKrigingModel(const SurfData& sd, const ParamMap& params)
   // *************************************************************
   // this starts the input section about the trend function 
   // *************************************************************
-  polyOrder = 1;
+  polyOrderRequested = 2;
+  ifReducedPoly=false;
   param_it = params.find("order");
   if (param_it != params.end() && param_it->second.size() > 0) {
-    polyOrder = std::atoi(param_it->second.c_str()); 
-    assert (polyOrder >= 0);
+    polyOrderRequested = std::atoi(param_it->second.c_str()); 
+    assert (polyOrderRequested >= 0);
   }
-  
-  //cout << "order=" << polyOrder << "\n";
+  else{
+    ifReducedPoly=true;
+  }
+  numTrend.newSize(polyOrderRequested+1,1);
 
   //polyOrder = 2; //for debug
   //main_effects_poly_power(Poly, numVarsr, polyOrder); //for debug
   //commented out for debug
-  ifReducedPoly=false;
   param_it = params.find("reduced_polynomial");
   if (param_it != params.end() && param_it->second.size() > 0) 
     if((std::atoi(param_it->second.c_str()))!=0) 
@@ -847,20 +1313,18 @@ GradKrigingModel::GradKrigingModel(const SurfData& sd, const ParamMap& params)
       
   //cout << "ifReducedPoly=" << ifReducedPoly << "\n";
 
-  if(ifReducedPoly)
-    main_effects_poly_power(Poly, numVarsr, polyOrder);
-  else
-    multi_dim_poly_power(Poly, numVarsr, polyOrder);  
-
-  //check that we have enough data for the selected trend functions
-  int needed_eqns = getNTrend()+1; //+numVarsr;
-  //if( !(needed_eqns <= numRowsR) ) {
-  if( !(needed_eqns <= numEqnAvail) ) {
-    std::cerr << "With the selected set of trend functions there are more unknown parameters (" <<  needed_eqns << ") than there are pieces of data (" << numRowsR << ") for the GradKrigingModel. For the current set of trend functions, you need at least " << std::ceil((double)needed_eqns/nDer) << " data points and having at least " << std::ceil((double)2.0*needed_eqns/nDer) << " is _strongly_ recommended.\n";
-    //assert(needed_eqns <= numRowsR);
-    assert(needed_eqns <= numEqnAvail);
+  if(ifReducedPoly) {
+    main_effects_poly_power(Poly, numVarsr, polyOrderRequested);
+    for(polyOrder=0; polyOrder<=polyOrderRequested; ++polyOrder) 
+      numTrend(polyOrder,0)=polyOrder*numVarsr+1;
+  }
+  else{
+    multi_dim_poly_power(Poly, numVarsr, polyOrderRequested);  
+    for(polyOrder=0; polyOrder<=polyOrderRequested; ++polyOrder) 
+      numTrend(polyOrder,0)=num_multi_dim_poly_coef(numVarsr, polyOrder);
   }
 
+  preAllocateMaxMemory(); 
   // *************************************************************
   // this starts the input section HOW to bound the condition 
   // number, this determines which derivatives of the constraint
@@ -901,7 +1365,7 @@ GradKrigingModel::GradKrigingModel(const SurfData& sd, const ParamMap& params)
   // number
   // *************************************************************
 
-  nug=(2*getNTrend()+1.0)/maxCondNum;
+  nug=(2*nTrend+1.0)/maxCondNum;
   //nug=2*numPoints/maxCondNum;
 
 
@@ -927,7 +1391,7 @@ GradKrigingModel::GradKrigingModel(const SurfData& sd, const ParamMap& params)
     if(nuggetFormula!=0) {
       switch(nuggetFormula) {
       case 1:
-	nug=(2*getNTrend()+1.0)/maxCondNum;
+	nug=(2*nTrend+1.0)/maxCondNum;
 	break;
       case 2:
 	nug=2*numPoints/maxCondNum; //bob; may want to change this numPoints to numRowsr
@@ -1156,8 +1620,8 @@ void GradKrigingModel::create()
   //temporary variables used by masterObjectiveAndConstraints
   temp.clear(); //vector
   temp2.clear(); //vector
-  temp3.clear(); //vector
-  temp4.clear(); //vector
+  //temp3.clear(); //vector
+  //temp4.clear(); //vector
 
   //Gtran_Rinv_G_inv.clear(); //need this for derivatives of log(det(Gtran_Rinv_G)) but could use it to replace the permanent copy of Gtran_Rinv_G_Chol
 
@@ -1174,6 +1638,22 @@ void GradKrigingModel::create()
   hessObj.clear(); //matrix used to compute hessObj
 }
 
+void GradKrigingModel::preAllocateMaxMemory() {
+  //this preallocates the maximum size of arrays whose size depends on how many equations were discarded by pivoted Cholesky and they could possibly be allocated to a different size than their maximum the first time they are allocated.
+  
+  nTrend=numTrend(polyOrderRequested,0);
+  Y.newSize(numEqnAvail,1);
+  G.newSize(numEqnAvail,nTrend);
+  Rinv_G.newSize(numEqnAvail,nTrend);
+  Gtran_Rinv_G_Chol.newSize(nTrend,nTrend);
+  rhs.newSize(numEqnAvail,1);
+  betaHat.newSize(nTrend,1);
+  temp.newSize(nTrend,1);
+  temp2.newSize(numEqnAvail,1);
+
+  return;
+}
+
 std::string GradKrigingModel::model_summary_string() const {
   MtxDbl temp_out_corr_lengths(1,numVarsr);
   for(int i=0; i<numVarsr; ++i) 
@@ -1181,7 +1661,7 @@ std::string GradKrigingModel::model_summary_string() const {
   scaler.unScaleXrDist(temp_out_corr_lengths);
   
   std::ostringstream oss;
-  oss << "GKM: #pts="<< numPoints <<"; used " << numEqnKeep << "/" << numEqnAvail << " eqns; Correlation lengths=(" << temp_out_corr_lengths(0,0);
+  oss << "GEK: #pts="<< numPoints <<"; used " << numEqnKeep << "/" << numEqnAvail << " eqns; Correlation lengths=(" << temp_out_corr_lengths(0,0);
   for(int i=1; i<numVarsr; ++i)
     oss << ", " << temp_out_corr_lengths(0,i);
   oss << "); unadjusted variance=" << estVarianceMLE * scaler.unScaleFactorVarY() << "; log(likelihood)=" << likelihood << "; the trend is a ";
@@ -1190,15 +1670,19 @@ std::string GradKrigingModel::model_summary_string() const {
       oss << "reduced_";
     else oss <<"full ";
   }
-  oss << "polynomial of order=" << polyOrder << 
-    "; rcond(R)=" << rcondR << "; rcond(Gtran_Rinv_G)=" << rcond_Gtran_Rinv_G 
-      << "; nugget=" << nug << ".\n";
+  oss << "polynomial of order=" << polyOrder << " (order "<< polyOrderRequested
+      << " was desired); rcond(R)=" << rcondR << "; rcond(Gtran_Rinv_G)=" 
+      << rcond_Gtran_Rinv_G << "; nugget=" << nug << ".\n";
   
   oss << "Beta= (" << betaHat(0,0);
-  int ntrend=getNTrend(); 
-  for(int i=1; i<ntrend; ++i)
+  //int ntrend=getNTrend(); 
+  for(int i=1; i<nTrend; ++i)
     oss << "," << betaHat(i,0);
   oss << ")\n";
+  //if(numEqnKeep!=numEqnAvail)
+  //for(int i=0; i<numEqnKeep; ++i)
+  // oss << "(" << i<< ":" << iptIderKeep(i,0) << "," << iptIderKeep(i,1) << ")\n";
+    
 
   return (oss.str());  
 }
@@ -1218,8 +1702,8 @@ double GradKrigingModel::evaluate(const MtxDbl& xr) const
   */
 
   //assert( (numVarsr == xr.getNCols()) && (xr.getNRows() == 1) );
-  int ntrend = getNTrend(); 
-  MtxDbl g(1, ntrend), r(1, numRowsR);
+  //int ntrend = getNTrend(); 
+  MtxDbl g(1, nTrend), r(1, numRowsR);
 
   /*
   printf("double evaluate()\n");
@@ -1257,7 +1741,7 @@ double GradKrigingModel::evaluate(const MtxDbl& xr) const
   //printf("] y=%g\n",yus);
   //printf("y=%g yunscaled=%g\n",y,yus);
   //return yus;
-  //printf("GKM::evaluate({%g->%g}",xr(0,0),xr_scaled(0,0));
+  //printf("GEK::evaluate({%g->%g}",xr(0,0),xr_scaled(0,0));
   //for(int ivar=1; ivar<numVarsr; ++ivar)
   //printf(",{%g->%g}",xr(0,ivar),xr_scaled(0,ivar));
   //printf(")=(scaled_y=%g),scaled_y=%g\n",y,scaler.unScaleYOther(y));
@@ -1285,8 +1769,8 @@ MtxDbl& GradKrigingModel::evaluate(MtxDbl& y, const MtxDbl& xr) const
   */  
 
   //assert( (numVarsr == xr.getNCols()) && (xr.getNRows() == 1) );
-  int ntrend = getNTrend(); 
-  MtxDbl g(nrowsxr, ntrend), r(nrowsxr, numRowsR);
+  //int ntrend = getNTrend(); 
+  MtxDbl g(nrowsxr, nTrend), r(nrowsxr, numRowsR);
 
   MtxDbl xr_scaled(xr); //for debug only, otherwise should be inside "else"
   if(scaler.isUnScaled()) {
@@ -1400,7 +1884,7 @@ MtxDbl& GradKrigingModel::evaluate_d1y(MtxDbl& d1y, const MtxDbl& xr) const
   MtxInt der(nder,numVarsr); 
   multi_dim_poly_power(der,numVarsr,-1); //equivalent to der.identity();
 
-  int ntrend=getNTrend();
+  //int ntrend=getNTrend();
 
   evaluate_poly_der(d1y,Poly,der,betaHat,xr_scaled);
   
@@ -1560,8 +2044,8 @@ double GradKrigingModel::eval_variance(const MtxDbl& xr) const
   */
 
   //assert( (numVarsr == xr.getNCols()) && (xr.getNRows() == 1) );
-  int ntrend = getNTrend(); 
-  MtxDbl g_minus_r_Rinv_G(1, ntrend), r(1, numRowsR);
+  //int ntrend = getNTrend(); 
+  MtxDbl g_minus_r_Rinv_G(1, nTrend), r(1, numRowsR);
 
   if(scaler.isUnScaled()) {
     eval_trend_fn(g_minus_r_Rinv_G, xr);
@@ -1575,7 +2059,7 @@ double GradKrigingModel::eval_variance(const MtxDbl& xr) const
   }
 
   MtxDbl tempa(numRowsR,1);
-  MtxDbl tempb(ntrend,1);
+  MtxDbl tempb(nTrend,1);
 
   if(nug>0.0) 
     apply_nugget_eval(r);
@@ -1623,8 +2107,8 @@ MtxDbl& GradKrigingModel:: eval_variance(MtxDbl& adj_var, const MtxDbl& xr) cons
   */
 
   //assert( (numVarsr == xr.getNCols()) && (xr.getNRows() == 1) );
-  int ntrend = getNTrend(); 
-  MtxDbl g_minus_r_Rinv_G(nrowsxr, ntrend), r(nrowsxr, numRowsR);
+  //int ntrend = getNTrend(); 
+  MtxDbl g_minus_r_Rinv_G(nrowsxr, nTrend), r(nrowsxr, numRowsR);
 
   if(scaler.isUnScaled()) {
     eval_trend_fn(g_minus_r_Rinv_G, xr);
@@ -1639,7 +2123,7 @@ MtxDbl& GradKrigingModel:: eval_variance(MtxDbl& adj_var, const MtxDbl& xr) cons
 
   int i,j;
   MtxDbl tempa(numRowsR,nrowsxr); 
-  MtxDbl tempb(ntrend,nrowsxr);
+  MtxDbl tempb(nTrend,nrowsxr);
   double var_unscale_factor=scaler.unScaleFactorVarY();
 
   if(nug>0.0)
@@ -1659,7 +2143,7 @@ MtxDbl& GradKrigingModel:: eval_variance(MtxDbl& adj_var, const MtxDbl& xr) cons
     for(j=1; j<numRowsR; ++j)
       adj_var(i,0)-=r(i,j)*tempa(j,i); //looks a lot like matrix mult but only N^2 ops
 
-    for(j=1; j<ntrend; ++j)
+    for(j=1; j<nTrend; ++j)
       adj_var(i,0)+=g_minus_r_Rinv_G(i,j)*tempb(j,i); //looks a lot like matrix mult but only N^2 ops
 
     adj_var(i,0)*=estVarianceMLE*var_unscale_factor;
@@ -2324,7 +2808,7 @@ void GradKrigingModel::masterObjectiveAndConstraints(const MtxDbl& theta, int ob
   //these are temporary variables that we keep around during emulator 
   //creation so we don't have to constantly allocate and deallocate them, 
   //these get deallocated at the end of create
-  //member variable: MtxDbl temp(ntrend)
+  //member variable: MtxDbl temp(nTrend)
   //member variable: MtxDbl temp2(numPoints)
   //member variable: MtxDbl temp3(numPoints)
   //member variable: MtxDbl temp4(numPoints)
@@ -2339,7 +2823,7 @@ void GradKrigingModel::masterObjectiveAndConstraints(const MtxDbl& theta, int ob
   //member variable: MtxDbl allEigVal(numPoints)
   //member variable: MtxDbl Z(numPoints*numPoints,numTheta)
   //member variable: MtxDbl R(numPoints,numPoints)
-  //member variable: MtxDbl G(numPoints,ntrend)
+  //member variable: MtxDbl G(numPoints,nTrend)
 
 
   //keep these around after emulator creation so we can evaluate the emulator
@@ -2347,9 +2831,9 @@ void GradKrigingModel::masterObjectiveAndConstraints(const MtxDbl& theta, int ob
   //member variable: MtxDbl RLU(numPoints,numPoints)
   //member variable: MtxInt ipvt_RLU
   //member variable: MtxDbl Rinv(numPoints,numPoints) //needed to eval integral of adjusted variance, capability not yet added
-  //member variable: MtxDbl Rinv_G(numPoints,ntrend)
-  //member variable: MtxDbl Gtran_Rinv_G_LU(ntrend,ntrend)
-  //member variable: MtxInt ipvt_Gtran_Rinv_G_LU(ntrend)
+  //member variable: MtxDbl Rinv_G(numPoints,nTrend)
+  //member variable: MtxDbl Gtran_Rinv_G_LU(nTrend,nTrend)
+  //member variable: MtxInt ipvt_Gtran_Rinv_G_LU(nTrend)
 
   //if theta was the same as the last time we called this function than we can reuse some of the things we calculated last time
   
@@ -2483,18 +2967,18 @@ void GradKrigingModel::masterObjectiveAndConstraints(const MtxDbl& theta, int ob
     //  will loop over k to fill up the gradient of the objective function
     
     //Do the generalized (by R^-1) least squares using min # of ops
-    Rinv_G.newSize(numRowsR,ntrend); //precompute and store
+    Rinv_G.newSize(numRowsR,nTrend); //precompute and store
     //matrix_mult(Rinv_G,Rinv,G);
     solve_after_Chol_fact(Rinv_G,RChol,G);
 
   
-    //Gtran_Rinv_G_inv.newSize(ntrend,ntrend);
+    //Gtran_Rinv_G_inv.newSize(nTrend,nTrend);
     //matrix_mult(Gtran_Rinv_G_inv,G,Rinv_G,0.0,1.0,'T','N');
     //double log_determinant_Gtran_Rinv_G=0.0, sign_of_det_Gtran_Rinv_G=1.0;
     //pseudo_inverse_sym(Gtran_Rinv_G_inv, 1.0/maxCondNum, rcond_Gtran_Rinv_G, log_determinant_Gtran_Rinv_G, sign_of_det_Gtran_Rinv_G);
 
 
-    Gtran_Rinv_G_Chol.newSize(ntrend,ntrend);
+    Gtran_Rinv_G_Chol.newSize(nTrend,nTrend);
     matrix_mult(Gtran_Rinv_G_Chol,G,Rinv_G,0.0,1.0,'T','N');
     //double rcond_Gtran_Rinv_G;
     Chol_fact_workspace(Gtran_Rinv_G_Chol,Gtran_Rinv_G_Chol_Scale,Gtran_Rinv_G_Chol_DblWork,Gtran_Rinv_G_Chol_IntWork,chol_info,rcond_Gtran_Rinv_G);
@@ -2506,15 +2990,15 @@ void GradKrigingModel::masterObjectiveAndConstraints(const MtxDbl& theta, int ob
 
 
     double log_determinant_Gtran_Rinv_G=0.0; //need this for the Rassmussen & Williams formulation of likelihood
-    for (int itrend = 0; itrend < ntrend; ++itrend)
+    for (int itrend = 0; itrend < nTrend; ++itrend)
       log_determinant_Gtran_Rinv_G += std::log(Gtran_Rinv_G_Chol(itrend,itrend)); 
     log_determinant_Gtran_Rinv_G *= 2.0; //only for Cholesky factorization of R
 
-    temp.newSize(ntrend,1);
+    temp.newSize(nTrend,1);
     matrix_mult(temp, Rinv_G, Y, 0.0, 1.0, 'T', 'N');
-    betaHat.newSize(ntrend,1);
-    solve_after_Chol_fact(betaHat,Gtran_Rinv_G_Chol,temp); //O(ntrend^2) ops
-    //matrix_mult(betaHat,Gtran_Rinv_G_inv,temp); //O(ntrend^2) ops
+    betaHat.newSize(nTrend,1);
+    solve_after_Chol_fact(betaHat,Gtran_Rinv_G_Chol,temp); //O(nTrend^2) ops
+    //matrix_mult(betaHat,Gtran_Rinv_G_inv,temp); //O(nTrend^2) ops
 
     temp2.copy(Y); //this will be eps=epsilon=Y-G(XR)*betaHat, but use 
     //variable temp2 because we would only need the variable "eps" for these 
@@ -2666,7 +3150,7 @@ void GradKrigingModel::masterObjectiveAndConstraints(const MtxDbl& theta, int ob
       fprintf(fp,"%-12.6g %-12.6g\n",Y(iii,0),YYY(iii,0));
 
     fprintf(fp,"\n[betaHat     BBBeta]=\n");
-    for(iii=0; iii<ntrend; ++iii)
+    for(iii=0; iii<nTrend; ++iii)
       fprintf(fp,"%-12.6g %-12.6g\n",betaHat(iii,0),BBBeta(iii,0));
 
 
@@ -2687,10 +3171,10 @@ void GradKrigingModel::masterObjectiveAndConstraints(const MtxDbl& theta, int ob
     //derived following: C. E. Rasmussen & C. K. I. Williams, Gaussian Processes for Machine Learning, the MIT Press, 2006, ISBN 026218253X. c 2006 Massachusetts Institute of Technology. www.GaussianProcess.org/gpml...  we assume a "vague prior" (i.e. that we don't know anything) for betaHat, then like "Koehler and Owen" we replace the covariance matrix K with (unadjusted variance)*R (where R is the correlation matrix) and find unadjusted variance and betaHat through maximum likelihood.
 
     //the unbiased estimate of unadjusted variance
-    estVarianceMLE = dot_product(temp2,rhs)/(numRowsR-ntrend); 
+    estVarianceMLE = dot_product(temp2,rhs)/(numRowsR-nTrend); 
 
     //the "per point" unbiased log(likelihood)
-    likelihood = -0.5*(std::log(estVarianceMLE)+(log_determinant_R+log_determinant_Gtran_Rinv_G)/(numRowsR-ntrend)); 
+    likelihood = -0.5*(std::log(estVarianceMLE)+(log_determinant_R+log_determinant_Gtran_Rinv_G)/(numRowsR-nTrend)); 
 
 #else
     //derived the "Koehler and Owen" way (assumes we know the trend function, and is therefore biased, but usally seems to work better for surrogate based optimization)

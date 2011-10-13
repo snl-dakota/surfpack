@@ -252,6 +252,14 @@ public:
   { return (Der.getNRows());
   } 
 
+  inline int getNumEqnAvail() const
+  { return (numEqnAvail);
+  }
+
+  inline int getNumEqnKeep() const
+  { return (numEqnKeep);
+  }
+
   // return the likelihood of this model
   inline double getLikelihood()
   { return likelihood; }
@@ -266,6 +274,7 @@ public:
 private:
   // helper functions
   void getBaseIEqnKeep(); //to replace or rewrite+rename
+  void preAllocateMaxMemory();
   void equationSelectingPrecondCholR();
 
   /// this function calculates the objective function (negative log
@@ -443,7 +452,11 @@ private:
       arbitrary order */
   MtxInt Poly;  
   bool ifReducedPoly; /// only use main effects (no interaction/mixed terms) in the polynomial basis
-  int polyOrder; /// highest total order of any term in the polynomial basis
+  int polyOrderRequested; /// this is what the user asked for, highest total order of any term in the polynomial basis
+  int polyOrder; /// this is what was actually used, can be less than what the user asked for if the correlation matrix was ill conditioned and we had to drop points to fix the ill conditioning and had to drop trend order to make it less than the remaining points.
+  MtxInt numTrend; //the number of equations needed for trend functions of order 0 through polyOrderRequested
+  int nTrend;
+
 
   /** the derivative orders for individual dimensions in a 
       multidimensional mixed partial derivatives of arbitrary order.
@@ -478,10 +491,13 @@ private:
   MtxInt iOrderEqnTest;
   MtxInt iEqnKeep;
   MtxInt iptIderKeep;
+  MtxInt iPivot; //filled by NKM_PivotChol.f and says which points have the most new information.
   bool ifHaveAnchorPoint;
   int  iAnchorPoint;
   int numEqnAvail;
   int numEqnKeep;
+  int numNeededEqn; 
+  
 
   //MtxDbl Rall; //don't actually need R after we do the equation selecting precond cholesky so keep variable named R and discard variable named Rall
   MtxDbl Yall;
@@ -577,24 +593,24 @@ private:
   double estVarianceMLE;
 
 
-  MtxDbl dNbetaHat_dthetaN; //(ntrend)
+  //MtxDbl dNbetaHat_dthetaN; //(ntrend)
   MtxDbl temp; //(ntrend)
   MtxDbl temp2; //(numPoints)
-  MtxDbl temp3; //(numPoints)
-  MtxDbl temp4; //(numPoints)
-  MtxDbl temp5; //(numPoints)
-  MtxDbl d2eps_dthetai_dthetaj; //(numPoints)
+  //MtxDbl temp3; //(numPoints)
+  //MtxDbl temp4; //(numPoints)
+  //MtxDbl temp5; //(numPoints)
+  //MtxDbl d2eps_dthetai_dthetaj; //(numPoints)
   //MtxDbl P; //(numPoints,numPoints)
-  MtxDbl dR_dthetai; //(numPoints,numPoints)
-  MtxDbl dR_dthetaj; //(numPoints,numPoints)
-  MtxDbl Rinv_dR_dthetai; //(numPoints,numPoints)
-  MtxDbl Rinv_dR_dthetaj; //(numPoints,numPoints)  
-  MtxDbl d2R_dthetai_dthetaj; //(numPoints,numPoints)
-  MtxDbl dR_dthetai_Rinv_eps_minus_deps_dthetai; //(numPoints,numTheta)
-  MtxDbl Rinv_dR_dthetai_Rinv_eps_minus_deps_dthetai; //(numPoints,numTheta)
+  //MtxDbl dR_dthetai; //(numPoints,numPoints)
+  //MtxDbl dR_dthetaj; //(numPoints,numPoints)
+  //MtxDbl Rinv_dR_dthetai; //(numPoints,numPoints)
+  //MtxDbl Rinv_dR_dthetaj; //(numPoints,numPoints)  
+  //MtxDbl d2R_dthetai_dthetaj; //(numPoints,numPoints)
+  //MtxDbl dR_dthetai_Rinv_eps_minus_deps_dthetai; //(numPoints,numTheta)
+  //MtxDbl Rinv_dR_dthetai_Rinv_eps_minus_deps_dthetai; //(numPoints,numTheta)
   MtxDbl Gtran_Rinv_G_inv; //(ntrend,ntrend)//maybe I ought to keep this instead of Gtran_Rinv_G_Chol but the only reason I actually need the inverse is if I'm calculating Gradients of the objective function and it's a "little" (order ntrend^3) extra work to calculate the inverse, and our default method of optimization is to use the DIRECT optimizer
-  MtxDbl Gtran_Rinv_dR_thetai; //(ntrend,numPoints);
-  MtxDbl Gtran_Rinv_dR_thetai_Rinv_G; //(ntrend,ntrend)
+  //MtxDbl Gtran_Rinv_dR_thetai; //(ntrend,numPoints);
+  //MtxDbl Gtran_Rinv_dR_thetai_Rinv_G; //(ntrend,ntrend)
 
   
   int prevObjDerMode;
@@ -604,9 +620,9 @@ private:
   MtxDbl allEigVal; //(numPoints)
   //MtxDbl Z; //(numPoints*numPoints,numTheta)
   //MtxDbl G; //(numPoints,ntrend)
-  MtxDbl deps_dtheta; //(numPoints,numTheta)
-  MtxDbl dR_dtheta_Rinv_eps; //(numPoints,numTheta)
-  MtxDbl destVarianceMLE_dtheta; //(numTheta)
+  //MtxDbl deps_dtheta; //(numPoints,numTheta)
+  //MtxDbl dR_dtheta_Rinv_eps; //(numPoints,numTheta)
+  //MtxDbl destVarianceMLE_dtheta; //(numTheta)
 
   int maxObjDerMode;
   int maxConDerMode;

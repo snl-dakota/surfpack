@@ -11,9 +11,9 @@ using std::ostringstream;
 
 //#define __PROFILING_TEST__ //not iplemented yet
 //#define __TIMING_BENCH__
-#define __FAST_TEST__
+//#define __FAST_TEST__
 //#define __WITH_PAV_500__
-//#define __FASTER_TEST__
+#define __FASTER_TEST__
 //#define __EVEN_FASTER_TEST__
 //#define __VALGRIND_TEST__
 //#define __GKM_USE_KM_CORR_LEN__
@@ -181,11 +181,11 @@ int main(int argc, char* argv[])
   //compare_sample_designs();
   //hack();
   //validate();
-  //validate_grad();
+  validate_grad();
   //validate_grad2();
   //check_matrix();
   //gen_sample_design_by_pivoted_cholesky();
-  nested_Krig_vs_GEK_herbie_smooth_herbie_2D_4D_8D();
+  //nested_Krig_vs_GEK_herbie_smooth_herbie_2D_4D_8D();
   return 0;
 }
 
@@ -567,40 +567,46 @@ void check_matrix()
 
 
 void nested_Krig_vs_GEK_herbie_smooth_herbie_2D_4D_8D(){
-  //string build_herbie_2D="gradHerbie_NestedLHS_2D_2048pts.spd";
-  //string build_smooth_2D="gradSmoothHerbie_NestedLHS_2D_2048pts.spd";
-  string build_herbie_2D="gradHerbie_PivotChol_2D_1024pts.spd";
-  string build_smooth_2D="gradSmoothHerbie_PivotChol_2D_1024pts.spd";
+  //string build_herbie_2D="gradHerbie_NestedLHS_2D_1024pts.spd";
+  //string build_smooth_2D="gradSmoothHerbie_NestedLHS_2D_1024pts.spd";
+  string build_herbie_2D="gradHerbie_NestedLHS_2D_2048pts.spd";
+  string build_smooth_2D="gradSmoothHerbie_NestedLHS_2D_2048pts.spd";
+  //string build_herbie_2D="gradHerbie_PivotChol_2D_1024pts.spd";
+  //string build_smooth_2D="gradSmoothHerbie_PivotChol_2D_1024pts.spd";
   string valid_herbie_2D="gradHerbie_NestedLHS_2D_16384pts.spd";
   string valid_smooth_2D="gradSmoothHerbie_NestedLHS_2D_16384pts.spd";
 
   //string build_herbie_4D="gradHerbie_NestedLHS_4D_1024pts.spd";
   //string build_smooth_4D="gradSmoothHerbie_NestedLHS_4D_1024pts.spd";
-  //string build_herbie_4D="gradHerbie_NestedLHS_4D_4096pts.spd";
-  //string build_smooth_4D="gradSmoothHerbie_NestedLHS_4D_4096pts.spd";
-  string build_herbie_4D="gradHerbie_PivotChol_4D_2048pts.spd";
-  string build_smooth_4D="gradSmoothHerbie_PivotChol_4D_2048pts.spd";
+  string build_herbie_4D="gradHerbie_NestedLHS_4D_4096pts.spd";
+  string build_smooth_4D="gradSmoothHerbie_NestedLHS_4D_4096pts.spd";
+  //string build_herbie_4D="gradHerbie_PivotChol_4D_2048pts.spd";
+  //string build_smooth_4D="gradSmoothHerbie_PivotChol_4D_2048pts.spd";
   string valid_herbie_4D="gradHerbie_NestedLHS_4D_16384pts.spd";
   string valid_smooth_4D="gradSmoothHerbie_NestedLHS_4D_16384pts.spd";
 
   //string build_herbie_8D="gradHerbie_NestedLHS_8D_512pts.spd";
   //string build_smooth_8D="gradSmoothHerbie_NestedLHS_8D_512pts.spd";
-  //string build_herbie_8D="gradHerbie_NestedLHS_8D_2048pts.spd";
-  //string build_smooth_8D="gradSmoothHerbie_NestedLHS_8D_2048pts.spd";
-  string build_herbie_8D="gradHerbie_PivotChol_8D_1024pts.spd";
-  string build_smooth_8D="gradSmoothHerbie_PivotChol_8D_1024pts.spd";
+  string build_herbie_8D="gradHerbie_NestedLHS_8D_2048pts.spd";
+  string build_smooth_8D="gradSmoothHerbie_NestedLHS_8D_2048pts.spd";
+  //string build_herbie_8D="gradHerbie_PivotChol_8D_1024pts.spd";
+  //string build_smooth_8D="gradSmoothHerbie_PivotChol_8D_1024pts.spd";
   string valid_herbie_8D="gradHerbie_NestedLHS_8D_16384pts.spd";
   string valid_smooth_8D="gradSmoothHerbie_NestedLHS_8D_16384pts.spd";
 
   string build_herbie_filename, valid_herbie_filename;
   string build_smooth_filename, valid_smooth_filename;
 
-  FILE *fpout1=fopen("GradKrigingPaperHerbieEffectOfDimensionStudyTablePivotCholDesigns.txt","w");
-  FILE *fpout2=fopen("GradKrigingPaperSmoothHerbieEffectOfDimensionStudyTablePivotCholDesigns.txt","w");
+  FILE *fpout1=fopen("GradKrigingPaperHerbieEffectOfDimensionStudyTableNestedLHSPivotCholKrigR.txt","w");
+  FILE *fpout2=fopen("GradKrigingPaperSmoothHerbieEffectOfDimensionStudyTableNestedLHSPivotCholKrigR.txt","w");
 
-  std::map< std::string, std::string> km_params;    
-  km_params["order"] = "2";
-  km_params["reduced_polynomial"]=nkm::toString<bool>(true);
+  std::map< std::string, std::string> herbie_krig_params;    
+  std::map< std::string, std::string> herbie_GEK_params;    
+  std::map< std::string, std::string> smooth_krig_params;    
+  std::map< std::string, std::string> smooth_GEK_params;    
+  herbie_krig_params["order"] = "2";
+  herbie_krig_params["reduced_polynomial"]=nkm::toString<bool>(true);
+  herbie_krig_params["optimization_method"]="none";
 
   for(int ndimpow=1; ndimpow<=3; ++ndimpow) { //loop over the number of
     //dimensions for the effect of dimension study
@@ -608,8 +614,12 @@ void nested_Krig_vs_GEK_herbie_smooth_herbie_2D_4D_8D(){
     int Ndim=static_cast<int> (std::pow(2.0,static_cast<double>(ndimpow)));
     switch(Ndim){
     case 2:
-      km_params["lower_bounds"]="-2.0 -2.0";
-      km_params["upper_bounds"]="2.0 2.0";
+      herbie_krig_params["lower_bounds"]="-2.0 -2.0";
+      herbie_krig_params["upper_bounds"]="2.0 2.0";
+      herbie_GEK_params=herbie_krig_params;
+      smooth_krig_params=herbie_krig_params;
+      smooth_GEK_params =herbie_krig_params;
+
       build_herbie_filename=build_herbie_2D;
       build_smooth_filename=build_smooth_2D;
       valid_herbie_filename=valid_herbie_2D;
@@ -617,8 +627,12 @@ void nested_Krig_vs_GEK_herbie_smooth_herbie_2D_4D_8D(){
       
       break;
     case 4:
-      km_params["lower_bounds"]="-2.0 -2.0 -2.0 -2.0";
-      km_params["upper_bounds"]="2.0 2.0 2.0 2.0";
+      herbie_krig_params["lower_bounds"]="-2.0 -2.0 -2.0 -2.0";
+      herbie_krig_params["upper_bounds"]="2.0 2.0 2.0 2.0";
+      herbie_GEK_params=herbie_krig_params;
+      smooth_krig_params=herbie_krig_params;
+      smooth_GEK_params =herbie_krig_params;
+
       build_herbie_filename=build_herbie_4D;
       build_smooth_filename=build_smooth_4D;
       valid_herbie_filename=valid_herbie_4D;
@@ -626,8 +640,12 @@ void nested_Krig_vs_GEK_herbie_smooth_herbie_2D_4D_8D(){
 
       break;
     case 8:
-      km_params["lower_bounds"]="-2.0 -2.0 -2.0 -2.0 -2.0 -2.0 -2.0 -2.0";
-      km_params["upper_bounds"]="2.0 2.0 2.0 2.0 2.0 2.0 2.0 2.0";
+      herbie_krig_params["lower_bounds"]="-2.0 -2.0 -2.0 -2.0 -2.0 -2.0 -2.0 -2.0";
+      herbie_krig_params["upper_bounds"]="2.0 2.0 2.0 2.0 2.0 2.0 2.0 2.0";
+      herbie_GEK_params=herbie_krig_params;
+      smooth_krig_params=herbie_krig_params;
+      smooth_GEK_params =herbie_krig_params;
+
       build_herbie_filename=build_herbie_8D;
       build_smooth_filename=build_smooth_8D;
       valid_herbie_filename=valid_herbie_8D;
@@ -653,12 +671,199 @@ void nested_Krig_vs_GEK_herbie_smooth_herbie_2D_4D_8D(){
     //if(Nref>2) Nref=2; //fast test for debug
     nkm::MtxDbl yeval(NptsValid,1);
     nkm::MtxInt ipts(NptsBuild,1);
-    nkm::MtxDbl rmse(Nref+1,5);  rmse.zero();
+    nkm::MtxDbl error_metric(Nref+1,9);  error_metric.zero();
     for(int i=0; i<NptsBuild; ++i)
       ipts(i,0)=i;
     for(int iref=0; iref<=Nref; ++iref) { //nested sample design loop
       int NptsThis=2*Ndim*static_cast<int>(std::pow(2.0,static_cast<double>(iref)));
-      rmse(iref,0)=static_cast<double>(NptsThis);
+      if(true) {
+	//make this run faster by feeding it the correlation lengths generated from the nested LHS design the first time I rank it (so can quickly calculate the mean absolute error, originally I only calculated the RMSE)
+	switch(Ndim){
+	case 2:
+	  switch(NptsThis){
+	  case 4:
+	    herbie_GEK_params["correlation_lengths"] ="0.500044 0.500132";
+	    smooth_GEK_params["correlation_lengths"] ="0.500044 0.500132";
+	    break;
+	  case 8:
+	    herbie_krig_params["correlation_lengths"]="1.26045  0.353585";
+	    herbie_GEK_params["correlation_lengths"] ="0.490945 0.399543";
+	    smooth_krig_params["correlation_lengths"]="2.01378  0.353585";
+	    smooth_GEK_params["correlation_lengths"] ="0.896517 0.918406";
+	    break;
+	  case 16:
+	    herbie_krig_params["correlation_lengths"]="2.11395  0.481163";
+	    herbie_GEK_params["correlation_lengths"] ="0.269972 0.327727";
+	    smooth_krig_params["correlation_lengths"]="0.250022 0.535061";
+	    smooth_GEK_params["correlation_lengths"] ="0.901693 0.916258";
+	    break;
+	  case 32:
+	    herbie_krig_params["correlation_lengths"]="0.337192 0.405882";
+	    herbie_GEK_params["correlation_lengths"] ="0.364354 0.349339";
+	    smooth_krig_params["correlation_lengths"]="0.801452 0.818999";
+	    smooth_GEK_params["correlation_lengths"] ="0.954075 0.964208";
+	    break;
+	  case 64:
+	    herbie_krig_params["correlation_lengths"]="0.362288 0.386812";
+	    herbie_GEK_params["correlation_lengths"] ="0.394655 0.396955";
+	    smooth_krig_params["correlation_lengths"]="0.942504 0.946496";
+	    smooth_GEK_params["correlation_lengths"] ="0.708602 0.843246";
+	    break;
+	  case 128:
+	    herbie_krig_params["correlation_lengths"]="0.341277 0.345084";
+	    herbie_GEK_params["correlation_lengths"] ="0.393593 0.378305";
+	    smooth_krig_params["correlation_lengths"]="0.713824 0.793784";
+	    smooth_GEK_params["correlation_lengths"] ="0.681042 0.641354";
+	    break;
+	  case 256:
+	    herbie_krig_params["correlation_lengths"]="0.427906 0.428056";
+	    herbie_GEK_params["correlation_lengths"] ="0.343611 0.345492";
+	    smooth_krig_params["correlation_lengths"]="0.409262 0.631571";
+	    smooth_GEK_params["correlation_lengths"] ="0.662672 0.702565";
+	    break;
+	  case 512:
+	    herbie_krig_params["correlation_lengths"]="0.332171 0.335345";
+	    herbie_GEK_params["correlation_lengths"] ="0.328333 0.323684";
+	    smooth_krig_params["correlation_lengths"]="0.223043 0.532758";
+	    smooth_GEK_params["correlation_lengths"] ="0.686387 0.673577";
+	    break;
+	  case 1024:
+	    herbie_krig_params["correlation_lengths"]="0.182501 0.255595";
+	    herbie_GEK_params["correlation_lengths"] ="0.295556 0.261237";
+	    smooth_krig_params["correlation_lengths"]="0.107725 0.473198";
+	    smooth_GEK_params["correlation_lengths"] ="0.636192 0.639449";
+	    break;
+	  case 2048:
+	    herbie_krig_params["correlation_lengths"]="0.176487 0.118631";
+	    smooth_krig_params["correlation_lengths"]="0.176487 0.118631";
+	    break;
+	  default:
+	    std::cerr << "NptsThis is not a known size" << std::endl;
+	    assert(false);
+	  } //switch(NptsThis)
+	  break;
+	case 4:
+	  switch(NptsThis){
+	  case 8:
+	    herbie_GEK_params["correlation_lengths"] ="0.986542 1.25723 0.752366  1.20457";
+	    smooth_GEK_params["correlation_lengths"] ="1.20457  1.10578 0.763173  1.05946";
+	    break;
+	  case 16:
+	    herbie_krig_params["correlation_lengths"]="0.632662 0.503578 15.6613  1.30938";
+	    herbie_GEK_params["correlation_lengths"] ="0.817832 0.903696 0.606163 0.817832";
+	    smooth_krig_params["correlation_lengths"]="0.510812 0.510812 1.57612  0.719313";
+	    smooth_GEK_params["correlation_lengths"] ="0.903696 0.817832 0.750758 0.817832";
+	    break;
+	  case 32:
+	    herbie_krig_params["correlation_lengths"]="0.524469 13.1696  13.1696  0.579533";
+	    herbie_GEK_params["correlation_lengths"] ="0.687712 0.770831 0.579533 0.658908";
+	    smooth_krig_params["correlation_lengths"]="0.50972  4.32949  13.3587  0.55526";
+	    smooth_GEK_params["correlation_lengths"] ="0.888995 0.816084 0.816084 0.839698";
+	    break;
+	  case 64:
+	    herbie_krig_params["correlation_lengths"]="0.530866 1.75907  0.473623 0.508631";
+	    herbie_GEK_params["correlation_lengths"] ="0.473623 0.578295 0.603575 0.629961";
+	    smooth_krig_params["correlation_lengths"]="0.603575 0.376989 11.2333  0.508631";
+	    smooth_GEK_params["correlation_lengths"] ="0.887095 0.912763 0.887095 0.925875";
+	    break;
+	  case 128:
+	    herbie_krig_params["correlation_lengths"]="0.745955 0.937167 0.317008 0.602285";
+	    herbie_GEK_params["correlation_lengths"] ="0.446403 0.43385  0.446403 0.507544";
+	    smooth_krig_params["correlation_lengths"]="0.602285 1.61135  0.360427 0.593756";
+	    smooth_GEK_params["correlation_lengths"] ="0.964285 0.950629 0.964285 0.964285";
+	    break;
+	  case 256:
+	    herbie_krig_params["correlation_lengths"]="0.776901 0.683312 0.683312 0.799381";
+	    herbie_GEK_params["correlation_lengths"] ="0.408916 0.408916 0.445449 0.458339";
+	    smooth_krig_params["correlation_lengths"]="0.788061 0.776901 0.776901 0.810863";
+	    smooth_GEK_params["correlation_lengths"] ="0.962224 0.962224 0.962224 0.962224";
+	    break;
+	  case 512:
+	    herbie_krig_params["correlation_lengths"]="0.62593  0.574595 0.653293 0.672196";
+	    herbie_GEK_params["correlation_lengths"] ="0.408042 0.390952 0.408042 0.396567";
+	    smooth_krig_params["correlation_lengths"]="0.919951 0.919951 0.919951 0.906924";
+	    smooth_GEK_params["correlation_lengths"] ="1.00214  0.960168 0.98795  1.00214";
+	    break;
+	  case 1024:
+	    herbie_krig_params["correlation_lengths"]="0.549352 0.462937 0.504297 0.565248";
+	    herbie_GEK_params["correlation_lengths"] ="0.373776 0.373776 0.379145 0.373776";
+	    smooth_krig_params["correlation_lengths"]="0.958116 0.944548 0.958116 0.958116";
+	    smooth_GEK_params["correlation_lengths"] ="0.842697 0.842697 0.842697 0.89217";
+	    break;
+	  case 2048:
+	    herbie_krig_params["correlation_lengths"]="0.482142 0.357356 0.412136 0.482142";
+	    herbie_GEK_params["correlation_lengths"] ="0.4426   0.436332 0.4426   0.4426";
+	    smooth_krig_params["correlation_lengths"]="0.956068 0.956068 0.956068 0.956068";
+	    smooth_GEK_params["correlation_lengths"] ="0.840896 0.840896 0.840896 0.840896";
+	    break;
+	  case 4096:
+	    herbie_krig_params["correlation_lengths"]="0.39969  0.38845  0.37218  0.405432";
+	    smooth_krig_params["correlation_lengths"]="0.875781 0.875781 0.875781 0.851153";
+	    break;
+	  default:
+	    std::cerr << "NptsThis is not a known size" << std::endl;
+	    assert(false);
+	  } //switch(NptsThis)
+	  break;
+	case 8:
+	  switch(NptsThis){
+	  case 16:
+	    herbie_GEK_params["correlation_lengths"] ="1.25992  1.25992  1.62868  1.25992  1.25992  1.25992  1.85175  1.25992";
+	    smooth_GEK_params["correlation_lengths"] ="0.753977 1.25992  1.25992  0.857244 1.25992  1.25992  1.25992  1.25992";
+	    break;
+	  case 32:
+	    herbie_krig_params["correlation_lengths"]="0.786096 17.1154  0.6914   17.1154  17.1154  17.1154  1.15535  17.1154";
+	    herbie_GEK_params["correlation_lengths"] ="0.786096 0.786096 0.786096 0.786096 0.6914   0.786096 0.786096 0.786096";
+	    smooth_krig_params["correlation_lengths"]="1.69806  17.1154  0.6914   1.69806  17.1154  17.1154  0.786096 1.15535";
+	    smooth_GEK_params["correlation_lengths"] ="0.786096 1.15535  1.15535  0.786096 1.15535  1.15535  0.893762 0.786096";
+	    break;
+	  case 64:
+	    herbie_krig_params["correlation_lengths"]="0.634017 4.94358  4.94358  2.28857  15.6949  1.05946  0.720853 15.6949";
+	    herbie_GEK_params["correlation_lengths"] ="0.720853 0.720853 0.720853 0.720853 0.720853 0.720853 0.720853 0.819584";
+	    smooth_krig_params["correlation_lengths"]="0.634017 4.94358  4.94358  4.94358  15.6949  1.05946  0.720853 15.6949";
+	    smooth_GEK_params["correlation_lengths"] ="0.720853 1.05946  1.05946  1.05946  1.05946  1.05946  0.931836 1.05946";
+	    break;
+	  case 128:
+	    herbie_krig_params["correlation_lengths"]="0.661025 0.581396 1.42789  1.42789  0.661025 1.42789  0.661025 14.3923";
+	    herbie_GEK_params["correlation_lengths"] ="0.661025 0.661025 0.661025 0.661025 0.661025 0.661025 0.661025 0.751561";
+	    smooth_krig_params["correlation_lengths"]="0.661025 0.661025 0.661025 1.42789  0.661025 0.661025 0.661025 0.581396";
+	    smooth_GEK_params["correlation_lengths"] ="0.971532 0.971532 0.971532 0.971532 0.971532 0.971532 0.854497 0.971532";
+	    break;
+	  case 256:
+	    herbie_krig_params["correlation_lengths"]="0.606163 1.30938  1.30938  0.606163 0.606163 1.30938  0.606163 0.533142";
+	    herbie_GEK_params["correlation_lengths"] ="0.890899 0.890899 0.890899 0.890899 0.890899 0.890899 0.783578 0.890899";
+	    smooth_krig_params["correlation_lengths"]="1.30938  0.533142 1.30938  0.606163 0.606163 0.606163 13.1978  0.606163";
+	    smooth_GEK_params["correlation_lengths"] ="0.890899 0.890899 0.890899 1.01292  0.890899 0.890899 0.890899 0.890899";
+	    break;
+	  case 512:
+	    herbie_krig_params["correlation_lengths"]="0.488894 1.20071  1.20071  0.555854 1.20071  1.20071  0.555854 0.555854";
+	    herbie_GEK_params["correlation_lengths"] ="0.816958 0.816958 0.816958 0.816958 0.816958 0.816958 0.718544 0.816958";
+	    smooth_krig_params["correlation_lengths"]="0.555854 0.555854 1.20071  1.20071  1.20071  1.20071  0.555854 0.488894";
+	    smooth_GEK_params["correlation_lengths"] ="0.816958 0.816958 0.816958 0.928851 0.816958 0.816958 0.816958 0.816958";
+	    break;
+	  case 1024:
+	    herbie_krig_params["correlation_lengths"]="1.25186  0.50972  3.49564  0.50972  1.10106  0.50972  1.10106  0.50972";
+	    herbie_GEK_params["correlation_lengths"] ="0.749154 0.749154 0.749154 0.749154 0.749154 0.749154 0.749154 0.749154";
+	    smooth_krig_params["correlation_lengths"]="2.37841  0.50972  5.13766  0.50972  1.25186  0.749154 0.749154 0.50972";
+	    smooth_GEK_params["correlation_lengths"] ="0.749154 0.749154 0.749154 0.85176  0.749154 0.749154 0.749154 0.749154";
+	    break;
+	  case 2048:
+	    herbie_krig_params["correlation_lengths"]="0.686977 0.686977 0.531434 0.467416 4.71125  3.20551  0.686977 0.686977";
+	    smooth_krig_params["correlation_lengths"]="2.18102  0.467416 0.531434 0.467416 3.20551  2.18102  0.686977 0.686977";
+	    break;
+	  default:
+	    std::cerr << "NptsThis is not a known size" << std::endl;
+	    assert(false);
+	  } //switch(NptsThis) 
+	  break;
+	default:
+	  std::cerr << "Ndim is not a known number of dimensions" << std::endl;
+	  assert(false);
+	} //switch{Ndim) 
+      }
+
+
+      error_metric(iref,0)=static_cast<double>(NptsThis);
       ipts.resize(NptsThis,1); //relies on actual and apparent sizes of the matrix 
       //class being different and that resize() doesn't copy or overwrite or shrink 
       //or enlarge unless it needs a bigger size than it actually has OR the user 
@@ -668,74 +873,99 @@ void nested_Krig_vs_GEK_herbie_smooth_herbie_2D_4D_8D(){
       {//limit km and gkm for herbie to this scope
 
 	sd_build_herbie.getPoints(sd_build_temp,ipts);
-	printf("Herbie: Ndim=%d Npts=%4d/%-4d Krig_rmse=",Ndim,NptsThis,NptsBuild);
-	fprintf(fpout1,"Herbie: Ndim=%d Npts=%4d/%-4d Krig_rmse=",Ndim,NptsThis,NptsBuild);
+	printf("Herbie: Ndim=%d Npts=%4d/%-4d",Ndim,NptsThis,NptsBuild);
+	fprintf(fpout1,"Herbie: Ndim=%d Npts=%4d/%-4d",Ndim,NptsThis,NptsBuild);
 
 	if(iref>0) { //if have enough equations for a reduced quadratic trend
-	  nkm::KrigingModel km(sd_build_temp,km_params); km.create();
+	  nkm::KrigingModel km(sd_build_temp,herbie_krig_params); km.create();
 	  km.evaluate(yeval,sd_valid_herbie.xr);
-	  for(int i=0; i<NptsValid; ++i)
-	    rmse(iref,1)+=std::pow(yeval(i,0)-sd_valid_herbie.y(i,0),2.0);
-	  rmse(iref,1)=std::sqrt(rmse(iref,1)/static_cast<double>(NptsValid));
-	  printf("%12.6g GEK_rmse=",rmse(iref,1));
-	  fprintf(fpout1,"%12.6g GEK_rmse=",rmse(iref,1));
+	  for(int i=0; i<NptsValid; ++i) {
+	    double tmpdbl=yeval(i,0)-sd_valid_herbie.y(i,0);
+	    error_metric(iref,1)+=std::fabs(tmpdbl);
+	    error_metric(iref,2)+=std::pow(tmpdbl,2.0);
+	  }
+	  error_metric(iref,1)/=static_cast<double>(NptsValid);
+	  error_metric(iref,2)=std::sqrt(error_metric(iref,2)/static_cast<double>(NptsValid));
+	  printf(" Krig_MAE=%12.6g Krig_RMSE=%12.6g",error_metric(iref,1),error_metric(iref,2));
+	  fprintf(fpout1," Krig_MAE=%12.6g Krig_RMSE=%12.6g",error_metric(iref,1),error_metric(iref,2));
 	}
 	else{
-	  printf("NaN          GEK_rmse=");
-	  fprintf(fpout1,"NaN          GEK_rmse=");
+	  printf(" Krig_MAE=NaN          Krig_RMSE=NaN         ");
+	  fprintf(fpout1," Krig_MAE=NaN          Krig_RMSE=NaN         ");
 	}
-
+	fflush(fpout1);
 	if(iref<Nref) { //Npts*(1+Ndim) equations makes for a BIG correlation matrix 
 	  //(slow emulator construction) and I don't need the largest Npts for the
 	  //Gradient Enhanced Kriging Paper
-	  nkm::GradKrigingModel gkm(sd_build_temp,km_params); gkm.create();
+	  nkm::GradKrigingModel gkm(sd_build_temp,herbie_GEK_params); gkm.create();
 	  gkm.evaluate(yeval,sd_valid_herbie.xr);
-	  for(int i=0; i<NptsValid; ++i)
-	    rmse(iref,2)+=std::pow(yeval(i,0)-sd_valid_herbie.y(i,0),2.0);
-	  rmse(iref,2)=std::sqrt(rmse(iref,2)/static_cast<double>(NptsValid));	
-	  printf("%12.6g\n",rmse(iref,2));
-	  fprintf(fpout1,"%12.6g\n",rmse(iref,2));
+	  for(int i=0; i<NptsValid; ++i) {
+	    double tmpdbl=yeval(i,0)-sd_valid_herbie.y(i,0);
+	    error_metric(iref,3)+=std::fabs(tmpdbl);
+	    error_metric(iref,4)+=std::pow(tmpdbl,2.0);
+	  }
+	  error_metric(iref,3)/=static_cast<double>(NptsValid);	
+	  error_metric(iref,4)=std::sqrt(error_metric(iref,4)/static_cast<double>(NptsValid));	
+	  printf(" GEK_MAE=%12.6g GEK_RMSE=%12.6g %5d/%-5d\n",
+		 error_metric(iref,3),error_metric(iref,4),
+		 gkm.getNumEqnKeep(),gkm.getNumEqnAvail());
+	  fprintf(fpout1," GEK_MAE=%12.6g GEK_RMSE=%12.6g %5d/%-5d\n",
+		  error_metric(iref,3),error_metric(iref,4),
+		  gkm.getNumEqnKeep(),gkm.getNumEqnAvail());
 	}
 	else{
-	  printf("NaN\n");
-	  fprintf(fpout1,"NaN\n");
+	  printf(" GEK_MAE=NaN          GEK_RMSE=NaN            NaN/NaN  \n");
+	  fprintf(fpout1," GEK_MAE=NaN          GEK_RMSE=NaN            NaN/NaN  \n");
 	}	
 	fflush(fpout1);
       } //end herbie scope
 
       {//limit km and gkm for SMOOTH herbie to this scope
 	sd_build_smooth.getPoints(sd_build_temp,ipts);
-	printf("Smooth: Ndim=%d Npts=%4d/%-4d Krig_rmse=",Ndim,NptsThis,NptsBuild);
-	fprintf(fpout2,"Smooth: Ndim=%d Npts=%4d/%-4d Krig_rmse=",Ndim,NptsThis,NptsBuild);
+	printf("Smooth: Ndim=%d Npts=%4d/%-4d",Ndim,NptsThis,NptsBuild);
+	fprintf(fpout2,"Smooth: Ndim=%d Npts=%4d/%-4d",Ndim,NptsThis,NptsBuild);
 	
 	if(iref>0) { //if have enough equations for a reduced quadratic trend
-	  nkm::KrigingModel km(sd_build_temp,km_params); km.create();
+	  nkm::KrigingModel km(sd_build_temp,smooth_krig_params); km.create();
 	  km.evaluate(yeval,sd_valid_smooth.xr);
-	  for(int i=0; i<NptsValid; ++i)
-	    rmse(iref,3)+=std::pow(yeval(i,0)-sd_valid_smooth.y(i,0),2.0);
-	  rmse(iref,3)=std::sqrt(rmse(iref,3)/static_cast<double>(NptsValid));
-	  printf("%12.6g GEK_rmse=",rmse(iref,3));
-	  fprintf(fpout2,"%12.6g GEK_rmse=",rmse(iref,3));
+	  for(int i=0; i<NptsValid; ++i) {
+	    double tmpdbl=yeval(i,0)-sd_valid_smooth.y(i,0);
+	    error_metric(iref,5)+=std::fabs(tmpdbl);
+	    error_metric(iref,6)+=std::pow(tmpdbl,2.0);
+	  }
+	  error_metric(iref,5)/=static_cast<double>(NptsValid);
+	  error_metric(iref,6)=std::sqrt(error_metric(iref,6)/static_cast<double>(NptsValid));
+	  printf(" Krig_MAE=%12.6g Krig_RMSE=%12.6g",error_metric(iref,5),error_metric(iref,6));
+	  fprintf(fpout2," Krig_MAE=%12.6g Krig_RMSE=%12.6g",error_metric(iref,5),error_metric(iref,6));
 	}
 	else{
-	  printf("NaN          GEK_rmse=");
-	  fprintf(fpout2,"NaN          GEK_rmse=");
+	  printf(" Krig_MAE=NaN          Krig_RMSE=NaN         ");
+	  fprintf(fpout2," Krig_MAE=NaN          Krig_RMSE=NaN         ");
 	}
-	
+	fflush(fpout2);	
 	if(iref<Nref) { //Npts*(1+Ndim) equations makes for a BIG correlation matrix 
 	  //(slow emulator construction) and I don't need the largest Npts for the
 	  //Gradient Enhanced Kriging Paper
-	  nkm::GradKrigingModel gkm(sd_build_temp,km_params); gkm.create();
+
+	  nkm::GradKrigingModel gkm(sd_build_temp,smooth_GEK_params); gkm.create();
 	  gkm.evaluate(yeval,sd_valid_smooth.xr);
-	  for(int i=0; i<NptsValid; ++i)
-	    rmse(iref,4)+=std::pow(yeval(i,0)-sd_valid_smooth.y(i,0),2.0);
-	  rmse(iref,4)=std::sqrt(rmse(iref,4)/static_cast<double>(NptsValid));	
-	  printf("%12.6g\n",rmse(iref,4));
-	  fprintf(fpout2,"%12.6g\n",rmse(iref,4));
+	  for(int i=0; i<NptsValid; ++i) {
+	    double tmpdbl=yeval(i,0)-sd_valid_smooth.y(i,0);
+	    error_metric(iref,7)+=std::fabs(tmpdbl);
+	    error_metric(iref,8)+=std::pow(tmpdbl,2.0);
+	  }
+	  error_metric(iref,7)/=static_cast<double>(NptsValid);	
+	  error_metric(iref,8)=std::sqrt(error_metric(iref,8)/static_cast<double>(NptsValid));	
+	  printf(" GEK_MAE=%12.6g GEK_RMSE=%12.6g %5d/%-5d\n",
+		 error_metric(iref,7),error_metric(iref,8),
+		 gkm.getNumEqnKeep(),gkm.getNumEqnAvail());
+	  fprintf(fpout2," GEK_MAE=%12.6g GEK_RMSE=%12.6g %5d/%-5d\n",
+		  error_metric(iref,7),error_metric(iref,8),
+		  gkm.getNumEqnKeep(),gkm.getNumEqnAvail());
 	}
 	else{
-	  printf("NaN\n");
-	  fprintf(fpout2,"NaN\n");
+	  printf(" GEK_MAE=NaN          GEK_RMSE=NaN            NaN/NaN  \n");
+	  fprintf(fpout2," GEK_MAE=NaN          GEK_RMSE=NaN            NaN/NaN  \n");
 	}	
 	fflush(fpout2);
       } //end SMOOTH herbie scope
@@ -1141,8 +1371,8 @@ void validate_grad()
   std::map< std::string, std::string> km_params;
   km_params["constraint_type"] = "r";
   //km_params["order"] = "linear";
-  km_params["order"] = "2";
-  km_params["reduced_polynomial"]=nkm::toString<bool>(true);
+  //km_params["order"] = "2";
+  //km_params["reduced_polynomial"]=nkm::toString<bool>(true);
 
 
   std::map< std::string, std::string> gkm_params;
