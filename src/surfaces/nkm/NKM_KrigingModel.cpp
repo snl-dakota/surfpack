@@ -64,6 +64,9 @@ void KrigingModel::equationSelectingCholR(){
     for(int i=0; i<numPoints; ++i)
       iEqnKeep(i,0)=i;
     //printf("\n");
+    while((numRowsR<=numTrend(polyOrder,0))&&(polyOrder>0))
+      --polyOrder;
+    nTrend=numTrend(polyOrder,0);
     return;
   }
 
@@ -249,6 +252,7 @@ void KrigingModel::equationSelectingCholR(){
   while((numRowsR<=numTrend(polyOrder,0))&&(polyOrder>0))
     --polyOrder;
   nTrend=numTrend(polyOrder,0);
+  //printf("nTrend=%d numRowsR=%d\n",nTrend,numRowsR);
   Poly.resize(nTrend,numVarsr); //I am relying on the matrix class's actual 
   //size not changing and that it's contents aren't being written over, so 
   //that when I enlarge the matrix up to polyOrderRequested I recover all 
@@ -1666,7 +1670,7 @@ void KrigingModel::masterObjectiveAndConstraints(const MtxDbl& theta, int obj_de
     equationSelectingCholR();
     if((rcondR==0.0)||(numRowsR<=numTrend(polyOrder,0))) {
       //nTrend=numTrend(polyOrder,0);
-      printf("singular correlation matrix rcondR=%g numRowsR=%d numTrend=%d",
+      printf("singular correlation matrix rcondR=%g numRowsR=%d numTrend=%d\n",
 	     rcondR,numRowsR,numTrend(polyOrder,0));
       obj=HUGE_VAL;
       con.newSize(numConFunc,1);
