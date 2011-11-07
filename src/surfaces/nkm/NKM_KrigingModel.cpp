@@ -1165,6 +1165,7 @@ double KrigingModel::eval_variance(const MtxDbl& xr) const
   //printf("adj_var=%g estVarianceMLE=%g rcondR=%g unscale_factor_vary=%g\n",adj_var,estVarianceMLE,rcondR,unscale_factor_vary); 
   //fflush(stdout);
   //}
+  adj_var=std::fabs(adj_var); //hack to handle negative zero variance (machine precision round off error)
   if(adj_var<0.0) {
     printf("NKM setting adj_var to zero adj_var=%g unadj_var=%g rcondR=%g\n",adj_var,estVarianceMLE*unscale_factor_vary,rcondR); 
     adj_var=0.0;

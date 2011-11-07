@@ -137,11 +137,11 @@ void GradKrigingModel::equationSelectingPrecondCholR(){
   ++num_eqn_test;
 
   //if the first point is an anchor point add its derivatives next
-  if(ifHaveAnchorPoint==true) 
-    for(; num_eqn_test<num_eqn_in_grp; ++num_eqn_test) {
-      iOrderEqnTest(num_eqn_test,0)=num_eqn_test*numPoints+ipt;
-      lapackRcondR(num_eqn_test,0)=1.0; //identity matrix so far
-    }
+  //if(ifHaveAnchorPoint==true) 
+  //for(; num_eqn_test<num_eqn_in_grp; ++num_eqn_test) {
+  //  iOrderEqnTest(num_eqn_test,0)=num_eqn_test*numPoints+ipt;
+  //  lapackRcondR(num_eqn_test,0)=1.0; //identity matrix so far
+  //}
   int iprev_lapack_rcondR=num_eqn_test-1; //will use for a bisection
   //search for the last equation we can keep without it being too
   //poorly conditioned 
@@ -252,8 +252,8 @@ void GradKrigingModel::equationSelectingPrecondCholR(){
     }
     iprev_lapack_rcondR=jeqn-1;
 
-    if(ifHaveAnchorPoint==true) 
-      ieqn=jeqn; //inside the commented out (for debug) if
+    //if(ifHaveAnchorPoint==true) 
+    //ieqn=jeqn; //inside the commented out (for debug) if
 
     for(; ieqn<num_eqn_test; ++ieqn) {
       ipt=iOrderEqnTest(iPivot(ieqn,0),0);
@@ -417,10 +417,11 @@ void GradKrigingModel::equationSelectingPrecondCholR(){
   }
 
   //scale (unprecondition) RChol
-  for(int j=0; j<numEqnKeep; ++j) 
-    for(int i=j; i<numEqnKeep; ++i)
-      RChol(i,j)*=scaleRChol(iEqnKeep(i,0),1);
-  
+  for(int j=0; j<numEqnKeep; ++j) {
+    RChol(j,j)*=scaleRChol(iEqnKeep(j,0),1);
+    for(int i=j+1; i<numEqnKeep; ++i)
+      RChol(j,i)=RChol(i,j)*=scaleRChol(iEqnKeep(i,0),1);
+  }
 
   for(int itrend=0; itrend<nTrend; ++itrend) 
     for(int i=0; i<numEqnKeep; ++i)       
@@ -2033,6 +2034,10 @@ MtxDbl& GradKrigingModel::evaluate_d2y(MtxDbl& d2y, const MtxDbl& xr) const
 /// matrix Ops evaluation of adjusted variance at a single point
 double GradKrigingModel::eval_variance(const MtxDbl& xr) const
 {
+  //MtxDbl m_adj_var(1,1);
+  //eval_variance(m_adj_var, xr);
+  //double adj_var=m_adj_var(0,0);
+
   /*
   double singular_y;
   if(scaler.isYSingular(0,singular_y)) {
@@ -2043,16 +2048,21 @@ double GradKrigingModel::eval_variance(const MtxDbl& xr) const
   }
   */
 
+  
+
   //assert( (numVarsr == xr.getNCols()) && (xr.getNRows() == 1) );
   //int ntrend = getNTrend(); 
   MtxDbl g_minus_r_Rinv_G(1, nTrend), r(1, numRowsR);
 
+  MtxDbl xr_scaled(xr);
   if(scaler.isUnScaled()) {
+    //printf("unscaled path\n");
     eval_trend_fn(g_minus_r_Rinv_G, xr);
     correlation_matrix(r, xr);
   }
   else{
-    MtxDbl xr_scaled(xr);
+    //prinf("scaled path\n");
+    //MtxDbl xr_scaled(xr);
     scaler.scaleXrOther(xr_scaled);
     eval_trend_fn(g_minus_r_Rinv_G, xr_scaled);
     correlation_matrix(r, xr_scaled);
@@ -2071,15 +2081,53 @@ double GradKrigingModel::eval_variance(const MtxDbl& xr) const
   //matrix_mult(tempb,Gtran_Rinv_G_inv,g_minus_r_Rinv_G,0.0,1.0,'N','T');
   solve_after_Chol_fact(tempb,Gtran_Rinv_G_Chol,g_minus_r_Rinv_G,'T');
 
+  
+
   double unscale_factor_vary=scaler.unScaleFactorVarY();
-  double adj_var=estVarianceMLE*unscale_factor_vary*
-    (1.0-dot_product(tempa,r)+dot_product(tempb,g_minus_r_Rinv_G));
+
+  double unadj_var=estVarianceMLE*unscale_factor_vary;
+  
+  double dtemp1=dot_product(tempa,r);
+  double dtemp2=dot_product(tempb,g_minus_r_Rinv_G);
+  double adj_var=unadj_var*(1.0-dtemp1+dtemp2);
   //if(!(adj_var>0.0)) {
   //printf("adj_var=%g estVarianceMLE=%g rcondR=%g unscale_factor_vary=%g\n",adj_var,estVarianceMLE,rcondR,unscale_factor_vary); 
   //fflush(stdout);
   //}
+  
+  adj_var=std::fabs(adj_var);
   if(adj_var<0.0) {
-    printf("NKM GEK setting adj_var to zero adj_var=%g unadj_var=%g rcondR=%g\n",adj_var,estVarianceMLE*unscale_factor_vary,rcondR); 
+    /*
+    printf("NKM GEK setting adj_var to zero adj_var=%g unadj_var=%g rcondR=%g\n",adj_var,unadj_var,rcondR); 
+    printf("isUnScaled=%d\ncorr_len=[%12.6g",(scaler.isUnScaled())?1:0,1.0/std::sqrt(2.0*correlations(0,0)));
+    for(int i=1; i<numVarsr; ++i)
+      printf(" %12.6g",1.0/std::sqrt(2.0*correlations(0,i)));
+    printf("]\nnrowsxr=%d\n",xr_scaled.getNRows());
+    printf("xr=|%12.6g",xr_scaled(0,0));
+    for(int j=1; j<numVarsr; ++j)
+      printf(" %12.6g",xr_scaled(0,j));
+    printf("|\nnumPoints=%d numEqnKeep=%d\n(ipt)|XR|\n",numPoints,numEqnKeep);
+    for(int i=0; i<numPoints; ++i) {
+      int ipt=iEqnKeep(i*(1+numVarsr),0);
+      printf("(%4d)|%12.6g",ipt,XR(ipt,0));
+      for(int j=1; j<numVarsr; ++j)
+	printf(" %12.6g",XR(ipt,j));
+      printf("|\n");
+    }
+    printf("rU=[...\n");
+    for(int i=0; i<numEqnKeep; ++i){
+      printf("%12.6g *****",r(i,0));
+      for(int j=0; j<i; ++j)
+	printf(" %12.6g",0.0);
+      for(int j=i; j<numEqnKeep; ++j)
+	printf(" %12.6g",RChol(i,j));
+      printf(";...\n");
+    }
+    printf("];\n");
+
+    printf("unscale_factor_vary=%g nTrend=%d numRowsR=%d dtemp1=%g dtemp2=%g\n",unscale_factor_vary,nTrend,numRowsR,dtemp1,dtemp2);
+    assert(false);
+    */
     adj_var=0.0;
   }
   else if(adj_var==0.0)
@@ -2283,39 +2331,68 @@ MtxDbl& GradKrigingModel::correlation_matrix(MtxDbl& r, const MtxDbl& xr) const
   
   int j_last_func_val=0;
   int jpt;
-  for(j=0; j<numEqnKeep; ++j) {
-    jpt=iptIderKeep(j,0);
-    Jder=iptIderKeep(j,1);
-    //printf("corr_mtx(r,xr)::jpt=%d Jder=%d\n",jpt,Jder);
-
-    if(Jder==-1) {
-      //printf("corr_mtx(r,xr):: case 1\n");
-      //correlation between function values
-      j_last_func_val=j;
-      for(i=0; i<nrowsxr; ++i) {
-	temp_double=xr(i,0)-XR(jpt,0);
-	r(i,j)=-correlations(0,0)*temp_double*temp_double; //=- is correct
-      }
-      for(k=1; k<numVarsr-1; ++k)
+  if(numVarsr==1) {
+    for(j=0; j<numEqnKeep; ++j) {
+      jpt=iptIderKeep(j,0);
+      Jder=iptIderKeep(j,1);
+      //printf("corr_mtx(r,xr)::jpt=%d Jder=%d\n",jpt,Jder);
+      
+      if(Jder==-1) {
+	//printf("corr_mtx(r,xr):: case 1\n");
+	//correlation between function values
+	j_last_func_val=j;
 	for(i=0; i<nrowsxr; ++i) {
-	  temp_double=xr(i,k)-XR(jpt,k);
-	  r( i, j)-=correlations(0,k)*temp_double*temp_double; //-= is correct
+	  temp_double=xr(i,0)-XR(jpt,0);
+	  r(i,j)=std::exp(-correlations(0,0)*temp_double*temp_double); 
 	}
-      k=numVarsr-1;
-      for(i=0; i<nrowsxr; ++i) {
-	temp_double=xr(i,k)-XR(jpt,k);
-	r( i, j)=std::exp(r( i, j)-correlations(0,k)*temp_double*temp_double);
+      }
+      else{
+	//printf("corr_mtx(r,xr):: case 2\n");
+	//correlation between the prediction point's function values and the
+	//"Jder" derivative of the build point
+	//relies on knowing that if a derivative equation occurs, the previous
+	//function value will be the one it's a derivative of
+	temp_double=2.0*correlations(0,Jder);
+	for(i=0; i<nrowsxr; ++i)
+	  r(i,j)=temp_double*(xr(i,Jder)-XR(jpt,Jder))*r(i,j_last_func_val);
       }
     }
-    else{
-      //printf("corr_mtx(r,xr):: case 2\n");
-      //correlation between the prediction point's function values and the
-      //"Jder" derivative of the build point
-      //relies on knowing that if a derivative equation occurs, the previous
-      //function value will be the one it's a derivative of
-      temp_double=2.0*correlations(0,Jder);
-      for(i=0; i<nrowsxr; ++i)
-	r(i,j)=temp_double*(xr(i,Jder)-XR(jpt,Jder))*r(i,j_last_func_val);
+  }
+  else{
+    for(j=0; j<numEqnKeep; ++j) {
+      jpt=iptIderKeep(j,0);
+      Jder=iptIderKeep(j,1);
+      //printf("corr_mtx(r,xr)::jpt=%d Jder=%d\n",jpt,Jder);
+      
+      if(Jder==-1) {
+	//printf("corr_mtx(r,xr):: case 1\n");
+	//correlation between function values
+	j_last_func_val=j;
+	for(i=0; i<nrowsxr; ++i) {
+	  temp_double=xr(i,0)-XR(jpt,0);
+	  r(i,j)=-correlations(0,0)*temp_double*temp_double; //=- is correct
+	}
+	for(k=1; k<numVarsr-1; ++k)
+	  for(i=0; i<nrowsxr; ++i) {
+	    temp_double=xr(i,k)-XR(jpt,k);
+	    r( i, j)-=correlations(0,k)*temp_double*temp_double; //-= is correct
+	  }
+	k=numVarsr-1;
+	for(i=0; i<nrowsxr; ++i) {
+	  temp_double=xr(i,k)-XR(jpt,k);
+	  r( i, j)=std::exp(r( i, j)-correlations(0,k)*temp_double*temp_double);
+	}
+      }
+      else{
+	//printf("corr_mtx(r,xr):: case 2\n");
+	//correlation between the prediction point's function values and the
+	//"Jder" derivative of the build point
+	//relies on knowing that if a derivative equation occurs, the previous
+	//function value will be the one it's a derivative of
+	temp_double=2.0*correlations(0,Jder);
+	for(i=0; i<nrowsxr; ++i)
+	  r(i,j)=temp_double*(xr(i,Jder)-XR(jpt,Jder))*r(i,j_last_func_val);
+      }
     }
   }
 
