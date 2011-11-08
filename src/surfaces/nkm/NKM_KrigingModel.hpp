@@ -89,6 +89,8 @@ public:
   /// evaluate the KrigingModel's adjusted variance at a collection of points xr, one per row
   virtual MtxDbl& eval_variance(MtxDbl& adj_var, const MtxDbl& xr) const;
 
+  //double get_unadjusted_variance(){return (estVarianceMLE*scaler.unScaleFactorVarY());};
+  
   /// evaluate the partial first derivatives with respect to xr of the models adjusted mean
   virtual MtxDbl& evaluate_d1y(MtxDbl& d1y, const MtxDbl& xr) const;
 

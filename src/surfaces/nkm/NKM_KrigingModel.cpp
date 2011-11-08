@@ -64,12 +64,14 @@ void KrigingModel::nuggetSelectingCholR(){
 		      chol_info,rcondR);
   if(rcondR<=min_allowed_rcond) {
     double dbl_num_pts=static_cast<double>(numPoints);
-    //double min_eig_worst=(rcondR*dbl_num_pts)/(1.0+(dbl_num_pts-1.0)*rcondR);
-    double min_eig_worst=0.0;
+    double sqrt_num_pts=std::sqrt(numPoints);
+    min_allowed_rcond*=sqrt_num_pts;
+    rcondR/=sqrt_num_pts; //one norm is within a factor of N^0.5 of 2 norm
+    double min_eig_worst=(rcondR*dbl_num_pts)/(1.0+(dbl_num_pts-1.0)*rcondR);
     double max_eig_worst=dbl_num_pts-(dbl_num_pts-1.0)*min_eig_worst;
-    nug=3.0*(min_allowed_rcond*max_eig_worst-min_eig_worst)/
+    nug=(min_allowed_rcond*max_eig_worst-min_eig_worst)/
       (1.0-min_allowed_rcond);
-    //printf("calculated nugget=%g\n",nug);      
+    //this nugget will make the worst case scenario meet (with an ==) the maxCondNum constraint, I (KRD) don't expect this to ever == fail because I don't expect rcond to be *N^-0.5 without nugget and be *N^0.5 with nugget while the maximum eigen value of R (without nugget) is N-(N-1)*min_eigval (all eigenvalues except the largest are the smallest possible for the given rcond) note that rcond is the LAPACK ESTIMATE of the 1 norm condition number so there are no 100% guarantees.
     apply_nugget_build();
     RChol.copy(R);
 
@@ -627,7 +629,7 @@ KrigingModel::KrigingModel(const SurfData& sd, const ParamMap& params)
   if (param_it != params.end() && param_it->second.size() > 0)
     ifChooseNug = true; 
 
-  //ifChooseNug = true ; cout << "ifChooseNug=" << ifChooseNug << "\n";
+  //ifChooseNug = true ; std::cout << "ifChooseNug=" << ifChooseNug << "\n";
 
   // fixed value for now
   maxChooseNug = 0.1;
@@ -1369,7 +1371,7 @@ MtxDbl& KrigingModel::apply_nugget_eval(MtxDbl& r) const {
     the model at */
 void KrigingModel::apply_nugget_build() {
   if(!(nug>0.0)) return;
-  printf("applying nugget=%22.16g\n",nug);
+  //printf("applying nugget=%22.16g\n",nug);
 
   int nrowsR=R.getNRows();
   //assert(nrowsR==R.getNCols());

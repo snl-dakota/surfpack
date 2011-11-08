@@ -11,9 +11,9 @@ using std::ostringstream;
 
 //#define __PROFILING_TEST__ //not iplemented yet
 //#define __TIMING_BENCH__
-//#define __FAST_TEST__
+#define __FAST_TEST__
 //#define __WITH_PAV_500__
-#define __FASTER_TEST__
+//#define __FASTER_TEST__
 //#define __EVEN_FASTER_TEST__
 //#define __VALGRIND_TEST__
 //#define __GKM_USE_KM_CORR_LEN__
@@ -180,8 +180,8 @@ int main(int argc, char* argv[])
   //compare_sample_designs_pav(8);
   //compare_sample_designs();
   //hack();
-  //validate();
-  validate_grad();
+  validate();
+  //validate_grad();
   //validate_grad2();
   //check_matrix();
   //gen_sample_design_by_pivoted_cholesky();
