@@ -34,6 +34,52 @@ void KrigingModel::preAllocateMaxMemory() {
   return;
 }
 
+void KrigingModel::nuggetSelectingCholR(){
+  numEqnKeep=numRowsR=numPoints;
+  iEqnKeep.newSize(numEqnAvail,1);
+  for(int i=0; i<numEqnKeep; ++i)
+    iEqnKeep(i,0)=i;
+  nug=0.0;
+  polyOrder=polyOrderRequested;
+  while((numRowsR<=numTrend(polyOrder,0))&&(polyOrder>0))
+    --polyOrder;
+  nTrend=numTrend(polyOrder,0);
+  for(int i=0; i<numEqnKeep; ++i) 
+    Y(i,0)=Yall(iEqnKeep(i,0),0);
+
+  for(int itrend=0; itrend<nTrend; ++itrend) 
+    for(int i=0; i<numEqnKeep; ++i) 
+      G(i,itrend)=Gall(iEqnKeep(i,0),itrend);
+
+  double min_allowed_rcond=1.0/maxCondNum;
+  RChol.copy(R);
+  int ld_RChol=RChol.getNRowsAct();
+  int chol_info;
+  scaleRChol.newSize(numEqnAvail,1); //no scaling is necessary since have
+  //all ones on the diagonal of R but the generic preconditioned cholesky 
+  //factoriztion function doesn't know that in advance
+  rcondDblWork.newSize(3*ld_RChol,1);
+  rcondIntWork.newSize(ld_RChol,1);
+  Chol_fact_workspace(RChol,scaleRChol,rcondDblWork,rcondIntWork,
+		      chol_info,rcondR);
+  if(rcondR<=min_allowed_rcond) {
+    double dbl_num_pts=static_cast<double>(numPoints);
+    //double min_eig_worst=(rcondR*dbl_num_pts)/(1.0+(dbl_num_pts-1.0)*rcondR);
+    double min_eig_worst=0.0;
+    double max_eig_worst=dbl_num_pts-(dbl_num_pts-1.0)*min_eig_worst;
+    nug=3.0*(min_allowed_rcond*max_eig_worst-min_eig_worst)/
+      (1.0-min_allowed_rcond);
+    //printf("calculated nugget=%g\n",nug);      
+    apply_nugget_build();
+    RChol.copy(R);
+
+    Chol_fact_workspace(RChol,scaleRChol,rcondDblWork,rcondIntWork,
+			chol_info,rcondR);
+  }
+  return;
+}
+
+
 void KrigingModel::equationSelectingCholR(){ 
   polyOrder=polyOrderRequested;
   
@@ -573,16 +619,15 @@ KrigingModel::KrigingModel(const SurfData& sd, const ParamMap& params)
   // number
   // *************************************************************
 
-  nug=(2*nTrend+1.0)/maxCondNum;
-  //nug=2*numPoints/maxCondNum;
-
+  //nug=(2*nTrend+1.0)/maxCondNum;
+  //nug=numPoints/(maxCondNum-1.0); //this is guaranteed to make R non-singular it's a little overkill though
 
   ifChooseNug = false;
   param_it = params.find("find_nugget");
   if (param_it != params.end() && param_it->second.size() > 0)
     ifChooseNug = true; 
 
-  //cout << "ifChooseNug=" << ifChooseNug << "\n";
+  //ifChooseNug = true ; cout << "ifChooseNug=" << ifChooseNug << "\n";
 
   // fixed value for now
   maxChooseNug = 0.1;
@@ -599,7 +644,7 @@ KrigingModel::KrigingModel(const SurfData& sd, const ParamMap& params)
     if(nuggetFormula!=0) {
       switch(nuggetFormula) {
       case 1:
-	nug=(2*nTrend+1.0)/maxCondNum;
+	nug=(2*numTrend(polyOrderRequested,0)+1.0)/maxCondNum;
 	break;
       case 2:
 	nug=2*numPoints/maxCondNum;
@@ -614,7 +659,7 @@ KrigingModel::KrigingModel(const SurfData& sd, const ParamMap& params)
   param_it = params.find("nugget");
   if (param_it != params.end() && param_it->second.size() > 0) {
     if(!((nuggetFormula==0)&&(ifChooseNug==false))) {
-      cerr << "You can do at most 1 of the following (A) auto-select the nugget (minimum needed to satisfy the condition number bound) (B) use one of the preset nugget formulas (C) directly specify a nugget.  The default is not to use a nugget at all (i.e. use a nugget of zero)." << endl;
+      cerr << "You can do at most 1 of the following (A) auto-select the nugget (approximately the minimum needed to satisfy the condition number bound) (B) use one of the preset nugget formulas (C) directly specify a nugget.  The default is not to use a nugget at all (i.e. use a nugget of zero)." << endl;
       assert((nuggetFormula==0)&&(ifChooseNug==false));
     }
     nug = std::atof(param_it->second.c_str()); 
@@ -826,9 +871,11 @@ std::string KrigingModel::model_summary_string() const {
     temp_out_corr_lengths(0,i)=std::sqrt(0.5/correlations(0,i));
   scaler.unScaleXrDist(temp_out_corr_lengths);
   
-  printf("numPoints=%d numTrend=%d numEqnKeep=%d\n",numPoints,numTrend(polyOrder,0),numEqnKeep);
+  //printf("numPoints=%d numTrend=%d numEqnKeep=%d\n",numPoints,numTrend(polyOrder,0),numEqnKeep);
+
 
   std::ostringstream oss;
+  oss << "--- Surfpack Kriging Diagnostics ---\n";
   oss << "KM: #pts=" << numPoints << "; used " << numEqnKeep << "/" << numEqnAvail << " pts; Correlation lengths=(" << temp_out_corr_lengths(0,0);
   for(int i=1; i<numVarsr; ++i)
     oss << ", " << temp_out_corr_lengths(0,i);
@@ -841,12 +888,13 @@ std::string KrigingModel::model_summary_string() const {
   oss << "polynomial of order=" << polyOrder << "(order " << polyOrderRequested << 
     " was desired); rcond(R)=" << rcondR << "; rcond(Gtran_Rinv_G)=" << rcond_Gtran_Rinv_G 
       << "; nugget=" << nug << ".\n";
-	
+  //printf("mod_sum_str nug=%22.16g\n",nug);
+
   oss << "Beta= (" << betaHat(0,0);
   for(int i=1; i<nTrend; ++i)
     oss << "," << betaHat(i,0);
   oss << ")\n";
-
+  oss << "------------------------------------\n";
   return (oss.str());  
 }
 
@@ -884,8 +932,8 @@ double KrigingModel::evaluate(const MtxDbl& xr) const
     correlation_matrix(r, xr_scaled);
   }
       
-  if(nug>0.0)
-    apply_nugget_eval(r);
+  //if(nug>0.0)
+  //apply_nugget_eval(r);
   
   double y = dot_product(g, betaHat) + dot_product(r, rhs);
 
@@ -928,8 +976,8 @@ MtxDbl& KrigingModel::evaluate(MtxDbl& y, const MtxDbl& xr) const
     correlation_matrix(r, xr_scaled);
   }
 
-  if(nug>0.0)
-    apply_nugget_eval(r);
+  //  if(nug>0.0)
+  //apply_nugget_eval(r);
   
   //y=0.0*y+1.0*g*betaHat => y=g*betaHat
   matrix_mult(y, g , betaHat, 0.0, 1.0);
@@ -1003,7 +1051,7 @@ MtxDbl& KrigingModel::evaluate_d1y(MtxDbl& d1y, const MtxDbl& xr) const
   
   MtxDbl r(nrowsxr,numRowsR);
   correlation_matrix(r, xr_scaled);
-  apply_nugget_eval(r);
+  //apply_nugget_eval(r);
   MtxDbl d1r(nrowsxr,numRowsR);
   MtxDbl temp_vec(nrowsxr,1);
 
@@ -1079,7 +1127,7 @@ MtxDbl& KrigingModel::evaluate_d2y(MtxDbl& d2y, const MtxDbl& xr) const
 
   MtxDbl r(nrowsxr,numRowsR);
   correlation_matrix(r, xr);
-  apply_nugget_eval(r);
+  //apply_nugget_eval(r);
   MtxDbl d1r(nrowsxr,numRowsR);
   MtxDbl d2r(nrowsxr,numRowsR);
   MtxDbl temp_vec(nrowsxr,1);
@@ -1150,8 +1198,8 @@ double KrigingModel::eval_variance(const MtxDbl& xr) const
   MtxDbl tempa(numRowsR,1);
   MtxDbl tempb(nTrend,1);
 
-  if(nug>0.0) 
-    apply_nugget_eval(r);
+  //if(nug>0.0) 
+  //apply_nugget_eval(r);
 
   solve_after_Chol_fact(tempa,RChol,r,'T');
   
@@ -1211,8 +1259,8 @@ MtxDbl& KrigingModel:: eval_variance(MtxDbl& adj_var, const MtxDbl& xr) const
   MtxDbl tempb(nTrend,nrowsxr);
   double var_unscale_factor=scaler.unScaleFactorVarY();
 
-  if(nug>0.0)
-    apply_nugget_eval(r);
+  //if(nug>0.0)
+  //apply_nugget_eval(r);
   
   solve_after_Chol_fact(tempa,RChol,r,'T');
 
@@ -1273,7 +1321,8 @@ std::string KrigingModel::asString() const
 */
 
 
-/** this function scales the input matrix, r, in place by 1.0/(1.0+nug), 
+#ifdef __DONT_USE__
+/* this function scales the input matrix, r, in place by 1.0/(1.0+nug), 
     where nug is the nugget (modifying the correlation matrix by the 
     inclusion of a nugget causes the KrigingModel to smooth data, i.e. 
     approximate, rather than interpolate, it can also be used to fix a 
@@ -1286,6 +1335,7 @@ std::string KrigingModel::asString() const
     matrix R drops out of its derivative).  The convention is that capital
     matrices are for the data the model is built from, lower case matrices 
     are for arbitrary points to evaluate the model at. */
+
 MtxDbl& KrigingModel::apply_nugget_eval(MtxDbl& r) const {
   if(!(nug>0.0))
     return r;
@@ -1306,6 +1356,8 @@ MtxDbl& KrigingModel::apply_nugget_eval(MtxDbl& r) const {
 
   return r;
 }
+#endif
+
 
 /** set R=(1.0+nug)^-1*(R+nug*I), where R is the correlation matrix for the
     data that the model is built from.  This function preserved the original 
@@ -1317,9 +1369,16 @@ MtxDbl& KrigingModel::apply_nugget_eval(MtxDbl& r) const {
     the model at */
 void KrigingModel::apply_nugget_build() {
   if(!(nug>0.0)) return;
-  
+  printf("applying nugget=%22.16g\n",nug);
+
   int nrowsR=R.getNRows();
   //assert(nrowsR==R.getNCols());
+
+  //if I do it this way I don't need to call apply_nugget_eval()
+  for(int i=0; i<nrowsR; ++i)
+    R(i,i)+=nug;
+
+  /*
 
   double temp_dbl=1.0/(1.0+nug);
   for(int j=0; j<nrowsR; ++j)
@@ -1338,7 +1397,7 @@ void KrigingModel::apply_nugget_build() {
   temp_dbl*=nug;
   for(int i=0; i<nrowsR; ++i)
     R(i,i)+=temp_dbl; 
-    
+  */
   return;
 }
 
@@ -1660,7 +1719,7 @@ void KrigingModel::masterObjectiveAndConstraints(const MtxDbl& theta, int obj_de
   if((prevObjDerMode==0)&&(prevConDerMode==0)) {
     R.newSize(numEqnAvail,numEqnAvail);
     correlation_matrix(theta); //fills member variable R as exp(Z*theta) where Z is a member variable
-    apply_nugget_build(); //modify R by nug in place
+    //apply_nugget_build(); //modify R by nug in place
   }
 
   if((prevObjDerMode==0)&&((1<=obj_der_mode)||(1<=con_der_mode))) {
@@ -1668,8 +1727,13 @@ void KrigingModel::masterObjectiveAndConstraints(const MtxDbl& theta, int obj_de
 
     //perform LU decomposition of R and calculate the determinant of R, replaced LU with Cholesky
     //http://en.wikipedia.org/wiki/Determinant#Determinant_from_LU_decomposition
-    equationSelectingCholR();
-    if((rcondR==0.0)||(numRowsR<=numTrend(polyOrder,0))) {
+
+    if(ifChooseNug==true)
+      nuggetSelectingCholR();
+    else
+      equationSelectingCholR();
+    double min_allowed_rcond=1.0/maxCondNum;
+    if((rcondR<=min_allowed_rcond)||(numRowsR<=numTrend(polyOrder,0))) {
       //nTrend=numTrend(polyOrder,0);
       printf("singular correlation matrix rcondR=%g numRowsR=%d numTrend=%d\n",
 	     rcondR,numRowsR,numTrend(polyOrder,0));
@@ -1871,13 +1935,18 @@ MtxDbl& KrigingModel::makeGuessFeasible(MtxDbl& nat_log_corr_len, OptimizationPr
   
   correlation_matrix(theta); //assigns to member variable R
 
-  if((ifChooseNug==true)||(nug<0.0))
-    nug=0.0;
+  //if((ifChooseNug==true)||(nug<0.0))
+  //nug=0.0;
 
-  apply_nugget_build();
-  RChol.copy(R);
+  //need to revisit this to allowed specified nug
+  //apply_nugget_build();
+  //RChol.copy(R);
   double best_rcond;
-  equationSelectingCholR();
+    if(ifChooseNug==true)
+      nuggetSelectingCholR();
+    else
+      equationSelectingCholR();
+    //equationSelectingCholR();
   if(numRowsR<=numTrend(polyOrder,0)) 
     best_rcond=0;
   else
@@ -1902,9 +1971,15 @@ MtxDbl& KrigingModel::makeGuessFeasible(MtxDbl& nat_log_corr_len, OptimizationPr
       guess_theta(0,k)=0.5*std::exp(-2.0*guess(0,k));
 
     correlation_matrix(guess_theta); //assigns to member variable R
-    apply_nugget_build();
-    RChol.copy(R);
-    equationSelectingCholR();
+
+    //need to revisit this to allowed specified nug
+    //apply_nugget_build();
+    //RChol.copy(R);
+    if(ifChooseNug==true)
+      nuggetSelectingCholR();
+    else
+      equationSelectingCholR();
+    //equationSelectingCholR();
     if(numRowsR<=numTrend(polyOrder,0)) 
       rcond=0;
     else

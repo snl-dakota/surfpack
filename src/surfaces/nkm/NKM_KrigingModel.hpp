@@ -256,6 +256,7 @@ private:
   // helper functions
   void preAllocateMaxMemory();
   void equationSelectingCholR();
+  void nuggetSelectingCholR();
 
   /// this function calculates the objective function (negative log
   /// likelihood) and/or the constraint functions and/or their analytical
@@ -291,17 +292,16 @@ private:
 				  const MtxDbl& xr, int Ider) const;
   MtxDbl& d2correlation_matrix_dxIdxK(MtxDbl& d2r, const MtxDbl& drI, const MtxDbl& r, const MtxDbl& xr, int Ider, int Kder) const;
 
-  /** this function applies the nugget to an r matrix (not a member variable)
+  /* this function applies the nugget to an r matrix (not a member variable)
       in place (i.e. it changes r to p). i.e. it scales r by 1.0/(1.0+nug). 
       The convention is that capital matrices are for the data the model is 
       build from, lower case matrices are fore arbitrary points to evaluate 
       the model at */
-  MtxDbl& apply_nugget_eval(MtxDbl& r_to_p) const;
+  //MtxDbl& apply_nugget_eval(MtxDbl& r_to_p) const;
 
   /** R(i,j)=exp(-sum_k theta(k) *(XR(i,k)-XR(j,k))^2), where theta =
      corr_vec, implmented as R=exp(Z*theta) where Z=Z(XR),
      Z(ij,k)=-(XR(i,k)-XR(j,k))^2, */
-  //MtxDbl 
   void correlation_matrix(const MtxDbl& corr_vec);
 
   /** this function applies the nugget to the R matrix (a member variable)
