@@ -378,10 +378,18 @@ KrigingModel::KrigingModel(const SurfData& sd, const ParamMap& params)
   //           correlation_lengths, optimizationMethod
   ParamMap::const_iterator param_it;
 
-  //TODO: add logic that checks for an anchor point and swaps it with
-  //the first zeroth, index, could put the swaping in the 
-  //equationSelectingCholR() function.
 
+  // *************************************************************  
+  // control verbosity outputLevel
+  // *************************************************************  
+  param_it = params.find("verbosity");
+  if (param_it != params.end() && param_it->second.size() > 0)
+    outputLevel=static_cast<short>(std::atoi(param_it->second.c_str()));
+
+  // *************************************************************  
+  // detect an anchor point if present this is the one point that 
+  // we make sure that the equationSelectingCholR does not discard
+  // *************************************************************
   iAnchorPoint=0;
   ifHaveAnchorPoint=false;
   param_it = params.find("anchor_index");
@@ -845,7 +853,8 @@ void KrigingModel::create()
   //printf("]\n");
 
   masterObjectiveAndConstraints(correlations, 1, 0);
-  cout << model_summary_string();
+  if(outputLevel >= NORMAL_OUTPUT)
+    std::cout << model_summary_string();
 
   //deallocate matrices we no longer need after emulator has been created
 

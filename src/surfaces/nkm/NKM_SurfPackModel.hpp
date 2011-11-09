@@ -2,6 +2,7 @@
 #define _SURFPACKMODEL_H_
 
 #include "NKM_SurfMat.hpp"
+#include "NKM_SurfPack.hpp"
 #include "NKM_Optimize.hpp"
 #include <iostream>
 #include <exception>
@@ -13,12 +14,13 @@ class SurfPackModel
 protected:
   SurfData sdBuild;  
   SurfDataScaler scaler;
+  short outputLevel;
 
 public:
   
-  SurfPackModel() : sdBuild(), scaler(sdBuild) {};
+  SurfPackModel() : sdBuild(), scaler(sdBuild), outputLevel(NORMAL_OUTPUT) {};
 
-  SurfPackModel(const SurfData& sd,int jout_keep) : sdBuild(sd,jout_keep), scaler(sdBuild) {};
+  SurfPackModel(const SurfData& sd,int jout_keep) : sdBuild(sd,jout_keep), scaler(sdBuild), outputLevel(NORMAL_OUTPUT) {};
 
   virtual void create() {
     std::cerr << "the create() function has not been implemented for this model type" << std::endl;

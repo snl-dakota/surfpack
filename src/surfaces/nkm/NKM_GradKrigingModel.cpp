@@ -1089,6 +1089,18 @@ GradKrigingModel::GradKrigingModel(const SurfData& sd, const ParamMap& params)
 
   //printf("GradKrigingModel() says hello world\n");
 
+
+  // *************************************************************  
+  // control verbosity outputLevel
+  // *************************************************************  
+  param_it = params.find("verbosity");
+  if (param_it != params.end() && param_it->second.size() > 0)
+    outputLevel=static_cast<short>(std::atoi(param_it->second.c_str()));
+  
+  // *************************************************************  
+  // detect an anchor point if present this is the one point that 
+  // we make sure that the equationSelectingCholR does not discard
+  // *************************************************************
   iAnchorPoint=-1;
   ifHaveAnchorPoint=false;
   //std::cerr << "A: ifHaveAnchorPoint=" << ifHaveAnchorPoint <<
@@ -1615,7 +1627,8 @@ void GradKrigingModel::create()
   //printf("]\n");
 
   masterObjectiveAndConstraints(correlations, 1, 0);
-  cout << model_summary_string();
+  if(outputLevel >= NORMAL_OUTPUT)
+    std::cout << model_summary_string();
   //deallocate matrices we no longer need after emulator has been created
 
   //temporary variables used by masterObjectiveAndConstraints
@@ -1662,6 +1675,7 @@ std::string GradKrigingModel::model_summary_string() const {
   scaler.unScaleXrDist(temp_out_corr_lengths);
   
   std::ostringstream oss;
+  oss << "--- Surfpack Kriging Diagnostics ---\n";
   oss << "GEK: #pts="<< numPoints <<"; used " << numEqnKeep << "/" << numEqnAvail << " eqns; Correlation lengths=(" << temp_out_corr_lengths(0,0);
   for(int i=1; i<numVarsr; ++i)
     oss << ", " << temp_out_corr_lengths(0,i);
@@ -1683,7 +1697,7 @@ std::string GradKrigingModel::model_summary_string() const {
   //if(numEqnKeep!=numEqnAvail)
   //for(int i=0; i<numEqnKeep; ++i)
   // oss << "(" << i<< ":" << iptIderKeep(i,0) << "," << iptIderKeep(i,1) << ")\n";
-    
+  oss << "------------------------------------\n";    
 
   return (oss.str());  
 }

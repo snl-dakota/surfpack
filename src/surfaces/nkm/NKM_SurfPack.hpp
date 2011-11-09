@@ -22,6 +22,9 @@
 
 namespace nkm {
 
+enum { SILENT_OUTPUT, QUIET_OUTPUT, NORMAL_OUTPUT, VERBOSE_OUTPUT,
+       DEBUG_OUTPUT };
+
 int if_close_enough(double a, double b);
 
 int nchoosek(int n, int k);
