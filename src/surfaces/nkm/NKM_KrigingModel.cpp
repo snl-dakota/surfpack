@@ -64,7 +64,7 @@ void KrigingModel::nuggetSelectingCholR(){
 		      chol_info,rcondR);
   if(rcondR<=min_allowed_rcond) {
     double dbl_num_pts=static_cast<double>(numPoints);
-    double sqrt_num_pts=std::sqrt(numPoints);
+    double sqrt_num_pts=std::sqrt(dbl_num_pts);
     min_allowed_rcond*=sqrt_num_pts;
     rcondR/=sqrt_num_pts; //one norm is within a factor of N^0.5 of 2 norm
     double min_eig_worst=(rcondR*dbl_num_pts)/(1.0+(dbl_num_pts-1.0)*rcondR);
