@@ -41,7 +41,6 @@
 #include <stack>
 #include <stdexcept>
 #include <string>
-#include <sys/time.h>
 #include <vector>
 
 typedef std::vector<double> VecDbl;
