@@ -9,12 +9,9 @@ set(ExportTarget ${CMAKE_PROJECT_NAME}-targets CACHE STRING
 
 include(FortranCInterface)
 
-if(WIN32)
-  find_package(CLAPACK REQUIRED)
+# first check for a system blas and lapack
+if(NOT DEFINED BLAS_LIBS OR NOT DEFINED LAPACK_LIBS)
 
-elseif(NOT DEFINED BLAS_LIBS OR NOT DEFINED LAPACK_LIBS)
-
-  # first check for a system blas and lapack
   if(NOT DEFINED BLAS_LIBS)
     find_library(BLAS_LIBS blas)
   endif()
