@@ -4,6 +4,7 @@
 #include "NKM_SurfMat.hpp"
 #include "NKM_SurfPack.hpp"
 #include "NKM_Optimize.hpp"
+#include <cfloat>
 #include <iostream>
 #include <exception>
 
@@ -58,7 +59,11 @@ public:
   virtual double eval_variance(const MtxDbl& xr) const {
     std::cerr << "This model doesn't have an implemented function to return a variance" << std::endl;
     assert(false);
-    return (0.0/0.0);
+    // stricter compilers don't allow divide by 0
+    // consider use of cmath macro NAN, though might not port to MSVS
+    //return (0.0/0.0);
+    // since code unreachable anyway, using a large variance value
+    return(DBL_MAX);
   };
 
   virtual MtxDbl& eval_variance(MtxDbl& var, const MtxDbl& xr) const
