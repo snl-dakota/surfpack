@@ -5,6 +5,7 @@
     This software is distributed under the GNU Lesser General Public License.
     For more information, see the README file in the top Surfpack directory.
     _______________________________________________________________________ */
+#include <cmath>
 
 #ifndef __SURFPACK_H__
 #define __SURFPACK_H__
@@ -150,7 +151,14 @@ unsigned block_owner(unsigned j, unsigned p, unsigned n);
 // ____________________________________________________________________________
 
 // windows doesn't have a native atanh function, long term we may want to switch to boost but for now we implement it ourselves.
-  double atanh(double x);
+  inline double atanh(double x)
+  {
+#if defined(_WIN32) || defined(_WIN64)
+    return 0.5*(std::log(1.0+x) - std::log(1.0-x));
+#else
+    return ::atanh(x);
+#endif
+  };
 
 
 // ____________________________________________________________________________

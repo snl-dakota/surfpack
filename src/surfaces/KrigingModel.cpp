@@ -41,7 +41,7 @@ surfdata_to_nkm_surfdata(const SurfData& sd, nkm::SurfData& nkm_sd)
     
     for(unsigned f_index=0; f_index<f_size; ++f_index) {
       derY[f_index].resize(der_order(0,f_index)+1);
-      for(unsigned der_order_index=1; der_order_index<=der_order(0,f_index); ++der_order_index)
+      for(unsigned der_order_index=1; static_cast<int>(der_order_index)<=der_order(0,f_index); ++der_order_index)
 	derY[f_index][der_order_index].newSize(num_points,nkm::num_multi_dim_poly_coef(x_size,-der_order_index));
     }
   }
@@ -184,14 +184,14 @@ double KrigingModel::variance(const VecDbl& x) const
 VecDbl KrigingModel::gradient(const VecDbl& x) const
 {
   nkm::MtxDbl nkm_x(1, ndims);
-  for(int i=0; i<ndims; ++i)
+  for(size_t i=0; i<ndims; ++i)
     nkm_x(0, i) = x[i];
 
   nkm::MtxDbl nkm_d1y(1, ndims);
   nkmKrigingModel->evaluate_d1y(nkm_d1y, nkm_x);
 
   VecDbl d1y(ndims, 0.0); 
-  for(int i=0; i<ndims; ++i)
+  for(size_t i=0; i<ndims; ++i)
     d1y[i] = nkm_d1y(0,i);
 
   return d1y;
@@ -200,7 +200,7 @@ VecDbl KrigingModel::gradient(const VecDbl& x) const
 MtxDbl KrigingModel::hessian(const VecDbl& x) const
 {
   nkm::MtxDbl nkm_x(1, ndims);
-  for(int i=0; i<ndims; ++i)
+  for(size_t i=0; i<ndims; ++i)
     nkm_x(0, i) = x[i];
 
   int num_lower_elem=(ndims+1)*ndims/2;
@@ -209,10 +209,10 @@ MtxDbl KrigingModel::hessian(const VecDbl& x) const
 
   MtxDbl d2y(ndims, ndims, 0.0); 
   int k=0;
-  for(int j=0; j<ndims; ++j) {
+  for(size_t j=0; j<ndims; ++j) {
     d2y(j,j)=nkm_d2y(0,k);
     k++;
-    for(int i=j+1; i<ndims; ++i) {
+    for(size_t i=j+1; i<ndims; ++i) {
       d2y(i,j) = nkm_d2y(0,k);
       d2y(j,i) = d2y(i,j);
       k++;

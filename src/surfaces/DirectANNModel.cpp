@@ -74,7 +74,7 @@ VecDbl DirectANNModel::gradient(const VecDbl& x) const
   assert(x.size() + 1 == bs.weights.getNCols());
   VecUns diff_var(1,0); // variable with which to differentiate
   VecDbl nodeSums(bs.weights.getNRows());
-  double finalSum; // the unsigmoided value of the output node
+  double finalSum=0.0; // the unsigmoided value of the output node
   for (unsigned r = 0; r < bs.weights.getNRows(); r++) {
     nodeSums[r] = bs.nodeSum(r,x);
     finalSum += coeffs[r]*tanh(nodeSums[r]);

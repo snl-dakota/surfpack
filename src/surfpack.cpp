@@ -73,17 +73,6 @@ unsigned surfpack::block_owner(unsigned j, unsigned p, unsigned n)
 }
 
 // ____________________________________________________________________________
-// MISC functions
-// ____________________________________________________________________________
-
-// windows doesn't have a native atanh function, long term we may want to switch to boost but for now we implement it ourselves.
-double surfpack::atanh(double x)
-{
-  return 0.5*(std::log(1.0+x) - std::log(1.0-x));
-};
-
-
-// ____________________________________________________________________________
 // I/O 
 // ____________________________________________________________________________
 
