@@ -46,7 +46,7 @@ using std::endl;
     identity matrix */
 LinearRegressionModel::
 LinearRegressionModel(const SurfData& sd_in)
-  :sd(sd_in), numVarsr(sd.getNVarsr()), numPoints(sd.getNPts()), XR(sd.xr)
+  :sd(sd_in), XR(sd.xr), numVarsr(sd.getNVarsr()), numPoints(sd.getNPts())
 {
   sd.getY(Y);
 

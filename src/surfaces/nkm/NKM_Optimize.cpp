@@ -451,7 +451,7 @@ where
   double alphax = 0.1;           ///Internal CONMIN variable: 1-D search parameter.
   double abobj1 = 0.1;           ///Internal CONMIN variable: 1-D search parameter.
   double theta  = 1.0;           ///Internal CONMIN variable: mean value of push-off factor.
-  double phi    = 5.0;           ///Internal CONMIN variable: "participation coefficient".
+  //  double phi    = 5.0;           ///Internal CONMIN variable: "participation coefficient".
   int  nscal    = 0;             ///Internal CONMIN variable: scaling control parameter.
   MtxDbl scal(N1,1);  scal.zero(); ///Internal CONMIN array. Vector of scaling parameters for design parameter values.
 

@@ -5,7 +5,7 @@
 #include <cmath>
 #include <iostream>
 #include <cfloat>
-#define __TIME_PIVOT_CHOLESKY__
+//#define __TIME_PIVOT_CHOLESKY__
 #ifdef __TIME_PIVOT_CHOLESKY__
 #include <sys/time.h>
 #endif
@@ -2334,7 +2334,7 @@ void GradKrigingModel::apply_nugget_build() {
     wrote this */
 MtxDbl& GradKrigingModel::correlation_matrix(MtxDbl& r, const MtxDbl& xr) const
 {
-  int nrowsXR=XR.getNRows(); //data points used to build model
+  //int nrowsXR=XR.getNRows(); //data points used to build model
   int nrowsxr=xr.getNRows(); //points at which we are evalutating the model
   //assert(xr.getNCols()==numVarsr);
   r.newSize(nrowsxr,numEqnKeep);
@@ -2928,7 +2928,7 @@ void GradKrigingModel::masterObjectiveAndConstraints(const MtxDbl& theta, int ob
 
   //if theta was the same as the last time we called this function than we can reuse some of the things we calculated last time
   
-  int i, j;
+  int i;
 
   //MtxDbl temp_row_vec_to_print_corrlen(1,numVarsr);
   //for(i=0; i<numTheta; ++i)
@@ -2972,8 +2972,6 @@ void GradKrigingModel::masterObjectiveAndConstraints(const MtxDbl& theta, int ob
   //printf(",%g",temp_row_vec_to_print_corrlen(0,i));
   //printf(")\n");
 
-  int k;
-  int ntrend=Poly.getNRows();
   int chol_info;
 
   if((prevObjDerMode==0)&&(prevConDerMode==0)) {
@@ -3384,7 +3382,7 @@ void GradKrigingModel::getRandGuess(MtxDbl& guess) const
 {
   int mymod = 1048576; //2^20 instead of 10^6 to be kind to the computer
   guess.newSize(1,numVarsr);
-  double corr_length,tempdouble;
+  //double corr_length,tempdouble;
   for(int j=0;j<numVarsr;j++) {
     //tempdouble=(std::rand() % mymod);
     //tempdouble/=mymod;
@@ -3415,7 +3413,7 @@ void GradKrigingModel::getRandGuess(MtxDbl& guess) const
     function */
 MtxDbl& GradKrigingModel::makeGuessFeasible(MtxDbl& nat_log_corr_len, OptimizationProblem *opt) {
   int k;
-  int chol_info;
+  //int chol_info;
   MtxDbl theta(1,numTheta);
   for(k=0; k<numTheta; ++k)
     theta(0,k)=0.5*std::exp(-2.0*nat_log_corr_len(0,k));
@@ -3433,7 +3431,7 @@ MtxDbl& GradKrigingModel::makeGuessFeasible(MtxDbl& nat_log_corr_len, Optimizati
   apply_nugget_build();
 
   //RChol.copy(R);
-  double best_rcond, log_determinant_R;
+  double best_rcond; //, log_determinant_R;
   equationSelectingPrecondCholR();
   best_rcond=rcondR;
   //Chol_fact(RChol,chol_info,best_rcond);

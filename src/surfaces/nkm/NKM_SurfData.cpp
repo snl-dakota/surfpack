@@ -368,7 +368,7 @@ MtxDbl& SurfData::getUpToDerY(MtxDbl& dny, int der_order, int jy) const {
 
   
 ///a constructor for when you pass in real inputs, and (arbitrarily high order) derivatives of the output with respect them, as well as the output, but don't pass in integer input variables.
-SurfData::SurfData(const MtxDbl& XR, const MtxDbl& Y, const MtxInt& der_order_in, const std::vector<std::vector<MtxDbl> > & derY_in, int jout_set) : xr(XR), y(Y), npts(XR.getNRows()), nvarsr(XR.getNCols()), nvarsi(0), nout(Y.getNCols()), jout(jout_set), derOrder(der_order_in), derY(derY_in), ifHaveMinMaxXr(false)
+  SurfData::SurfData(const MtxDbl& XR, const MtxDbl& Y, const MtxInt& der_order_in, const std::vector<std::vector<MtxDbl> > & derY_in, int jout_set) : npts(XR.getNRows()), nvarsr(XR.getNCols()), nvarsi(0), nout(Y.getNCols()), jout(jout_set), derOrder(der_order_in), derY(derY_in), ifHaveMinMaxXr(false), xr(XR), y(Y)
 {
   //npts  =XR.getNRows();
   //nvarsr=XR.getNCols();
@@ -379,11 +379,11 @@ SurfData::SurfData(const MtxDbl& XR, const MtxDbl& Y, const MtxInt& der_order_in
   
   if(0<npts) {
     assert((0<=jout)&&(jout<nout)&&(1==derOrder.getNRows())&&
-	   (nout==derOrder.getNCols())&&(nout==derY.size()));
+	   (nout==derOrder.getNCols())&&(nout==static_cast<int>(derY.size())));
     for(int iout=0; iout<nout; ++iout) {
       assert(derOrder(0,iout)>=0);
       if(1<=derOrder(0,iout)) {
-	assert(derY[iout].size()==derOrder(0,iout)+1);
+	assert(static_cast<int>(derY[iout].size())==derOrder(0,iout)+1);
 	for(int ider=1; ider<=derOrder(0,iout); ++ider)
 	  assert((derY[iout][ider].getNRows()==npts)&&
 		 (derY[iout][ider].getNCols()==
@@ -601,7 +601,7 @@ SurfData::SurfData(const string& filename, int nvarsr_in, int nvarsi_in, int nou
 
 
 ///copy constructor performs a deep copy
-SurfData::SurfData(const SurfData& other) : npts(other.npts), nvarsr(other.nvarsr), nvarsi(other.nvarsi), nout(other.nout), jout(other.jout), derOrder(other.derOrder), derY(other.derY), xr(other.xr), xi(other.xi), y(other.y), unscalexr(other.unscalexr), unscaley(other.unscaley), lockxr(other.lockxr), ifHaveMinMaxXr(false)
+SurfData::SurfData(const SurfData& other) : npts(other.npts), nvarsr(other.nvarsr), nvarsi(other.nvarsi), nout(other.nout), jout(other.jout), derOrder(other.derOrder), derY(other.derY), ifHaveMinMaxXr(false), lockxr(other.lockxr), unscalexr(other.unscalexr), unscaley(other.unscaley), xr(other.xr), xi(other.xi), y(other.y)
  //effective c++ says to initialize rather than assign 
 {
   //I don't know if vectors have copy constructors so use the assignment operator which I know does the right thing.
@@ -613,7 +613,7 @@ SurfData::SurfData(const SurfData& other) : npts(other.npts), nvarsr(other.nvars
 }
 
 ///deep copy constructor that keeps only one column of output
-SurfData::SurfData(const SurfData& other, int jout_keep) : npts(other.npts), nvarsr(other.nvarsr), nvarsi(other.nvarsi), nout(1), jout(0), ifHaveMinMaxXr(false), xr(other.xr), xi(other.xi), unscalexr(other.unscalexr), lockxr(other.lockxr) //effective c++ says to initialize rather than assign 
+SurfData::SurfData(const SurfData& other, int jout_keep) : npts(other.npts), nvarsr(other.nvarsr), nvarsi(other.nvarsi), nout(1), jout(0), ifHaveMinMaxXr(false), lockxr(other.lockxr), unscalexr(other.unscalexr), xr(other.xr), xi(other.xi) //effective c++ says to initialize rather than assign 
 {
   //printf("inside SurfData::SurfData(const SurfData& other, int jout_keep)\n");  fflush(stdout);
 

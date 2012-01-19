@@ -61,7 +61,7 @@ public:
   // Creating GradKrigingModels
 
   /// Default constructor
-  GradKrigingModel() : XR(sdBuild.xr), Y(sdBuild.y), ifChooseNug(false), nug(0.0), maxChooseNug(0.2)
+  GradKrigingModel() : ifChooseNug(false), nug(0.0), maxChooseNug(0.2), XR(sdBuild.xr), Y(sdBuild.y)
   { /* empty constructor */ };
   
   /// Standard GradKrigingModel constructor

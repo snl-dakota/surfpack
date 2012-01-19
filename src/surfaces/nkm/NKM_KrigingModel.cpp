@@ -145,7 +145,6 @@ void KrigingModel::equationSelectingCholR(){
   
   numEqnKeep=numEqnAvail; //=numPoints
   //printf("b4PC numEqnKeep=%d",numEqnKeep);
-  double min_allowed_rcond2=0.0;
   PIVOTCHOL_F77(&uplo, &numEqnAvail, RChol.ptr(0,0), &ld_RChol,
     		iEqnKeep.ptr(0,0), &numEqnKeep, &min_allowed_rcond, 
 		//&min_allowed_pivot_est_rcond, 
@@ -229,7 +228,7 @@ void KrigingModel::equationSelectingCholR(){
   
 
   int inext_lapack_rcondR=icurr_lapack_rcondR;
-  int iprev_lapack_rcondR;
+  int iprev_lapack_rcondR=1;
   if(rcondR<=min_allowed_rcond) {
     icurr_lapack_rcondR=numTrend(polyOrder,0);
     int num_needed_eqn=icurr_lapack_rcondR+1;
@@ -1700,7 +1699,7 @@ void KrigingModel::masterObjectiveAndConstraints(const MtxDbl& theta, int obj_de
 
   //if theta was the same as the last time we called this function than we can reuse some of the things we calculated last time
   
-  int i, j;
+  int i;
 
   if(prevTheta.getNElems()!=numTheta) {
     prevTheta.newSize(1,numTheta);
@@ -1937,7 +1936,6 @@ void KrigingModel::getRandGuess(MtxDbl& guess) const
     function */
 MtxDbl& KrigingModel::makeGuessFeasible(MtxDbl& nat_log_corr_len, OptimizationProblem *opt) {
   int k;
-  int chol_info;
   MtxDbl theta(1,numTheta);
   for(k=0; k<numTheta; ++k)
     theta(0,k)=0.5*std::exp(-2.0*nat_log_corr_len(0,k));

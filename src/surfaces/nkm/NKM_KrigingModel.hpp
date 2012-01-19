@@ -53,7 +53,7 @@ public:
   // Creating KrigingModels
 
   /// Default constructor
-  KrigingModel() : XR(sdBuild.xr), Y(sdBuild.y), ifChooseNug(false), nug(0.0), maxChooseNug(0.2)
+  KrigingModel() : ifChooseNug(false), nug(0.0), maxChooseNug(0.2), XR(sdBuild.xr), Y(sdBuild.y)
   { /* empty constructor */ };
   
   /// Standard KrigingModel constructor

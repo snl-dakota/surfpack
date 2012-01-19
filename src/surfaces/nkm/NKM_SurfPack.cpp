@@ -258,7 +258,10 @@ int num_multi_dim_poly_coef(int Nvarsr, int Ndeg){
 ///poly=multi_dim_poly_power(poly,Nvarsr,Ndeg,istart,jstart) returns a matrix of size={Npoly,Nvarsr}; if Ndeg>=0 this function returns the mixed partial powers of all Nvarsr-dimensional polynomials of degree less than or equal to zero (there are Npoly=nchoosek(Ndeg+Nvarsr,Ndeg) of these), if Ndeg<=0 this function returns the mixed partial powers of all Nvarsr-dimensional polynomials of exactly degree abs(Ndeg) (there are Npoly=nchoosek(abs(Ndeg)-1+Nvarsr,abs(Ndeg)) of these); istart and jstart are offsets from the beginning of the matrix that say where to start the next "group" of powers (istart and jstart are there to avoid needing to RECURSIVELY allocate, fill, copy contents of this "poly" to the next larger "poly" and then deallocate this poly (it's a performance/speed thing), when any function other than multi_dim_poly_power() calls multi_dim_poly_power(), istart and jstart should be left unspecified, which makes them default to zero; if the "user" specifies non-zero istart and jstart then it "voids the warranty" on multi_dim_poly_power(), specifically you could end up going beyond the bounds of poly (a memory error) 
 MtxInt& multi_dim_poly_power(MtxInt& poly, int Nvarsr, int Ndeg, int istart, int jstart, int iffirst){
   //printf("istart=%d jstart=%d iffirst=%d Nvarsr=%d Ndeg=%d poly.NRows()=%d\n",istart,jstart,iffirst,Nvarsr,Ndeg,poly.getNRows());
-  int Npoly, npoly, istartorig=istart;
+  int Npoly, npoly;
+#ifdef __SURFPACK_ERR_CHECK__
+  int istartorig=istart;
+#endif
   //determine the total number of polynomials that this call of multi_dim_poly_power() is supposed to find mixed partial powers for
   if(Ndeg<0)
     Npoly=nchoosek(-Ndeg-1+Nvarsr,-Ndeg);
