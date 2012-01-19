@@ -166,7 +166,7 @@ SurfpackModel* DirectANNModelFactory::Create(const SurfData& sd)
       //cout << "A(" << samp << "," << n << "): " << A(samp,n) << endl;
     }
     A(samp,nodes) = 1.0; // for hidden layer bias
-    b[samp] = atanh(ssd.getResponse(samp));
+    b[samp] = surfpack::atanh(ssd.getResponse(samp));
       //cout << "b(" << samp <<  "): " << b[samp] << endl;
   }
   VecDbl x;
