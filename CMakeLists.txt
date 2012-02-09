@@ -28,6 +28,7 @@ if(NOT DEFINED BLAS_LIBS OR NOT DEFINED LAPACK_LIBS)
 
 endif() 
 
+add_definitions("-D__TESTING_MODE__=1")
 remove_definitions("-DHAVE_CONFIG_H")
 
 include_directories(${Surfpack_BINARY_DIR})
