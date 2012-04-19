@@ -3,7 +3,7 @@
 #include "MarsModel.h"
 #include "SurfData.h"
 
-
+// Need WJB to review:
 #ifdef HAVE_CONFIG_H
 #define FMODM_F77 F77_FUNC(fmodm,FMODM)
 #define MARS_F77  F77_FUNC(mars,MARS)

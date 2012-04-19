@@ -1,6 +1,5 @@
-#include "surfpack_system_headers.h"
-#include "MovingLeastSquaresModel.h"
 #include "surfpack.h"
+#include "MovingLeastSquaresModel.h"
 
 using std::cout;
 using std::endl;

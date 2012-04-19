@@ -1,7 +1,7 @@
 #include "SurfpackModel.h"
 #include "SurfData.h"
 #include "surfpack.h"
-#include <stdlib.h> // for atoi
+#include "ModelScaler.h"
 
 using std::cout;
 using std::endl;
@@ -201,18 +201,24 @@ ModelScaler* SurfpackModel::scaler() const
 ///	Surfpack Model Factory
 ///////////////////////////////////////////////////////////
 
+/** Default constructor for a factory that will get its configuration
+    later, likely from a SurfData object */
 SurfpackModelFactory::SurfpackModelFactory()
   : params(), ndims(0), response_index(0)
 {
 
 }
 
+/** Factory constructor that has some of its parameters passed
+    initially, but not necessarily the number of dimensions */
 SurfpackModelFactory::SurfpackModelFactory(const ParamMap& params_in)
   : params(params_in), ndims(0), response_index(0)
 {
 
 }
 
+/** Use information in the parameter map to set member data prior to
+    build/query */
 void SurfpackModelFactory::config()
 {
   ndims = atoi(params["ndims"].c_str());
@@ -266,6 +272,10 @@ void SurfpackModelFactory::add(const std::string& name, const std::string& value
   params[name]=value;
 }
 
+/** Update the model factory with characteristics from the provided
+    data, select the desired response index in the data, and create a
+    SurfpackModel. Hence the same factory can be used to build models
+    on different responses */
 SurfpackModel* SurfpackModelFactory::Build(const SurfData& sd)
 {
   //cout << "Data:\n";

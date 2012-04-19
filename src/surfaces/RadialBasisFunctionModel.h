@@ -8,9 +8,6 @@
 
 #ifndef __RADIAL_BASIS_FUNCTION_MODEL_H__
 #define __RADIAL_BASIS_FUNCTION_MODEL_H__
-#ifdef HAVE_CONFIG_H
-#include "surfpack_config.h"
-#endif
 
 #include "surfpack_system_headers.h"
 #include "SurfpackModel.h"
@@ -65,10 +62,16 @@ class RadialBasisFunctionModelFactory : public SurfpackModelFactory
 public:
   RadialBasisFunctionModelFactory();
   RadialBasisFunctionModelFactory(const ParamMap& args);
-  virtual SurfpackModel* Create(const SurfData& sd);
-  virtual SurfpackModel* Create(const std::string& model_string);
-  virtual void config();
 protected:
+
+  /// Model-specific portion of creation process
+  virtual SurfpackModel* Create(const SurfData& sd);
+  /// Model-specific portion of creation process
+  virtual SurfpackModel* Create(const std::string& model_string);
+
+  /// set member data prior to build; appeals to SurfpackModel::config()
+  virtual void config();
+
   unsigned nCenters;
   unsigned cvtPts;
   unsigned maxSubsets;

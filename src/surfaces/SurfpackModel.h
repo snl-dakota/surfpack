@@ -10,18 +10,10 @@
 #define __SURFPACK_MODEL_H__
 
 #include "surfpack_system_headers.h"
-#include "ModelScaler.h"
-#include "SurfpackMatrix.h"
 #include "surfpack.h"
 
 class SurfData;
-
-///////////////////////////////////////////////////////////
-///	Surfpack Model Parameters 
-///////////////////////////////////////////////////////////
-
-typedef std::pair< std::string, std::string > ModelParam;
-typedef std::map< std::string, std::string> ParamMap;
+class ModelScaler;
 
 ///////////////////////////////////////////////////////////
 ///	Surfpack Model 
@@ -29,7 +21,9 @@ typedef std::map< std::string, std::string> ParamMap;
 
 class SurfpackModel
 {
+
 public:
+
   SurfpackModel(unsigned ndims_in);
   SurfpackModel(const SurfpackModel& other);
   virtual VecDbl operator()(const SurfData& data) const;
@@ -73,11 +67,14 @@ public:
   unsigned size() const { return ndims;}
   const ParamMap& parameters() const { return args; }
   void parameters(const ParamMap& args) { this->args = args;}
+
 protected:
+
   virtual double evaluate(const VecDbl& x) const = 0;
   unsigned ndims;
   ParamMap args;
   ModelScaler*  mScaler;
+
 };
 
 ///////////////////////////////////////////////////////////
@@ -88,26 +85,47 @@ class SurfpackModelFactory
 {
 
 public:
+
+  /// Default constructor 
   SurfpackModelFactory();
+  /// Partial parameter list constructor
   SurfpackModelFactory(const ParamMap& args);
+
+  /// Build a model from the provided SurfData
   virtual SurfpackModel* Build(const SurfData& sd);
-  virtual SurfpackModel* Create(const SurfData& sd) = 0;
-  virtual SurfpackModel* Create(const std::string& model_string) = 0;
+
   /// the minimum number of points with which Surfpack will build a model
   virtual unsigned minPointsRequired();
   /// the recommended default number of points
   virtual unsigned recommendedNumPoints();
   /// whether the model type supports constraints (anchor point)
   virtual bool supports_constraints();
-  virtual void config();
+
+  /// retreive the configuration parameters
   const ParamMap& parameters() const;
+  /// add a configuration parameter
   void add(const std::string& name, const std::string& value);
+
 protected:
+
+  /// Model-specific portion of creation process
+  virtual SurfpackModel* Create(const SurfData& sd) = 0;
+  /// Model-specific portion of creation process
+  virtual SurfpackModel* Create(const std::string& model_string) = 0;
+
+  /// set member data prior to build
+  virtual void config();
+
   /// convenience function to verify that a model has sufficient data to build
   virtual void sufficient_data(const SurfData& sd);
+
+  /// map of configuration parameters
   ParamMap params;
+  /// dimension of the problem (variables)
   unsigned ndims;
+  /// active response index over which to build
   unsigned response_index;
+
 };
 
 #endif

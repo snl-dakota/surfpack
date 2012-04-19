@@ -2,7 +2,7 @@
 #include "DirectANNModel.h"
 #include "SurfData.h"
 #include "surfpack.h"
-
+#include "ModelScaler.h"
 
 using std::cout;
 using std::endl;

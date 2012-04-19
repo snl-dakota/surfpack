@@ -2,7 +2,7 @@
 #include "surfpack.h"
 #include "LinearRegressionModel.h"
 #include "SurfData.h"
-
+#include "ModelScaler.h"
 
 using std::cout;
 using std::endl;

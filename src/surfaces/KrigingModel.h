@@ -8,17 +8,14 @@
 
 #ifndef __KRIGING_MODEL_H__
 #define __KRIGING_MODEL_H__
-#ifdef HAVE_CONFIG_H
-#include "surfpack_config.h"
-#endif
 
 #include "surfpack_system_headers.h"
 #include "SurfpackModel.h"
-#include "SurfpackMatrix.h"
 
 #include "nkm/NKM_KrigingModel.hpp"
 #include "nkm/NKM_GradKrigingModel.hpp"
 
+class ScaledSurfData;
 
 /// A thin wrapper around a NewKrigingModel
 class KrigingModel : public SurfpackModel
@@ -56,12 +53,19 @@ class KrigingModelFactory : public SurfpackModelFactory
 public:
   KrigingModelFactory();
   KrigingModelFactory(const ParamMap& args);
-  virtual SurfpackModel* Create(const SurfData& sd);
-  virtual SurfpackModel* Create(const std::string& model_string);
-  virtual void config();
   /// Override since Kriging does allow constraints
   virtual bool supports_constraints();
+
 protected:
+
+  /// Model-specific portion of creation process
+  virtual SurfpackModel* Create(const SurfData& sd);
+  /// Model-specific portion of creation process
+  virtual SurfpackModel* Create(const std::string& model_string);
+
+  /// set member data prior to build; appeals to SurfpackModel::config()
+  virtual void config();
+
   /// For Kriging, sufficient data is assessed by the NKM submodel
   virtual void sufficient_data(const SurfData& sd);
 };

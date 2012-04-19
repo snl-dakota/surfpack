@@ -8,14 +8,9 @@
 
 #ifndef __MARS_MODEL_H__
 #define __MARS_MODEL_H__
-#ifdef HAVE_CONFIG_H
-#include "surfpack_config.h"
-#endif
 
 #include "surfpack_system_headers.h"
 #include "SurfpackModel.h"
-#include "SurfpackMatrix.h"
-class SurfPoint;
 
 typedef float real;
 
@@ -47,10 +42,17 @@ class MarsModelFactory : public SurfpackModelFactory
 public:
   MarsModelFactory();
   MarsModelFactory(const ParamMap& args);
-  virtual SurfpackModel* Create(const SurfData& sd);
-  virtual SurfpackModel* Create(const std::string& model_string);
-  virtual void config();
+
 protected:
+
+  /// Model-specific portion of creation process
+  virtual SurfpackModel* Create(const SurfData& sd);
+  /// Model-specific portion of creation process
+  virtual SurfpackModel* Create(const std::string& model_string);
+
+  /// set member data prior to build; appeals to SurfpackModel::config()
+  virtual void config();
+
   real* xMatrix;
   real* fm;
   int* im;
