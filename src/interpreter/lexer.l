@@ -8,7 +8,6 @@
 
 /* lexical analyzer for Surfpack */
 %{
-	#include "surfpack_config.h"
 	#include "surfparse.h"
 	extern void appendToken(const char*);
 %}

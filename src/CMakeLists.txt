@@ -2,9 +2,6 @@
 include_directories(${Surfpack_BINARY_DIR}
                     ${Surfpack_SOURCE_DIR}/src)
 
-# WJB - ToDo: introduce interpreter dependency when I am ready for LEX/YACC
-#                    ${Surfpack_SOURCE_DIR}/src/interpreter
-#
 # WJB - ToDo: introduce teuchos dependency when requested by team
 #include_directories(${Surfpack_BINARY_DIR}/packages/teuchos/src
 #                    ${Surfpack_SOURCE_DIR}/packages/teuchos/src)
@@ -59,6 +56,12 @@ foreach(sd_it ${local_src_subdirs})
   include_directories(${CMAKE_CURRENT_SOURCE_DIR}/${sd_it})
 
 endforeach()
+
+# the interpreter should not be linked into the main library, just
+# into executables
+if(SURFPACK_STANDALONE)
+  add_subdirectory(interpreter)
+endif()
 
 # WJB - ToDo: look into CMake template support features: SurfpackMatrix.tpl
 

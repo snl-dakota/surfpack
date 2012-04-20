@@ -41,7 +41,15 @@ set(Surfpack_ENABLE_DEBUG OFF)
 
 #include(CTest)
 
+option(SURFPACK_STANDALONE  "Create a standalone surfpack executable" OFF)
+if(SURFPACK_STANDALONE)
+  find_package(BISON)
+  find_package(FLEX)
+endif()
+
 add_subdirectory(packages)
 add_subdirectory(src)
 #add_subdirectory(tests)
-
+if(SURFPACK_STANDALONE)
+  add_subdirectory(interface)
+endif()
