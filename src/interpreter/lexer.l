@@ -11,6 +11,10 @@
 	#include "surfparse.h"
 	extern void appendToken(const char*);
 %}
+
+/* This tells flex to read only one input file */
+%option noyywrap
+
 %%
 CreateAxes |
 CreateSurface |
