@@ -76,11 +76,6 @@ void LRMBasisSet::serialize(Archive & archive, const unsigned int version)
 }
 
 
-LinearRegressionModel::LinearRegressionModel(): SurfpackModel(0)
-{
-  // empty ctor
-}
-
 LinearRegressionModel::LinearRegressionModel(const unsigned dims, 
   const LRMBasisSet& bs_in, const VecDbl& coeffs_in)
   : SurfpackModel(dims), bs(bs_in), coeffs(coeffs_in)

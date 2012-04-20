@@ -24,6 +24,7 @@ class SurfpackModel
 
 public:
 
+  SurfpackModel();
   SurfpackModel(unsigned ndims_in);
   SurfpackModel(const SurfpackModel& other);
   virtual VecDbl operator()(const SurfData& data) const;

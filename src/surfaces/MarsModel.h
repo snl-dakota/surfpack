@@ -17,20 +17,39 @@ typedef float real;
 
 class MarsModel : public SurfpackModel
 {
+
 public:
+
+  /// default constructor used when reading from archive file 
+  MarsModel() { /* empty ctor */ }
+  /// standard constructor from a factory
   MarsModel(const unsigned dims, real* fm_in, int fmsize, int* im_in, 
     int imsize, int interp);
   virtual VecDbl gradient(const VecDbl& x) const;
   virtual std::string asString() const;
+
 protected:
+
   virtual double evaluate(const VecDbl& x) const;
-  VecDbl coeffs;
 
   std::vector<real> fm;
   std::vector<int> im;
   int interpolation;
+
 friend class MarsModelTest;
+
+private:
+
+  // allow serializers access to private data
+  friend class boost::serialization::access;
+  /// serializer for derived class Model data
+  template<class Archive> 
+  void serialize(Archive & archive, const unsigned int version);
+
 };
+
+BOOST_CLASS_EXPORT_KEY(MarsModel)
+
 
 ///////////////////////////////////////////////////////////
 ///	Linear Regression Model Factory	

@@ -41,10 +41,10 @@ class LinearRegressionModel : public SurfpackModel
 public:
   // TODO: consider making a private constructor and using friend
   /// default constructor used when reading from archive file 
-  LinearRegressionModel();
+  LinearRegressionModel() { /* empty ctor */ }
   /// standard constructor from a basis set
   LinearRegressionModel(const unsigned dims, const LRMBasisSet& bs_in, 
-    const VecDbl& coeffs_in);
+			const VecDbl& coeffs_in);
   virtual VecDbl gradient(const VecDbl& x) const;
   virtual std::string asString() const;
 protected:

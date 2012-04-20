@@ -38,6 +38,11 @@ double SurfpackModel::operator()(const VecDbl& x) const
   //return mScaler->descale(evaluate(mScaler->scale(x)));
 }
 
+
+SurfpackModel::SurfpackModel(): 
+  ndims(0), mScaler(new NonScaler)
+{ /* empty ctor */ }
+
 SurfpackModel::SurfpackModel(unsigned ndims_in) 
   : ndims(ndims_in), mScaler(new NonScaler)
 {

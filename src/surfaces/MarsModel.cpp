@@ -71,6 +71,21 @@ std::string MarsModel::asString() const
   return os.str();
 }
 
+/** Serializer for the dervied Model data, e.g., basis and coefficients.
+    Must call the base class serialize function via base_object */
+template<class Archive> 
+void MarsModel::serialize(Archive & archive, const unsigned int version)
+{
+  // serialize the base class data, then my members
+  archive & boost::serialization::base_object<SurfpackModel>(*this);
+  archive & fm;
+  archive & im;
+  archive & interpolation;
+}
+
+BOOST_CLASS_EXPORT_IMPLEMENT(MarsModel)
+
+
 ///////////////////////////////////////////////////////////
 ///	Moving Least Squares Model Factory
 ///////////////////////////////////////////////////////////
