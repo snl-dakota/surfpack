@@ -8,7 +8,8 @@ if BUILD_STANDALONE
   surfpack_LDADD = $(top_builddir)/src/libsurfpack.la
   surfpack_LDADD += $(top_builddir)/packages/CONMIN/src/libconmin.la
   surfpack_LDADD += $(top_builddir)/packages/NCSUOpt/libncsuopt.a
-  surfpack_LDADD += $(LAPACK_LIBS) $(BLAS_LIBS) $(LIBS) $(FLIBS) $(LEXLIB)
+  # Shouldn't need ${LEXLIB} any more due to %noyywrap in lexer.l
+  surfpack_LDADD += $(LAPACK_LIBS) $(BLAS_LIBS) $(LIBS) $(FLIBS)
 endif
 
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src \
