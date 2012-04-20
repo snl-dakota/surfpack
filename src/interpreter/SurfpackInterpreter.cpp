@@ -78,10 +78,13 @@ void SurfpackInterpreter::commandLoop(ostream& os, ostream& es)
         es << "Unrecognized command: " << commands[i].first << endl;
       }
     } catch (string& msg) {
-      es << "FailedInstruction: " << fullCommands[i].cmdstring << endl;
-      es << msg << endl;
+      es << "Error: " << msg;
+      es << "\n  Failed Instruction: " << fullCommands[i].cmdstring << endl;
+    } catch (std::exception& e) {
+      es << "Exception: " << e.what() 
+	 << "\n  Failed Instruction: " << fullCommands[i].cmdstring << endl;
     } catch (...) {
-      es << "Unknown Exception.  FailedInstruction: " 
+      es << "Exception (unknown)\n  FailedInstruction: " 
 	 << fullCommands[i].cmdstring << endl;
     }
   }
@@ -129,8 +132,7 @@ void SurfpackInterpreter::execLoad(ParamMap& args)
   bool valid;
   string filename = asStr(args["file"]);
   if (surfpack::hasExtension(filename,".sps")) {
-    throw string("Read surface feature not currently supported.");
-  //  executeLoadSurface(c);
+    execLoadSurface(args);
   } else if (surfpack::hasExtension(filename,".spd") ||
 	     surfpack::hasExtension(filename,".dat")) {
     execLoadData(args);
@@ -164,14 +166,26 @@ void SurfpackInterpreter::execLoadData(ParamMap& args)
 }
 
 ///\todo Add support for LoadSurface in interpreter
-//void SurfpackInterpreter::execLoadSurface(ParamMap& args)
-//{
-//  string name = SurfpackParser::parseIdentifier("name",c.arglist);
-//  string filename = SurfpackParser::parseStringLiteral("file",c.arglist);
-//  Surface* surf = ModelFactory::createSurface(filename);
-//  symbolTable.surfaceVars.insert(SurfaceSymbol(name,surf));
-//}
-//
+void SurfpackInterpreter::execLoadSurface(ParamMap& args)
+{
+  string name = asStr(args["name"]); 
+  string filename = asStr(args["file"]); 
+  
+  // TODO: clean up where files get opened / closed
+  std::ifstream model_ifstream(filename.c_str());
+  if (!model_ifstream.good())
+    throw "Failure opening file."; 
+
+  // TODO: support other archive types
+  boost::archive::text_iarchive input_archive(model_ifstream);
+
+  SurfpackModel* model;
+  input_archive >> model; 
+  symbolTable.modelVars.insert(SurfpackModelSymbol(name, model));
+
+  std::cout << "Model load complete." << std::endl;
+}
+
 void SurfpackInterpreter::execSaveData(ParamMap& args)
 {
   string data_name = asStr(args["data"]);
@@ -188,19 +202,25 @@ void SurfpackInterpreter::execSave(ParamMap& args)
     // Don't automatically fail if either of these isn't defined
     bool valid_data;
     string data_name = asStr(args["data"],valid_data); 
-    bool valid_surface;
-    string surf_name = asStr(args["surface"],valid_surface);
+    bool valid_model;
+    string model_name = asStr(args["surface"],valid_model);
     if (!valid_data) {
-      if (!valid_surface) {
+      if (!valid_model) {
         // Do fail if both are missing
         throw string("Save command requires either 'surface' or 'data' argument");
       } else {
-        std::cout << "Model written" << std::endl;
-        //Surface* surface = symbolTable.lookupSurface(surf_name);
-        //surface->write(filename);
+
+	// TODO: clean up where files get opened / closed
+	std::ofstream model_ofstream(filename.c_str());
+	boost::archive::text_oarchive output_archive(model_ofstream);
+	
+        SurfpackModel* model = symbolTable.lookupModel(model_name);
+	output_archive << model;
+        std::cout << "Model save complete." << std::endl;
+
       }
     } else {
-      if (valid_surface) {
+      if (valid_model) {
         // Fail if both are specified 
         throw string("Save command may not have both 'surface' and 'data' arguments");
       } else {
@@ -208,23 +228,15 @@ void SurfpackInterpreter::execSave(ParamMap& args)
         sd->write(filename);
       }
     }
-  } catch (string e) {
-    cout << e << endl;
+  } catch (string& e) {
+    cout << "Error (Save): " << e << endl;
+  } catch (std::exception& e) {
+    cout << "Exception (Save): " << e.what() << endl;
   } catch (...) {
-    cout << "Caught some other error" << endl;
+    cout << "Exception (Save, unknown)" << endl;
   }
 }
-//
-//void SurfpackInterpreter::execSaveSurface(
-//  ParamMap& args)
-//{
-//  string surf_name = SurfpackParser::parseIdentifier("surface", c.arglist);
-//  string filename = SurfpackParser::parseStringLiteral("file", c.arglist);
-//  Surface* surface = symbolTable.lookupSurface(surf_name);
-//  Save(surface,filename);
-//  // Call save surface
-//}
-//
+
 //int getResponseIndex(const ArgList& arglist, const SurfData& sd)
 //{
 //  bool valid;
@@ -449,12 +461,6 @@ SurfpackInterpreter::SymbolTable::~SymbolTable()
         ++iter) {
     delete iter->second; 
   }
-  //BMA: commented pending determination of whether to maintain
-  //for (SurfaceMap::iterator siter = surfaceVars.begin();
-  //      siter != surfaceVars.end();
-  //      ++siter) {
-  //  delete siter->second; 
-  //}
   for (AxesBoundsMap::iterator pditer = axesVars.begin();
         pditer != axesVars.end();
         ++pditer) {
@@ -478,19 +484,6 @@ SurfpackInterpreter::SymbolTable::lookupModel(const std::string name)
   }
   return result;
 }
-
-/* BMA: commented pending determination of whether to maintain
-Surface* SurfpackInterpreter::SymbolTable::lookupSurface(string name)
-{
-  SurfaceMap::iterator iter = surfaceVars.find(name);
-  if (iter == surfaceVars.end()) {
-    string msg = "Surface variable " + name + " not found in symbol table."; 
-    throw msg;
-  }
-  assert(iter->second);
-  return iter->second;
-}
-*/
 
 SurfData* SurfpackInterpreter::SymbolTable::lookupData(string name)
 {

@@ -65,8 +65,6 @@ protected:
 public:
   typedef std::pair<std::string, SurfData*> SurfDataSymbol;
   typedef std::map<std::string, SurfData*> SurfDataMap;
-  //  typedef std::pair<std::string, Surface*> SurfaceSymbol;
-  //typedef std::map<std::string, Surface*> SurfaceMap;
   typedef std::pair<std::string, AxesBounds*> AxesBoundsSymbol;
   typedef std::map<std::string, AxesBounds*> AxesBoundsMap;
   typedef std::pair<std::string, SurfpackModel*> SurfpackModelSymbol;
@@ -76,12 +74,10 @@ private:
   struct SymbolTable
   {
     SurfDataMap dataVars;
-    //    SurfaceMap surfaceVars;
     SurfpackModelMap modelVars;
     AxesBoundsMap axesVars;
     ~SymbolTable();  
     SurfpackModel* lookupModel(const std::string);
-    //    Surface* lookupSurface(const std::string);
     SurfData* lookupData(const std::string);
     AxesBounds* lookupAxes(const std::string);
   };

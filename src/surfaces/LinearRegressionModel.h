@@ -24,11 +24,25 @@ public:
   std::string asString() const;
   void add(const std::string& s_basis);
   unsigned size() const { return bases.size();}
+
+private:
+
+  // allow serializers access to private data
+  friend class boost::serialization::access;
+  /// serializer for linear regression bases
+  template<class Archive> 
+  void serialize(Archive & archive, const unsigned int version);
+
 };
+
 
 class LinearRegressionModel : public SurfpackModel
 {
 public:
+  // TODO: consider making a private constructor and using friend
+  /// default constructor used when reading from archive file 
+  LinearRegressionModel();
+  /// standard constructor from a basis set
   LinearRegressionModel(const unsigned dims, const LRMBasisSet& bs_in, 
     const VecDbl& coeffs_in);
   virtual VecDbl gradient(const VecDbl& x) const;
@@ -38,7 +52,19 @@ protected:
   LRMBasisSet bs;
   VecDbl coeffs;
 friend class LinearRegressionModelTest;
+
+private:
+
+  // allow serializers access to private data
+  friend class boost::serialization::access;
+  /// serializer for derived class Model data
+  template<class Archive> 
+  void serialize(Archive & archive, const unsigned int version);
+
 };
+
+BOOST_CLASS_EXPORT_KEY(LinearRegressionModel)
+
 
 struct Term {
   bool color;
