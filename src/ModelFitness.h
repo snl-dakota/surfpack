@@ -9,10 +9,6 @@
 #ifndef __MODEL_FITNESS_H__
 #define __MODEL_FITNESS_H__
 
-// WJB - ToDo: verify "configHdr" not needed and remove
-#if 0
-#include "surfpack_config.h"
-#endif
 #include "surfpack_system_headers.h"
 #include "surfpack.h"
 

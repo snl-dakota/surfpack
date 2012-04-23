@@ -8,12 +8,8 @@
 
 #ifndef __KRIGING_MODEL_HPP__
 #define __KRIGING_MODEL_HPP__
-//#ifdef HAVE_CONFIG_H
-//#include "surfpack_config.h"
-//#endif
 
 //#include "surfpack_system_headers.h"
-//#include "SurfpackModel.h"
 #include "NKM_SurfPack.hpp"
 #include "NKM_SurfData.hpp"
 #include "NKM_SurfPackModel.hpp"

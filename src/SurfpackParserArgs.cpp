@@ -6,12 +6,7 @@
     For more information, see the README file in the top Surfpack directory.
     _______________________________________________________________________ */
 
-#ifdef HAVE_CONFIG_H
-#include "surfpack_config.h"
-#endif
 #include "SurfpackParserArgs.h"
-#include <sstream>
-#include <stdlib.h> // for atof
 
 Triplet::Triplet() : min(0), max(0), numPts(0) {}
 

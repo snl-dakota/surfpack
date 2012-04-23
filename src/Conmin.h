@@ -9,11 +9,7 @@
 #ifndef __CONMIN_H__ 
 #define __CONMIN_H__ 
 
-#ifdef HAVE_CONFIG_H
-#include "surfpack_config.h"
-#endif
 #include "surfpack_system_headers.h"
-
 #include "SurfpackModel.h"
 
 

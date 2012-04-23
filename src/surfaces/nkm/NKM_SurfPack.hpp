@@ -1,10 +1,6 @@
 #ifndef __SURFPACK_HPP__
 #define __SURFPACK_HPP__
 
-#ifdef HAVE_CONFIG_H
-#include "surfpack_config.h"
-#endif
-
 #include "NKM_SurfMat.hpp"
 //not sure which of these includes and usings are necessary achieved
 #include <cstdlib>

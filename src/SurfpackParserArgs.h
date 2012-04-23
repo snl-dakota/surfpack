@@ -8,9 +8,7 @@
 
 #ifndef SURFPACK_PARSER_ARGS_H
 #define SURFPACK_PARSER_ARGS_H
-#ifdef HAVE_CONFIG_H
-#include "surfpack_config.h"
-#endif
+
 #include "surfpack_system_headers.h"
 
 class Arg;

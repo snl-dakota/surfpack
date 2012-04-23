@@ -12,10 +12,6 @@
 #include "surfpack_system_headers.h"
 #include "SurfpackMatrix.h"
 
-// Functions incomplete or broken with addition of gradient/Hessian information:
-//   read/write Binary/Text
-//   range check not working for grad / Hessians
-
 /// Holds a data point in a space of arbitrary dimension.  A SurfPoint object
 /// contains an n-tuple representing the location of the point in the space, 
 /// and list of zero or more response values for that point.  Includes methods
@@ -24,19 +20,40 @@
 class SurfPoint {
 
 private:
+
 /// Nested exception class used when an attempt is made to create a SurfPoint 
 /// with 0 dimensions.
 class null_point : public std::runtime_error
 {
 public:
   null_point(const std::string& msg = 
-    "Error: attempt to make SurfPoint with 0 dimensions.") 
+    "Surfpack Error: attempt to make SurfPoint with 0 dimensions.") 
+    : std::runtime_error(msg) {}
+};
+
+/// Nested exception for insufficient gradient data
+class bad_gradient_size : public std::runtime_error
+{
+public:
+  bad_gradient_size(const std::string& msg = 
+    "Surfpack Error: SurfPoint gradient data required for all functions") 
+    : std::runtime_error(msg) {}
+};
+
+/// Nested exception for insufficient Hessian data
+class bad_hessian_size : public std::runtime_error
+{
+public:
+  bad_hessian_size(const std::string& msg = 
+    "Surfpack Error: SurfPoint Hessian data required for all functions") 
     : std::runtime_error(msg) {}
 };
   
+
 // ____________________________________________________________________________
 // Creation, Destruction, Initialization 
 // ____________________________________________________________________________
+
 public:
 
   /// Initialize without any response values
@@ -52,21 +69,24 @@ public:
 
   /// Initialize with one response value and corresponding gradient
   SurfPoint(const std::vector<double>& x, double f0, 
-    const std::vector<double> gradient0);
+	    const std::vector<double>& gradient0);
 
   /// Initialize with one response value and corresponding gradient and Hessian
   SurfPoint(const std::vector<double>& x, double f0, 
-    const std::vector<double> gradient0, const SurfpackMatrix<double> hessian0);
+	    const std::vector<double>& gradient0, 
+	    const SurfpackMatrix<double>& hessian0);
   
   /// Initialize with zero or more response values
   SurfPoint(const std::vector<double>& x, const std::vector<double>& f);
   
   /// Read point from istream in binary format
-  SurfPoint(unsigned xsize, unsigned fsize, std::istream& is);
+  SurfPoint(std::istream& is, unsigned xsize, unsigned fsize, 
+	    unsigned grad_size = 0, unsigned hess_size = 0);
 
   /// Read point from string in text format
-  SurfPoint(unsigned xsize, unsigned fsize, const std::string& single_line,
-    unsigned skip_columns = 0);
+  SurfPoint(const std::string& single_line, unsigned xsize, unsigned fsize,
+	    unsigned grad_size = 0, unsigned hess_size = 0, 
+	    unsigned skip_columns = 0);
 
   /// Copy constructor performs a deep copy
   SurfPoint(const SurfPoint& other);
@@ -77,6 +97,7 @@ public:
   ~SurfPoint();
 
 private:
+
   /// Initialization used by all regular constructors.  Ensures that point has
   /// at least one dimension.
   void init();
@@ -96,7 +117,7 @@ public:
   /// Tests for deep inequality
   bool operator!=(const SurfPoint& other) const;
 
-  /// Return the value along the (xindex)th dimension;
+  /// Return the x value along the (xindex)- th dimension (x[xindex])
   double operator[](unsigned xindex) const;
   
   /// Function object for use with pairs of SurfPoint objects (particularly in
@@ -149,7 +170,7 @@ public:
 // Commands 
 // ____________________________________________________________________________
 
-  /// Append a new response variable
+  /// Append a new response variable, returning index of the inserted value
   unsigned addResponse(double val = 0); 
 
   /// Set an existing response variable to a new value

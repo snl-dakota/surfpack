@@ -6,9 +6,6 @@
     For more information, see the README file in the top Surfpack directory.
     _______________________________________________________________________ */
 
-#ifdef HAVE_CONFIG_H
-#include "surfpack_config.h"
-#endif
 #include "surfpack.h"
 #include "SurfPoint.h"
 
@@ -43,7 +40,7 @@ SurfPoint::SurfPoint(const vector<double>& x, double f0) : x(x), f(1)
 
 /// Initialize with one response value and corresponding gradient
 SurfPoint::SurfPoint(const std::vector<double>& x, double f0, 
-  const std::vector<double> gradient0) 
+		     const std::vector<double>& gradient0) 
   : x(x), f(1), fGradients(1)
 {
   f[0] = f0;
@@ -53,8 +50,9 @@ SurfPoint::SurfPoint(const std::vector<double>& x, double f0,
 
 /// Initialize with one response value and corresponding gradient and Hessian
 SurfPoint::SurfPoint(const std::vector<double>& x, double f0, 
-  const std::vector<double> gradient0, const SurfpackMatrix<double> hessian0)
-: x(x), f(1), fGradients(1), fHessians(1)
+		     const std::vector<double>& gradient0,
+		     const SurfpackMatrix<double>& hessian0)
+  : x(x), f(1), fGradients(1), fHessians(1)
 {
   f[0] = f0;
   fGradients[0] = gradient0;
@@ -70,16 +68,22 @@ SurfPoint::SurfPoint(const vector<double>& x, const vector<double>& f)
 }
 
 /// Read point from istream in binary format
-SurfPoint::SurfPoint(unsigned xsize, unsigned fsize, istream& is) 
-  : x(xsize), f(fsize)
+SurfPoint::SurfPoint(istream& is, unsigned xsize, unsigned fsize, 
+		     unsigned grad_size, unsigned hess_size) 
+  : x(xsize), f(fsize), fGradients(grad_size), fHessians(hess_size)
 {
+  for(unsigned i = 0; i < fsize; ++i) {
+    fGradients.resize(xsize);
+    fHessians.resize(xsize, xsize);
+  }
   readBinary(is);
   init();
 }
 
 /// Read point from string in text format
-SurfPoint::SurfPoint(unsigned xsize, unsigned fsize, const string& single_line,
-  unsigned skip_columns) 
+SurfPoint::SurfPoint(const string& single_line, unsigned xsize, unsigned fsize, 
+		     unsigned grad_size, unsigned hess_size,
+		     unsigned skip_columns) 
   : x(xsize), f(fsize)
 {
   readText(single_line, skip_columns);
@@ -111,15 +115,12 @@ void SurfPoint::init()
   }
   // if any gradient data, must have for all functions
   if (!fGradients.empty() && f.size() != fGradients.size()) {
-    std::cerr << "Surfpack Error: if provided, must have gradient data for exactly number of functions present" << std::endl;
-    throw("SurfPoint: bad gradients");
+    throw SurfPoint::bad_gradient_size();
   }
   // if any Hessian data, must have for all functions
   if (!fHessians.empty() && f.size() != fHessians.size()) {
-    std::cerr << "Surfpack Error: if provided, must have Hessian data for exactly number of functions present" << std::endl;
-    throw("SurfPoint: bad Hessians");
+    throw SurfPoint::bad_gradient_size();
   }
-
 }
 
 SurfPoint::~SurfPoint() 
@@ -272,14 +273,22 @@ double SurfPoint::F(unsigned responseIndex) const
 /// Return gradient vector for response value at responseIndex
 const std::vector<double>& SurfPoint::fGradient(unsigned responseIndex) const
 {
-  // TODO: range check
+  string header(
+    "Error in query SurfPoint::fGradient. Invalid responseIndex."
+  );
+  // Throw an exception if the responseIndex is out of range.
+  checkRange(header, responseIndex);
   return fGradients[responseIndex];
 }
 
 /// Return response value at responseIndex
 const SurfpackMatrix<double>& SurfPoint::fHessian(unsigned responseIndex) const
 {
-  // TODO: range check
+  string header(
+    "Error in query SurfPoint::fHessian. Invalid responseIndex."
+  );
+  // Throw an exception if the responseIndex is out of range.
+  checkRange(header, responseIndex);
   return fHessians[responseIndex];
 }
 
@@ -325,14 +334,33 @@ void SurfPoint::resize(unsigned new_size)
 // I/O
 // ____________________________________________________________________________
 
-/// Write location and responses of this point to stream in binary format 
+/// Write location (x) and responses (f) of this point to stream in
+/// binary format
 void SurfPoint::writeBinary(ostream& os) const
 {
+  // write x
   for (unsigned i = 0; i < x.size(); i++) {
     os.write(reinterpret_cast<const char*>(&x[i]),sizeof(x[i])) ;
   }
+  // write f
   for (unsigned i = 0; i < f.size(); i++) {
     os.write(reinterpret_cast<const char*>(&f[i]),sizeof(f[i]));
+  }
+  // write gradient
+  for (unsigned i = 0; i < fGradients.size(); ++i) {
+    for (unsigned j = 0; j < x.size(); ++j) {
+      os.write(reinterpret_cast<const char*>(&fGradients[i][j]),
+	       sizeof(fGradients[i][j]));
+    }
+  }
+  // write Hessian
+  for (unsigned i = 0; i < fHessians.size(); ++i) {
+    for (unsigned j = 0; j < x.size(); ++j) {
+      for (unsigned k = 0; k < x.size(); ++k) {
+	os.write(reinterpret_cast<const char*>(&fHessians[i](j, k)),
+		 sizeof(fHessians[i](j, k)));
+      }
+    }
   }
 }
 
@@ -346,27 +374,28 @@ void SurfPoint::writeText(ostream& os) const
   ios::fmtflags old_flags = os.flags();
   unsigned old_precision = os.precision(surfpack::output_precision);
   os.setf(ios::scientific);
-  for (unsigned i = 0; i < x.size(); i++) {
+  // write x
+  for (unsigned i = 0; i < x.size(); ++i) {
     os  << setw(surfpack::field_width) << x[i] ;
   }
-  for (unsigned i = 0; i < f.size(); i++) {
+  // write f
+  for (unsigned i = 0; i < f.size(); ++i) {
     os << setw(surfpack::field_width) << f[i];
   }
-
-  // TODO: make I/O include gradients/Hessians
-//   for (unsigned i = 0; i < fGradients.size(); i++) {
-//     for (unsigned j = 0; j < x.size(); j++) {
-//       os << setw(surfpack::field_width) << fGradients[i][j];
-//     }
-//   }
-//   for (unsigned i = 0; i < fHessians.size(); i++) {
-//     for (unsigned j = 0; j < x.size(); j++) {
-//       for (unsigned k = 0; k < x.size(); k++) {
-// 	os << setw(surfpack::field_width) << fHessians[i](j, k);
-//       }
-//     }
-//   }
-
+  // write gradient
+  for (unsigned i = 0; i < fGradients.size(); ++i) {
+    for (unsigned j = 0; j < x.size(); ++j) {
+      os << setw(surfpack::field_width) << fGradients[i][j];
+    }
+  }
+  // write Hessian
+  for (unsigned i = 0; i < fHessians.size(); ++i) {
+    for (unsigned j = 0; j < x.size(); ++j) {
+      for (unsigned k = 0; k < x.size(); ++k) {
+	os << setw(surfpack::field_width) << fHessians[i](j, k);
+      }
+    }
+  }
   os << endl;
   // Restore output flags to what they were before this method was called.
   os.flags(old_flags);
@@ -377,25 +406,51 @@ void SurfPoint::readBinary(istream& is)
 {
   unsigned xValsRead = 0;
   unsigned fValsRead = 0;
+  unsigned fGradRead = 0;
+  unsigned fHessRead = 0;
   try {
     // read the point in binary format
+    // For each read, throw an exception via checkForEOF if there are
+    // fewer values on the line than expected.
+    // read x
     for (xValsRead = 0; xValsRead < x.size(); xValsRead++) {
-       // Throw an exception if there are fewer values on this line that
-       // expected.
        surfpack::checkForEOF(is);
        is.read(reinterpret_cast<char*>(&x[xValsRead]),sizeof(x[xValsRead]));
     }
+    // read f
     for (fValsRead = 0; fValsRead < f.size(); fValsRead++) {
-       // Throw an exception if there are fewer values on this line that
-       // expected.
        surfpack::checkForEOF(is);
        is.read(reinterpret_cast<char*>(&f[fValsRead]),sizeof(f[fValsRead]));
     }
+    // read gradient
+    for (fGradRead = 0; fGradRead < fGradients.size(); ++fGradRead) {
+      for (unsigned j = 0; j < x.size(); ++j) {
+	surfpack::checkForEOF(is);
+	is.read(reinterpret_cast<char*>(&fGradients[fGradRead][j]),
+		sizeof(fGradients[fGradRead][j]));
+      }
+    }
+    // read Hessian
+    for (fHessRead = 0; fHessRead < fHessians.size(); ++fHessRead) {
+      for (unsigned j = 0; j < x.size(); ++j) {
+	for (unsigned k = 0; k < x.size(); ++k) {
+	  surfpack::checkForEOF(is);
+	  is.read(reinterpret_cast<char*>(&fHessians[fHessRead](j,k)),
+		  sizeof(fHessians[fHessRead](j,k)));
+	}
+      }
+    }
   } catch (surfpack::io_exception&) {
-    cerr << "\nExpected on this line: " << x.size() << " domain value(s) "
-         << "and " << f.size() << " response value(s)." << endl
-         << "Found: " << xValsRead << " domain value(s) and " 
-         << fValsRead << " response value(s)." << endl;
+    cerr << "Bad binary read. "
+	 << "\nExpected on this line: " << x.size() << " domain value(s) "
+         << "and " << f.size() << " response value(s);" << endl;
+    if (fGradients.size() > 0 || fHessians.size() > 0)
+      cerr << fGradients.size() << " gradient(s) and "
+	   << fHessians.size() << " Hessians(s);" << endl;
+    cerr << "Found: " << xValsRead << " domain value(s), " 
+	 << fValsRead << " response value(s),\n" 
+	 << fGradRead << " gradient(s), and "
+	 << fHessRead << " Hessian(s)." << endl;
     throw;
   } catch (...) {
     cerr << "Exception rethrown in SurfPoint::readBinary(istream& is)" 
@@ -408,29 +463,52 @@ void SurfPoint::readText(const string& single_line, unsigned skip_columns)
 {
   unsigned xValsRead = 0;
   unsigned fValsRead = 0;
+  unsigned fGradRead = 0;
+  unsigned fHessRead = 0;
   string dummy;
   try {
     // read the point as text
     istringstream streamline(single_line);
     for (unsigned i = 0; i < skip_columns; i++) streamline >> dummy;
-    for (xValsRead = 0; xValsRead < x.size(); xValsRead++) {
-       // Throw an exception if there are fewer values on this line that
-       // expected.
+    // For each read, throw an exception via checkForEOF if there are
+    // fewer values on the line than expected.
+    // read x
+    for (xValsRead = 0; xValsRead < x.size(); ++xValsRead) {
        surfpack::checkForEOF(streamline);
        streamline >> x[xValsRead];
     }
-    for (fValsRead = 0; fValsRead < f.size(); fValsRead++) {
-       // Throw an exception if there are fewer values on this line that
-       // expected.
+    // read f
+    for (fValsRead = 0; fValsRead < f.size(); ++fValsRead) {
        surfpack::checkForEOF(streamline);
        streamline >> f[fValsRead];
+    }
+    // read gradient
+    for (fGradRead = 0; fGradRead < fGradients.size(); ++fGradRead) {
+      for (unsigned j = 0; j < x.size(); ++j) {
+	surfpack::checkForEOF(streamline);
+	streamline >> fGradients[fGradRead][j];
+      }
+    }
+    // read Hessian
+    for (fHessRead = 0; fHessRead < fHessians.size(); ++fHessRead) {
+      for (unsigned j = 0; j < x.size(); ++j) {
+	for (unsigned k = 0; k < x.size(); ++k) {
+	  surfpack::checkForEOF(streamline);
+	  streamline >> fHessians[fGradRead](j,k);
+	}
+      }
     }
   } catch (surfpack::io_exception&) {
     cerr << "Bad SurfPoint: " << single_line 
 	 << "\nExpected on this line: " << x.size() << " domain value(s) "
-         << "and " << f.size() << " response value(s)." << endl
-         << "Found: " << xValsRead << " domain value(s) and " 
-         << fValsRead << " response value(s)." << endl;
+         << "and " << f.size() << " response value(s);" << endl;
+    if (fGradients.size() > 0 || fHessians.size() > 0)
+      cerr << fGradients.size() << " gradient(s) and "
+	   << fHessians.size() << " Hessians(s);" << endl;
+    cerr << "Found: " << xValsRead << " domain value(s), " 
+	 << fValsRead << " response value(s),\n" 
+	 << fGradRead << " gradient(s), and "
+	 << fHessRead << " Hessian(s)." << endl;
     throw;
   } catch (...) {
     cerr << "Exception caught and rethrown in SurfPoint::readText(istream& is)"

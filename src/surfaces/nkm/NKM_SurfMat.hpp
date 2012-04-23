@@ -4,10 +4,6 @@
 //#define __SURFMAT_ERR_CHECK__
 //#define __SURFMAT_ZERO_MEM__
 
-#ifdef HAVE_CONFIG_H
-#include "surfpack_config.h"
-#endif
-
 #include "surfpack_LAPACK_wrappers.h"
 
 #include <cstdio>

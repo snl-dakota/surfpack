@@ -6,9 +6,6 @@
     For more information, see the README file in the top Surfpack directory.
     _______________________________________________________________________ */
 
-#ifdef HAVE_CONFIG_H
-#include "surfpack_config.h"
-#endif
 #include "surfpack.h"
 #include "SurfData.h"
 
@@ -30,17 +27,6 @@ using std::setw;
 using std::string;
 using std::vector;
 
-// ____________________________________________________________________________
-// Constants 
-// ____________________________________________________________________________
-
-/// Used to send a message through Surface::notify(...) that this object is
-/// going out of existence
-const int SurfData::GOING_OUT_OF_EXISTENCE = 1;
-
-/// Used to send a message through Surface::notify(...) that one or more
-/// SurfPoints have been added or modified
-const int SurfData::DATA_MODIFIED = 2;
 
 // ____________________________________________________________________________
 // Creation, Destruction, Initialization 
@@ -52,9 +38,13 @@ SurfData::SurfData(const vector<SurfPoint>& points_)
   if (points_.empty()) {
     this->xsize = 0;
     this->fsize = 0;
+    this->gradsize = 0;
+    this->hesssize = 0;
   } else {
     this->xsize = points_[0].xSize();
     this->fsize = points_[0].fSize();
+    this->gradsize = points_[0].fGradientsSize();
+    this->hesssize = points_[0].fHessiansSize();
     defaultLabels();
     for (unsigned i = 0; i < points_.size(); i++) {
       this->addPoint(points_[i]);
@@ -67,7 +57,8 @@ SurfData::SurfData(const vector<SurfPoint>& points_)
 }
 
 /// Read a set of SurfPoints from a file
-SurfData::SurfData(const string filename) 
+SurfData::SurfData(const string filename):
+  xsize(0), fsize(0), gradsize(0), hesssize(0) 
 {
   init();
   read(filename);
@@ -77,9 +68,12 @@ SurfData::SurfData(const string filename)
 /// contain the normal header information (#points, #vars, #responses).
 /// The #vars and #responses are explicitly specified in the constructor;
 /// The stream reader processes data until eof, assuming one point per line.
-SurfData::SurfData(const string filename, unsigned n_vars, unsigned n_responses, 
-  unsigned n_cols_to_skip)
+SurfData::SurfData(const string filename, unsigned n_vars, 
+		   unsigned n_responses, unsigned n_cols_to_skip):
+  xsize(n_vars), fsize(n_responses), gradsize(0), hesssize(0)
 {
+  init();
+
   if (!surfpack::hasExtension(filename,".dat") 
     && !surfpack::hasExtension(filename,".spd")) {
     cerr << "Bad filename: " << filename << endl;
@@ -91,14 +85,13 @@ SurfData::SurfData(const string filename, unsigned n_vars, unsigned n_responses,
   if (!infile) {
     throw surfpack::file_open_failure(filename);
   }
-  init();
-  this->xsize = n_vars;
-  this->fsize = n_responses;
-  readText(infile, false, n_cols_to_skip);
+  bool read_header = false;
+  readText(infile, read_header, n_cols_to_skip);
 }
 
 /// Read a set of SurfPoints from a istream
-SurfData::SurfData(istream& is, bool binary) 
+SurfData::SurfData(istream& is, bool binary):
+  xsize(0), fsize(0), gradsize(0), hesssize(0)
 {
   init();
   if (binary) {
@@ -109,8 +102,9 @@ SurfData::SurfData(istream& is, bool binary)
 }
 
 /// Makes a deep copy of the object 
-SurfData::SurfData(const SurfData& other) 
-  : xsize(other.xsize), fsize(other.fsize),
+SurfData::SurfData(const SurfData& other):
+  xsize(other.xsize), fsize(other.fsize),
+  gradsize(other.gradsize), hesssize(other.hesssize),
   excludedPoints(other.excludedPoints), defaultIndex(other.defaultIndex),
   xLabels(other.xLabels), fLabels(other.fLabels)
 {
@@ -122,18 +116,14 @@ SurfData::SurfData(const SurfData& other)
 }
 
 /// First SurfPoint added will determine the dimensions of the data set 
-SurfData::SurfData() 
+SurfData::SurfData(): xsize(0), fsize(0), gradsize(0), hesssize(0)
 {
-    this->xsize = 0;
-    this->fsize = 0;
     init();
 }
 
 /// STL data members' resources automatically deallocated 
 SurfData::~SurfData() 
 {
-  //notifyListeners(GOING_OUT_OF_EXISTENCE);
-  //listeners.clear();
   cleanup();
 }
 
@@ -191,6 +181,8 @@ SurfData& SurfData::operator=(const SurfData& other)
     cleanup();
     this->xsize = other.xsize;
     this->fsize = other.fsize;
+    this->gradsize = other.gradsize;
+    this->hesssize = other.hesssize;
     for (unsigned i = 0; i < other.points.size(); i++) {
       this->addPoint(*other.points[i]);
     }
@@ -207,6 +199,8 @@ bool SurfData::operator==(const SurfData& other) const
 {
   if (this->xsize == other.xsize && 
       this->fsize == other.fsize &&
+      this->gradsize == other.gradsize &&
+      this->hesssize == other.hesssize &&
       this->size() == other.size()) { 
     for (unsigned i = 0; i < points.size(); i++) {
       if (*this->points[i] != *other.points[i]) {
@@ -233,12 +227,11 @@ const SurfPoint& SurfData::operator[](unsigned index) const
   return *points[mapping[index]];
 }
 
-/// Return the value for point pt along dimension dim
+/// Return the x-value for point pt along dimension dim
 double SurfData::operator()(unsigned pt, unsigned dim) const
 {
   assert(pt < size());
   assert(dim < xSize());
-  //return points[mapping[pt]]->X()[dim];
   return points[mapping[pt]]->X()[dim];
 }
 
@@ -309,7 +302,7 @@ double SurfData::getResponse(unsigned index) const
 //   return points[mapping[index]]->fHessian(defaultIndex);
 // }
 
-/// Get the responses for all of the points as a vector
+/// Get the default response for all of the points as a vector
 std::vector< double > SurfData::getResponses() const
 {
   vector< double > result(mapping.size());
@@ -319,7 +312,7 @@ std::vector< double > SurfData::getResponses() const
   return result;
 }
 
-/// Get the predictor for all of the points as a vector
+/// Get the predictor (index-th x-value) for all the active points as a vector
 std::vector< double > SurfData::getPredictor(unsigned index) const
 {
   assert(index < xSize());
@@ -362,7 +355,7 @@ const string& SurfData::getXLabel(unsigned index) const
   return xLabels[index];
 }
 
-/// Retrieve the label for one of the predictor variables
+/// Retrieve the label for one of the response variables
 const string& SurfData::getFLabel(unsigned index) const
 {
   return fLabels[index];
@@ -433,17 +426,21 @@ void SurfData::addPoint(const SurfPoint& sp)
   if (points.empty()) {
     xsize = sp.xSize();
     fsize = sp.fSize();
+    gradsize = sp.fGradientsSize();
+    hesssize = sp.fHessiansSize();
     if (xLabels.empty()) {
       defaultLabels();
     }
   } else {
-    if (sp.xSize() != xsize || sp.fSize() != fsize) {
+    if (sp.xSize() != xsize || sp.fSize() != fsize ||
+	sp.fGradientsSize() != gradsize || sp.fHessiansSize() != hesssize) {
       ostringstream errormsg;
       errormsg << "Error in SurfData::addPoint.  Points in this data set "
 	       << "have " << xsize << " dimensions and " << fsize
 	       << " response values; point to be added has "
 	       << sp.xSize() << " dimensions and " << sp.fSize()
-	       << " response values." << endl;
+	       << " response values. (Or gradient and Hessian sizes don't " 
+	       << "match.)" << endl;
       throw bad_surf_data(errormsg.str());
     }
   }
@@ -464,7 +461,6 @@ void SurfData::addPoint(const SurfPoint& sp)
     SurfPoint* spPtr = *iter;
     *spPtr = sp;
   }
-  //notifyListeners(SurfData::DATA_MODIFIED);
 }
 
 /// Add a new response variable to each point. Return the index of the new 
@@ -513,17 +509,21 @@ void SurfData::setConstraintPoint(const SurfPoint& sp)
   if (points.empty()) { 
     xsize = sp.xSize();
     fsize = sp.fSize();
+    gradsize = sp.fGradientsSize();
+    hesssize = sp.fHessiansSize();
     if (xLabels.empty()) { 
       defaultLabels(); 
     } 
   } else { 
-    if (sp.xSize() != xsize || sp.fSize() != fsize) {
+    if (sp.xSize() != xsize || sp.fSize() != fsize || 
+	sp.fGradientsSize() != gradsize || sp.fHessiansSize() != hesssize) {
       ostringstream errormsg;
       errormsg << "Error in SurfData::setConstraintPoint.  Points in this data set "
                << "have " << xsize << " dimensions and " << fsize
                << " response values; point to be added has "
                << sp.xSize() << " dimensions and " << sp.fSize() 
-               << " response values." << endl;
+               << " response values. (Or gradient and Hessian sizes don't " 
+	       << "match.)" << endl;
       throw bad_surf_data(errormsg.str()); 
     } 
   } 
@@ -558,27 +558,6 @@ void SurfData::setExcludedPoints(const set<unsigned>& excluded_points)
     assert(mappingIndex == mapping.size());
   }
 }
-
-/// Inform this object that a Surface wants to be notified when this object
-/// changes
-// BMA: commenting post-Surface deprecation; may resurrect for Models
-// void SurfData::addListener(Surface* surface)
-// {
-//   /// only add the listener if its not already there
-//   list<Surface*>::iterator itr = 
-//     find(listeners.begin(),listeners.end(),surface);
-//   if(itr ==listeners.end() ) {
-//     listeners.push_back(surface);
-//   }
-// }
-
-/// Remove the Surface from the list of surfaces that are notified when the
-/// data changes
-// BMA: commenting post-Surface deprecation; may resurrect for Models
-// void SurfData::removeListener(Surface* surface)
-// {
-//   listeners.remove(surface);
-// }
 
 /// For use with copy constructor and assignment operator-- creates a list of
 /// pointers to the points in the data set which is used to check for 
@@ -631,8 +610,9 @@ void SurfData::setFLabel(unsigned index, const string& response_name)
 // I/O
 // ____________________________________________________________________________
 
-/// Write a set of SurfPoints to a file.  Opens the file and calls other 
-/// version of write.
+/// Write a set of SurfPoints to a file.  Opens the file and calls
+/// other version of write.  All files include dimensions, but some
+/// contain additional header and label information.
 void SurfData::write(const string& filename) const
 {
   if (mapping.empty()) {
@@ -649,9 +629,10 @@ void SurfData::write(const string& filename) const
   } else if (binary) {
     writeBinary(outfile);
   } else {
+    bool write_header = false;
     // Write the header and label info for .spd, not for .dat
     bool metadata = surfpack::hasExtension(filename,".spd");
-    writeText(outfile, false, metadata);
+    writeText(outfile, write_header, metadata);
   }
   outfile.close();
 }
@@ -680,6 +661,8 @@ void SurfData::writeBinary(ostream& os) const
   os.write((char*)&s,sizeof(s));
   os.write((char*)&xsize,sizeof(xsize));
   os.write((char*)&fsize,sizeof(fsize));
+  os.write((char*)&gradsize,sizeof(gradsize));
+  os.write((char*)&hesssize,sizeof(hesssize));
   ///\todo accumulate all the writes into one big chunk of data
   /// and write it out all at once.
   for (unsigned i = 0; i < mapping.size(); i++) {
@@ -688,12 +671,15 @@ void SurfData::writeBinary(ostream& os) const
 }
 
 /// Write a set of SurfPoints to an output stream
-void SurfData::writeText(ostream& os, bool write_header, bool write_labels) const
+void SurfData::writeText(ostream& os, 
+			 bool write_header, bool write_labels) const
 {
     if (write_header) {
       os << mapping.size() << endl
          << xsize << endl 
-         << fsize << endl;
+         << fsize << endl
+         << gradsize << endl
+         << hesssize << endl;
     }
     if (write_labels) {
       os << '%';
@@ -728,13 +714,14 @@ void SurfData::readBinary(istream& is)
     is.read((char*)&size,sizeof(size));
     is.read((char*)&xsize,sizeof(xsize));
     is.read((char*)&fsize,sizeof(fsize));
+    is.read((char*)&gradsize,sizeof(gradsize));
+    is.read((char*)&hesssize,sizeof(hesssize));
     points.clear();
     for (n_points_read = 0; n_points_read < size; n_points_read++) {
       // Throw an exception if we hit the end-of-file before we've
       // read the number of points that were supposed to be there.
       surfpack::checkForEOF(is);
-      // True for fourth argument signals a binary read
-      this->addPoint(SurfPoint(xsize,fsize,is));  
+      this->addPoint(SurfPoint(is, xsize, fsize, gradsize, hesssize));  
     }
     defaultMapping();
   } catch(surfpack::io_exception&) {
@@ -746,22 +733,33 @@ void SurfData::readBinary(istream& is)
 
 unsigned SurfData::readHeaderInfo(istream& is)
 {
-    unsigned declared_size;
-    string single_line;
-    getline(is,single_line);
-    istringstream streamline(single_line);
-    streamline >> declared_size;
-    getline(is,single_line);
-    streamline.str(single_line); streamline.clear();
-    streamline >> xsize;
-    getline(is,single_line);
-    streamline.str(single_line);
-    streamline.clear();
-    streamline >> fsize;
-    return declared_size;
+  string single_line;
+
+  getline(is,single_line);
+  istringstream streamline(single_line);
+  unsigned declared_size;
+  streamline >> declared_size;
+
+  getline(is,single_line);
+  streamline.str(single_line); streamline.clear();
+  streamline >> xsize;
+
+  getline(is,single_line);
+  streamline.str(single_line); streamline.clear();
+  streamline >> fsize;
+
+  getline(is,single_line);
+  streamline.str(single_line); streamline.clear();
+  streamline >> gradsize;
+
+  getline(is,single_line);
+  streamline.str(single_line); streamline.clear();
+  streamline >> hesssize;
+  
+  return declared_size;
 }
 
-/// Read a set of SurfPoints from an input stream
+/// Read a set of SurfPoints from a text input stream
 void SurfData::readText(istream& is, bool read_header, unsigned skip_columns) 
 {
   unsigned n_points_read = 0;
@@ -776,7 +774,8 @@ void SurfData::readText(istream& is, bool read_header, unsigned skip_columns)
     istringstream streamline(single_line);
     if (!readLabelsIfPresent(single_line)) {
       if (single_line != "" && single_line != "\n" && single_line[0] != '%') {
-        this->addPoint(SurfPoint(xsize,fsize,single_line));
+        this->addPoint(SurfPoint(single_line, xsize, 
+				 fsize, gradsize, hesssize, skip_columns));
         n_points_read = 1;
       }
     }
@@ -787,7 +786,8 @@ void SurfData::readText(istream& is, bool read_header, unsigned skip_columns)
       getline(is,single_line);
       if (single_line[0] == '%' || single_line == "") continue;
       // False for last argument signals a text read
-      this->addPoint(SurfPoint(xsize,fsize,single_line, skip_columns));  
+      this->addPoint(SurfPoint(single_line, xsize, 
+			       fsize, gradsize, hesssize, skip_columns));  
       n_points_read++;
     }
     defaultMapping();
@@ -826,27 +826,10 @@ bool SurfData::hasBinaryFileExtension(const string& filename) const
     return false;
   } else {
     throw surfpack::io_exception(
-      "Unrecognized filename extension.  Use .bspd or .spd"
+      "Unrecognized filename extension.  Use .bspd, or .spd"
     );
   }
 }
-
-/// Notify listening surfaces whenever something of interest happens to this
-/// data set
-// BMA: commenting post-Surface deprecation; may resurrect for Models
-// void SurfData::notifyListeners(int msg)
-// {
-//   if (listeners.size() != 0) {
-//     // Do nothing
-//   }
-//   list<Surface*>::iterator itr = listeners.begin();
-//   while (itr != listeners.end()) {
-//     if (*itr) {
-//       (*itr)->notify(msg);
-//     }
-//     ++itr;
-//   }
-// }
 
 /// Set x vars labels to x0 x1, etc.; resp. vars to f0 f1, etc.
 void SurfData::defaultLabels()
@@ -908,16 +891,20 @@ void SurfData::sanityCheck() const
   if (!points.empty()) {
     unsigned dimensionality = points[0]->xSize();
     unsigned numResponses = points[0]->fSize();
+    unsigned numGrad = points[0]->fGradientsSize();
+    unsigned numHess = points[0]->fHessiansSize();
     for (unsigned i = 1; i < points.size(); i++) {
       if (points[i]->xSize() != dimensionality ||
-          points[i]->fSize() != numResponses ) {
+          points[i]->fSize() != numResponses || 
+          points[i]->fGradientsSize() != numGrad || 
+          points[i]->fHessiansSize() != numHess ) {
         ostringstream errormsg;
         errormsg << "Error in SurfData::sanityCheck." << endl
 		 << "Point 0 has " << dimensionality << " dimensions "
                  << "and " << numResponses << " response values, " << endl
                  << "but point " << i << " has " << points[i]->xSize()
  		 << " dimensions and " << points[i]->fSize() << "response "
- 		 << " values.";
+ 		 << " values. (Or gradient and Hessian sizes are wrong.)";
 	throw bad_surf_data(errormsg.str());
       } // if mismatch
     } // for each point

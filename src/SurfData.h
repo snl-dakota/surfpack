@@ -9,19 +9,11 @@
 #ifndef __SURF_DATA_H__
 #define __SURF_DATA_H__
 
-#if defined(HAVE_CONFIG_H) && !defined(DISABLE_DAKOTA_CONFIG_H)
-  // HAVE_CONFIG_H is STILL set in Dakota/src (EVEN IN THE CMAKE BUILD!) so
-  // use a "disable config header" conditional to help manage the transition
-  #include "surfpack_config.h"
-#endif // HAVE_CONFIG_H
 #include "surfpack_system_headers.h"
-
 #include "SurfPoint.h"
 
-/// Contains a set of SurfPoint objects.  May be associated with zero or more
-/// Surface objects, which it notifies when its data changes or when it goes 
-/// out of existence.  Contains support for exclusion of some of the SurfPoint
-/// objects that are physically present, so that clients may operate on some
+/// Contains a set of SurfPoint objects.  Supports exclusion of some
+/// of the SurfPoint objects, so clients may operate on some
 /// subset of the data if they so choose (e.g., in a cross-validation 
 /// algorithm).  Contains methods for I/O support.  Does not allow duplicate
 /// points.
@@ -29,7 +21,9 @@
 /// in weighted regression.
 class SurfData
 {
+
 public:
+
 /// Nested exception class. A bad_surf_data exception is thrown whenever a 
 /// client attempts to:
 /// 1) Add a SurfPoint to the SurfData object that has a different number of
@@ -48,6 +42,7 @@ public:
   bad_surf_data(const std::string& msg = "") : std::runtime_error(msg) {}
 };
 
+
 // ____________________________________________________________________________
 // Creation, Destruction, Initialization 
 // ____________________________________________________________________________
@@ -56,16 +51,22 @@ public:
   /// Vector of points will be copied and checked for duplicates
   SurfData(const std::vector<SurfPoint>& points_);
 
-  /// Read a set of SurfPoints from a file
+  /// Read a set of SurfPoints from a file; binary or text determined
+  /// based on extension
   SurfData(const std::string filename);
 
-  /// Read a set of SurfPoints from a std::istream
+  /// Read a set of SurfPoints from a std::istream, binary or text as
+  /// specified via flag
   SurfData(std::istream& is, bool binary = false);
 
-  /// Read a set of SurfPoints from a std::istream.  The stream does not
+  /// Read a set of SurfPoints in text format from a std::istream.
+  /// The stream does not
   /// contain the normal header information (#points, #vars, #responses).
   /// The #vars and #responses are explicitly specified in the constructor;
   /// The stream reader processes data until eof, assuming one point per line.
+
+  // TODO: include grad/hess sizing?
+
   SurfData(const std::string filename, unsigned n_vars, unsigned n_responses, 
     unsigned n_cols_to_skip);
 
@@ -101,20 +102,20 @@ public:
   /// Makes deep comparison
   bool operator!=(const SurfData& other) const;
 
-  /// Return a const reference to SurfPoint at given index
+  /// Return a const reference to active SurfPoint at given index
   const SurfPoint& operator[](unsigned index) const;
 
-  /// Return the value for point pt along dimension dim
+  /// Return the x-value for point pt along dimension dim
   double operator()(unsigned pt, unsigned dim) const;
 
-  /// Return the vector of predictor vars for point index 
+  /// Return the vector of predictor (x) vars for point index 
   const std::vector<double>& operator()(unsigned pt) const;
 
 // ____________________________________________________________________________
 // Queries 
 // ____________________________________________________________________________
 
-  /// Return the number of SurfPoints in the data set 
+  /// Return the number of active SurfPoints in the data set 
   unsigned size() const;
 
   /// True if there are no points
@@ -129,7 +130,7 @@ public:
   /// Return the set of excluded points (the indices)
   const std::set<unsigned>& getExcludedPoints() const ; 
 
-  /// Get the response value of the (index)th point
+  /// Get the default response f value of the (index)th point
   double getResponse(unsigned index) const;
 
   /// Get the vector of gradients for the (index)th point
@@ -138,10 +139,10 @@ public:
   /// Get the full symmetric matrix of Hessians for the (index)th point
   //  const SurfpackMatrix<double>& getHessian(unsigned index) const;
 
-  /// Get the responses for all of the points as a vector
+  /// Get the default response f values for all of the points as a vector
   std::vector< double > getResponses() const;
   
-  /// Get the predictor for all the points as a vector
+  /// Get the predictor (index-th x-value) for all the active points as a vector
   std::vector< double > getPredictor(unsigned index) const;
 
   /// Get the constraint point
@@ -156,7 +157,7 @@ public:
   /// Retrieve the label for one of the predictor variables
   const std::string& getXLabel(unsigned index) const;
 
-  /// Retrieve the label for one of the predictor variables
+  /// Retrieve the label for one of the response variables
   const std::string& getFLabel(unsigned index) const;
 
   /// Retrieve the index and variable type (predictor/response) for a given
@@ -180,13 +181,13 @@ public:
   /// surface
   void setResponse(unsigned index, double value);
 
-  /// Add a point to the data set. The parameter point will be copied.
+  /// Add a point to the data set. The passed point will be copied.
   void addPoint(const SurfPoint& sp);
 
-  /// Add a new response variable to each point. 
+  /// Add a new response variable to each point, possibly with label. 
   /// Return the index of the new variable.
   unsigned addResponse(const std::vector<double>& newValues, 
-    std::string label = ""); 
+		       std::string label = ""); 
 
   /// Set the constraint (anchor) point, copying the data (only single
   /// constraint supported)
@@ -195,14 +196,6 @@ public:
   /// Specify which points should be skipped.  This can be used when only a 
   /// subset of the SurfPoints should be used for some computation.
   void setExcludedPoints(const std::set<unsigned>& excluded_points);
-
-  /// Inform this object that a Surface wants to be notified when this object
-  /// changes
-  //void addListener(Surface*);
- 
-  /// Remove the Surface from the list of surfaces that are notified when the
-  /// data changes
-  //void removeListener(Surface*);
 
   /// For use with copy constructor and assignment operator-- creates a list of
   /// pointers to the points in the data set which is used to check for 
@@ -219,7 +212,8 @@ public:
   void setFLabel(unsigned index, const std::string& label);
 
 private:
-  /// Maps all indices to themselves in the mapping data member
+  /// Maps all indices to themselves in the mapping data member, based
+  /// on number of points present when called.
   void defaultMapping();
 
   /// Set x vars labels to 'x0' 'x1', etc.; resp. vars to 'f0' 'f1', etc.
@@ -231,23 +225,27 @@ public:
 // I/O
 // ____________________________________________________________________________
 
-  /// Write a set of SurfPoints to a file
+  /// Write the active SurfPoints to a file
+  /// binary extension .bsps: includes header not labels
+  /// text extension    .spd: includes header and label info
+  /// text extension    .dat: no header or labels
   void write(const std::string& filename) const;
 
   /// Read a set of SurfPoints from a file
   void read(const std::string& filename);
   
-  /// Write the surface in binary format
+  /// Write the data in binary format, with header, but no labels
   void writeBinary(std::ostream& os) const;
 
-  /// Write the surface in text format
+  /// Write the data in text format, with optional header, optional
+  /// labels, followed by points.
   void writeText(std::ostream& os, bool write_header = true,
-    bool write_labels = true) const ; 
+		 bool write_labels = true) const; 
 
-  /// Read the surface in binary format
+  /// Read the data in binary format
   void readBinary(std::istream& is); 
 
-  /// Read the surface in text format
+  /// Read the data in text format
   void readText(std::istream& is, bool read_header = true, 
     unsigned skip_columns = 0); 
 
@@ -257,11 +255,17 @@ private:
 // Data members 
 // ____________________________________________________________________________
 
-  /// Dimensionality of the space from wich the SurfPoints are drawn
+  /// Dimensionality of the input (x) space from which the SurfPoints are drawn
   unsigned xsize;
 
-  /// Number of response variables in the data set 
+  /// Number of response/output variables in the data set 
   unsigned fsize;
+
+  /// Number of responses with gradient data (must be 0 or fsize)
+  unsigned gradsize;
+
+  /// Number of responses with Hessian data (must be 0 or fsize)
+  unsigned hesssize;
 
   /// The set of points in this data set
   std::vector<SurfPoint*> points; 
@@ -286,10 +290,10 @@ private:
   /// typically just integrated into the points.
   SurfPoint constraintPoint;
 
-  /// Labels for the predictor variables
+  /// Labels for the predictor/input (x) variables
   std::vector< std::string > xLabels;
  
-  /// Labels for the response variables
+  /// Labels for the responses/output variables
   std::vector< std::string > fLabels;
 
 public:
@@ -303,29 +307,10 @@ private:
   /// This can be done in O(n log n) time instead of O(n^2).
   SurfPointSet orderedPoints;
 
-  /// List of pointers to listening/observing Surface objects that need to be 
-  /// notified when this object changes
-  //std::list<Surface*> listeners;
 
-// ____________________________________________________________________________
-// Constants 
-// ____________________________________________________________________________
-public:
-  /// Used to send a message through Surface::notify(...) that this object is
-  /// going out of existence
-  static const int GOING_OUT_OF_EXISTENCE;
-
-  /// Used to send a message through Surface::notify(...) that one or more
-  /// SurfPoints have been added or modified
-  static const int DATA_MODIFIED;
-  
 // ____________________________________________________________________________
 // Helper methods 
 // ____________________________________________________________________________
-
-  /// Notify listening surfaces whenever something of interest happens to this
-  /// data set
-  void notifyListeners(int msg); 
 
   /// Returns true if file has .bspd extension, false if it has .spd extension. 
   /// Otherwise, an exception is thrown.
@@ -338,7 +323,11 @@ public:
   /// Read the #points, #vars, #responses
   unsigned readHeaderInfo(std::istream& is);
 
+  /// return the sample points (x data) as a matrix samples[i][j],
+  /// where i indexes sample and j indexes dimension of x
   static VecVecDbl asVecVecDbl(const SurfData& data);
+
+
 // ____________________________________________________________________________
 // Testing 
 // ____________________________________________________________________________

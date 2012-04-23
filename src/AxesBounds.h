@@ -9,9 +9,6 @@
 #ifndef AXES_BOUNDS_H
 #define AXES_BOUNDS_H
 
-#ifdef HAVE_CONFIG_H
-#include "surfpack_config.h"
-#endif
 #include "surfpack_system_headers.h"
 
 class SurfData;
