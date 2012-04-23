@@ -68,14 +68,6 @@ void LRMBasisSet::add(const std::string& s_basis)
   bases.push_back(surfpack::toVec<unsigned>(s_basis));
 }
 
-
-template<class Archive> 
-void LRMBasisSet::serialize(Archive & archive, const unsigned int version)
-{
-  archive & bases;
-}
-
-
 LinearRegressionModel::LinearRegressionModel(const unsigned dims, 
   const LRMBasisSet& bs_in, const VecDbl& coeffs_in)
   : SurfpackModel(dims), bs(bs_in), coeffs(coeffs_in)
@@ -120,22 +112,8 @@ std::string LinearRegressionModel::asString() const
   return os.str();
 }
 
-/** Serializer for the dervied Model data, e.g., basis and coefficients.
-    Must call the base class serialize function via base_object */
-template<class Archive> 
-void LinearRegressionModel::serialize(Archive & archive, 
-				      const unsigned int version)
-{
-  // serialize the base class data, then my members
-  archive & boost::serialization::base_object<SurfpackModel>(*this);
-  archive & bs;
-  archive & coeffs;
-}
-
-BOOST_CLASS_EXPORT_IMPLEMENT(LinearRegressionModel)
-
 ///////////////////////////////////////////////////////////
-///	Polynomial (LinearRegression) Model Factory
+///	Moving Least Squares Model Factory
 ///////////////////////////////////////////////////////////
 
 VecDbl LinearRegressionModelFactory::lrmSolve(const LRMBasisSet& bs, const ScaledSurfData& ssd)
@@ -186,7 +164,9 @@ LRMBasisSet LinearRegressionModelFactory::CreateLRM(unsigned order,
 
 SurfpackModel* LinearRegressionModelFactory::Create(const std::string& model_string)
 {
-  // consider retiring
+  ///\todo Be able to parse an LRM model from a string
+  assert(false);
+  return 0;
 }
 
 SurfpackModel* LinearRegressionModelFactory::Create(const SurfData& sd)

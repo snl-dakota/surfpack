@@ -38,11 +38,6 @@ double SurfpackModel::operator()(const VecDbl& x) const
   //return mScaler->descale(evaluate(mScaler->scale(x)));
 }
 
-
-SurfpackModel::SurfpackModel(): 
-  ndims(0), mScaler(new NonScaler)
-{ /* empty ctor */ }
-
 SurfpackModel::SurfpackModel(unsigned ndims_in) 
   : ndims(ndims_in), mScaler(new NonScaler)
 {
@@ -201,24 +196,6 @@ ModelScaler* SurfpackModel::scaler() const
 {
   return mScaler;
 }
-
-
-/** Serializer for the base class data, e.g., parameter list.  This is
-    called by the derived class serialize functions via base_object */
-template<class Archive> 
-void SurfpackModel::serialize(Archive & archive, const unsigned int version)
-{
-  archive & args;
-  archive & ndims;
-  // TODO: How to deal with pointer to ModelScaler; ugh.
-}
-
-BOOST_CLASS_EXPORT_IMPLEMENT(SurfpackModel)
-
-// TODO: remove need for explicit instantiation; these shouldn't need to be here
-template void SurfpackModel::serialize(boost::archive::text_oarchive & ar, const unsigned int version);
-template void SurfpackModel::serialize(boost::archive::text_iarchive & ar, const unsigned int version);
-
 
 ///////////////////////////////////////////////////////////
 ///	Surfpack Model Factory

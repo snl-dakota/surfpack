@@ -28,19 +28,6 @@ if(NOT DEFINED BLAS_LIBS OR NOT DEFINED LAPACK_LIBS)
 
 endif() 
 
-# Surfpack requires Boost for serialization
-#??? set(Boost_USE_MULTITHREADED OFF)
-if(Boost_DIR)
-  message("in ${CMAKE_CURRENT_BINARY_DIR} Boost_DIR already set: ${Boost_DIR}")
-  include_directories(${Boost_INCLUDE_DIR} ${Boost_INCLUDE_DIRS})
-else()
-  find_package(Boost 1.37 REQUIRED COMPONENTS serialization)
-  if(Boost_FOUND)
-    include_directories(${Boost_INCLUDE_DIR} ${Boost_INCLUDE_DIRS})
-  endif()
-endif(Boost_DIR)
-
-
 add_definitions("-D__TESTING_MODE__=1")
 remove_definitions("-DHAVE_CONFIG_H")
 

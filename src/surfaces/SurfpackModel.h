@@ -24,7 +24,6 @@ class SurfpackModel
 
 public:
 
-  SurfpackModel();
   SurfpackModel(unsigned ndims_in);
   SurfpackModel(const SurfpackModel& other);
   virtual VecDbl operator()(const SurfData& data) const;
@@ -76,18 +75,7 @@ protected:
   ParamMap args;
   ModelScaler*  mScaler;
 
-private:
-
-  // allow serializers access to private data
-  friend class boost::serialization::access;
-  /// serializer for base class Model data
-  template<class Archive> 
-  void serialize(Archive & archive, const unsigned int version);
-
 };
-
-BOOST_CLASS_EXPORT_KEY(SurfpackModel)
-
 
 ///////////////////////////////////////////////////////////
 ///	Surfpack Model Factory

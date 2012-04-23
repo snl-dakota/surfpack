@@ -250,14 +250,6 @@ std::string RadialBasisFunction::asString() const
   return os.str();
 }
 
-template<class Archive> 
-void RadialBasisFunction::serialize(Archive & archive, 
-				    const unsigned int version)
-{
-  archive & center;
-  archive & radius;
-}
-
 RadialBasisFunctionModel::RadialBasisFunctionModel(const VecRbf& rbfs_in, const VecDbl& coeffs_in)
   : SurfpackModel(1), rbfs(rbfs_in),coeffs(coeffs_in)
 {
@@ -302,23 +294,6 @@ std::string RadialBasisFunctionModel::asString() const
   }
   return os.str();
 }
-
-
-/** Serializer for the dervied Model data, e.g., basis and coefficients.
-    Must call the base class serialize function via base_object */
-template<class Archive> 
-void RadialBasisFunctionModel::serialize(Archive & archive, 
-					 const unsigned int version)
-{
-  // serialize the base class data, then my members
-  archive & boost::serialization::base_object<SurfpackModel>(*this);
-  archive & rbfs;
-  archive & coeffs;
-}
-
-BOOST_CLASS_EXPORT_IMPLEMENT(RadialBasisFunctionModel)
-
-
 
 typedef std::pair<double,VecUns> RbfBest;
 ///////////////////////////////////////////////////////////
