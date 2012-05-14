@@ -461,8 +461,8 @@ KrigingModel::KrigingModel(const SurfData& sd, const ParamMap& params)
   // scaling section
   // *************************************************************
   
-  // current options are none (fixed correl) | sampling (guess) | local | global
-  optimizationMethod = "global";
+  // current options are none (fixed correl) | sampling (guess) | local | global | global_local
+  optimizationMethod = "global_local";
   param_it = params.find("optimization_method");
   if (param_it != params.end() && param_it->second.size() > 0)
     optimizationMethod = param_it->second; 
@@ -475,6 +475,11 @@ KrigingModel::KrigingModel(const SurfData& sd, const ParamMap& params)
     maxTrials=2*numVarsr+1;
   else if(optimizationMethod.compare("global")==0)
     maxTrials = 10000;
+  else if(optimizationMethod.compare("global_local")==0) {
+    maxTrials = 10000; //ensure it has non-zero as a fail safe but this shouldn't be used
+    maxTrialsGlobal = 500;
+    maxTrialsLocal = 20;
+  }
   else{ //error checking the input
     cerr << "KrigingModel() unknown optimization_method [" << optimizationMethod << "]  aborting\n";
     assert(false);
@@ -823,6 +828,13 @@ void KrigingModel::create()
       opt.direct_optimize();
     else if(optimizationMethod.compare("sampling")==0)
       opt.best_guess_optimize(maxTrials);
+    else if(optimizationMethod.compare("global_local")==0){
+      maxTrials=maxTrialsGlobal;
+      opt.direct_optimize();
+      natLogCorrLen = opt.best_point();
+      maxTrials=maxTrialsLocal;
+      opt.conmin_optimize();
+    }
     else{
       cerr << "KrigingModel:create() unknown optimization_method [" << optimizationMethod << "]  aborting\n";
       assert(false);

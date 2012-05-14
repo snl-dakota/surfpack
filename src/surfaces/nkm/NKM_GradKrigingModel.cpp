@@ -1194,7 +1194,7 @@ GradKrigingModel::GradKrigingModel(const SurfData& sd, const ParamMap& params)
   // *************************************************************
   
   // current options are none (fixed correl) | sampling (guess) | local | global
-  optimizationMethod = "global";
+  optimizationMethod = "global_local";
   param_it = params.find("optimization_method");
   if (param_it != params.end() && param_it->second.size() > 0)
     optimizationMethod = param_it->second; 
@@ -1210,6 +1210,11 @@ GradKrigingModel::GradKrigingModel(const SurfData& sd, const ParamMap& params)
     //if(maxTrials>1500) 
     //maxTrials=1500;
     maxTrials = 10000;
+  }
+  else if(optimizationMethod.compare("global_local")==0) {
+    maxTrials = 10000; //ensure it has non-zero as a fail safe but this shouldn't be used
+    maxTrialsGlobal = 500;
+    maxTrialsLocal = 20;
   }
   else{ //error checking the input
     std::cerr << "GradKrigingModel() unknown optimization_method [" << optimizationMethod << "]  aborting\n";
@@ -1604,6 +1609,13 @@ void GradKrigingModel::create()
       opt.direct_optimize();
     else if(optimizationMethod.compare("sampling")==0)
       opt.best_guess_optimize(maxTrials);
+    else if(optimizationMethod.compare("global_local")==0){
+      maxTrials=maxTrialsGlobal;
+      opt.direct_optimize();
+      natLogCorrLen = opt.best_point();
+      maxTrials=maxTrialsLocal;
+      opt.conmin_optimize();
+    }    
     else{
       std::cerr << "GradKrigingModel:create() unknown optimization_method [" << optimizationMethod << "]  aborting\n";
       assert(false);

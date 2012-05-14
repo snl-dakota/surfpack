@@ -331,6 +331,8 @@ private:
 
   /// maximum number of sets of roughness parameters to try
   int maxTrials;
+  int maxTrialsGlobal; //used if optimization_method = global_local
+  int maxTrialsLocal; //used if optimization_method = global_local
 
   /// should contain either "eig" or "rcond"
   std::string constraintType;

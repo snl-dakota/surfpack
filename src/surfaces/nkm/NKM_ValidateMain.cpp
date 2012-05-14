@@ -1939,7 +1939,7 @@ void validate()
 
   km_params["lower_bounds"]="-2.0 -2.0";
   km_params["upper_bounds"]="2.0 2.0";
-  km_params["optimization_method"]="local";
+  //km_params["optimization_method"]="local";
   //km_params["optimization_method"]="none";
   //km_params["nugget_formula"]="2";
 
