@@ -221,10 +221,10 @@ SurfpackModelFactory::SurfpackModelFactory(const ParamMap& params_in)
     build/query */
 void SurfpackModelFactory::config()
 {
-  ndims = atoi(params["ndims"].c_str());
+  ndims = std::atoi(params["ndims"].c_str());
   assert(ndims);
   string arg = params["response_index"];
-  if (arg != "") response_index = atoi(arg.c_str());
+  if (arg != "") response_index = std::atoi(arg.c_str());
 }
 
 /// Default implementation of minimum data to build
