@@ -91,7 +91,7 @@ void AxesBounds::parseBounds(istream& is)
       m_axes.push_back(Axis());
       continue; // There is no 'max' for this dim; skip to next one
     } else {
-      m_axes.back().max = atof(token.c_str());
+      m_axes.back().max = std::atof(token.c_str());
       m_axes.back().minIsMax = false;
       // now the next token should be a '|' or eof
       is >> token;
@@ -99,7 +99,7 @@ void AxesBounds::parseBounds(istream& is)
       if (is.eof()) break;
       if (token != "|") {
         cerr << "Expected |" << endl;
- 	exit(1);
+ 	std::exit(1);
       }
       m_axes.push_back(Axis());
     }
