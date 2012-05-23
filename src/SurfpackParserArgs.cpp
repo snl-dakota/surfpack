@@ -141,7 +141,7 @@ RvalTuple::asVectorDouble(std::vector< double >& result, const Tuple& tuple)
 {
   result.resize(tuple.size());
   for (unsigned i = 0; i < tuple.size(); i++) {
-    result[i] = atof(tuple[i].c_str());
+    result[i] = std::atof(tuple[i].c_str());
   }
   return result;
 }
