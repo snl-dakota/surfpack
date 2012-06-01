@@ -89,6 +89,16 @@ private:
 
   /// Row of matrix most recently references by operator[]
   //mutable SurfpackVector< T > oneRow;
+
+#ifdef SURFPACK_HAVE_BOOST_SERIALIZATION
+  // allow serializers access to private data
+  friend class boost::serialization::access;
+  /// serializer for derived class matrix data
+  template< class Archive> 
+  void serialize(Archive & archive, const unsigned int version);
+#endif
+
+
 };
 
 // Implementation of functions
@@ -254,6 +264,22 @@ T SurfpackMatrix<T>::sum() const
 {
   return std::accumulate(rawData.begin(),rawData.end(),0.0);
 }
+
+#ifdef SURFPACK_HAVE_BOOST_SERIALIZATION
+template< typename T >
+template< class Archive >
+void SurfpackMatrix<T>::serialize(Archive & archive, 
+				  const unsigned int version)
+{
+  archive & forFortran;
+  archive & nRows;
+  archive & nCols;
+  archive & rawData;
+}
+
+// Seems required for each template type (currently double only)
+BOOST_CLASS_EXPORT(SurfpackMatrix<double>) 
+#endif
 
 typedef SurfpackMatrix<double> MtxDbl;
 

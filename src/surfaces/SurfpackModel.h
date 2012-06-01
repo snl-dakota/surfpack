@@ -11,9 +11,11 @@
 
 #include "surfpack_system_headers.h"
 #include "surfpack.h"
+// need complete type information for serialization
+#include "ModelScaler.h"
 
 class SurfData;
-class ModelScaler;
+
 
 ///////////////////////////////////////////////////////////
 ///	Surfpack Model 
@@ -70,12 +72,34 @@ public:
 
 protected:
 
+  /// default constructor used when reading from archive file 
+  SurfpackModel();
+
+  /// evaluation function implemented by derived classes, used in operator()
   virtual double evaluate(const VecDbl& x) const = 0;
+
+  /// number of input (x) variables
   unsigned ndims;
+  /// model configuration parameters
   ParamMap args;
+  /// data scaler for this model
   ModelScaler*  mScaler;
 
+private:
+
+  /// disallow assignment as not implemented
+  SurfpackModel& operator=(const SurfpackModel& other);
+
+#ifdef SURFPACK_HAVE_BOOST_SERIALIZATION
+  // allow serializers access to private data
+  friend class boost::serialization::access;
+  /// serializer for base class Model data
+  template<class Archive> 
+  void serialize(Archive & archive, const unsigned int version);
+#endif
+
 };
+
 
 ///////////////////////////////////////////////////////////
 ///	Surfpack Model Factory
@@ -110,10 +134,9 @@ protected:
 
   /// Model-specific portion of creation process
   virtual SurfpackModel* Create(const SurfData& sd) = 0;
-  /// Model-specific portion of creation process
-  virtual SurfpackModel* Create(const std::string& model_string) = 0;
 
-  /// set member data prior to build
+  /// set member data prior to build; derived classes are responsible
+  /// for calling this implementation
   virtual void config();
 
   /// convenience function to verify that a model has sufficient data to build
@@ -128,4 +151,26 @@ protected:
 
 };
 
+
+// -----
+// Definitions and export of serialization functions
+// -----
+
+/** Serializer for the base class data, e.g., parameter list.  This is
+    called by the derived class serialize functions via base_object */
+#ifdef SURFPACK_HAVE_BOOST_SERIALIZATION
+template<class Archive> 
+void SurfpackModel::serialize(Archive & archive, const unsigned int version)
+{
+  archive & args;
+  archive & ndims;
+  archive & mScaler;
+}
+
+BOOST_SERIALIZATION_ASSUME_ABSTRACT(SurfpackModel)
+BOOST_CLASS_EXPORT_IMPLEMENT(SurfpackModel)
+
 #endif
+
+
+#endif  // __SURFPACK_MODEL_H__

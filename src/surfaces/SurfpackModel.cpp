@@ -38,6 +38,11 @@ double SurfpackModel::operator()(const VecDbl& x) const
   //return mScaler->descale(evaluate(mScaler->scale(x)));
 }
 
+
+SurfpackModel::SurfpackModel(): 
+  ndims(0), mScaler(NULL)
+{ /* empty ctor */ }
+
 SurfpackModel::SurfpackModel(unsigned ndims_in) 
   : ndims(ndims_in), mScaler(new NonScaler)
 {
@@ -45,14 +50,17 @@ SurfpackModel::SurfpackModel(unsigned ndims_in)
 }
 
 SurfpackModel::SurfpackModel(const SurfpackModel& other)
-  : ndims(other.ndims), mScaler(other.mScaler->clone())
+  : ndims(other.ndims), args(other.args), mScaler(other.mScaler->clone())
 {
 
 }
 
 SurfpackModel::~SurfpackModel()
 {
-  delete mScaler; mScaler = 0;
+  if (mScaler) {
+    delete mScaler;
+    mScaler = NULL;
+  }
 }
 
 double SurfpackModel::variance(const VecDbl& x) const
@@ -197,6 +205,7 @@ ModelScaler* SurfpackModel::scaler() const
   return mScaler;
 }
 
+
 ///////////////////////////////////////////////////////////
 ///	Surfpack Model Factory
 ///////////////////////////////////////////////////////////
@@ -218,7 +227,8 @@ SurfpackModelFactory::SurfpackModelFactory(const ParamMap& params_in)
 }
 
 /** Use information in the parameter map to set member data prior to
-    build/query */
+    build/query.  Derived classes are responsible for calling this
+    implementation. */
 void SurfpackModelFactory::config()
 {
   ndims = std::atoi(params["ndims"].c_str());

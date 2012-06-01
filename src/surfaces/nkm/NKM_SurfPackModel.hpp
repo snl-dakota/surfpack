@@ -17,9 +17,18 @@ protected:
   SurfDataScaler scaler;
   short outputLevel;
 
+private:
+#ifdef SURFPACK_HAVE_BOOST_SERIALIZATION
+  // allow serializers access to private data
+  friend class boost::serialization::access;
+  /// serializer for base class Model data
+  template<class Archive> 
+  void serialize(Archive & archive, const unsigned int version);
+#endif
+
 public:
   
-  SurfPackModel() : sdBuild(), scaler(sdBuild), outputLevel(NORMAL_OUTPUT) {};
+  SurfPackModel() : scaler(sdBuild), outputLevel(NORMAL_OUTPUT) {};
 
   SurfPackModel(const SurfData& sd,int jout_keep) : sdBuild(sd,jout_keep), scaler(sdBuild), outputLevel(NORMAL_OUTPUT) {};
 
@@ -155,5 +164,18 @@ public:
 };
 
 } // end namespace nkm
+
+#ifdef SURFPACK_HAVE_BOOST_SERIALIZATION
+template<class Archive> 
+void nkm::SurfPackModel::serialize(Archive & archive, 
+				   const unsigned int version)
+{
+  archive & sdBuild;
+  archive & scaler;
+  archive & outputLevel;
+}
+BOOST_SERIALIZATION_ASSUME_ABSTRACT(nkm::SurfPackModel)
+BOOST_CLASS_EXPORT_IMPLEMENT(nkm::SurfPackModel)
+#endif
 
 #endif

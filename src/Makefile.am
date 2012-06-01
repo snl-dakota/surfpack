@@ -19,7 +19,13 @@ endif
 lib_LTLIBRARIES = libsurfpack.la
 
 ##libsurfpack_la_CPPFLAGS= -g -fno-inline
-libsurfpack_la_CPPFLAGS=
+libsurfpack_la_CPPFLAGS =
+if BUILD_STANDALONE
+if HAVE_BOOST
+  libsurfpack_la_CPPFLAGS += @BOOST_CPPFLAGS@
+endif
+endif
+
 ## libsurfpack_la is the canonicalized form of the libsurfpack.la that
 ## was listed above as one of the targets that needs to be built by
 ## this makefile.  (See the automake manual for the canonicalization

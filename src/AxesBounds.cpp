@@ -146,35 +146,41 @@ AxesBounds::~AxesBounds()
 }
 
 
-/// Advance the counter used to iterate through dimensions for grid data.
-/// For example, if the client has requested a 10 x 10 grid, and the odometer 
-/// data member currently holds (3,9), it will be advanced (not unlike an
-/// odometer) to (4,0).  This will signify that the next point to be added
-/// should be (m_axes[0].min+4*intervals[0], m_axes[1].min+0*intervals[0].
+/// Advance the counter used to iterate through dimensions for grid
+/// data.  For example, if the client has requested a 10 x 4 grid, and
+/// the point_odometer currently holds (7,3), it will be advanced
+/// (like an odometer) to (8,0).  This will signify that the next
+/// point to be added should be (m_axes[0].min+8*intervals[0],
+/// m_axes[1].min+0*intervals[1]).
+///
+/// NOTE: On the last call the odometer will increase beyond the 0th
+/// grid_points bound; the caller is responsible for not requesting
+/// too many points and exceeding the bounds.
 void AxesBounds::nextPoint(vector<unsigned>& point_odometer, 
   const vector<unsigned>& grid_points) const
 {
-    // Scan across the "odometer" reading to find the first value that does
-    // not need to roll over.  For example, if the user requested a 5 x 5 x 5 x
-    // 5 grid and point holds (3,2,4,4), then the next value should be 
-    // (3,3,0,0), so the rightmost two values need to roll over, and cur_dim,
-    // should point to the 2.
-    int cur_dim = m_axes.size()-1;
-    while (grid_points[cur_dim] == 1 || 
-	   point_odometer[cur_dim] == (grid_points[cur_dim] - 1)) {
-	cur_dim--;
-    }
+  // Scan across the "odometer" reading to find the first value that
+  // does not need to roll over.  For example, if the user requested a
+  // 5 x 5 x 5 x 5 grid and point_odometer holds (3,2,4,4), then the
+  // next value should be (3,3,0,0), so the rightmost two values need
+  // to roll over, and cur_dim should point to the 2's position.  Skip
+  // over dimensions with one grid point (fixed).
+  int cur_dim = m_axes.size()-1;
+  while (cur_dim > 0 && 
+	 (grid_points[cur_dim] == 1 || 
+	  point_odometer[cur_dim] == (grid_points[cur_dim] - 1))
+	 ) {
+    cur_dim--;
+  }
 
-    // If the odometer isn't maxed out, increase the digit at cur_dim by one,
-    // and then zero out everything to the right.
-    if (cur_dim < m_axes.size()) {
-        point_odometer[cur_dim]++;
-	cur_dim++;
-	while(cur_dim < m_axes.size()) {
-	    point_odometer[cur_dim] = 0;
-	    cur_dim++;
-	}
-    }
+  // If the odometer isn't maxed out, increase the digit at cur_dim by one,
+  // and then zero out everything to the right.
+  point_odometer[cur_dim]++;
+  cur_dim++;
+  while(cur_dim < m_axes.size()) {
+    point_odometer[cur_dim] = 0;
+    cur_dim++;
+  }
 }
 
 /// Return a hypergrid data set as a SurfData object.  The client is 
@@ -183,7 +189,11 @@ SurfData* AxesBounds::sampleGrid(const vector<unsigned>& grid_points) const
 {
   return sampleGrid(grid_points,vector<string>());
 }
-SurfData* AxesBounds::sampleGrid(const vector<unsigned>& grid_points, const vector<string>& test_functions) const
+
+/// Return a hypergrid data set as a SurfData object, evaluating
+/// requested test_function, if any.
+SurfData* AxesBounds::sampleGrid(const vector<unsigned>& grid_points, 
+				 const vector<string>& test_functions) const
 {
   vector<unsigned> point_odometer(grid_points.size(),0);
   vector<double> surfptx(m_axes.size());

@@ -5,6 +5,7 @@
 //#include <iostream>
 #include <string>
 #include <sstream>
+#include "surfpack_system_headers.h"
 
 namespace nkm {
 
@@ -175,9 +176,7 @@ public:
     if(!((data.size()>=NRowsAct*NColsAct)&&(NRowsAct>=NRows)&&(NColsAct>=NCols))){
       printf("NRowsAct=%d NRows=%d\n",NRowsAct,NRows);
       printf("NColsAct=%d NCols=%d\n",NColsAct,NCols);
-      printf("data.size()=%d  NRowsAct*NColsAct=%d\n",data.size(),NRowsAct*NColsAct);
-    }
-    assert((data.size()>=NRowsAct*NColsAct)&&(NRowsAct>=NRows)&&(NColsAct>=NCols)&&(jtoi.size()>=NColsAct));
+      printf("data.size()=%d  NRowsAct*NColsAct=%d\n",data.size(),NRowsAct*NColsAct);((data.size()>=NRowsAct*NColsAct)&&(NRowsAct>=NRows)&&(NColsAct>=NCols)&&(jtoi.size()>=NColsAct));
     if(!((0<=i)&&(i<NRows)&&(0<=j)&&(j<NCols))) {
       printf("ERROR: need 0<=i=%d<NRows=%d & 0<=j=%d<NCols=%d",
 	     i,NRows,j,NCols);
@@ -656,6 +655,13 @@ private:
 		       int (* compare_a_b)(int ia, int ib),
 		       void (* swap_a_b)(int ia, int ib));
 
+#ifdef SURFPACK_HAVE_BOOST_SERIALIZATION
+  // allow serializers access to private data
+  friend class boost::serialization::access;
+  /// serializer for derived class SurfPoint data
+  template<class Archive> 
+  void serialize(Archive & archive, const unsigned int version);
+#endif
 };
 
 
@@ -1504,9 +1510,25 @@ inline void SurfMat<T>::maxElem(T& val, int& loc) const {
       loc=k;}
   return;
 }
-
-
 } // end namespace nkm
 
-
+#ifdef SURFPACK_HAVE_BOOST_SERIALIZATION
+template<typename T>
+template<class Archive>
+void nkm::SurfMat<T>::serialize(Archive & archive, 
+				const unsigned int version)
+{
+  archive & NRowsAct; 
+  archive & NColsAct; 
+  archive & NRows; 
+  archive & NCols; 
+  archive & data;
+  archive & jtoi;
+  archive & tol; 
+}
+// export for each template type for now (currently only double and int)
+BOOST_CLASS_EXPORT(nkm::SurfMat<double>)
+BOOST_CLASS_EXPORT(nkm::SurfMat<int>)
 #endif
+
+#endif // __SURFMAT_HPP__

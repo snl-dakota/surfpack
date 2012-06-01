@@ -316,6 +316,15 @@ private:
 
   //friend void SurfData_scaling_unit_test();
   friend class SurfDataScaler;
+  
+#ifdef SURFPACK_HAVE_BOOST_SERIALIZATION
+  // allow serializers access to private data
+  friend class boost::serialization::access;
+  /// serializer for derived class SurfData data
+  template< class Archive> 
+  void serialize(Archive & archive, const unsigned int version);
+#endif
+  
 
 public:
   ///real input variables, by default this will be scaled
@@ -585,39 +594,90 @@ public:
   ///The purpose of the SurfDataScaler class is to provide SurfPackModels and ONLY SurfPackModels with access to some of SurfData's scaling functions, because we don't want anything but a SurfPackModel scaling the SurfData.
 class SurfDataScaler{
 public:
-  SurfDataScaler(SurfData& sd): mySd(sd) {};
+  SurfDataScaler(SurfData& sd): mySd(&sd) {};
 private:
-  SurfData& mySd;
-  inline int isYSingular(int j, double& singular_y) const {return (mySd.isYSingular(j,singular_y));};
-  inline int isUnScaled() const {return (mySd.isUnScaled());};
-  inline void scaleToDefault(){mySd.scaleToDefault();};
-  inline void scaleXrToDomain(MtxDbl& domain_new){mySd.scaleXrToDomain(domain_new);};
-  inline void scaleXrToFactor(MtxDbl& unscale_xr){mySd.scaleXrToFactor(unscale_xr);};
-  inline void scaleYToFactor(MtxDbl& unscale_y){mySd.scaleYToFactor(unscale_y);};
-  inline void scaleToFactors(MtxDbl& unscale_xr, MtxDbl& unscale_y){mySd.scaleToFactors(unscale_xr,unscale_y);};
-  inline SurfData& unScaleCopy(SurfData& result){return (mySd.unScaleCopy(result));};
-  inline SurfData& unScale(){return (mySd.unScale());};
+  SurfDataScaler() {};
+  SurfData* mySd;
+  inline int isYSingular(int j, double& singular_y) const {return (mySd->isYSingular(j,singular_y));};
+  inline int isUnScaled() const {return (mySd->isUnScaled());};
+  inline void scaleToDefault(){mySd->scaleToDefault();};
+  inline void scaleXrToDomain(MtxDbl& domain_new){mySd->scaleXrToDomain(domain_new);};
+  inline void scaleXrToFactor(MtxDbl& unscale_xr){mySd->scaleXrToFactor(unscale_xr);};
+  inline void scaleYToFactor(MtxDbl& unscale_y){mySd->scaleYToFactor(unscale_y);};
+  inline void scaleToFactors(MtxDbl& unscale_xr, MtxDbl& unscale_y){mySd->scaleToFactors(unscale_xr,unscale_y);};
+  inline SurfData& unScaleCopy(SurfData& result){return (mySd->unScaleCopy(result));};
+  inline SurfData& unScale(){return (mySd->unScale());};
 
-  inline MtxDbl& scaleXrDist(MtxDbl& xr_dist) const {return (mySd.scaleXrDist(xr_dist));};
-  inline MtxDbl& unScaleXrDist(MtxDbl& xr_dist) const {return (mySd.unScaleXrDist(xr_dist));};  
-  inline MtxDbl& scaleXrOther(MtxDbl& xr_other) const {return (mySd.scaleXrOther(xr_other));};
-  inline MtxDbl& unScaleXrOther(MtxDbl& xr_other) const {return (mySd.unScaleXrOther(xr_other));};
-  inline double scaleYOther(double y, int j=-99999) const {return (mySd.scaleYOther(y,j));};
-  inline double unScaleYOther(double y, int j=-99999) const {return (mySd.unScaleYOther(y));};
-  inline MtxDbl& scaleYOther(MtxDbl& y, int j=-99999) const {return (mySd.scaleYOther(y,j));};
-  inline MtxDbl& unScaleYOther(MtxDbl& y, int j=-99999) const {return (mySd.unScaleYOther(y,j));};
-  inline double scaleFactorDerY(int j_xr, int j_y=-99999) const {return (mySd.scaleFactorDerY(j_xr, j_y));};
-  inline double unScaleFactorDerY(int j_xr, int j_y=-99999) const {return (mySd.unScaleFactorDerY(j_xr, j_y));};
-  inline double scaleFactorDerY(const MtxInt& der, int j_y=-99999) const {return (mySd.scaleFactorDerY(der, j_y));};
-  inline double unScaleFactorDerY(const MtxInt& der, int j_y=-99999)const {return (mySd.unScaleFactorDerY(der, j_y));};
-  inline double scaleFactorVarY(int j_y=-99999) const {return (mySd.scaleFactorVarY(j_y));};
-  inline double unScaleFactorVarY(int j_y=-99999) const {return (mySd.unScaleFactorVarY(j_y));};
+  inline MtxDbl& scaleXrDist(MtxDbl& xr_dist) const {return (mySd->scaleXrDist(xr_dist));};
+  inline MtxDbl& unScaleXrDist(MtxDbl& xr_dist) const {return (mySd->unScaleXrDist(xr_dist));};  
+  inline MtxDbl& scaleXrOther(MtxDbl& xr_other) const {return (mySd->scaleXrOther(xr_other));};
+  inline MtxDbl& unScaleXrOther(MtxDbl& xr_other) const {return (mySd->unScaleXrOther(xr_other));};
+  inline double scaleYOther(double y, int j=-99999) const {return (mySd->scaleYOther(y,j));};
+  inline double unScaleYOther(double y, int j=-99999) const {return (mySd->unScaleYOther(y));};
+  inline MtxDbl& scaleYOther(MtxDbl& y, int j=-99999) const {return (mySd->scaleYOther(y,j));};
+  inline MtxDbl& unScaleYOther(MtxDbl& y, int j=-99999) const {return (mySd->unScaleYOther(y,j));};
+  inline double scaleFactorDerY(int j_xr, int j_y=-99999) const {return (mySd->scaleFactorDerY(j_xr, j_y));};
+  inline double unScaleFactorDerY(int j_xr, int j_y=-99999) const {return (mySd->unScaleFactorDerY(j_xr, j_y));};
+  inline double scaleFactorDerY(const MtxInt& der, int j_y=-99999) const {return (mySd->scaleFactorDerY(der, j_y));};
+  inline double unScaleFactorDerY(const MtxInt& der, int j_y=-99999)const {return (mySd->unScaleFactorDerY(der, j_y));};
+  inline double scaleFactorVarY(int j_y=-99999) const {return (mySd->scaleFactorVarY(j_y));};
+  inline double unScaleFactorVarY(int j_y=-99999) const {return (mySd->unScaleFactorVarY(j_y));};
 
   friend class SurfPackModel;
   friend class KrigingModel;
   friend class GradKrigingModel;
+  
+#ifdef SURFPACK_HAVE_BOOST_SERIALIZATION
+  // allow serializers access to private data
+  friend class boost::serialization::access;
+  /// serializer for derived class SurfData data
+  template< class Archive> 
+  void serialize(Archive & archive, const unsigned int version);
+#endif
+  
 };
 
+
 } // end namespace nkm
+
+
+
+#ifdef SURFPACK_HAVE_BOOST_SERIALIZATION
+//if put this inside the namespace nkm { } compiler was looking for and could not find boost templates as part of nkm namespace
+//using nkm::SurfData;
+template<class Archive>
+void nkm::SurfData::serialize(Archive & archive, 
+			      const unsigned int version)
+{
+  archive & npts;
+  archive & nvarsr;
+  archive & nvarsi;
+  archive & nout;
+  archive & jout;
+  archive & derOrder;
+  archive & derY;
+  archive & ifHaveMinMaxXr;
+  archive & minMaxXr;
+  archive & lockxr;
+  archive & unscalexr;
+  archive & unscaley;
+  archive & xrLabels;
+  archive & xiLabels;
+  archive & yLabels;
+  archive & xr;
+  archive & xi;
+  archive & y;
+
+}
+BOOST_CLASS_EXPORT(nkm::SurfData) 
+
+template<class Archive>
+void nkm::SurfDataScaler::serialize(Archive & archive, 
+				    const unsigned int version)
+{
+  archive & mySd;
+}
+BOOST_CLASS_EXPORT(nkm::SurfDataScaler) 
+#endif
 
 #endif

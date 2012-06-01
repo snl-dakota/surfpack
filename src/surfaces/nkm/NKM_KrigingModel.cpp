@@ -878,8 +878,16 @@ void KrigingModel::create()
   prevObjDerMode=prevConDerMode=0;
   prevTheta.clear(); //row vector 
   Z.clear(); //matrix
+  Ztheta.clear(); //vector
   R.clear(); //matrix
   G.clear(); //matrix
+  Yall.clear();
+  Gall.clear();
+  rcondDblWork.clear();
+  rcondIntWork.clear();
+  sumAbsColR.clear();
+  lapackRcondR.clear();
+  oneNormR.clear();
 
   con.clear(); //vector
   gradObj.clear(); //vector

@@ -250,6 +250,7 @@ std::string RadialBasisFunction::asString() const
   return os.str();
 }
 
+
 RadialBasisFunctionModel::RadialBasisFunctionModel(const VecRbf& rbfs_in, const VecDbl& coeffs_in)
   : SurfpackModel(1), rbfs(rbfs_in),coeffs(coeffs_in)
 {
@@ -294,6 +295,7 @@ std::string RadialBasisFunctionModel::asString() const
   }
   return os.str();
 }
+
 
 typedef std::pair<double,VecUns> RbfBest;
 ///////////////////////////////////////////////////////////
@@ -372,12 +374,5 @@ SurfpackModel* RadialBasisFunctionModelFactory::Create(const SurfData& sd)
   //cout << "Cached fitness: " << bestset.first << " recomputed: " << fitness << endl;
   assert(sm);
   return sm; 
-}
-
-SurfpackModel* RadialBasisFunctionModelFactory::Create(const std::string& model_string)
-{
-  ///\todo Be able to parse an RBF model from a string
-  assert(false);
-  return 0;
 }
 

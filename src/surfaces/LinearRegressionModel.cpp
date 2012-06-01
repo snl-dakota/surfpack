@@ -68,6 +68,7 @@ void LRMBasisSet::add(const std::string& s_basis)
   bases.push_back(surfpack::toVec<unsigned>(s_basis));
 }
 
+
 LinearRegressionModel::LinearRegressionModel(const unsigned dims, 
   const LRMBasisSet& bs_in, const VecDbl& coeffs_in)
   : SurfpackModel(dims), bs(bs_in), coeffs(coeffs_in)
@@ -112,8 +113,9 @@ std::string LinearRegressionModel::asString() const
   return os.str();
 }
 
+
 ///////////////////////////////////////////////////////////
-///	Moving Least Squares Model Factory
+///	Polynomial (LinearRegression) Model Factory
 ///////////////////////////////////////////////////////////
 
 VecDbl LinearRegressionModelFactory::lrmSolve(const LRMBasisSet& bs, const ScaledSurfData& ssd)
@@ -162,12 +164,6 @@ LRMBasisSet LinearRegressionModelFactory::CreateLRM(unsigned order,
   return bs;
 } 
 
-SurfpackModel* LinearRegressionModelFactory::Create(const std::string& model_string)
-{
-  ///\todo Be able to parse an LRM model from a string
-  assert(false);
-  return 0;
-}
 
 SurfpackModel* LinearRegressionModelFactory::Create(const SurfData& sd)
 {

@@ -226,7 +226,7 @@ public:
 // ____________________________________________________________________________
 
   /// Write the active SurfPoints to a file
-  /// binary extension .bsps: includes header not labels
+  /// binary extension .bspd: includes header not labels
   /// text extension    .spd: includes header and label info
   /// text extension    .dat: no header or labels
   void write(const std::string& filename) const;
@@ -307,7 +307,6 @@ private:
   /// This can be done in O(n log n) time instead of O(n^2).
   SurfPointSet orderedPoints;
 
-
 // ____________________________________________________________________________
 // Helper methods 
 // ____________________________________________________________________________
@@ -327,6 +326,15 @@ private:
   /// where i indexes sample and j indexes dimension of x
   static VecVecDbl asVecVecDbl(const SurfData& data);
 
+      
+#ifdef SURFPACK_HAVE_BOOST_SERIALIZATION
+  // allow serializers access to private data
+  friend class boost::serialization::access;
+  /// serializer for derived class SurfData data
+  template<class Archive> 
+  void serialize(Archive & archive, const unsigned int version);
+#endif
+  
 
 // ____________________________________________________________________________
 // Testing 
@@ -351,5 +359,29 @@ protected:
 
 /// Print the SurfData to a stream 
 std::ostream& operator<<(std::ostream& os, const SurfData& data);
+
+
+#ifdef SURFPACK_HAVE_BOOST_SERIALIZATION
+template<class Archive>
+void SurfData::serialize(Archive & archive, 
+			 const unsigned int version)
+{  
+  archive & xsize;
+  archive & fsize;
+  archive & gradsize;
+  archive & hesssize;
+  archive & points;
+  archive & excludedPoints;
+  archive & mapping;
+  archive & defaultIndex;
+  archive & constraintPoint;
+  archive & xLabels;
+  archive & fLabels;
+  archive & orderedPoints;
+}
+BOOST_CLASS_EXPORT(SurfData)
+#endif
+
+
 
 #endif

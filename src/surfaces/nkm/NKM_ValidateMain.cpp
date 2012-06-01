@@ -11,11 +11,11 @@ using std::ostringstream;
 
 //#define __PROFILING_TEST__ //not iplemented yet
 //#define __TIMING_BENCH__
-#define __FAST_TEST__
+//#define __FAST_TEST__
 //#define __WITH_PAV_500__
 //#define __FASTER_TEST__
 //#define __EVEN_FASTER_TEST__
-//#define __VALGRIND_TEST__
+#define __VALGRIND_TEST__
 //#define __GKM_USE_KM_CORR_LEN__
 using std::cout;
 using std::endl;
@@ -29,6 +29,7 @@ void check_matrix();
 void compare_sample_designs();
 void compare_sample_designs_pav(int nvarsr);
 void nested_Krig_vs_GEK_herbie_smooth_herbie_2D_4D_8D();
+void boost_save_loadtest();
 
 void gen_sample_design_by_pivoted_cholesky() {
   int NumGuesses=100;
@@ -174,6 +175,7 @@ void time_build_grad() {
 
 int main(int argc, char* argv[])
 {
+  //boost_save_loadtest();
   //time_build_grad();
   //compare_sample_designs_pav(2);
   //compare_sample_designs_pav(4);
@@ -565,6 +567,78 @@ void check_matrix()
   return;
 }
 
+void boost_save_loadtest(){
+
+  printf("testing boost save and load\n");
+
+  //filenames
+  string validate2d_100="grad_validate2d_100.spd";
+  string validate2d_10K="grad_validate2d_10K.spd";
+
+  nkm::SurfData sd2d100(validate2d_100, 2, 0, 3, 0, 1, 0);
+  nkm::SurfData sd2d10K(validate2d_10K, 2, 0, 3, 0, 1, 0);
+
+  nkm::MtxDbl yevalOrig(    10000,1);
+  nkm::MtxDbl yevalRestored(10000,1);
+
+  int jout;
+  std::map< std::string, std::string> km_params;
+  km_params["constraint_type"] = "r";
+  km_params["order"] = "2";
+  km_params["reduced_polynomial"]=nkm::toString<bool>(true);
+
+  jout=0; //the 0th output column is Rosenbrock  
+  sd2d100.setJOut(jout);
+  sd2d10K.setJOut(jout);
+
+  km_params["lower_bounds"]="-2.0 -2.0";
+  km_params["upper_bounds"]="2.0 2.0";
+  //km_params["optimization_method"]="local";
+  //km_params["optimization_method"]="none";
+  //km_params["nugget_formula"]="2";
+  
+  nkm::KrigingModel kmOrig( sd2d100 , km_params); kmOrig.create();
+  nkm::SurfPackModel *kmOrigPtr=&kmOrig;
+  {
+    std::ofstream nkm_km_ofstream("km.sav");
+  
+    boost::archive::text_oarchive output_archive(nkm_km_ofstream);
+    output_archive << kmOrigPtr;
+  }
+  nkm::SurfPackModel *kmRestored;
+  {
+    std::ifstream nkm_km_ifstream("km.sav");
+    boost::archive::text_iarchive input_archive(nkm_km_ifstream);
+    input_archive >> kmRestored;
+  }
+  std::cout <<"Restored: " << kmRestored->model_summary_string() << std::endl;
+    
+  nkm::MtxDbl xr(sd2d10K.xr);
+  kmOrig.evaluate(yevalOrig,sd2d10K.xr);
+  kmRestored->evaluate(yevalRestored,xr);
+  delete kmRestored;
+
+  double rmse=0;
+  double mean=0;
+  double var=0;
+  for(int i=0; i<10000; ++i) {
+    mean+=yevalOrig(i,0);
+    var+=yevalOrig(i,0)*yevalOrig(i,0);
+    double temp=yevalOrig(i,0)-yevalRestored(i,0);
+    rmse+=temp*temp;
+  }
+  mean/=10000.0;
+  var=var/10000.0-mean*mean;
+  rmse=std::sqrt(rmse/10000.0);
+  printf("rmse=%22.16g stddev=%22.16g\n",rmse,std::sqrt(var));
+
+  sd2d100.clear();
+  sd2d10K.clear();
+  yevalOrig.clear();
+  yevalRestored.clear();
+
+  return;
+}
 
 void nested_Krig_vs_GEK_herbie_smooth_herbie_2D_4D_8D(){
   //string build_herbie_2D="gradHerbie_NestedLHS_2D_1024pts.spd";
@@ -1891,27 +1965,33 @@ void validate()
   //filenames
 
 #ifndef __TIMING_BENCH__  
+#ifndef __VALGRIND_TEST__
   string validate2d_10 ="grad_validate2d_10.spd";
-  string validate2d_100="grad_validate2d_100.spd";
   string validate2d_500="grad_validate2d_500.spd";
-  string validate2d_10K="grad_validate2d_10K.spd";
-
   nkm::SurfData sd2d10( validate2d_10 , 2, 0, 3, 0, 1, 0);
-  nkm::SurfData sd2d100(validate2d_100, 2, 0, 3, 0, 1, 0);
   nkm::SurfData sd2d500(validate2d_500, 2, 0, 3, 0, 1, 0);
+#endif
+  string validate2d_100="grad_validate2d_100.spd";
+  string validate2d_10K="grad_validate2d_10K.spd";
+  nkm::SurfData sd2d100(validate2d_100, 2, 0, 3, 0, 1, 0);
   nkm::SurfData sd2d10K(validate2d_10K, 2, 0, 3, 0, 1, 0);
 #endif
 
+#ifndef __VALGRIND_TEST__
   string paviani10d_50  ="grad_paviani10d_50.spd";
   string paviani10d_500 ="grad_paviani10d_500.spd";
   string paviani10d_2500="grad_paviani10d_2500.spd";
   string paviani10d_10K ="grad_paviani10d_10K.spd";
+#endif
 
-
+#ifndef __VALGRIND_TEST__
   nkm::MtxDbl yeval10(    10,1);
+#endif
 #ifndef __TIMING_BENCH__
   nkm::MtxDbl yeval100(  100,1);
+#ifndef __VALGRIND_TEST__
   nkm::MtxDbl yeval500(  500,1);
+#endif
 #endif
   nkm::MtxDbl yeval10K(10000,1);
 
@@ -1932,9 +2012,11 @@ void validate()
   nkm::MtxDbl roserror(3,4); roserror.zero();
   
   jout=0; //the 0th output column is Rosenbrock  
+#ifndef __VALGRIND_TEST__
   sd2d10.setJOut( jout);
-  sd2d100.setJOut(jout);
   sd2d500.setJOut(jout);
+#endif
+  sd2d100.setJOut(jout);
   sd2d10K.setJOut(jout);
 
   km_params["lower_bounds"]="-2.0 -2.0";
@@ -1943,25 +2025,30 @@ void validate()
   //km_params["optimization_method"]="none";
   //km_params["nugget_formula"]="2";
 
+#ifndef __VALGRIND_TEST__
   nkm::KrigingModel kmros10( sd2d10 , km_params); kmros10.create();
-  nkm::KrigingModel kmros100(sd2d100, km_params); kmros100.create();
   nkm::KrigingModel kmros500(sd2d500, km_params); kmros500.create();
+#endif
+  nkm::KrigingModel kmros100(sd2d100, km_params); kmros100.create();
 
   //exit(0);
 
 
+#ifndef __VALGRIND_TEST__
   //evaluate error the 10 pt rosenbrock kriging model at 10K points
   kmros10.evaluate(yeval10K,sd2d10K.xr);
   for(int i=0; i<10000; ++i)
     roserror(0,2)+=std::pow(yeval10K(i,0)-sd2d10K.y(i,jout),2);
   roserror(0,3)=std::sqrt(roserror(0,2)/10000.0);
+#endif
 
   //evaluate error the 100 pt rosenbrock kriging model at 10K points
   kmros100.evaluate(yeval10K,sd2d10K.xr);
   for(int i=0; i<10000; ++i)
     roserror(1,2)+=std::pow(yeval10K(i,0)-sd2d10K.y(i,jout),2);
   roserror(1,3)=std::sqrt(roserror(1,2)/10000.0);
-  
+
+#ifndef __VALGRIND_TEST__  
   //evaluate error the 500 pt rosenbrock kriging model at 10K points
   kmros500.evaluate(yeval10K,sd2d10K.xr);
   for(int i=0; i<10000; ++i)
@@ -1975,6 +2062,7 @@ void validate()
   for(int i=0; i<500; ++i)
     roserror(2,0)+=std::pow(yeval500(i,0)-sd2d500.y(i,jout),2);
   roserror(2,1)=std::sqrt(roserror(2,0)/500.0);
+#endif
 
   //evaluate error the 100 pt rosenbrock kriging model at build points
   kmros100.evaluate(yeval100,sd2d100.xr);
@@ -1982,6 +2070,7 @@ void validate()
     roserror(1,0)+=std::pow(yeval100(i,0)-sd2d100.y(i,jout),2);
   roserror(1,1)=std::sqrt(roserror(1,0)/100.0);
 
+#ifndef __VALGRIND_TEST__
   //evaluate error the 10 pt rosenbrock kriging model at build points  
   kmros10.evaluate(yeval10,sd2d10.xr);
   for(int i=0; i<10; ++i)
@@ -2096,13 +2185,14 @@ void validate()
   herberror(0,1)=std::sqrt(herberror(0,0)/10.0);
   
   sd2d10.clear();
-  sd2d100.clear();
   sd2d500.clear();
-  sd2d10K.clear();
   yeval10.clear();
+#endif
+  sd2d100.clear();
+  sd2d10K.clear();
   yeval100.clear();
 #endif
-
+#ifndef __VALGRIND_TEST__
   printf("*****************************************************************\n");
   printf("*** running paviani 10D tests ***********************************\n");
   printf("*****************************************************************\n");
@@ -2197,7 +2287,7 @@ void validate()
 
   yeval500.clear();
 #endif
-   
+#endif   
   printf("*****************************************************************\n");
   printf("*** writing output **********************************************\n");
   printf("*****************************************************************\n");
@@ -2207,8 +2297,11 @@ void validate()
 #ifndef __TIMING_BENCH__
   fprintf(fpout,"rosenbrock\n");
   fprintf(fpout,"# of samples, SSE at build points, RMSE at build points, SSE at 10K points, RMSE at 10K points\n");
+#ifndef __VALGRIND_TEST__
   fprintf(fpout,"%12d, %19.6g, %20.6g, %17.6g, %18.6g\n",10,roserror(0,0),roserror(0,1),roserror(0,2),roserror(0,3));
+#endif
   fprintf(fpout,"%12d, %19.6g, %20.6g, %17.6g, %18.6g\n",100,roserror(1,0),roserror(1,1),roserror(1,2),roserror(1,3));
+#ifndef __VALGRIND_TEST__
   fprintf(fpout,"%12d, %19.6g, %20.6g, %17.6g, %18.6g\n",500,roserror(2,0),roserror(2,1),roserror(2,2),roserror(2,3));
   
   fprintf(fpout,"shubert\n");
@@ -2223,13 +2316,14 @@ void validate()
   fprintf(fpout,"%12d, %19.6g, %20.6g, %17.6g, %18.6g\n",100,herberror(1,0),herberror(1,1),herberror(1,2),herberror(1,3));
   fprintf(fpout,"%12d, %19.6g, %20.6g, %17.6g, %18.6g\n",500,herberror(2,0),herberror(2,1),herberror(2,2),herberror(2,3));
 #endif
-
+#endif
+#ifndef __VALGRIND_TEST__
   fprintf(fpout,"paviani\n");
   fprintf(fpout,"# of samples, SSE at build points, RMSE at build points, SSE at 10K points, RMSE at 10K points\n");
   fprintf(fpout,"%12d, %19.6g, %20.6g, %17.6g, %18.6g\n",50,paverror(0,0),paverror(0,1),paverror(0,2),paverror(0,3));
   fprintf(fpout,"%12d, %19.6g, %20.6g, %17.6g, %18.6g\n",500,paverror(1,0),paverror(1,1),paverror(1,2),paverror(1,3));
   fprintf(fpout,"%12d, %19.6g, %20.6g, %17.6g, %18.6g\n",2500,paverror(2,0),paverror(2,1),paverror(2,2),paverror(2,3));
-  
+#endif  
   fclose(fpout);
   
   return;

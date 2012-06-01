@@ -71,17 +71,11 @@ std::string MarsModel::asString() const
   return os.str();
 }
 
-///////////////////////////////////////////////////////////
-///	Moving Least Squares Model Factory
-///////////////////////////////////////////////////////////
 
 
-SurfpackModel* MarsModelFactory::Create(const std::string& model_string)
-{
-  ///\todo Be able to parse an RBF model from a string
-  assert(false);
-  return 0;
-}
+///////////////////////////////////////////////////////////
+///	MARS Model Factory
+///////////////////////////////////////////////////////////
 
 SurfpackModel* MarsModelFactory::Create(const SurfData& sd)
 {

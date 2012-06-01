@@ -28,6 +28,35 @@ if(NOT DEFINED BLAS_LIBS OR NOT DEFINED LAPACK_LIBS)
 
 endif() 
 
+option(SURFPACK_STANDALONE  "Create a standalone surfpack executable" OFF)
+if(SURFPACK_STANDALONE)
+  # By default, require Boost serialization in stand-alone
+  if(NOT DEFINED SURFPACK_HAVE_BOOST_SERIALIZATION)
+    message(STATUS 
+      "SURFPACK_STANDALONE enabling SURFPACK_HAVE_BOOST_SERIALIZATION")
+    set(SURFPACK_HAVE_BOOST_SERIALIZATION ON CACHE BOOL 
+      "Use Boost serialization library")
+  endif()
+  find_package(BISON)
+  find_package(FLEX)
+endif()
+
+# Surfpack optionally uses Boost for serialization
+#??? set(Boost_USE_MULTITHREADED OFF)
+option(SURFPACK_HAVE_BOOST_SERIALIZATION "Use Boost serialization library" OFF)
+if (SURFPACK_HAVE_BOOST_SERIALIZATION)
+  if(Boost_DIR)
+    message("in ${CMAKE_CURRENT_BINARY_DIR} Boost_DIR already set: ${Boost_DIR}")
+    include_directories(${Boost_INCLUDE_DIR} ${Boost_INCLUDE_DIRS})
+  else()
+    find_package(Boost 1.37 REQUIRED COMPONENTS serialization)
+    if(Boost_FOUND)
+      include_directories(${Boost_INCLUDE_DIR} ${Boost_INCLUDE_DIRS})
+    endif()
+  endif(Boost_DIR)
+  add_definitions("-DSURFPACK_HAVE_BOOST_SERIALIZATION")
+endif()
+
 add_definitions("-D__TESTING_MODE__=1")
 remove_definitions("-DHAVE_CONFIG_H")
 
@@ -39,13 +68,9 @@ install(FILES ${Surfpack_BINARY_DIR}/surf77_config.h DESTINATION include)
 
 set(Surfpack_ENABLE_DEBUG OFF)
 
-#include(CTest)
+set(Surfpack_NKM_Tests OFF CACHE BOOL "Build the NKM test binaries?")
 
-option(SURFPACK_STANDALONE  "Create a standalone surfpack executable" OFF)
-if(SURFPACK_STANDALONE)
-  find_package(BISON)
-  find_package(FLEX)
-endif()
+#include(CTest)
 
 add_subdirectory(packages)
 add_subdirectory(src)

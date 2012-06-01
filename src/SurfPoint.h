@@ -96,8 +96,7 @@ public:
 
   ~SurfPoint();
 
-private:
-
+private:  
   /// Initialization used by all regular constructors.  Ensures that point has
   /// at least one dimension.
   void init();
@@ -237,9 +236,30 @@ void checkRange(const std::string& header, unsigned index) const;
   //friend class SurfScalerTest;
 #endif
 
+private:
+#ifdef SURFPACK_HAVE_BOOST_SERIALIZATION
+    // allow serializers access to private data
+  friend class boost::serialization::access;
+  /// serializer for derived class SurfPoint data
+  template<class Archive> 
+  void serialize(Archive & archive, const unsigned int version);
+#endif
 };
 
 /// Write point to an output stream in text format
 std::ostream& operator<<(std::ostream& os, const SurfPoint& sp); 
+
+#ifdef SURFPACK_HAVE_BOOST_SERIALIZATION
+template<class Archive>
+void SurfPoint::serialize(Archive & archive, 
+			  const unsigned int version)
+{  
+  archive & x;          
+  archive & f;      
+  archive & fGradients;
+  archive & fHessians;
+}
+BOOST_CLASS_EXPORT(SurfPoint)
+#endif
 
 #endif

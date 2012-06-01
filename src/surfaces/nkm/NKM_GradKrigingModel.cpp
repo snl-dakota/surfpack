@@ -1193,7 +1193,7 @@ GradKrigingModel::GradKrigingModel(const SurfData& sd, const ParamMap& params)
   // scaling section
   // *************************************************************
   
-  // current options are none (fixed correl) | sampling (guess) | local | global
+  // current options are none (fixed correl) | sampling (guess) | local | global | global_local
   optimizationMethod = "global_local";
   param_it = params.find("optimization_method");
   if (param_it != params.end() && param_it->second.size() > 0)
@@ -1615,7 +1615,7 @@ void GradKrigingModel::create()
       natLogCorrLen = opt.best_point();
       maxTrials=maxTrialsLocal;
       opt.conmin_optimize();
-    }    
+    }
     else{
       std::cerr << "GradKrigingModel:create() unknown optimization_method [" << optimizationMethod << "]  aborting\n";
       assert(false);
@@ -1646,8 +1646,7 @@ void GradKrigingModel::create()
   //temporary variables used by masterObjectiveAndConstraints
   temp.clear(); //vector
   temp2.clear(); //vector
-  //temp3.clear(); //vector
-  //temp4.clear(); //vector
+
 
   //Gtran_Rinv_G_inv.clear(); //need this for derivatives of log(det(Gtran_Rinv_G)) but could use it to replace the permanent copy of Gtran_Rinv_G_Chol
 
@@ -1657,6 +1656,13 @@ void GradKrigingModel::create()
   Z.clear(); //matrix
   R.clear(); //matrix
   G.clear(); //matrix
+  Yall.clear();
+  Gall.clear();
+  rcondDblWork.clear();
+  rcondIntWork.clear();
+  sumAbsColPrecondR.clear();
+  lapackRcondR.clear();
+  oneNormPrecondR.clear();
 
   con.clear(); //vector
   gradObj.clear(); //vector

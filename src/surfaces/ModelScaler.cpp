@@ -40,7 +40,11 @@ ModelScaler* NonScaler::clone() const
 const VecDbl& NormalizingScaler::scale(const VecDbl& unscaled_x) const
 {
   //cout << "NormalizingScaler::scale" << endl;
-  assert(unscaled_x.size() == scalers.size());
+  if(unscaled_x.size() != scalers.size()) {
+    std::cout << "unscaled_x.size=" << unscaled_x.size() <<
+      " scalers.size=" << scalers.size() << std::endl;
+    assert(unscaled_x.size() == scalers.size());
+  }
   assert(this->result.size() == scalers.size());
   for (unsigned i = 0; i < scalers.size(); i++) {
     this->result[i] = (unscaled_x[i] - scalers[i].offset)/scalers[i].scaleFactor;

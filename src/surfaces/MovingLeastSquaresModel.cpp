@@ -151,11 +151,3 @@ SurfpackModel* MovingLeastSquaresModelFactory::Create(const SurfData& sd)
   assert(sm);
   return sm; 
 }
-
-SurfpackModel* MovingLeastSquaresModelFactory::Create(const std::string& model_string)
-{
-  ///\todo Be able to parse a MLS model from a string
-  assert(false);
-  return 0;
-}
-

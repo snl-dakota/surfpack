@@ -129,13 +129,6 @@ void DirectANNModelFactory::config()
   if (strarg != "") samples = std::atoi(strarg.c_str()); 
 }
 
-SurfpackModel* DirectANNModelFactory::Create(const std::string& model_string)
-{
-  ///\todo Be able to parse an RBF model from a string
-  assert(false);
-  return 0;
-}
-
 
 typedef std::pair<double,VecDbl> KMPair;
 SurfpackModel* DirectANNModelFactory::Create(const SurfData& sd)

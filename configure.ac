@@ -89,6 +89,13 @@ AC_PROG_YACC
 AC_ARG_ENABLE(standalone,AS_HELP_STRING([--enable-standalone],[build command-line interpreter (needs lex, yacc)]),[enable_standalone=$enableval],[enable_standalone=no])
 AM_CONDITIONAL([BUILD_STANDALONE], [test "x$enable_standalone" = xyes])
 
+# Boost is optional, but don't want to entangle/conditional the probes
+AX_BOOST_BASE([1.37], [optional])
+if test "x$enable_standalone" = xyes -a "x$succeeded" = "xyes"; then
+  AC_DEFINE([SURFPACK_HAVE_BOOST_SERIALIZATION],[1],
+            [Whether Surfpack should use Boost serialization library.])
+fi
+
 # The AC_DEFINE macro causes its first argument to always be #defined
 # when source code is compiled.
 AC_DEFINE([__TESTING_MODE__],[1],

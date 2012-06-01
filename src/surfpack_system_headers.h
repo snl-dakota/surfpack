@@ -42,6 +42,27 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <exception>
+
+#ifdef SURFPACK_HAVE_BOOST_SERIALIZATION
+
+// crucial that these be included before any calls to BOOST_CLASS_EXPORT
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/archive/binary_iarchive.hpp>
+
+#include <boost/serialization/serialization.hpp> 
+#include <boost/serialization/base_object.hpp>
+#include <boost/serialization/export.hpp>
+#include <boost/serialization/access.hpp>
+
+// serialization for STL types
+#include <boost/serialization/map.hpp>
+#include <boost/serialization/vector.hpp>
+#include <boost/serialization/set.hpp>
+
+#endif
 
 typedef std::vector<double> VecDbl;
 typedef std::vector<double>::const_iterator VecDblIt;

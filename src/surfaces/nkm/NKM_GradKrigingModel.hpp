@@ -268,6 +268,14 @@ public:
   void getRandGuess(MtxDbl& guess) const;
 
 private:
+#ifdef SURFPACK_HAVE_BOOST_SERIALIZATION
+  // allow serializers access to private data
+  friend class boost::serialization::access;
+  /// serializer for derived class SurfPoint data
+  template<class Archive> 
+  void serialize(Archive & archive, const unsigned int version);
+#endif
+
   // helper functions
   void getBaseIEqnKeep(); //to replace or rewrite+rename
   void preAllocateMaxMemory();
@@ -570,7 +578,7 @@ private:
   MtxDbl R;
 
  ///we need to calculate Rinv (a protected pseudo inverse), and we can use it to "efficiently" calculate adjusted variances, and even the integral of adjusted variance  ///keep around to evaluate the integral of adjusted variance, this currently only getting calculated when optimization_method=local is selected
-  MtxDbl Rinv; //(numRowsR,numRowsR)
+  //MtxDbl Rinv; //(numRowsR,numRowsR)
 
   /// keep around to evaluate adjusted variance
   MtxDbl Rinv_G;
@@ -594,33 +602,14 @@ private:
   //MtxDbl dNbetaHat_dthetaN; //(ntrend)
   MtxDbl temp; //(ntrend)
   MtxDbl temp2; //(numPoints)
-  //MtxDbl temp3; //(numPoints)
-  //MtxDbl temp4; //(numPoints)
-  //MtxDbl temp5; //(numPoints)
-  //MtxDbl d2eps_dthetai_dthetaj; //(numPoints)
-  //MtxDbl P; //(numPoints,numPoints)
-  //MtxDbl dR_dthetai; //(numPoints,numPoints)
-  //MtxDbl dR_dthetaj; //(numPoints,numPoints)
-  //MtxDbl Rinv_dR_dthetai; //(numPoints,numPoints)
-  //MtxDbl Rinv_dR_dthetaj; //(numPoints,numPoints)  
-  //MtxDbl d2R_dthetai_dthetaj; //(numPoints,numPoints)
-  //MtxDbl dR_dthetai_Rinv_eps_minus_deps_dthetai; //(numPoints,numTheta)
-  //MtxDbl Rinv_dR_dthetai_Rinv_eps_minus_deps_dthetai; //(numPoints,numTheta)
-  MtxDbl Gtran_Rinv_G_inv; //(ntrend,ntrend)//maybe I ought to keep this instead of Gtran_Rinv_G_Chol but the only reason I actually need the inverse is if I'm calculating Gradients of the objective function and it's a "little" (order ntrend^3) extra work to calculate the inverse, and our default method of optimization is to use the DIRECT optimizer
-  //MtxDbl Gtran_Rinv_dR_thetai; //(ntrend,numPoints);
-  //MtxDbl Gtran_Rinv_dR_thetai_Rinv_G; //(ntrend,ntrend)
+  // MtxDbl Gtran_Rinv_G_inv; //(ntrend,ntrend)//maybe I ought to keep this instead of Gtran_Rinv_G_Chol but the only reason I actually need the inverse is if I'm calculating Gradients of the objective function and it's a "little" (order ntrend^3) extra work to calculate the inverse, and our default method of optimization is to use the DIRECT optimizer
+
 
   
   int prevObjDerMode;
   int prevConDerMode;
   MtxDbl prevTheta; //(1,numTheta)
-  MtxDbl allEigVect; //(numPoints,numPoints)
-  MtxDbl allEigVal; //(numPoints)
-  //MtxDbl Z; //(numPoints*numPoints,numTheta)
-  //MtxDbl G; //(numPoints,ntrend)
-  //MtxDbl deps_dtheta; //(numPoints,numTheta)
-  //MtxDbl dR_dtheta_Rinv_eps; //(numPoints,numTheta)
-  //MtxDbl destVarianceMLE_dtheta; //(numTheta)
+
 
   int maxObjDerMode;
   int maxConDerMode;
@@ -632,5 +621,100 @@ private:
 };
 
 } // end namespace nkm
+
+#ifdef SURFPACK_HAVE_BOOST_SERIALIZATION
+template< class Archive >
+void nkm::GradKrigingModel::serialize(Archive & archive, 
+				      const unsigned int version)
+{  
+
+  archive & boost::serialization::base_object<nkm::SurfPackModel>(*this);
+  archive & optimizationMethod;          
+  archive & numStarts;      
+  archive & maxTrials;
+  archive & maxTrialsGlobal;
+  archive & maxTrialsLocal;
+  archive & constraintType;
+  archive & ifChooseNug;
+  archive & nuggetFormula;
+  archive & ifUserSpecifiedCorrLengths;
+  archive & numVarsr;
+  archive & numTheta;
+  archive & aveDistBetweenPts;
+  archive & maxNatLogCorrLen;
+  archive & minNatLogCorrLen;
+  archive & numPoints;
+  archive & numRowsR;
+  archive & numConFunc;
+  archive & nug;
+  archive & maxChooseNug;
+  archive & maxCondNum;
+  archive & XR;
+  archive & Y;
+  archive & Poly;
+  archive & ifReducedPoly;
+  archive & polyOrderRequested;
+  archive & polyOrder;
+  archive & numTrend;
+  archive & nTrend;
+  archive & Der;
+  archive & nDer;
+  archive & EulAng; //need to keep Rot, but EulAng is more human readable, but I should probably scrap both of them and not use polynomials of rotated X as a trrend function (the infra structure is there but it's not being used and I'll need to remove it if I am to calculate the integral of the adjusted variance)
+  archive & Rot; //see previous comment
+  archive & RChol;
+  archive & scaleRChol;
+  //archive & sumAbsColPrecondR; //need this during the constuction of a model but not afterward
+  //archive & oneNormPrecondR; //need this during the constuction of a model but not afterward
+  //archive & lapackRcondR; //need this during the constuction of a model but not afterward
+  //archive & rcondDblWork; //need this during the constuction of a model but not afterward
+  //archive & rcondIntWork; //need this during the constuction of a model but not afterward
+  archive & ifPointUsed;
+  archive & iPointOrderTest;
+  archive & iOrderEqnTest;
+  archive & iEqnKeep;
+  archive & iptIderKeep;
+  archive & iPivot;
+  archive & ifHaveAnchorPoint;
+  archive & iAnchorPoint;
+  archive & numEqnAvail;
+  archive & numEqnKeep;
+  archive & numNeededEqn;
+  //archive & Yall; //need this during the constuction of a model but not afterward
+  //archive & Gall; //need this during the constuction of a model but not afterward
+  archive & likelihood;
+  archive & rhs;
+  archive & betaHat;
+  archive & correlations;
+  archive & natLogCorrLen;
+  archive & rcondR;
+  archive & rcond_Gtran_Rinv_G;
+  //archive & G; //need this during the constuction of a model but not afterward
+  //archive & Z; //need this during the constuction of a model but not afterward
+  //archive & Ztheta; //need this during the constuction of a model but not afterward
+  archive & twoXRminusXRtran;
+  //archive & R; //need this during the constuction of a model but not afterward
+  //archive & Rinv; //not used, would be used for integral of adjusted variance
+  //Rinv_G*inv(Gtran_Rinv_G)*Rinv_G^T would also be needed should calculate this ONCE after the optimization in complete (when we clear stuff, or maybe we should just go ahead and calculate the integral (mean) of adjusted variance and store the answer in case anyone ever asks for it, then we wouldn't have to store Rinv or the longer matrix forever)
+  archive & Rinv_G;
+  archive & Gtran_Rinv_G_Chol;
+  archive & Gtran_Rinv_G_Chol_Scale;
+  //archive & Gtran_Rinv_G_Chol_DblWork; //need this during the constuction of a model but not afterward
+  //archive & Gtran_Rinv_G_Chol_IntWork; //need this during the constuction of a model but not afterward
+  archive & estVarianceMLE;
+  //archive & temp; //need this during the constuction of a model but not afterward
+  //archive & temp2; //need this during the constuction of a model but not afterward
+  //archive & prevObjDerMode; //need this during the constuction of a model but not afterward
+  //archive & prevConDerMode; //need this during the constuction of a model but not afterward
+  //archive & prevTheta; //need this during the constuction of a model but not afterward
+  archive & maxObjDerMode;
+  archive & maxConDerMode;
+  archive & obj;
+  //archive & gradObj; //not needed because analytical derivatives removed
+  //archive & hessObj; //not needed because analytical derivatives removed
+  //archive & con; //not needed because analytical derivatives removed
+  //archive & gradCon; //not needed because analytical derivatives removed
+}
+BOOST_CLASS_EXPORT(nkm::GradKrigingModel)
+#endif
 
 #endif

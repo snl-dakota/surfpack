@@ -5,7 +5,6 @@
     This software is distributed under the GNU Lesser General Public License.
     For more information, see the README file in the top Surfpack directory.
     _______________________________________________________________________ */
-#include <cmath>
 
 #ifndef __SURFPACK_H__
 #define __SURFPACK_H__
@@ -202,6 +201,9 @@ unsigned block_owner(unsigned j, unsigned p, unsigned n);
   /// Return true if the file specified by parameter file name has the extension
   /// specified by parameter extension
   bool hasExtension(const std::string& filename, const std::string extension);
+
+  /// Return true for binary model filename, false for text
+  bool isBinaryModelFilename(const std::string& filename);
 
   /// Throw an exception if end-of-file has been reached 
   void checkForEOF(std::istream& is);

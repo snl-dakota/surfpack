@@ -115,15 +115,14 @@ surfdata_to_nkm_surfdata(const SurfData& sd, nkm::SurfData& nkm_sd)
   // arguments as needed, adding to f, grad, Hess
   const SurfPoint& constraint_point = sd.getConstraintPoint();
 
-
-  // TODO: populate with derY as well
   nkm_sd = nkm::SurfData(XR, Y, der_order, derY);
 }
 
 
 KrigingModel::KrigingModel(const SurfData& sd, const ParamMap& args)
-  : SurfpackModel(sd.xSize())
+  : SurfpackModel(sd.xSize()), nkmKrigingModel(NULL)
 {
+  nkm::SurfData nkmSurfData;
   surfdata_to_nkm_surfdata(sd, nkmSurfData);
   int der_order=0;
   ParamMap::const_iterator param_it;
@@ -156,7 +155,8 @@ KrigingModel::KrigingModel(const SurfData& sd, const ParamMap& args)
 
 KrigingModel::~KrigingModel()
 {
-  delete nkmKrigingModel;
+  if (nkmKrigingModel)
+    delete nkmKrigingModel;
 }
 
 
@@ -274,14 +274,6 @@ void KrigingModelFactory::sufficient_data(const SurfData& sd)
 {
   // NKM manages error checking, so this always passes
   return;
-}
-
-
-SurfpackModel* KrigingModelFactory::Create(const std::string& model_string)
-{
-  ///\todo Be able to parse a Kriging model from a string
-  assert(false);
-  return 0;
 }
 
 

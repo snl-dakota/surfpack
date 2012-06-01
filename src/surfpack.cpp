@@ -6,17 +6,8 @@
     For more information, see the README file in the top Surfpack directory.
     _______________________________________________________________________ */
 
-#ifdef HAVE_CONFIG_H
-#include "surfpack_config.h"
-/* WJB - ToDo:  one more iteration to get the CMake build functional
-#elif HAVE_EMPTY_CONFIG_H
-#include "surf77_config.h"
-*/
-#endif
-
 #include "surfpack.h"
 #include "surfpack_LAPACK_wrappers.h"
-#include <cstdlib> // for rand
 
 using std::cerr;
 using std::endl;
@@ -184,6 +175,25 @@ bool surfpack::hasExtension(const string& filename, const string extension)
   return (filename.find(extension) == filename.size() - extension.size());
 }
 
+/// Validate model (surface) filename.  Return true if filename has
+/// .bsps extension, false if .sps extension, otherwise throws
+/// surfpack::io_exception.
+bool surfpack::isBinaryModelFilename(const string& filename)
+{
+  bool binary;
+  if (surfpack::hasExtension(filename,".bsps")) {
+    binary = true;;
+  } else if (surfpack::hasExtension(filename,".sps")) {
+    binary = false;
+  } else {
+    throw surfpack::io_exception(
+      "Unrecognized model (surface) filename extension.  Use .sps or .bsps"
+    );
+  }
+  return binary;
+}
+
+
 /// Throw an exception if end-of-file has been reached 
 void surfpack::checkForEOF(istream& is)
 {
@@ -197,16 +207,7 @@ void surfpack::checkForEOF(istream& is)
 /// the file extension is anything other than .sps or .bsps. 
 const string surfpack::surfaceName(const string filename)
 {
-  bool binary;
-  if (surfpack::hasExtension(filename,".bsps")) {
-    binary = true;;
-  } else if (surfpack::hasExtension(filename,".sps")) {
-    binary = false;
-  } else {
-    throw surfpack::io_exception(
-      "Unrecognized filename extension.  Use .sps or .bsps"
-    );
-  }
+  bool binary = isBinaryModelFilename(filename);
   ifstream infile(filename.c_str(), (binary ? ios::in|ios::binary : ios::in));
   if (!infile) {
     throw surfpack::file_open_failure(filename);
