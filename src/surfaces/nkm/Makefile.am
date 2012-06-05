@@ -24,7 +24,8 @@ libnkm_la_SOURCES = NKM_GradKrigingModel.cpp \
 #	NKM_BlockPivotChol.f
 #	NKM_SurfMat_Teuchos.hpp
 
-noinst_PROGRAMS = TestMain ValidateMain
+#noinst_PROGRAMS = TestMain ValidateMain
+noinst_PROGRAMS = TestMain
 
 TestMain_SOURCES = NKM_TestMain.cpp
 TestMain_LDADD = libnkm.la
@@ -32,10 +33,12 @@ TestMain_LDADD += $(top_builddir)/packages/CONMIN/src/libconmin.la
 TestMain_LDADD += $(top_builddir)/packages/NCSUOpt/libncsuopt.a
 TestMain_LDADD += $(LAPACK_LIBS) $(BLAS_LIBS) $(LIBS) $(FLIBS)
 
-ValidateMain_SOURCES = NKM_ValidateMain.cpp
-ValidateMain_LDADD = libnkm.la
-ValidateMain_LDADD += $(top_builddir)/packages/CONMIN/src/libconmin.la
-ValidateMain_LDADD += $(top_builddir)/packages/NCSUOpt/libncsuopt.a
-ValidateMain_LDADD += $(LAPACK_LIBS) $(BLAS_LIBS) $(LIBS) $(FLIBS)
+#if BUILD_STANDALONE
+#ValidateMain_SOURCES = NKM_ValidateMain.cpp
+#ValidateMain_LDADD = libnkm.la
+#ValidateMain_LDADD += $(top_builddir)/packages/CONMIN/src/libconmin.la
+#ValidateMain_LDADD += $(top_builddir)/packages/NCSUOpt/libncsuopt.a
+#ValidateMain_LDADD += $(LAPACK_LIBS) $(BLAS_LIBS) $(LIBS) $(FLIBS)
+#endif
 
 MAINTAINERCLEANFILES = Makefile.in
