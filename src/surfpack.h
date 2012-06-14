@@ -36,6 +36,9 @@ enum MetricType {
 
 namespace surfpack {
 
+enum { SILENT_OUTPUT, QUIET_OUTPUT, NORMAL_OUTPUT, VERBOSE_OUTPUT,
+       DEBUG_OUTPUT };
+
 // _____________________________________________________________________________
 // Debugging Output Strategy 
 // _____________________________________________________________________________

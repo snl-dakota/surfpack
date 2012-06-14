@@ -181,6 +181,10 @@ double CrossValidationFitness::operator()(const SurfpackModel& sm, const SurfDat
   //cout << "CV Fitness: " << n << endl;
   SurfData my_data = sd; // Get non const copy
   ParamMap args = sm.parameters();
+
+  // silence model output for cross-validation
+  args["verbosity"] = surfpack::toString<short>(surfpack::SILENT_OUTPUT);
+
   VecUns indices(my_data.size()); 
   for (unsigned i = 0; i < indices.size(); i++) indices[i] = i;
   random_shuffle(indices.begin(),indices.end(),shared_rng());
