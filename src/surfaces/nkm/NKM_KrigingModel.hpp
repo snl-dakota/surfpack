@@ -22,6 +22,9 @@ namespace nkm {
 
 typedef std::map< std::string, std::string> ParamMap;
 
+// enumerated type stored in nkm::KrigingModel::corrFunc see below for more details
+enum {DEFAULT_CORR_FUNC, GAUSSIAN_CORR_FUNC, EXP_CORR_FUNC, POW_EXP_CORR_FUNC, MATERN_CORR_FUNC};
+
 // BMA TODO: Use more descriptive names for variables?
 
 /** 
@@ -33,11 +36,15 @@ typedef std::map< std::string, std::string> ParamMap;
     * coordinate rotation
     * evaluation with gradients
     * nugget to control ill-conditioning.
+    * optimal subset selection to control ill-conditioning
+    * correlation Function (powered exponential or matern families)
 */
 class KrigingModel: public SurfPackModel
 {
 
 public:
+
+  // MtxDbl& makeGuessFeasible(MtxDbl& nat_log_corr_len, OptimizationProblem *opt);
 
   std::string model_summary_string() const;
 
@@ -95,53 +102,19 @@ public:
 
   // Helpers for solving correlation optimization problems
 
-  /// adjust correlations to be feasible with respect to condition
-  /// number constraints
-  MtxDbl& makeGuessFeasible(MtxDbl& nat_log_corr_len, 
-			    OptimizationProblem *opt);
-
   /// the objective function, i.e. the negative log(likelihood);
-  /// minimizing this produces a "good" KrigingModel)
-  
+  /// minimizing this produces a "KrigingModel" good)  
   inline double objective(const MtxDbl& nat_log_corr_len) {
-    correlations.newSize(1,numTheta);
-    //MtxDbl theta(1,numTheta);
+    MtxDbl corr_len(1,numTheta);
     for(int i=0; i<numTheta; ++i)
-      correlations(0,i)=0.5*std::exp(-2.0*nat_log_corr_len(0,i));
+      corr_len(0,i)=std::exp(nat_log_corr_len(0,i));
+    correlations.newSize(1,numTheta);
+    get_theta_from_corr_len(correlations,corr_len);
     masterObjectiveAndConstraints(correlations, 1, 0);
     //printf("[objective]");
     return obj;
   };
-  
-  
-  /* //useful because it shows how to convert the Hessian of the objective function from being with respect to theta to being with respect to natLogCorrLen, but the different (mountain) objective function didn't result a better model for the test cases and was considerably more expensive
-  inline double objective(const MtxDbl& nat_log_corr_len) {
-    //testing using "the volume of the mountain" (probability) rather than "the height of the mountain's peak" (likelihood=probability density) as the objective... it seems to work identically to maximum likelihood but require evaluation of higher derivatives so don't use should still print out hess_ob_out during model construction (ValidateMain tests) to verify that the hessian is working correctly 
-    //the volume of an ellitpical paraboloid =(height/2)*prod(ellipse_radii)*volume of the unit hypersphere; each radius=1/(second derivative at endpoint of axis) (sign indicates direction), and those are the eigenvalues of the Hessian of the objective function. the 1/2 and volume of the hypersphere are constant with respect to theta, so they drop out.
-
-    correlations.newSize(1,numTheta);
-    //MtxDbl theta(1,numTheta);
-    for(int i=0; i<numTheta; ++i)
-      correlations(0,i)=0.5*std::exp(-2.0*nat_log_corr_len(0,i));
-    masterObjectiveAndConstraints(correlations, 4, 0);
-
-    //convert Hessian into log(correlation_length) space
-    MtxDbl hess_obj_out(numTheta,numTheta);
-    for(int i=0; i<numTheta; ++i)
-      for(int j=0; j<numTheta; ++j)
-	hess_obj_out(i,j)=hessObj(i,j)*4.0*correlations(0,i)*correlations(0,j);
-
-    MtxDbl eig_vals(numTheta); //all the eigenvalues of a Hessian should be positive
-    eig_sym(eig_vals,hess_obj_out);
-    double test_obj=obj;
-    for(int i=0; i<numTheta; ++i)
-      test_obj/=eig_vals(i);
-	  
-    return test_obj;
-  };
-  */
-
-
+    
   /// the objective function, i.e. the negative log(likelihood), and
   /// its gradient; minimizing the objective function produces a good
   /// KrigingModel
@@ -152,10 +125,11 @@ public:
     assert(false);
 
     grad_obj_out.newSize(numTheta,1);
-    correlations.newSize(1,numTheta);
-    //MtxDbl theta(1,numTheta);
+    MtxDbl corr_len(1,numTheta);
     for(int i=0; i<numTheta; ++i)
-      correlations(0,i)=0.5*std::exp(-2.0*nat_log_corr_len(0,i));
+      corr_len(0,i)=std::exp(nat_log_corr_len(0,i));
+    correlations.newSize(1,numTheta);
+    get_theta_from_corr_len(correlations,corr_len);
     masterObjectiveAndConstraints(correlations, 2, 0);
     obj_out=obj;
     //grad_obj_out.copy(gradObj);
@@ -177,7 +151,11 @@ public:
   inline void objectiveAndConstraints(double& obj_out, MtxDbl& con_out, 
 				      const MtxDbl& nat_log_corr_len) {
     //printf("entered objectiveAndConstraints\n");  fflush(stdout);
+    MtxDbl corr_len(1,numTheta);
+    for(int i=0; i<numTheta; ++i)
+      corr_len(0,i)=std::exp(nat_log_corr_len(0,i));
     correlations.newSize(1,numTheta);
+    get_theta_from_corr_len(correlations,corr_len);
     con_out.newSize(numConFunc,1);
     //MtxDbl theta(1,numTheta);
     for(int i=0; i<numTheta; ++i)
@@ -209,8 +187,11 @@ public:
     grad_obj_out.newSize(numTheta,1);
     grad_con_out.newSize(numConFunc,numTheta);
     //MtxDbl theta(1,numTheta);
+    MtxDbl corr_len(1,numTheta);
     for(int i=0; i<numTheta; ++i)
-      correlations(0,i)=0.5*std::exp(-2.0*nat_log_corr_len(0,i));
+      corr_len(0,i)=std::exp(nat_log_corr_len(0,i));
+    correlations.newSize(1,numTheta);
+    get_theta_from_corr_len(correlations,corr_len);
     masterObjectiveAndConstraints(correlations, 2, 2);
     obj_out=obj;
     for(int i=0; i<numConFunc; ++i)
@@ -250,7 +231,7 @@ public:
   void getRandGuess(MtxDbl& guess) const;
 
 private:
-
+  
 #ifdef SURFPACK_HAVE_BOOST_SERIALIZATION
   // allow serializers access to private data
   friend class boost::serialization::access;
@@ -285,11 +266,63 @@ private:
   /// evaluate the trend function g(xr), using class members {Poly, Rot}
   MtxDbl& eval_trend_fn(MtxDbl& g, const MtxDbl& xr) const;
 
+  //the following matern_1pt5_... and matern_2pt5_... functions don't really need to be member functions as they don't access any data members
+
+  /// multiply exponential corr func by this to get matern 1.5 corr func
+  inline double matern_1pt5_coef(double theta_abs_dx) const{
+    return 1.0+theta_abs_dx;
+  };
+  /// multiply matern 1.5 corr func by this to get d1 of matern 1.5 corr func
+  inline double matern_1pt5_d1_mult_r(double theta, double dx) const{
+    return -theta*theta*dx/matern_1pt5_coef(theta*std::fabs(dx));
+  };
+  /** multiply matern 1.5 corr func by this to get d2 of matern 1.5 corr func
+      1D MATERN_CORR_FUNC 1.5 r(x1,x2) is twice+ differential except 
+      where x1==x2 this is correct for x1!=x2 */
+  inline double matern_1pt5_d2_mult_r(double theta, double dx) const{
+    return theta*theta*(1.0-2.0/matern_1pt5_coef(theta*std::fabs(dx)));
+  };
+
+
+  /// multiply exponential corr func by this to get matern 2.5 corr func
+  inline double matern_2pt5_coef(double theta_abs_dx) const{
+    return 1.0+theta_abs_dx+theta_abs_dx*theta_abs_dx/3.0;
+  };
+  /// multiply matern 2.5 corr func by this to get d1 of matern 2.5 corr func
+  inline double matern_2pt5_d1_mult_r(double theta, double dx) const{
+    double theta_abs_dx=theta*std::fabs(dx);
+    return -theta*theta*dx*(1-theta_abs_dx)/(3*matern_2pt5_coef(theta_abs_dx));
+  };
+  /// multiply matern 2.5 corr func by this to get d2 of matern 2.5 corr func
+  inline double matern_2pt5_d2_mult_r(double theta, double dx) const{
+    double theta_abs_dx=theta*std::fabs(dx);
+    return -theta*theta*
+      (1-(2.0/3.0+2.0*theta_abs_dx)/matern_2pt5_coef(theta_abs_dx));
+  };
+
+
   // BMA TODO: these docs need updating
 
-  /** r(i,j)=exp(-sum_k theta(k) *(xr(i,k)-XR(j,k))^2); The convention is
-      that capital matrices are for the data the model is built from, 
-      lower case matrices are for arbitrary points to evaluate the model at */
+  /** converts from correlation lengths to theta
+      for powered exponential (including exponential and Gaussian)
+          theta=1/(powExpCorrLenPow*corr_len^powExpCorrLenPow)
+      for matern (excluding Gaussian)
+          theta= sqrt(2*maternCorrFuncNu)/corr_len  */
+  MtxDbl& get_theta_from_corr_len(MtxDbl& theta, const MtxDbl& corr_len) const;
+  /** converts from theta to correlation lengths 
+      for powered exponential (including exponential and Gaussian)
+          theta=1/(powExpCorrLenPow*corr_len^powExpCorrLenPow)
+      for matern (excluding Gaussian)
+          theta= sqrt(2*maternCorrFuncNu)/corr_len  */
+  MtxDbl& get_corr_len_from_theta(MtxDbl& corr_len, const MtxDbl& theta) const;
+
+  /** r(i,j)=corr_func(xr(i,:),XR(j,:);theta(:)) choices for correlation 
+      function are gaussian, exponential, powered exponential with 1<power<2, 
+      and matern with nu=1.5 or 2.5 (gaussian and exponential are pulled out
+      for efficient implementation and because they belong to both families).
+      The convention is that capital matrices are for the data the model is 
+      built from, lower case matrices are for arbitrary points to evaluate 
+      the model at */
   MtxDbl& correlation_matrix(MtxDbl& r, const MtxDbl& xr) const;
 
   /** dr(i,j)=d(r(i,j))/d(xr(i,k)) combining repeated calls can be used to 
@@ -298,39 +331,68 @@ private:
 				  const MtxDbl& xr, int Ider) const;
   MtxDbl& d2correlation_matrix_dxIdxK(MtxDbl& d2r, const MtxDbl& drI, const MtxDbl& r, const MtxDbl& xr, int Ider, int Kder) const;
 
-  /* this function applies the nugget to an r matrix (not a member variable)
-      in place (i.e. it changes r to p). i.e. it scales r by 1.0/(1.0+nug). 
-      The convention is that capital matrices are for the data the model is 
-      build from, lower case matrices are fore arbitrary points to evaluate 
-      the model at */
-  //MtxDbl& apply_nugget_eval(MtxDbl& r_to_p) const;
-
-  /** R(i,j)=exp(-sum_k theta(k) *(XR(i,k)-XR(j,k))^2), where theta =
-     corr_vec, implmented as R=exp(Z*theta) where Z=Z(XR),
-     Z(ij,k)=-(XR(i,k)-XR(j,k))^2, */
+  /** R(i,j)=corr_func(XR(i,:),XR(j,:);theta(:)) where choices for for 
+      correlation function are gaussian, exponential, powered exponential 
+      with 1<power<2, and matern with nu=1.5 or 2.5 (gaussian and exponential 
+      are pulled out for efficient implementation and because they belong 
+      to both families).  All correlation functions are implemented as
+      R=something.*exp(Z*theta) (with reshapes) the something depends on the
+      correlation function (for gaussian, exponential, and powered exponential
+      that something is 1) for the matern function that something is
+      matern_1pt5_coef or matern_2pt5_coef) of course the definition of Z 
+      and theta differs for different correlation functions.  Note that Z 
+      only stores what is needed to compute the strictly lower (BELOW the 
+      diagonal) part of R to save memory and computation.  R is symmetric 
+      and has ones on the diagonal. */
   void correlation_matrix(const MtxDbl& corr_vec);
 
   /** this function applies the nugget to the R matrix (a member variable)
       and stores the result in R (another member variable), i.e. it adds 
-      nug to the diagonal of R, scales the result by 1.0/(1.0+nug), and
-      stores that result in R. The convention is that capital matrices are 
-      for the data the model is built from, lower case matrices are for 
-      arbitrary points to evaluate the model at */
+      nug to the diagonal of R. The convention is that capital matrices 
+      are for the data the model is built from, lower case matrices are for 
+      arbitrary points to evaluate the model at.  Once the nugget is added
+      R is not strictly a correlation matrix */
   void apply_nugget_build();
 
-  //static MtxDbl corrMtx(MtxDbl& R, int nrowsXR, MtxDbl& Z, MtxDbl& corr_vec);
-
-  /** the Z matrix, Z=Z(XR), Z(ij,k)=-(XR(i,k)-XR(j,k))^2, facilitates
-      the efficient evaluation of the correlation matrix
-      R... R=exp(Z*theta)... and its derivatives with respect to theta
-      (the vector of correlation
-      parameters)... dR_dthetak=-Z(:,k).*R(:) (MATLAB notation);
-      The convention is that capital matrices are for the data the model 
-      is built from, lower case matrices are for arbitrary points to 
-      evaluate the model at, the Z and XR matrices are member variables so 
-      they don't need to be passed in */
+  /** the Z matrix, Z=Z(XR), its definitition depends on the correlation 
+      function
+          for the gaussian correlation function 
+              Z(ij,k)=-(XR(i,k)-XR(j,k))^2, 
+          for the exponetial and matern correlation functions
+              Z(ij,k)=-|XR(i,k)-XR(j,k)|     
+	  for the powered exponential correlation function
+	      Z(ii,k)=-|XR(i,k)-XR(j,k)|^powExpCorrFuncPow
+	      where 1<powExpCorrFuncPow<2
+      the Z matrix facilitates the efficient evaluation of the correlation 
+      matrix R... R=something.*exp(Z*theta) 
+      note that Z only holds what is needed to compute the strictly lower
+      (below the diagonal) portion of R to save memory and computation.
+      R is symmetric and has ones on the diagonal.  The convention is that 
+      capital matrices are for the data the model is built from, lower 
+      case matrices are for arbitrary points to evaluate the model at, 
+      the Z and XR matrices are member variables so they don't need to be 
+      passed in */
   MtxDbl& gen_Z_matrix();
-
+  
+  /** stores which correlation function we using, major choices are 
+          powered exponential with 1<=power<=2 and 
+          matern with nu=0.5,1.5,2.5 or "infinity" 
+      There are 2 special cases that belong to both families and are 
+      pulled out for efficient implementation these are
+          gaussian correlation function
+              equals powered exponential with power=2 
+              equals matern with nu="infinity"
+          exponential correlation function 
+              equals powered exponential with power=1
+	      equals matern with nu = 0.5
+      after these are pulled out we have 
+      powered exponential with 1<power<2 and
+      matern with nu = 1.5 or 2.5
+      corrFunc stores an enumerated type
+  */
+  short corrFunc;
+  double powExpCorrFuncPow;
+  double maternCorrFuncNu;
   
   std::string optimizationMethod;
 
@@ -361,7 +423,6 @@ private:
 
   /// NUMber of THETA for Real input variables... this is the number of correlation parameters (for real input variables), for Kriging numTheta=numVarsr, for radial basis functions numTheta=1 (radial basis functions, a derived class, are independent of direction)
   int numTheta;
-
 
   double aveDistBetweenPts;
   double maxNatLogCorrLen;
@@ -550,6 +611,9 @@ void nkm::KrigingModel::serialize(Archive & archive,
 {  
 
   archive & boost::serialization::base_object<nkm::SurfPackModel>(*this);
+  archive & corrFunc;
+  archive & powExpCorrFuncPow;
+  archive & maternCorrFuncNu;
   archive & optimizationMethod;          
   archive & numStarts;      
   archive & maxTrials;

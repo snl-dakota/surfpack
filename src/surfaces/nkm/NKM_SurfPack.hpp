@@ -67,6 +67,10 @@ inline MtxDbl& rotate_xr(MtxDbl& xr_rot, const MtxDbl& rot_or_eul_ang, const Mtx
 }
 
 
+inline double dsign(double x){return static_cast<double>((x>0.0)-(x<0.0));};
+inline int isign(int x){return static_cast<int>((x>0)-(x<0));};
+
+
 template<typename T>
 std::vector<T>& toVec(std::vector<T>& result, const std::string& s)
 {

@@ -11,11 +11,11 @@ using std::ostringstream;
 
 //#define __PROFILING_TEST__ //not iplemented yet
 //#define __TIMING_BENCH__
-//#define __FAST_TEST__
+#define __FAST_TEST__
 //#define __WITH_PAV_500__
 //#define __FASTER_TEST__
 //#define __EVEN_FASTER_TEST__
-#define __VALGRIND_TEST__
+//#define __VALGRIND_TEST__
 //#define __GKM_USE_KM_CORR_LEN__
 using std::cout;
 using std::endl;
@@ -2002,7 +2002,13 @@ void validate()
   //km_params["order"] = "linear";
   km_params["order"] = "2";
   km_params["reduced_polynomial"]=nkm::toString<bool>(true);
-
+  //km_params["powered_exponential"]="1";
+  //km_params["powered_exponential"]="1.5";
+  //km_params["powered_exponential"]="2";
+  //km_params["matern"] = "0.5";
+  //km_params["matern"] = "1.5";
+  //km_params["matern"] = "2.5";
+  //km_params["matern"] = "infinity";
 
 #ifndef __TIMING_BENCH__  
   printf("*****************************************************************\n");
@@ -2014,9 +2020,12 @@ void validate()
   jout=0; //the 0th output column is Rosenbrock  
 #ifndef __VALGRIND_TEST__
   sd2d10.setJOut( jout);
-  sd2d500.setJOut(jout);
 #endif
   sd2d100.setJOut(jout);
+#ifndef __VALGRIND_TEST__
+  sd2d500.setJOut(jout);
+#endif
+
   sd2d10K.setJOut(jout);
 
   km_params["lower_bounds"]="-2.0 -2.0";
@@ -2027,9 +2036,12 @@ void validate()
 
 #ifndef __VALGRIND_TEST__
   nkm::KrigingModel kmros10( sd2d10 , km_params); kmros10.create();
-  nkm::KrigingModel kmros500(sd2d500, km_params); kmros500.create();
 #endif
   nkm::KrigingModel kmros100(sd2d100, km_params); kmros100.create();
+#ifndef __VALGRIND_TEST__
+  nkm::KrigingModel kmros500(sd2d500, km_params); kmros500.create();
+#endif
+
 
   //exit(0);
 
@@ -2066,9 +2078,10 @@ void validate()
 
   //evaluate error the 100 pt rosenbrock kriging model at build points
   kmros100.evaluate(yeval100,sd2d100.xr);
-  for(int i=0; i<100; ++i)
+  int N100=sd2d100.getNPts();
+  for(int i=0; i<N100; ++i)
     roserror(1,0)+=std::pow(yeval100(i,0)-sd2d100.y(i,jout),2);
-  roserror(1,1)=std::sqrt(roserror(1,0)/100.0);
+  roserror(1,1)=std::sqrt(roserror(1,0)/N100);
 
 #ifndef __VALGRIND_TEST__
   //evaluate error the 10 pt rosenbrock kriging model at build points  

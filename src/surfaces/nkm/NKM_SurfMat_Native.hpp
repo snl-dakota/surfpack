@@ -141,42 +141,14 @@ public:
   inline const T getTol() const {return tol;};
   inline void putTol(T tol_in){tol=tol_in; return;};
   
-  /*  
-  //vector style retrieve of a single element from the matrix by value
-  inline const T& operator()(int k) const {
-#ifdef __SURFMAT_ERR_CHECK__
-    assert((data.size()>=NRowsAct*NColsAct)&&(NRowsAct>=NRows)&&(NColsAct>=NCols)&&(jtoi.size()>=NColsAct));
-    assert((0<=k)&&(k<(NRows*NCols)));
-#endif
-    return (const_cast<T&> (data[jtoi[k/NRows]+(k%NRows)]));
-  };
-  
-  //vector style retrieve of a single element from the matrix by reference
-  inline T& operator()(int k) {
-    printf("single index access");
-    fflush(stdout);
-    printf("\n");
-    //assert(false); //to root out single index access which is now slower;
-    //T& operator()(int k) {
-#ifdef __SURFMAT_ERR_CHECK__
-    assert((data.size()>=NRowsAct*NColsAct)&&(NRowsAct>=NRows)&&(NColsAct>=NCols)&&(jtoi.size()>=NColsAct));
-    if(!((0<=k)&&(k<NRows*NCols))) {
-      printf("T& SurfMat::operator()(int k): k=%d NRows=%d NCols=%d",
-	     k,NRows,NCols);
-      printf("\n");
-      assert((0<=k)&&(k<NRows*NCols));
-    }
-#endif
-    return data[jtoi[k/NRows]+(k%NRows)];};
-  */
-  
   //matrix style retrieve of a single element from the matrix by value
   inline const T& operator()(int i, int j) const {
 #ifdef __SURFMAT_ERR_CHECK__
     if(!((data.size()>=NRowsAct*NColsAct)&&(NRowsAct>=NRows)&&(NColsAct>=NCols))){
       printf("NRowsAct=%d NRows=%d\n",NRowsAct,NRows);
       printf("NColsAct=%d NCols=%d\n",NColsAct,NCols);
-      printf("data.size()=%d  NRowsAct*NColsAct=%d\n",data.size(),NRowsAct*NColsAct);((data.size()>=NRowsAct*NColsAct)&&(NRowsAct>=NRows)&&(NColsAct>=NCols)&&(jtoi.size()>=NColsAct));
+      printf("data.size()=%d  NRowsAct*NColsAct=%d\n",data.size(),NRowsAct*NColsAct);
+      assert((data.size()>=NRowsAct*NColsAct)&&(NRowsAct>=NRows)&&(NColsAct>=NCols)&&(jtoi.size()>=NColsAct));}
     if(!((0<=i)&&(i<NRows)&&(0<=j)&&(j<NCols))) {
       printf("ERROR: need 0<=i=%d<NRows=%d & 0<=j=%d<NCols=%d",
 	     i,NRows,j,NCols);

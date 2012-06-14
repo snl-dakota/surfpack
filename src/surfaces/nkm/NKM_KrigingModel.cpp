@@ -422,14 +422,14 @@ KrigingModel::KrigingModel(const SurfData& sd, const ParamMap& params)
   }
   
   if(!(if_user_specified_lower_bounds==if_user_specified_upper_bounds)) {
-    cerr << "Your options are to\n(A) specify both the upper and lower, or\n(B) specify neither the upper nor lower,\nbounds of the domain of the Kriging Model\n";
+    std::cerr << "Your options are to\n(A) specify both the upper and lower, or\n(B) specify neither the upper nor lower,\nbounds of the domain of the Kriging Model\n";
     assert(if_user_specified_lower_bounds==if_user_specified_upper_bounds);
   }
   
   if(if_user_specified_lower_bounds==true) {
     for(int ivarsr=0; ivarsr<numVarsr; ++ivarsr) 
       if(!(min_max_xr(0,ivarsr)<=min_max_xr(1,ivarsr))) {
-	cerr << "The lower bound of the domain of the Kriging Model must be less than or equal to the upper bound of the domain of the Kriging Model\n";
+	std::cerr << "The lower bound of the domain of the Kriging Model must be less than or equal to the upper bound of the domain of the Kriging Model\n";
 	assert(min_max_xr(0,ivarsr)<=min_max_xr(1,ivarsr));
       }
     //printf("lower_bounds = (%g",min_max_xr(0,0));
@@ -481,7 +481,7 @@ KrigingModel::KrigingModel(const SurfData& sd, const ParamMap& params)
     maxTrialsLocal = 20;
   }
   else{ //error checking the input
-    cerr << "KrigingModel() unknown optimization_method [" << optimizationMethod << "]  aborting\n";
+    std::cerr << "KrigingModel() unknown optimization_method [" << optimizationMethod << "]  aborting\n";
     assert(false);
   }
 
@@ -496,7 +496,7 @@ KrigingModel::KrigingModel(const SurfData& sd, const ParamMap& params)
   }
   
   if(!((numStarts==1)||(optimizationMethod.compare("local")==0))) {
-    cerr << "Local optimization is the only optimization method for Kriging that uses the \"num_starts\" key word. Check your input file for errors.\n";
+    std::cerr << "Local optimization is the only optimization method for Kriging that uses the \"num_starts\" key word. Check your input file for errors.\n";
     assert((numStarts==1)||(optimizationMethod.compare("local")==0));
   }
   
@@ -514,7 +514,7 @@ KrigingModel::KrigingModel(const SurfData& sd, const ParamMap& params)
     // * say they want to global optimize __AND__
     // * specify correlation lengths  
     if(optimizationMethod.compare("global")==0) {
-      cerr << "You can't both \n (A) use the global optimization method to choose, and \n (B) directly specify \n correlation lengths for the Kriging model.\n";
+      std::cerr << "You can't both \n (A) use the global optimization method to choose, and \n (B) directly specify \n correlation lengths for the Kriging model.\n";
       assert(optimizationMethod.compare("global")!=0);
     }
     else if(optimizationMethod.compare("sampling")==0) {
@@ -532,7 +532,7 @@ KrigingModel::KrigingModel(const SurfData& sd, const ParamMap& params)
     // but first we need to check the input for errors
     for(int ivarsr=0; ivarsr<numVarsr; ++ivarsr) 
       if(!(natLogCorrLen(0,ivarsr)>0.0)) {
-	cerr << "For the Kriging Model, correlation lengths must be strictly positive\n.";
+	std::cerr << "For the Kriging Model, correlation lengths must be strictly positive\n.";
 	assert(false);
       }
 
@@ -607,6 +607,73 @@ KrigingModel::KrigingModel(const SurfData& sd, const ParamMap& params)
       numTrend(polyOrder,0)=num_multi_dim_poly_coef(numVarsr, polyOrder);
   }
 
+  // ********************************************************************
+  // this starts the section about the choice of correlation functions
+  // need to do build derivative order before this 
+  // ********************************************************************
+  corrFunc=DEFAULT_CORR_FUNC; 
+
+  //POW_EXP_CORR_FUNC
+  powExpCorrFuncPow=0.0; //only 1.0<=powExpCorrFunc<=2.0 are allowed
+  //later if corrFunc==POW_EXP_CORR_FUNC and powExpCorrFuncPow==0.0 we know 
+  //we have an error
+  param_it = params.find("powered_exponential");
+  if(param_it != params.end() && param_it->second.size() > 0) {
+    if(corrFunc!=DEFAULT_CORR_FUNC) {
+      std::cerr << "You can only specify one correlation function\n";
+      assert(corrFunc==DEFAULT_CORR_FUNC);
+    }    
+    corrFunc=POW_EXP_CORR_FUNC;
+    powExpCorrFuncPow=std::atof(param_it->second.c_str());
+    if(!((1.0<=powExpCorrFuncPow)&&(powExpCorrFuncPow<=2.0))){
+      std::cerr << "The powered exponential correlation function must have 1.0<=power<=2.0\n";
+      assert((1.0<=powExpCorrFuncPow)&&(powExpCorrFuncPow<=2.0));
+    }
+    //need to require 1<powExpCorrFuncPow if first derivatives are used 
+    //(otherwise no derivative is continuous at build points
+    //will need to require powExpCorrFuncPow==2 of 2nd or higher order 
+    //derivatives are used
+    if(powExpCorrFuncPow==1.0) 
+      corrFunc=EXP_CORR_FUNC;
+    else if(powExpCorrFuncPow==2.0)
+      corrFunc=GAUSSIAN_CORR_FUNC;
+  }
+
+  
+  //MATERN_CORR_FUNC
+  maternCorrFuncNu=0.0; //only 0.5, 1.5, 2.5, and infinity will be allowed
+  //later if corrFunc==MATERN_CORR_FUNC and maternCorrFuncNu=0.0 we know 
+  //we have an error
+  param_it = params.find("matern");
+  if(param_it != params.end() && param_it->second.size() > 0) {
+    if(corrFunc!=DEFAULT_CORR_FUNC) {
+      std::cerr << "You can only specify one correlation function\n";
+      assert(corrFunc==DEFAULT_CORR_FUNC);
+    }
+    if(param_it->second.compare("infinity")==0) {
+      corrFunc=GAUSSIAN_CORR_FUNC;
+      //matern nu=infinty is the Gaussian correlation function
+    }
+    else{
+      corrFunc=MATERN_CORR_FUNC;
+      maternCorrFuncNu=std::atof(param_it->second.c_str());
+      if(!((maternCorrFuncNu==0.5)||(maternCorrFuncNu==1.5)||
+	   (maternCorrFuncNu==2.5))) {
+	//could allow more later if 3rd+ order derivatives are enabled later
+	std::cerr << "For the Matern correlation function the only allowed values for nu are 0.5, 1.5, 2.5, and infinity\n"; 
+	  assert((maternCorrFuncNu==0.5)||(maternCorrFuncNu==1.5)||
+		 (maternCorrFuncNu==2.5));
+      }
+      if(maternCorrFuncNu==0.5) {
+	corrFunc=EXP_CORR_FUNC; //matern nu=0.5 is the exponential correlation function
+	//need to disallow maternCorrFuncNu=0.5 if gradients or higher order derivatives are used to construct the Kriging model
+      }      
+      //need to disallow maternCorrFuncNu=1.5 it hessians or higher order derivatives are used to construct the Kriging model
+    }
+  }
+
+  if(corrFunc==DEFAULT_CORR_FUNC)
+    corrFunc=GAUSSIAN_CORR_FUNC;
 
   preAllocateMaxMemory();
   // *************************************************************
@@ -842,19 +909,12 @@ void KrigingModel::create()
     natLogCorrLen = opt.best_point();
   }
 
+
+  MtxDbl corr_len(1,numVarsr);
+  for(int k=0; k<numVarsr; ++k)
+    corr_len(0,k)=std::exp(natLogCorrLen(0,k));
   correlations.newSize(1,numVarsr);
-  //MtxDbl *mtxdblptr=&natLogCorrLen;
-  //int nROWS=natLogCorrLen.getNRows();
-  //int nCOLS=natLogCorrLen.getNCols();
-  //printf("mtxdblptr=%d nROWS=%d nCOLS=%d",mtxdblptr,nROWS,nCOLS);
-  //fflush(stdout);
-  //printf("\n");
-  correlations(0,0)=0.5*std::exp(-2.0*natLogCorrLen(0,0));
-  //printf("theta={%g",correlations(0,0));
-  for(int k=1; k<numVarsr; ++k) {
-    correlations(0,k)=0.5*std::exp(-2.0*natLogCorrLen(0,k));
-    //printf(", %g",correlations(0,k));
-  }
+  get_theta_from_corr_len(correlations,corr_len);
 
   //printf("}\n");
 
@@ -897,8 +957,11 @@ void KrigingModel::create()
 
 std::string KrigingModel::model_summary_string() const {
   MtxDbl temp_out_corr_lengths(1,numVarsr);
+  get_corr_len_from_theta(temp_out_corr_lengths,correlations);
+  /* for GAUSSIAN_CORR_FUNC
   for(int i=0; i<numVarsr; ++i) 
     temp_out_corr_lengths(0,i)=std::sqrt(0.5/correlations(0,i));
+  */
   scaler.unScaleXrDist(temp_out_corr_lengths);
   
   //printf("numPoints=%d numTrend=%d numEqnKeep=%d\n",numPoints,numTrend(polyOrder,0),numEqnKeep);
@@ -909,7 +972,21 @@ std::string KrigingModel::model_summary_string() const {
   oss << "KM: #pts=" << numPoints << "; used " << numEqnKeep << "/" << numEqnAvail << " pts; Correlation lengths=(" << temp_out_corr_lengths(0,0);
   for(int i=1; i<numVarsr; ++i)
     oss << ", " << temp_out_corr_lengths(0,i);
-  oss << "); unadjusted variance=" << estVarianceMLE * scaler.unScaleFactorVarY() << "; log(likelihood)=" << likelihood << "; the trend is a ";
+  oss << "); unadjusted variance=" << estVarianceMLE * scaler.unScaleFactorVarY() << "; log(likelihood)=" << likelihood << "; using the ";
+
+  if(corrFunc==GAUSSIAN_CORR_FUNC)
+    oss << "Gaussian";
+  else if(corrFunc==EXP_CORR_FUNC)
+    oss << "exponential";
+  else if(corrFunc==POW_EXP_CORR_FUNC)
+    oss << "powered exponential (with power = " << powExpCorrFuncPow << ")";
+  else if(corrFunc==MATERN_CORR_FUNC)
+    oss << "Matern " << maternCorrFuncNu;
+  else{
+    std::cerr << "unknown corr func in model_summary_string()\n";
+    assert(NULL);
+  }
+  oss << " correlation function; the trend is a ";
   if(polyOrder>1) {
     if(ifReducedPoly==true)
       oss << "reduced_";
@@ -1431,13 +1508,62 @@ void KrigingModel::apply_nugget_build() {
   return;
 }
 
+// convert from correlation lengths to theta (a.k.a. correlation parameters)
+MtxDbl& KrigingModel::get_theta_from_corr_len(MtxDbl& theta, 
+					      const MtxDbl& corr_len) const{
+  theta.newSize(1,numVarsr);  
+  if(corrFunc==GAUSSIAN_CORR_FUNC) 
+    for(int k=0; k<numVarsr; ++k)
+      theta(0,k)=0.5/(corr_len(0,k)*corr_len(0,k));
+  else if(corrFunc==EXP_CORR_FUNC) 
+    for(int k=0; k<numVarsr; ++k)
+      theta(0,k)=1.0/corr_len(0,k);
+  else if(corrFunc==POW_EXP_CORR_FUNC)
+    for(int k=0; k<numVarsr; ++k)
+      theta(0,k)=1.0/
+	(powExpCorrFuncPow*std::pow(corr_len(0,k),powExpCorrFuncPow));
+  else if(corrFunc==MATERN_CORR_FUNC)
+    for(int k=0; k<numVarsr; ++k)
+      theta(0,k)=std::sqrt(2.0*maternCorrFuncNu)/corr_len(0,k);
+  else{
+    std::cerr << "unknown corrFunc in get_theta_from_corr_len()\n";
+    assert(NULL);
+  }
+  return theta;
+}
+
+// convert from theta (a.k.a. correlation parameters) to correlation lengths 
+MtxDbl& KrigingModel::get_corr_len_from_theta(MtxDbl& corr_len, 
+					      const MtxDbl& theta) const{
+  corr_len.newSize(1,numVarsr);  
+  if(corrFunc==GAUSSIAN_CORR_FUNC) 
+    for(int k=0; k<numVarsr; ++k)
+      corr_len(0,k)=std::sqrt(0.5/theta(0,k));
+  else if(corrFunc==EXP_CORR_FUNC) 
+    for(int k=0; k<numVarsr; ++k)
+      corr_len(0,k)=1.0/theta(0,k);
+  else if(corrFunc==POW_EXP_CORR_FUNC) 
+    for(int k=0; k<numVarsr; ++k)
+      corr_len(0,k)=
+	std::pow(powExpCorrFuncPow*theta(0,k),-1.0/powExpCorrFuncPow);
+  else if(corrFunc==MATERN_CORR_FUNC) 
+    for(int k=0; k<numVarsr; ++k)
+      corr_len(0,k)=std::sqrt(2.0*maternCorrFuncNu)/theta(0,k);
+  else{
+    std::cerr << "unknown corrFunc in get_theta_from_corr_len()\n";
+    assert(NULL);
+  }
+  return corr_len;
+}
+
 /** r (lower case r) is the correlation matrix between the
     interpolation points and data points, it used to EVALUATE but not
     construct the emulator's Gaussian process error model
     i.e. E(y(xr)|Y(XR))=g(xr)*betaHat+r*R^-1*eps where
-    eps=(Y-G(XR)*betaHat), to be more specific
-    r(i,j)=r(xr(i,:),XR(j,:))=exp(sum_k -theta(0,k)*(xr(i,k)-XR(j,k))^2) KRD
-    wrote this */
+    eps=(Y-G(XR)*betaHat)
+    choices for correlation function are gaussian, exponential,
+    powered exponential with 1<power<2, matern with nu=1.5 or 2.5
+    KRD wrote this */
 MtxDbl& KrigingModel::correlation_matrix(MtxDbl& r, const MtxDbl& xr) const
 {
   //int nrowsXR=XR.getNRows(); //data points used to build model
@@ -1460,70 +1586,300 @@ MtxDbl& KrigingModel::correlation_matrix(MtxDbl& r, const MtxDbl& xr) const
   */
   
   if(numVarsr==1) {
-    //optimized for when there is only 1 output variable
-    for(j=0; j<numRowsR; ++j) {
-      jeqn=iEqnKeep(j,0);
-      for(i=0; i<nrowsxr; ++i) {
-	temp_double=xr(i,0)-XR(jeqn,0);
-	r(i,j)=std::exp(-correlations(0,0)*temp_double*temp_double); 
+    //optimized for when there is only 1 input variable
+    if(corrFunc==GAUSSIAN_CORR_FUNC)
+      for(j=0; j<numRowsR; ++j) {
+	jeqn=iEqnKeep(j,0);
+	for(i=0; i<nrowsxr; ++i) {
+	  temp_double=xr(i,0)-XR(jeqn,0);
+	  r(i,j)=std::exp(-correlations(0,0)*temp_double*temp_double); 
+	}
       }
+    else if(corrFunc==EXP_CORR_FUNC)
+      for(j=0; j<numRowsR; ++j) {
+	jeqn=iEqnKeep(j,0);
+	for(i=0; i<nrowsxr; ++i)
+	    r(i,j)=std::exp(-correlations(0,0)*std::fabs(xr(i,0)-XR(jeqn,0)));
+      }
+    else if(corrFunc==POW_EXP_CORR_FUNC)
+      for(j=0; j<numRowsR; ++j) {
+	jeqn=iEqnKeep(j,0);
+	for(i=0; i<nrowsxr; ++i)
+	  r(i,j)=std::exp(-correlations(0,0)*
+			  std::pow(std::fabs(xr(i,0)-XR(jeqn,0)),
+				   powExpCorrFuncPow));
+      }
+    else if(corrFunc==MATERN_CORR_FUNC) {
+      if(maternCorrFuncNu==1.5)
+	for(j=0; j<numRowsR; ++j) {
+	  jeqn=iEqnKeep(j,0);
+	  for(i=0; i<nrowsxr; ++i) {
+	    temp_double=correlations(0,0)*std::fabs(xr(i,0)-XR(jeqn,0));
+	    r(i,j)=std::exp(-temp_double)*matern_1pt5_coef(temp_double);
+	  }
+	}      
+      else if(maternCorrFuncNu==2.5)
+	for(j=0; j<numRowsR; ++j) {
+	  jeqn=iEqnKeep(j,0);
+	  for(i=0; i<nrowsxr; ++i) {
+	    temp_double=correlations(0,0)*std::fabs(xr(i,0)-XR(jeqn,0));
+	    r(i,j)=std::exp(-temp_double)*matern_2pt5_coef(temp_double);
+	  }
+	}      
+      else{
+	std::cerr << "invalid Matern Nu for numVarsr==1\n";
+	assert(NULL);
+      }
+    }
+    else{
+      std::cerr << "unknown corrFunc for numVarsr==1\n";
+      assert(NULL);
     }
   } else if(nrowsxr==1) {
     //"optimized" for when there is only 1 evaluation point (Save loops, save dereferences)
     
-    //k=0 was pulled out from below to avoid doing an extra loop just to 
-    //initialize all of r to zero
-    for(j=0; j<numRowsR; ++j) {
-      temp_double=xr(0,0)-XR(iEqnKeep(j,0),0);
-      r(0,j)=-correlations(0,0)*temp_double*temp_double; //=- is correct
-    }
-  
-    //all but first and last k
-    for(k=1;k<numVarsr-1;++k)
+    if(corrFunc==GAUSSIAN_CORR_FUNC) {
+      //k=0 was pulled out from below to avoid doing an extra loop just to 
+      //initialize all of r to zero
+      for(j=0; j<numRowsR; ++j) {
+	temp_double=xr(0,0)-XR(iEqnKeep(j,0),0);
+	r(0,j)=-correlations(0,0)*temp_double*temp_double; //=- is correct
+      }
+      
+      //all but first and last k
+      for(k=1;k<numVarsr-1;++k)
+	for(j=0; j<numRowsR; ++j) {
+	  temp_double=xr(0,k)-XR(iEqnKeep(j,0),k);
+	  r(0,j)-=correlations(0,k)*temp_double*temp_double; //-= is correct
+	}
+      
+      //this value of k was pulled out of above to save doing an extra loop 
+      //for just the exp() operation
+      k=numVarsr-1; 
       for(j=0; j<numRowsR; ++j) {
 	temp_double=xr(0,k)-XR(iEqnKeep(j,0),k);
-	r(0,j)-=correlations(0,k)*temp_double*temp_double; //-= is correct
+	r(0,j)=std::exp(r(0,j)-correlations(0,k)*temp_double*temp_double); 
       }
-  
-    //this value of k was pulled out of above to save doing an extra loop 
-    //for just the exp() operation
-    k=numVarsr-1; 
-    for(j=0; j<numRowsR; ++j) {
-      temp_double=xr(0,k)-XR(iEqnKeep(j,0),k);
-      r(0,j)=std::exp(r(0,j)-correlations(0,k)*temp_double*temp_double); 
-    }
+    } else if(corrFunc==EXP_CORR_FUNC) {
+      //k=0 was pulled out from below to avoid doing an extra loop just to 
+      //initialize all of r to zero
+      for(j=0; j<numRowsR; ++j) 
+	r(0,j)=-correlations(0,0)* //=- is correct
+	  std::fabs(xr(0,0)-XR(iEqnKeep(j,0),0)); 
+      
+      //all but first and last k
+      for(k=1;k<numVarsr-1;++k)
+	for(j=0; j<numRowsR; ++j) 
+	  r(0,j)-=correlations(0,k)* //-= is correct
+	    std::fabs(xr(0,k)-XR(iEqnKeep(j,0),k));
+
+      if(corrFunc==EXP_CORR_FUNC) {
+	//this value of k was pulled out of above to save doing an extra loop 
+	//for just the exp() operation
+	k=numVarsr-1; 
+	for(j=0; j<numRowsR; ++j)
+	  r(0,j)=std::exp(r(0,j)-correlations(0,k)*
+			  std::fabs(xr(0,k)-XR(iEqnKeep(j,0),k)));
+      } else if(corrFunc==MATERN_CORR_FUNC) {
+	if(maternCorrFuncNu==1.5) {
+	  //this value of k was pulled out of above and below to save doing an 
+	  //extra loop for just the exp() operation and an extra loop for one 
+	  //of the matern coefficients
+	  k=numVarsr-1; 
+	  for(j=0; j<numRowsR; ++j) {
+	    temp_double=correlations(0,k)*
+	      std::fabs(xr(0,k)-XR(iEqnKeep(j,0),k));;
+	    r(0,j)=std::exp(r(0,j)-temp_double)*matern_1pt5_coef(temp_double);
+	  }
+	  for(k=0; k<numVarsr-1; ++k) 
+	    for(j=0; j<numRowsR; ++j)
+	      r(i,j)*=matern_1pt5_coef(correlations(0,k)*
+				       std::fabs(xr(0,k)-XR(iEqnKeep(j,0),k)));
+	}else if(maternCorrFuncNu==2.5) {
+	  //this value of k was pulled out of above and below to save doing an 
+	  //extra loop for just the exp() operation and an extra loop for one 
+	  //of the matern coefficients
+	  k=numVarsr-1; 
+	  for(j=0; j<numRowsR; ++j) {
+	    temp_double=correlations(0,k)*
+	      std::fabs(xr(0,k)-XR(iEqnKeep(j,0),k));;
+	    r(0,j)=std::exp(r(0,j)-temp_double)*matern_2pt5_coef(temp_double);
+	  }
+	  for(k=0; k<numVarsr-1; ++k) 
+	    for(j=0; j<numRowsR; ++j)
+	      r(i,j)*=matern_2pt5_coef(correlations(0,k)*
+				       std::fabs(xr(0,k)-XR(iEqnKeep(j,0),k)));		}else{
+	  std::cerr << "invalid Matern Nu for nrowsxr==1\n";
+	  assert(NULL);
+	}
+      } else{
+	std::cerr << "unknown corrFunc for nrowsxr==1 A\n";
+	assert(NULL);
+      }
+    } else if(corrFunc==POW_EXP_CORR_FUNC) { 
+      //k=0 was pulled out from below to avoid doing an extra loop just to 
+      //initialize all of r to zero
+      for(j=0; j<numRowsR; ++j) 
+	r(0,j)=-correlations(0,0)* //=- is correct
+	  std::pow(std::fabs(xr(0,0)-XR(iEqnKeep(j,0),0)),powExpCorrFuncPow);
+      
+      //all but first and last k
+      for(k=1;k<numVarsr-1;++k)
+	for(j=0; j<numRowsR; ++j) 
+	  r(0,j)-=correlations(0,k)* //-= is correct
+	    std::pow(std::fabs(xr(0,k)-XR(iEqnKeep(j,0),k)),powExpCorrFuncPow);
+      
+      //this value of k was pulled out of above to save doing an extra loop 
+      //for just the exp() operation
+      k=numVarsr-1; 
+      for(j=0; j<numRowsR; ++j)
+	r(0,j)=std::exp(r(0,j)-correlations(0,k)*
+			std::pow(std::fabs(xr(0,k)-XR(iEqnKeep(j,0),k)),
+				 powExpCorrFuncPow));
+    } else{
+      std::cerr << "unknown corrFunc for nrowsxr==1 B\n";
+      assert(NULL);
+    }    
   } else {
-    //"optimized" for when there is more than 1 output variable
-    
-    //k=0 was pulled out from below to avoid doing an extra loop just to 
-    //initialize all of r to zero
-    for(j=0; j<numRowsR; ++j) {
-      jeqn=iEqnKeep(j,0);
-      for(i=0; i<nrowsxr; ++i) {
-	temp_double=xr(i,0)-XR(jeqn,0);
-	r(i,j)=-correlations(0,0)*temp_double*temp_double; //=- is correct
+    //"optimized" for when there is more than 1 input variable
+    if(corrFunc==GAUSSIAN_CORR_FUNC) {    
+      //k=0 was pulled out from below to avoid doing an extra loop just to 
+      //initialize all of r to zero
+      for(j=0; j<numRowsR; ++j) {
+	jeqn=iEqnKeep(j,0);
+	for(i=0; i<nrowsxr; ++i) {
+	  temp_double=xr(i,0)-XR(jeqn,0);
+	  r(i,j)=-correlations(0,0)*temp_double*temp_double; //=- is correct
+	}
       }
-    }
-    //all but first and last k
-    for(k=1;k<numVarsr-1;++k)
+
+      //all but first and last k
+      for(k=1;k<numVarsr-1;++k)
+	for(j=0; j<numRowsR; ++j) {
+	  jeqn=iEqnKeep(j,0);
+	  for(i=0; i<nrowsxr; ++i) {
+	    temp_double=xr(i,k)-XR(jeqn,k);
+	    r(i,j)-=correlations(0,k)*temp_double*temp_double; //-= is correct
+	  }
+	}
+      
+      //this value of k was pulled out of above to save doing an extra loop 
+      //for just the exp() operation
+      k=numVarsr-1; 
       for(j=0; j<numRowsR; ++j) {
 	jeqn=iEqnKeep(j,0);
 	for(i=0; i<nrowsxr; ++i) {
 	  temp_double=xr(i,k)-XR(jeqn,k);
-	  r(i,j)-=correlations(0,k)*temp_double*temp_double; //-= is correct
+	  r(i,j)=std::exp(r(i,j)-correlations(0,k)*temp_double*temp_double); 
 	}
       }
-
-    //this value of k was pulled out of above to save doing an extra loop 
-    //for just the exp() operation
-    k=numVarsr-1; 
-    for(j=0; j<numRowsR; ++j) {
-      jeqn=iEqnKeep(j,0);
-      for(i=0; i<nrowsxr; ++i) {
-	temp_double=xr(i,k)-XR(jeqn,k);
-	r(i,j)=std::exp(r(i,j)-correlations(0,k)*temp_double*temp_double); 
+    } else if((corrFunc==EXP_CORR_FUNC)||(corrFunc==MATERN_CORR_FUNC)) {
+      //k=0 was pulled out from below to avoid doing an extra loop just to 
+      //initialize all of r to zero
+      for(j=0; j<numRowsR; ++j) {
+	jeqn=iEqnKeep(j,0);
+	for(i=0; i<nrowsxr; ++i) 
+	    r(i,j)=-correlations(0,0)*std::fabs(xr(i,0)-XR(jeqn,0)); //=- is correct
       }
-    }
+
+      //all but first and last k
+      for(k=1;k<numVarsr-1;++k)
+	for(j=0; j<numRowsR; ++j) {
+	  jeqn=iEqnKeep(j,0);
+	  for(i=0; i<nrowsxr; ++i) 
+	    r(i,j)-=correlations(0,k)*std::fabs(xr(i,k)-XR(jeqn,k)); //-= is correct
+	}
+
+      if(corrFunc==EXP_CORR_FUNC) {
+	//this value of k was pulled out of above to save doing an extra loop 
+	//for just the exp() operation
+	k=numVarsr-1; 
+	for(j=0; j<numRowsR; ++j) {
+	  jeqn=iEqnKeep(j,0);
+	  for(i=0; i<nrowsxr; ++i)
+	    r(i,j)=std::exp(r(i,j)-correlations(0,k)*std::fabs(xr(i,k)-XR(jeqn,k)));
+	}
+      }else  if(corrFunc==MATERN_CORR_FUNC) {
+	if(maternCorrFuncNu==1.5) {
+	  //this value of k was pulled out of above and below to save doing an 
+	  //extra loop for just the exp() operation and an extra loop for one 
+	  //of the matern coefficients
+	  k=numVarsr-1; 
+	  for(j=0; j<numRowsR; ++j) {
+	    jeqn=iEqnKeep(j,0);
+	    for(i=0; i<nrowsxr; ++i) {
+	      temp_double=correlations(0,k)*std::fabs(xr(i,k)-XR(jeqn,k));
+	      r(i,j)=std::exp(r(i,j)-temp_double)*matern_1pt5_coef(temp_double);
+	    }
+	  }
+	  for(k=0; k<numVarsr-1; ++k) 
+	    for(j=0; j<numRowsR; ++j) {
+	      jeqn=iEqnKeep(j,0);
+	      for(i=0; i<nrowsxr; ++i) 
+		r(i,j)*=matern_1pt5_coef(correlations(0,k)*
+					 std::fabs(xr(i,k)-XR(jeqn,k)));
+	    }
+	}else if(maternCorrFuncNu==2.5) {
+	  //this value of k was pulled out of above and below to save doing an 
+	  //extra loop for just the exp() operation and an extra loop for one 
+	  //of the matern coefficients
+	  k=numVarsr-1; 
+	  for(j=0; j<numRowsR; ++j) {
+	    jeqn=iEqnKeep(j,0);
+	    for(i=0; i<nrowsxr; ++i) {
+	      temp_double=correlations(0,k)*std::fabs(xr(i,k)-XR(jeqn,k));
+	      r(i,j)=std::exp(r(i,j)-temp_double)*matern_2pt5_coef(temp_double);
+	    }
+	  }
+	  for(k=0; k<numVarsr-1; ++k) 
+	    for(j=0; j<numRowsR; ++j) {
+	      jeqn=iEqnKeep(j,0);
+	      for(i=0; i<nrowsxr; ++i) 
+		r(i,j)*=matern_2pt5_coef(correlations(0,k)*
+					 std::fabs(xr(i,k)-XR(jeqn,k)));
+	    }	  
+	}else{
+	  std::cerr << "invalid Matern Nu\n";
+	  assert(NULL);
+	}
+      }
+      else{
+	std::cerr << "unknown corrFunc A\n";
+	assert(NULL);
+      }
+    } else if(corrFunc==POW_EXP_CORR_FUNC) { 
+      //k=0 was pulled out from below to avoid doing an extra loop just to 
+      //initialize all of r to zero
+      for(j=0; j<numRowsR; ++j) {
+	jeqn=iEqnKeep(j,0);
+	for(i=0; i<nrowsxr; ++i) 
+	    r(i,j)=-correlations(0,0)* //=- is correct
+	      std::pow(std::fabs(xr(i,0)-XR(jeqn,0)),powExpCorrFuncPow); 
+      }
+
+      //all but first and last k
+      for(k=1;k<numVarsr-1;++k)
+	for(j=0; j<numRowsR; ++j) {
+	  jeqn=iEqnKeep(j,0);
+	  for(i=0; i<nrowsxr; ++i) 
+	    r(i,j)-=correlations(0,k)* //-= is correct
+	      std::pow(std::fabs(xr(i,k)-XR(jeqn,k)),powExpCorrFuncPow); 
+	}
+
+      //this value of k was pulled out of above to save doing an extra loop 
+      //for just the exp() operation
+      k=numVarsr-1; 
+      for(j=0; j<numRowsR; ++j) {
+	jeqn=iEqnKeep(j,0);
+	for(i=0; i<nrowsxr; ++i)
+	  r(i,j)=std::exp(r(i,j)-correlations(0,k)*
+			  std::pow(std::fabs(xr(i,k)-XR(jeqn,k)),
+				   powExpCorrFuncPow));
+      }      
+    } else{
+      std::cerr << "unknown corrFunc B\n";
+      assert(NULL);
+    }    
   }
   return r;
 }
@@ -1537,12 +1893,64 @@ MtxDbl& KrigingModel::dcorrelation_matrix_dxI(MtxDbl& dr, const MtxDbl& r,
 	 (xr.getNCols()==numVarsr)&&(0<=Ider)&&(Ider<numVarsr));
   dr.newSize(nrowsxr,numRowsR);
 
-  int jeqn;
-  double temp_dbl=-2.0*correlations(0,Ider);
-  for(int j=0; j<numRowsR; ++j) {
-    jeqn=iEqnKeep(j,0);
-    for(int ipt=0; ipt<nrowsxr; ++ipt)
-      dr(ipt,j)=temp_dbl*r(ipt,j)*(xr(ipt,Ider)-XR(jeqn,Ider));
+  int jeqn; //save matrix dereference for speed
+  double temp_dbl; 
+  if(corrFunc==GAUSSIAN_CORR_FUNC) {
+    temp_dbl=-2.0*correlations(0,Ider); //save matrix dereference for speed
+    for(int j=0; j<numRowsR; ++j) {
+      jeqn=iEqnKeep(j,0); //save matrix dereference for speed
+      for(int ipt=0; ipt<nrowsxr; ++ipt)
+	dr(ipt,j)=temp_dbl*r(ipt,j)*(xr(ipt,Ider)-XR(jeqn,Ider));
+    }
+  } else if(corrFunc==EXP_CORR_FUNC) {
+    // 1D EXP_CORR_FUNC r(x1,x2) is differential except where x1==x2 
+    // this is correct for x1!=x2
+    temp_dbl=-correlations(0,Ider); //save matrix dereference for speed
+    for(int j=0; j<numRowsR; ++j) {
+      jeqn=iEqnKeep(j,0); //save matrix dereference for speed
+      for(int ipt=0; ipt<nrowsxr; ++ipt) 
+	dr(ipt,j)=r(ipt,j)*dsign(xr(ipt,Ider)-XR(jeqn,Ider))*temp_dbl;
+    }
+  } else if(corrFunc==POW_EXP_CORR_FUNC) {
+    // 1D POW_EXP_CORR_FUNC r(x1,x2) is once differential everywhere (and 
+    // twice+ differentiable where x1!=x2)
+    double theta_pow=powExpCorrFuncPow*correlations(0,Ider); //save dereference
+    double pow_m_1=powExpCorrFuncPow-1.0; //for speed
+    double delta_x;
+    for(int j=0; j<numRowsR; ++j) {
+      jeqn=iEqnKeep(j,0); //save matrix dereference for speed
+      for(int ipt=0; ipt<nrowsxr; ++ipt) {
+	delta_x=xr(ipt,Ider)-XR(jeqn,Ider);
+	dr(ipt,j)=r(ipt,j)*-dsign(delta_x)*theta_pow*
+	  std::pow(std::fabs(delta_x),pow_m_1);
+      }
+    }
+  } else if(corrFunc==MATERN_CORR_FUNC) {
+    temp_dbl=correlations(0,Ider); //save matrix dereference for speed
+    if(maternCorrFuncNu==1.5)
+      // 1D MATERN_CORR_FUNC 1.5 is once differentiable everywhere (and 
+      // twice+ differentiable where x1!=x2)
+      for(int j=0; j<numRowsR; ++j) {
+	jeqn=iEqnKeep(j,0); //save matrix dereference for speed
+	for(int ipt=0; ipt<nrowsxr; ++ipt) 
+	  dr(ipt,j)=r(ipt,j)*
+	    matern_1pt5_d1_mult_r(temp_dbl,xr(ipt,Ider)-XR(jeqn,Ider));
+      }
+    else if(maternCorrFuncNu==2.5)
+      // 1D MATERN_CORR_FUNC 2.5 is twice differentiable everywhere
+      for(int j=0; j<numRowsR; ++j) {
+	jeqn=iEqnKeep(j,0); //save matrix dereference for speed
+	for(int ipt=0; ipt<nrowsxr; ++ipt) 
+	  dr(ipt,j)=r(ipt,j)*
+	    matern_2pt5_d1_mult_r(temp_dbl,xr(ipt,Ider)-XR(jeqn,Ider));
+      }
+    else{
+      std::cerr << "invalid Matern Nu in dcorrelation_matrix_dxI\n";
+      assert(NULL);
+    }    
+  } else{
+    std::cerr << "unknown corrFunc in dcorrelation_matrix_dxI\n";
+    assert(NULL);
   }
   return dr;
 }
@@ -1557,20 +1965,116 @@ MtxDbl& KrigingModel::d2correlation_matrix_dxIdxK(MtxDbl& d2r, const MtxDbl& drI
   assert((r.getNRows()==nrowsxr)&&(r.getNCols()==numRowsR)&&
 	 (xr.getNCols()==numVarsr)&&(0<=Kder)&&(Kder<numVarsr));
 
-  double neg_two_theta_K=-2.0*correlations(0,Kder);
   int jeqn;
-  if(Ider==Kder) 
-    for(int j=0; j<numRowsR; ++j) {
-      jeqn=iEqnKeep(j,0);
-      for(int ipt=0; ipt<nrowsxr; ++ipt)
-	d2r(ipt,j)=neg_two_theta_K*((xr(ipt,Kder)-XR(jeqn,Kder))*drI(ipt,j)+r(ipt,j));
+  if(corrFunc==GAUSSIAN_CORR_FUNC) {
+    double neg_two_theta_K=-2.0*correlations(0,Kder);//save matrix dereference for speed
+    if(Ider==Kder) 
+      for(int j=0; j<numRowsR; ++j) {
+	jeqn=iEqnKeep(j,0); //save matrix dereference for speed
+	for(int ipt=0; ipt<nrowsxr; ++ipt)
+	  d2r(ipt,j)=neg_two_theta_K*((xr(ipt,Kder)-XR(jeqn,Kder))*drI(ipt,j)+r(ipt,j));
+      }
+    else //Ider!=Kder for GAUSSIAN_CORR_FUNC
+      for(int j=0; j<numRowsR; ++j) {
+	jeqn=iEqnKeep(j,0); //save matrix dereference for speed
+	for(int ipt=0; ipt<nrowsxr; ++ipt)
+	  d2r(ipt,j)=neg_two_theta_K*(xr(ipt,Kder)-XR(jeqn,Kder))*drI(ipt,j);
+      }
+  } else if(corrFunc==EXP_CORR_FUNC) {
+    // 1D EXP_CORR_FUNC r(x1,x2) is differential except where x1==x2 
+    // this is correct for x1!=x2
+    if(Ider==Kder) {
+      double theta_squared=correlations(0,Kder)*correlations(0,Kder); //save matrix dereference for speed
+      for(int j=0; j<numRowsR; ++j) {
+	jeqn=iEqnKeep(j,0); //save matrix dereference for speed
+	for(int ipt=0; ipt<nrowsxr; ++ipt)
+	  d2r(ipt,j)=theta_squared*r(ipt,j);
+      }      
+    } else { //Ider!=Kder for EXP_CORR_FUNC
+      double neg_theta_K=-correlations(0,Kder); //save matrix dereference for speed
+      for(int j=0; j<numRowsR; ++j) {
+	jeqn=iEqnKeep(j,0); //save matrix dereference for speed
+	for(int ipt=0; ipt<nrowsxr; ++ipt)
+	  d2r(ipt,j)=
+	    neg_theta_K*dsign(xr(ipt,Kder)-XR(jeqn,Kder))*drI(ipt,j);
+      }
     }
-  else
-    for(int j=0; j<numRowsR; ++j) {
-      jeqn=iEqnKeep(j,0);
-      for(int ipt=0; ipt<nrowsxr; ++ipt)
-	d2r(ipt,j)=neg_two_theta_K*(xr(ipt,Kder)-XR(jeqn,Kder))*drI(ipt,j);
+  } else if(corrFunc==POW_EXP_CORR_FUNC) {
+    double theta_K_pow=correlations(0,Kder)*powExpCorrFuncPow;
+    double pow_m_1=powExpCorrFuncPow-1;      
+    if(Ider==Kder) {
+      // 1D POW_EXP_CORR_FUNC r(x1,x2) is twice+ differential except where 
+      // x1==x2 (because 1<powExpCorrFuncPow<2); this is correct for x1!=x2 
+      // next 3 lines: save matrix dereference for speed
+      double theta_theta_pow_pow=theta_K_pow*theta_K_pow;
+      double theta_pow_pow_m_1=theta_K_pow*pow_m_1;
+      double abs_dx;
+      double abs_dx_to_pow_m_1;
+      for(int j=0; j<numRowsR; ++j) {
+	jeqn=iEqnKeep(j,0); //save matrix dereference for speed
+	for(int ipt=0; ipt<nrowsxr; ++ipt) {
+	  abs_dx=std::fabs(xr(ipt,Kder)-XR(jeqn,Kder));
+	  abs_dx_to_pow_m_1=std::pow(abs_dx,pow_m_1);
+	  d2r(ipt,j)=(abs_dx==0)?0.0:
+	    (r(ipt,j)*(theta_theta_pow_pow*abs_dx_to_pow_m_1*abs_dx_to_pow_m_1
+		       -theta_pow_pow_m_1*abs_dx_to_pow_m_1/abs_dx));
+	}
+      }      
+    } else { //Ider!=Kder for POW_EXP_CORR_FUNC
+      double delta_x;
+      for(int j=0; j<numRowsR; ++j) {
+	jeqn=iEqnKeep(j,0); //save matrix dereference for speed
+	for(int ipt=0; ipt<nrowsxr; ++ipt) {
+	  delta_x=xr(ipt,Kder)-XR(jeqn,Kder);
+	  d2r(ipt,j)=drI(ipt,j)*-theta_K_pow*dsign(delta_x)*
+	    std::pow(std::fabs(delta_x),pow_m_1);
+	}
+      }
     }
+  } else if(corrFunc==MATERN_CORR_FUNC) {
+    double theta_K=correlations(0,Kder); //save matrix dereference for speed
+    if(maternCorrFuncNu==1.5) {
+      if(Ider==Kder) { //Ider==Kder for MATERN_CORR_FUNC 1.5
+	// 1D MATERN_CORR_FUNC 1.5 r(x1,x2) is twice+ differential except 
+	// where x1==x2 this is correct for x1!=x2
+	for(int j=0; j<numRowsR; ++j) {
+	  jeqn=iEqnKeep(j,0); //save matrix dereference for speed
+	  for(int ipt=0; ipt<nrowsxr; ++ipt)
+	    d2r(ipt,j)=r(ipt,j)*
+	      matern_1pt5_d2_mult_r(theta_K,xr(ipt,Kder)-XR(jeqn,Kder));
+	}      
+      } else { //Ider!=Kder for MATERN_CORR_FUNC 1.5
+	for(int j=0; j<numRowsR; ++j) {
+	  jeqn=iEqnKeep(j,0); //save matrix dereference for speed
+	  for(int ipt=0; ipt<nrowsxr; ++ipt)
+	    d2r(ipt,j)=drI(ipt,j)*
+	      matern_1pt5_d1_mult_r(theta_K,xr(ipt,Kder)-XR(jeqn,Kder));
+	}
+      }
+    } else if(maternCorrFuncNu==2.5) {
+      if(Ider==Kder) { //Ider==Kder for MATERN_CORR_FUNC 2.5
+	for(int j=0; j<numRowsR; ++j) {
+	  jeqn=iEqnKeep(j,0); //save matrix dereference for speed
+	  for(int ipt=0; ipt<nrowsxr; ++ipt)
+	    d2r(ipt,j)=r(ipt,j)*
+	      matern_2pt5_d2_mult_r(theta_K,xr(ipt,Kder)-XR(jeqn,Kder));
+	}      
+      } else { //Ider!=Kder for MATERN_CORR_FUNC 2.5
+	for(int j=0; j<numRowsR; ++j) {
+	  jeqn=iEqnKeep(j,0); //save matrix dereference for speed
+	  for(int ipt=0; ipt<nrowsxr; ++ipt)
+	    d2r(ipt,j)=drI(ipt,j)*
+	      matern_2pt5_d1_mult_r(theta_K,xr(ipt,Kder)-XR(jeqn,Kder));
+	}
+      }
+    } else{
+      std::cerr << "invalid Matern Nu in d2correlation_matrix_dxIdxK\n";
+      assert(NULL);
+    }    
+  } else{
+    std::cerr << "unknown corrFunc in d2correlation_matrix_dxIdxK\n";
+    assert(NULL);
+  }
   return d2r;
 }
 
@@ -1600,25 +2104,114 @@ void KrigingModel::correlation_matrix(const MtxDbl& theta)
 
   double Rij_temp;
   int ij=0;
-  for(int j=0; j<numPoints-1; ++j) {
-    R(j,j)=1.0;
-    for(int i=j+1; i<numPoints; ++i, ++ij) {
-      Rij_temp=std::exp(Ztheta(ij,0));
-      R(i,j)=Rij_temp;
-      R(j,i)=Rij_temp;
+  if((corrFunc==GAUSSIAN_CORR_FUNC)||
+     (corrFunc==EXP_CORR_FUNC)||
+     (corrFunc==POW_EXP_CORR_FUNC)) 
+    for(int j=0; j<numPoints-1; ++j) {
+      R(j,j)=1.0;
+      for(int i=j+1; i<numPoints; ++i, ++ij) {
+	Rij_temp=std::exp(Ztheta(ij,0));
+	R(i,j)=Rij_temp;
+	R(j,i)=Rij_temp;
+      }
     }
+  else if(corrFunc==MATERN_CORR_FUNC){
+    int ncolsZ=Z.getNCols();
+    if(ncolsZ==1){
+      if(maternCorrFuncNu==1.5) 
+	for(int j=0; j<numPoints-1; ++j) {
+	  R(j,j)=1.0;
+	  for(int i=j+1; i<numPoints; ++i, ++ij) {
+	    Rij_temp=std::exp(Ztheta(ij,0))*matern_1pt5_coef(-Ztheta(ij,0));
+	    R(i,j)=Rij_temp;
+	    R(j,i)=Rij_temp;
+	  }
+	}
+      else if(maternCorrFuncNu==2.5) 
+	for(int j=0; j<numPoints-1; ++j) {
+	  R(j,j)=1.0;
+	  for(int i=j+1; i<numPoints; ++i, ++ij) {
+	    Rij_temp=std::exp(Ztheta(ij,0))*matern_2pt5_coef(-Ztheta(ij,0));
+	    R(i,j)=Rij_temp;
+	    R(j,i)=Rij_temp;
+	  }
+	}
+      else{
+	std::cerr << "invalid Matern Nu for ncolsZ==1\n";
+	assert(NULL);
+      }
+    }
+    else{
+      //matern_1pt5_coef and matern_2pt5_coef etc need to be inline 
+      //functions for this to be efficient (it's coded for efficieny)
+      double neg_theta=-theta(0,0);
+
+      if(maternCorrFuncNu==1.5) {
+	for(int j=0; j<numPoints-1; ++j) {
+	  R(j,j)=1.0;
+	  for(int i=j+1; i<numPoints; ++i, ++ij)
+	    R(i,j)=std::exp(Ztheta(ij,0))*matern_1pt5_coef(Z(ij,0)*neg_theta);
+	}
+	for(int k=1; k<ncolsZ-1; ++k) {
+	  ij=0;
+	  neg_theta=-theta(0,k);
+	  for(int j=0; j<numPoints-1; ++j)
+	    for(int i=j+1; i<numPoints; ++i, ++ij)
+	      R(i,j)*=matern_1pt5_coef(Z(ij,k)*neg_theta);
+	}
+	ij=0;
+	int k=ncolsZ-1;
+	neg_theta=-theta(0,k);
+	for(int j=0; j<numPoints-1; ++j)
+	  for(int i=j+1; i<numPoints; ++i, ++ij) {
+	    R(i,j)*=matern_1pt5_coef(Z(ij,k)*neg_theta);
+	    R(j,i)=R(i,j);
+	  }
+      }
+      else if(maternCorrFuncNu==2.5){
+	for(int j=0; j<numPoints-1; ++j) {
+	  R(j,j)=1.0;
+	  for(int i=j+1; i<numPoints; ++i, ++ij)
+	    R(i,j)=std::exp(Ztheta(ij,0))*matern_2pt5_coef(Z(ij,0)*neg_theta);
+	}
+	for(int k=1; k<ncolsZ-1; ++k) {
+	  ij=0;
+	  neg_theta=-theta(0,k);
+	  for(int j=0; j<numPoints-1; ++j)
+	    for(int i=j+1; i<numPoints; ++i, ++ij)
+	      R(i,j)*=matern_2pt5_coef(Z(ij,k)*neg_theta);
+	}
+	ij=0;
+	int k=ncolsZ-1;
+	neg_theta=-theta(0,k);
+	for(int j=0; j<numPoints-1; ++j)
+	  for(int i=j+1; i<numPoints; ++i, ++ij) {
+	    R(i,j)*=matern_2pt5_coef(Z(ij,k)*neg_theta);
+	    R(j,i)=R(i,j);
+	  }
+      }
+      else{
+	std::cerr << "invalid Matern Nu for ncolsZ>1\n";
+	assert(NULL);
+      }
+    }
+  }
+  else{
+    std::cerr << "unknown corrFunc\n";
+    assert(NULL);
   }
   R(numPoints-1,numPoints-1)=1.0;
 
-  //  FILE *fp=fopen("km_Rmat_check.txt","w");
-  //  for(int i=0; i<numPoints; ++i) {
-  //    fprintf(fp,"%-12.6g", R(i,0));
-  //    for(int j=1; j<numPoints; ++j) 
-  //      fprintf(fp," %-12.6g", R(i,j));     
-  //    fprintf(fp,"\n");
-  //  }
-  //  fclose(fp);
-
+  /*
+  FILE *fp=fopen("km_Rmat_check.txt","w");
+  for(int i=0; i<numPoints; ++i) {
+      fprintf(fp,"%-12.6g", R(i,0));
+      for(int j=1; j<numPoints; ++j) 
+	fprintf(fp," %-12.6g", R(i,j));     
+      fprintf(fp,"\n");
+  }
+  fclose(fp);
+  */
   return; 
 }
 
@@ -1645,15 +2238,37 @@ MtxDbl& KrigingModel::gen_Z_matrix()
   //register int ijk=0;
   //double *Z_ptr=Z.ptr(0); //done for speed, undone for robustness because matrices can now have fewer apparent rows than actual rows (it shouldn't happen for Kriging that isn't gradient enhanced, but future mods might change that) 2011.06.01
   const double *XR_k_ptr; //done for speed
-  for(int k=0; k<ncolsXR; k++) {
-    XR_k_ptr=XR.ptr(0,k);
-    int ij=0;
-    for(int j=0; j<nrowsXR-1; ++j)
-      for(int i=j+1; i<nrowsXR; ++i, ++ij) {
-	mult_term=XR_k_ptr[i]-XR_k_ptr[j];
-	//Z_ptr[ijk++]=-mult_term*mult_term;
-	Z(ij,k)=-mult_term*mult_term;
-      }
+
+  if(corrFunc==GAUSSIAN_CORR_FUNC) 
+    for(int k=0; k<ncolsXR; k++) {
+      XR_k_ptr=XR.ptr(0,k);
+      int ij=0;
+      for(int j=0; j<nrowsXR-1; ++j)
+	for(int i=j+1; i<nrowsXR; ++i, ++ij) {
+	  mult_term=XR_k_ptr[i]-XR_k_ptr[j];
+	  Z(ij,k)=-mult_term*mult_term;
+	}
+    }
+  else if((corrFunc==EXP_CORR_FUNC)||(corrFunc==MATERN_CORR_FUNC)) 
+    for(int k=0; k<ncolsXR; k++) {
+      XR_k_ptr=XR.ptr(0,k);
+      int ij=0;
+      for(int j=0; j<nrowsXR-1; ++j)
+	for(int i=j+1; i<nrowsXR; ++i, ++ij) 
+	  Z(ij,k)=-std::fabs(XR_k_ptr[i]-XR_k_ptr[j]);
+    }
+  else if(corrFunc==POW_EXP_CORR_FUNC)
+    for(int k=0; k<ncolsXR; k++) {
+      XR_k_ptr=XR.ptr(0,k);
+      int ij=0;
+      for(int j=0; j<nrowsXR-1; ++j)
+	for(int i=j+1; i<nrowsXR; ++i, ++ij) 
+	  Z(ij,k)=-std::pow(std::fabs(XR_k_ptr[i]-XR_k_ptr[j]),
+			    powExpCorrFuncPow);
+    }
+  else{
+    std::cerr << "unknown corrFunc\n";
+    assert(NULL);
   }
   
   return Z;
@@ -1925,24 +2540,11 @@ void KrigingModel::getRandGuess(MtxDbl& guess) const
 {
   int mymod = 1048576; //2^20 instead of 10^6 to be kind to the computer
   guess.newSize(1,numVarsr);
-  //double corr_length,tempdouble;
   for(int j=0;j<numVarsr;j++) {
-    //tempdouble=(std::rand() % mymod);
-    //tempdouble/=mymod;
-    //printf("tempdouble=%g ",tempdouble);
-    //corr_length=std::pow(2.0,tempdouble*(log2(max_corr_length)-log2(min_corr_length)) + log2(min_corr_length));    
-      
-    //corr_length=std::exp((std::rand() % mymod)*(maxNatLogCorrLen-minNatLogCorrLen)/mymod+
-    //minNatLogCorrLen);
-    //guess(0,j) = 1.0/(2.0*corr_length*corr_length); 
     guess(0,j) = (std::rand() % mymod)*(maxNatLogCorrLen-minNatLogCorrLen)/mymod+
       minNatLogCorrLen; //this returns a random nat_log_corr_len which is the space we need to search in
-
-    //guess(0,j)=100.0;
   }
-  //printf("\n");
 }
-
 
 /** this functions makes guessed values of the correlation paramters
     feasible, i.e. decreases the condition number of the correlation
@@ -1954,6 +2556,7 @@ void KrigingModel::getRandGuess(MtxDbl& guess) const
     were a linear function, R really is R in this function, it determines
     the needed/desired nugget so R can be modified to R OUTSIDE of this 
     function */
+/*
 MtxDbl& KrigingModel::makeGuessFeasible(MtxDbl& nat_log_corr_len, OptimizationProblem *opt) {
   int k;
   MtxDbl theta(1,numTheta);
@@ -2036,6 +2639,9 @@ MtxDbl& KrigingModel::makeGuessFeasible(MtxDbl& nat_log_corr_len, OptimizationPr
   
   return nat_log_corr_len;
 }
+
+*/
+
 
 /** evaluate the trend function g(x), using specified {Poly, Rot}
 Here, g() and x can represent arbitrary (elsewhere represented by
