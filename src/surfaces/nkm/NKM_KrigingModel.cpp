@@ -462,7 +462,7 @@ KrigingModel::KrigingModel(const SurfData& sd, const ParamMap& params)
   // *************************************************************
   
   // current options are none (fixed correl) | sampling (guess) | local | global | global_local
-  optimizationMethod = "global_local";
+  optimizationMethod = "global";
   param_it = params.find("optimization_method");
   if (param_it != params.end() && param_it->second.size() > 0)
     optimizationMethod = param_it->second; 
