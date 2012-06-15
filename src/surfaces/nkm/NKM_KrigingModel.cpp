@@ -704,6 +704,7 @@ KrigingModel::KrigingModel(const SurfData& sd, const ParamMap& params)
   //nug=numPoints/(maxCondNum-1.0); //this is guaranteed to make R non-singular it's a little overkill though
 
   ifChooseNug = false;
+  //ifChooseNug = true;
   param_it = params.find("find_nugget");
   if (param_it != params.end() && param_it->second.size() > 0)
     ifChooseNug = true; 

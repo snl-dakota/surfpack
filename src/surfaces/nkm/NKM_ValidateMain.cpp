@@ -16,7 +16,16 @@ using std::ostringstream;
 //#define __FASTER_TEST__
 //#define __EVEN_FASTER_TEST__
 //#define __VALGRIND_TEST__
-//#define __GKM_USE_KM_CORR_LEN__
+//#define __GKM_USE_KM_CORR_LEN_
+#define __CORR_FUNC0__
+#define __CORR_FUNC1__ "matern"
+//#define __CORR_FUNC2__ "0.5"
+#define __CORR_FUNC2__ "infinity"
+#define __GPAIS_NDIM__ 6
+#define __GPAIS_GLOBAL__
+//#define __GPAIS_LOCAL__
+//#define __GPAIS_CORRLEN__
+
 using std::cout;
 using std::endl;
 using std::string;
@@ -30,6 +39,11 @@ void compare_sample_designs();
 void compare_sample_designs_pav(int nvarsr);
 void nested_Krig_vs_GEK_herbie_smooth_herbie_2D_4D_8D();
 void boost_save_loadtest();
+void global_build_and_eval_mean_adjvar();
+void local_corrlen_build_and_eval_mean_adjvar();
+void corrlen_build_and_eval_mean_adjvar();
+void build_dont_eval();
+void local_corrlen_build_dont_eval();
 
 void gen_sample_design_by_pivoted_cholesky() {
   int NumGuesses=100;
@@ -182,12 +196,23 @@ int main(int argc, char* argv[])
   //compare_sample_designs_pav(8);
   //compare_sample_designs();
   //hack();
-  validate();
+  //validate();
   //validate_grad();
   //validate_grad2();
   //check_matrix();
   //gen_sample_design_by_pivoted_cholesky();
   //nested_Krig_vs_GEK_herbie_smooth_herbie_2D_4D_8D();
+#ifdef __GPAIS_GLOBAL__
+  global_build_and_eval_mean_adjvar();
+#endif
+  //build_dont_eval();
+#ifdef __GPAIS_LOCAL__
+  local_corrlen_build_and_eval_mean_adjvar();
+#endif
+  //local_corrlen_build_dont_eval();
+#ifdef __GPAIS_CORRLEN__
+  corrlen_build_and_eval_mean_adjvar();
+#endif
   return 0;
 }
 
@@ -567,6 +592,7 @@ void check_matrix()
   return;
 }
 
+#ifdef SURFPACK_HAVE_BOOST_SERIALIZATION
 void boost_save_loadtest(){
 
   printf("testing boost save and load\n");
@@ -639,6 +665,7 @@ void boost_save_loadtest(){
 
   return;
 }
+#endif
 
 void nested_Krig_vs_GEK_herbie_smooth_herbie_2D_4D_8D(){
   //string build_herbie_2D="gradHerbie_NestedLHS_2D_1024pts.spd";
@@ -2339,5 +2366,137 @@ void validate()
 #endif  
   fclose(fpout);
   
+  return;
+}
+
+//used for quick develop/test of matlab implementation of adaptive importance sampling
+void global_build_and_eval_mean_adjvar() {
+  int Nvarsr=__GPAIS_NDIM__;
+  std::map< std::string, std::string> km_params;
+  km_params["constraint_type"] = "r";
+  km_params["order"] = "0";
+  km_params["optimization_method"]="global";
+#ifdef __CORR_FUNC0__
+  km_params[__CORR_FUNC1__]=__CORR_FUNC2__;
+#endif  
+
+  //km_params["reduced_polynomial"]=nkm::toString<bool>(true);
+  string buildfile="buildfile.spd";
+  string evalfile_in ="evalfile_in.spd";
+  //string evalfile_out  ="evalfile.out";
+  nkm::SurfData sdbuild(buildfile, Nvarsr, 0, 1, 0, 0, 0);
+  nkm::SurfData sdeval(evalfile_in, Nvarsr, 0, 1, 0, 0, 0);  
+  int Neval=sdeval.getNPts();
+  nkm::KrigingModel km(sdbuild,km_params); km.create();
+  nkm::MtxDbl y(Neval,1);
+  nkm::MtxDbl vary(Neval,1);
+  km.evaluate(y,sdeval.xr);
+  km.eval_variance(vary,sdeval.xr);
+  FILE* fp=fopen("evalfile.out","w");
+  for(int i=0; i<Neval; ++i) {
+    for(int j=0; j<Nvarsr; ++j)
+      fprintf(fp,"%22.16g ",sdeval.xr(i,j));
+    fprintf(fp,"%22.16g %22.16g\n",y(i,0),vary(i,0));
+  }
+  fclose(fp);
+  return;
+}
+
+//used for quick develop/test of matlab implementation of adaptive importance sampling
+void local_corrlen_build_dont_eval() {
+  //the point of this is to a local optimization (starting from a good initial guess)
+  //and have the calling function grab the resulting correlation lengths out of the 
+  //command line model summary
+  int Nvarsr=__GPAIS_NDIM__;
+  ifstream infile("corrlen.txt",ios::in);
+  string corrlen_str;
+  getline(infile,corrlen_str);
+  std::map< std::string, std::string> km_params;
+  km_params["constraint_type"] = "r";
+  km_params["order"] = "0";
+  //km_params["reduced_polynomial"]=nkm::toString<bool>(true);
+  km_params["optimization_method"]="local";
+  km_params["correlation_lengths"]=corrlen_str;
+#ifdef __CORR_FUNC0__
+  km_params[__CORR_FUNC1__]=__CORR_FUNC2__;
+#endif  
+
+  string buildfile="buildfile.spd";
+  nkm::SurfData sdbuild(buildfile, Nvarsr, 0, 1, 0, 0, 0);
+  nkm::KrigingModel km(sdbuild,km_params); km.create();
+  return;
+}
+
+//used for quick develop/test of matlab implementation of adaptive importance sampling
+void local_corrlen_build_and_eval_mean_adjvar() {
+  int Nvarsr=__GPAIS_NDIM__;
+  ifstream infile("corrlen.txt",ios::in);
+  string corrlen_str;
+  getline(infile,corrlen_str);
+  std::map< std::string, std::string> km_params;
+  km_params["constraint_type"] = "r";
+  km_params["order"] = "0";
+  //km_params["reduced_polynomial"]=nkm::toString<bool>(true);
+  km_params["optimization_method"]="local";
+  km_params["correlation_lengths"]=corrlen_str;
+#ifdef __CORR_FUNC0__
+  km_params[__CORR_FUNC1__]=__CORR_FUNC2__;
+#endif  
+
+  string buildfile="buildfile.spd";
+  string evalfile_in ="evalfile_in.spd";
+  //string evalfile_out  ="evalfile.out";
+  nkm::SurfData sdbuild(buildfile, Nvarsr, 0, 1, 0, 0, 0);
+  nkm::SurfData sdeval(evalfile_in, Nvarsr, 0, 1, 0, 0, 0);  
+  int Neval=sdeval.getNPts();
+  nkm::KrigingModel km(sdbuild,km_params); km.create();
+  nkm::MtxDbl y(Neval,1);
+  nkm::MtxDbl vary(Neval,1);
+  km.evaluate(y,sdeval.xr);
+  km.eval_variance(vary,sdeval.xr);
+  FILE* fp=fopen("evalfile.out","w");
+  for(int i=0; i<Neval; ++i) {
+    for(int j=0; j<Nvarsr; ++j)
+      fprintf(fp,"%22.16g ",sdeval.xr(i,j));
+    fprintf(fp,"%22.16g %22.16g\n",y(i,0),vary(i,0));
+  }
+  fclose(fp);
+  return;
+}
+
+//used for quick develop/test of matlab implementation of adaptive importance sampling
+void corrlen_build_and_eval_mean_adjvar() {
+  int Nvarsr=__GPAIS_NDIM__;
+  ifstream infile("corrlen.txt",ios::in);
+  string corrlen_str;
+  getline(infile,corrlen_str);
+  std::map< std::string, std::string> km_params;
+  km_params["constraint_type"] = "r";
+  km_params["order"] = "0";
+  //km_params["reduced_polynomial"]=nkm::toString<bool>(true);
+  km_params["optimization_method"]="none";
+  km_params["correlation_lengths"]=corrlen_str;
+#ifdef __CORR_FUNC0__
+  km_params[__CORR_FUNC1__]=__CORR_FUNC2__;
+#endif  
+
+  string buildfile="buildfile.spd";
+  string evalfile_in ="evalfile_in.spd";
+  //string evalfile_out  ="evalfile.out";
+  nkm::SurfData sdbuild(buildfile, Nvarsr, 0, 1, 0, 0, 0);
+  nkm::SurfData sdeval(evalfile_in, Nvarsr, 0, 1, 0, 0, 0);  
+  int Neval=sdeval.getNPts();
+  nkm::KrigingModel km(sdbuild,km_params); km.create();
+  nkm::MtxDbl y(Neval,1);
+  nkm::MtxDbl vary(Neval,1);
+  km.evaluate(y,sdeval.xr);
+  km.eval_variance(vary,sdeval.xr);
+  FILE* fp=fopen("evalfile.out","w");
+  for(int i=0; i<Neval; ++i) {
+    for(int j=0; j<Nvarsr; ++j)
+      fprintf(fp,"%22.16g ",sdeval.xr(i,j));
+    fprintf(fp,"%22.16g %22.16g\n",y(i,0),vary(i,0));
+  }
+  fclose(fp);
   return;
 }
