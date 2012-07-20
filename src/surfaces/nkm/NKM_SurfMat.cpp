@@ -133,7 +133,7 @@ MtxDbl& LDLT_fact(MtxDbl& matrix, MtxInt& ipvt, MtxDbl& scale, int& info, double
   double log_of_2=std::log(2.0);
   for(int i=0; i<nrows; ++i) {
     abspower=static_cast<int>(std::floor(0.5+std::log(std::sqrt(matrix(i,i)))/log_of_2));
-    scale(i,0)=std::pow(2.0,static_cast<double>(-abspower)); //this is the "numerically optimal" preconditioning of a real symmetric positive definite matrix by "numerically optimal" I meant the analytically optimal (for reducing condition number) scaling has been rounded to the nearest power of 2 so that we don't lose any bits of accuracy due to rounding error due to preconditioning (and yes I know that the matrix may not be positive definite, but we want it to work at least as good as preconditioned Cholesky for rspd matrix)
+    scale(i,0)=std::pow(2.0,static_cast<double>(-abspower)); //this is the "numerically optimal" equilibration of a real symmetric positive definite matrix by "numerically optimal" I meant the analytically optimal (for reducing condition number) scaling has been rounded to the nearest power of 2 so that we don't lose any bits of accuracy due to rounding error due to equilibration (and yes I know that the matrix may not be positive definite, but we want it to work at least as good as equilibrated Cholesky for rspd matrix)
   }
 
   for(int j=0; j<nrows; ++j)
@@ -348,8 +348,8 @@ MtxDbl& pseudo_inverse(MtxDbl& A, double min_allowed_rcond, double& rcondA, doub
 
 
 
-/// perform a numerically optimally preconditioned Cholesky factorization of a real symmetric positive semi-definite matrix, wraps DPOTRF, returns the lower triangular portion, the preconditioning is "undone" so the L matrix is the same (minus some rounding error due to poor conditioning) as it would be without precondtioning, if info>0 then the preconditined matrix is singular, rcondprecond is the standard fast estimate of the reciprocal of the condition number of the numerically optimally preconditioned real symmetric positive definite matrix (that's what affects the round off error)
-MtxDbl& Chol_fact(MtxDbl& matrix, int& info, double& rcondprecond)
+/// perform a numerically optimally equilibrated Cholesky factorization of a real symmetric positive semi-definite matrix, wraps DPOTRF, returns the lower triangular portion, the pequilibration is "undone" so the L matrix is the same (minus some rounding error due to poor conditioning) as it would be without equilibration, if info>0 then the equilibrated matrix is singular, rcond is the standard fast estimate of the reciprocal of the condition number of the numerically optimally equilibrated real symmetric positive definite matrix (that's what affects the round off error)
+MtxDbl& Chol_fact(MtxDbl& matrix, int& info, double& rcond)
 {
   int nrows = static_cast<int>(matrix.getNRows());
   int ncols = static_cast<int>(matrix.getNCols());
@@ -376,7 +376,7 @@ MtxDbl& Chol_fact(MtxDbl& matrix, int& info, double& rcondprecond)
   minabspower=maxabspower=abspower;
   for(int i=1; i<nrows; ++i) {
     abspower=static_cast<int>(std::floor(0.5+std::log(std::sqrt(matrix(i,i)))/log_of_2));
-    scalefactor(i,0)=std::pow(2.0,static_cast<double>(-abspower)); //this is the "numerically optimal" preconditioning of a real symmetric positive definite matrix by "numerically optimal" I meant the analytically optimal (for reducing condition number) scaling has been rounded to the nearest power of 2 so that we don't lose any bits of accuracy due to rounding error due to preconditioning
+    scalefactor(i,0)=std::pow(2.0,static_cast<double>(-abspower)); //this is the "numerically optimal" equilibration of a real symmetric positive definite matrix by "numerically optimal" I meant the analytically optimal (for reducing condition number) scaling has been rounded to the nearest power of 2 so that we don't lose any bits of accuracy due to rounding error due to equilibration
     //abspower=log2(sqrt(matrix(i,i)));
     //scalefactor(i,0)=1.0/sqrt(matrix(i,i));
     minabspower=(abspower<minabspower)?abspower:minabspower;
@@ -384,7 +384,7 @@ MtxDbl& Chol_fact(MtxDbl& matrix, int& info, double& rcondprecond)
   }
   
   if(maxabspower!=minabspower) {
-    //only do the preconditioning if the maximum and minimum numerically optimal scaling factors are different (by a factor of 2 or more) because otherwise the real symmetric positive definite matrix is already numerically optimally preconditioned.
+    //only do the equilibration if the maximum and minimum numerically optimal scaling factors are different (by a factor of 2 or more) because otherwise the real symmetric positive definite matrix is already numerically optimally equilibrated.
     for(int j=0; j<nrows; ++j)
       for(int i=0; i<nrows; ++i)
 	matrix(i,j)*=scalefactor(i,0)*scalefactor(j,0);
@@ -400,14 +400,14 @@ MtxDbl& Chol_fact(MtxDbl& matrix, int& info, double& rcondprecond)
 #endif
   info=info_local;
 
-  //the rcond of the "numerically optimally" preconditioned real symmetric positive definte matrix, feed it orignorm
-  DPOCON_F77(&uplo,&nrows,matrix.ptr(0,0),&lda,&orignorm,&rcondprecond,work.ptr(0,0),iwork.ptr(0,0),&info_local);
+  //the rcond of the "numerically optimally" equilibrated real symmetric positive definte matrix, feed it orignorm
+  DPOCON_F77(&uplo,&nrows,matrix.ptr(0,0),&lda,&orignorm,&rcond,work.ptr(0,0),iwork.ptr(0,0),&info_local);
 #ifdef __SURFMAT_ERR_CHECK__
   assert(info_local==0);
 #endif
 
   if(maxabspower!=minabspower) {
-    //undo the "numerically optimal" preconditioning of the real symmetric positive definite matrix, that is other than possibly avoiding rounding error due to poorly condition matrix this function produces the same cholesky "L" matrix that you would get without preconditiong.
+    //undo the "numerically optimal" equilibration of the real symmetric positive definite matrix, that is other than possibly avoiding rounding error due to poorly condition matrix this function produces the same cholesky "L" matrix that you would get without equilibration.
     for(int i=0; i<nrows; ++i)
       scalefactor(i,0)=1.0/scalefactor(i,0); //multiplication can be faster than division
 
@@ -421,7 +421,7 @@ MtxDbl& Chol_fact(MtxDbl& matrix, int& info, double& rcondprecond)
 
 MtxDbl& Chol_fact_workspace(MtxDbl& matrix, MtxDbl& scalefactor, 
 			    MtxDbl& work, MtxInt& iwork, int& info, 
-			    double& rcondprecond)
+			    double& rcond)
 {
   int nrows = static_cast<int>(matrix.getNRows());
   int ncols = static_cast<int>(matrix.getNCols());
@@ -448,7 +448,7 @@ MtxDbl& Chol_fact_workspace(MtxDbl& matrix, MtxDbl& scalefactor,
   minabspower=maxabspower=abspower;
   for(int i=1; i<nrows; ++i) {
     abspower=static_cast<int>(std::floor(0.5+std::log(std::sqrt(matrix(i,i)))/log_of_2));
-    scalefactor(i,0)=std::pow(2.0,static_cast<double>(-abspower)); //this is the "numerically optimal" preconditioning of a real symmetric positive definite matrix by "numerically optimal" I meant the analytically optimal (for reducing condition number) scaling has been rounded to the nearest power of 2 so that we don't lose any bits of accuracy due to rounding error due to preconditioning
+    scalefactor(i,0)=std::pow(2.0,static_cast<double>(-abspower)); //this is the "numerically optimal" equilibration of a real symmetric positive definite matrix by "numerically optimal" I meant the analytically optimal (for reducing condition number) scaling has been rounded to the nearest power of 2 so that we don't lose any bits of accuracy due to rounding error due to equilibration
     //abspower=log2(sqrt(matrix(i,i)));
     //scalefactor(i,0)=1.0/sqrt(matrix(i,i));
     minabspower=(abspower<minabspower)?abspower:minabspower;
@@ -456,7 +456,7 @@ MtxDbl& Chol_fact_workspace(MtxDbl& matrix, MtxDbl& scalefactor,
   }
   
   if(maxabspower!=minabspower) {
-    //only do the preconditioning if the maximum and minimum numerically optimal scaling factors are different (by a factor of 2 or more) because otherwise the real symmetric positive definite matrix is already numerically optimally preconditioned.
+    //only do the equilibration if the maximum and minimum numerically optimal scaling factors are different (by a factor of 2 or more) because otherwise the real symmetric positive definite matrix is already numerically optimally equilibrated.
     for(int j=0; j<nrows; ++j)
       for(int i=0; i<nrows; ++i)
 	matrix(i,j)*=scalefactor(i,0)*scalefactor(j,0);
@@ -472,14 +472,14 @@ MtxDbl& Chol_fact_workspace(MtxDbl& matrix, MtxDbl& scalefactor,
 #endif
   info=info_local;
 
-  //the rcond of the "numerically optimally" preconditioned real symmetric positive definte matrix, feed it orignorm
-  DPOCON_F77(&uplo,&nrows,matrix.ptr(0,0),&lda,&orignorm,&rcondprecond,work.ptr(0,0),iwork.ptr(0,0),&info_local);
+  //the rcond of the "numerically optimally" equilibrated real symmetric positive definte matrix, feed it orignorm
+  DPOCON_F77(&uplo,&nrows,matrix.ptr(0,0),&lda,&orignorm,&rcond,work.ptr(0,0),iwork.ptr(0,0),&info_local);
 #ifdef __SURFMAT_ERR_CHECK__
   assert(info_local==0);
 #endif
 
   if(maxabspower!=minabspower) {
-    //undo the "numerically optimal" preconditioning of the real symmetric positive definite matrix, that is other than possibly avoiding rounding error due to poorly condition matrix this function produces the same cholesky "L" matrix that you would get without preconditiong.
+    //undo the "numerically optimal" equilibration of the real symmetric positive definite matrix, that is other than possibly avoiding rounding error due to poorly condition matrix this function produces the same cholesky "L" matrix that you would get without equilibration.
     for(int i=0; i<nrows; ++i)
       scalefactor(i,0)=1.0/scalefactor(i,0); //multiplication can be faster than division
 

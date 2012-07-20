@@ -227,8 +227,8 @@ public:
     //num_vars,numDesignVar); fflush(stdout);
     lowerBounds.newSize(numDesignVar,1);
     upperBounds.newSize(numDesignVar,1);
-    initialIterates.newSize(1, numDesignVar);
-    bestVars.newSize(1, numDesignVar);
+    initialIterates.newSize(numDesignVar,1);
+    bestVars.newSize(numDesignVar,1);
   }
   
   // init functions

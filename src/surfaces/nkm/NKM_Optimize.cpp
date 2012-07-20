@@ -62,20 +62,20 @@ void OptimizationProblem::lower_bound(int i, double lb)
 void OptimizationProblem::upper_bound(int i, double ub)
 { upperBounds(i,0) = ub; }
 
-void OptimizationProblem::initial_iterate(int j, double x0)
-{ initialIterates(0,j) = x0; }
+void OptimizationProblem::initial_iterate(int i, double x0)
+{ initialIterates(i,0) = x0; }
 
 void OptimizationProblem::add_initial_iterates(MtxDbl& init_iterates_to_add)
 {
   assert(init_iterates_to_add.getNRows()==numDesignVar);
-  int numsofar=initialIterates.getNRows();
-  int numtoadd=init_iterates_to_add.getNRows();
+  int numsofar=initialIterates.getNCols();
+  int numtoadd=init_iterates_to_add.getNCols();
   //printf("numsofar=%d numtoadd=%d\n",numsofar,numtoadd);
-  initialIterates.resize(numsofar+numtoadd,numDesignVar);
-  MtxInt irows(numtoadd,1);
+  initialIterates.resize(numDesignVar,numsofar+numtoadd);
+  MtxInt icols(numtoadd,1);
   for(int i=0; i<numtoadd; ++i)
-    irows(i,0)=i+numsofar;
-  initialIterates.putRows(init_iterates_to_add,irows);
+    icols(i,0)=i+numsofar;
+  initialIterates.putCols(init_iterates_to_add,icols);
 }
 
 // no treatment of constraints for now
@@ -83,7 +83,7 @@ void OptimizationProblem::multistart_conmin_optimize(int num_guesses)
 {
   assert(num_guesses >= 1);
 
-  MtxDbl guess(1, numDesignVar);
+  MtxDbl guess(numDesignVar,1);
   double best_obj;
   bestFunction = DBL_MAX;
 
@@ -99,9 +99,7 @@ void OptimizationProblem::multistart_conmin_optimize(int num_guesses)
     
     // TODO: put switch here for optimizer choice
     optimize_with_conmin(guess, best_obj);
-    //printf("theta={%g",0.5*std::exp(-2.0*guess(0,0))); //for debug with Kriging
-    //for(int i=1; i<numDesignVar; ++i)
-    //printf(", %g",0.5*std::exp(-2.0*guess(0,i))); //for debug with Kriging
+
     theModel.objectiveAndConstraints(obj,con_out,guess);
     //printf("} obj=%g\n",best_obj);
 
@@ -555,7 +553,7 @@ where
 	       igoto, nac, info, infog, iter);
 
     for(i = 0; i<numDesignVar; i++) 
-      guess(0,i) = query_pt(i,0);
+      guess(i,0) = query_pt(i,0);
     //printf("numDesignVar: %d query_pt.getNElems(): %d N1: %d\n",numDesignVar,query_pt.getNElems(),N1);
   } while (igoto != 0);
 
@@ -568,7 +566,7 @@ void OptimizationProblem::best_guess_optimize(int num_guesses)
 {
   assert(num_guesses >= 1);
 
-  MtxDbl guess(1, numDesignVar);
+  MtxDbl guess(numDesignVar,1);
   bestFunction = DBL_MAX;
 
   // iterate over provided then possibly random guesses
@@ -591,11 +589,11 @@ optimize_with_direct(double& final_val)
   using std::cerr;
 
   if (directData.maxFunctionEvals > NCSU_DIRECT_MAXFUNC)
-    cerr << "Error: Maximum function evaluations " 
+    std::cerr << "Error: Maximum function evaluations " 
 	 << directData.maxFunctionEvals << "\nexceeds DiRECT algorithm limit " 
 	 << NCSU_DIRECT_MAXFUNC << std::endl;
   if (numDesignVar > NCSU_DIRECT_MAXDIM)
-    cerr << "Error: " << numDesignVar << " variables exceeds DiRECT algorithm "
+    std::cerr << "Error: " << numDesignVar << " variables exceeds DiRECT algorithm "
 	 << "limit of " << NCSU_DIRECT_MAXDIM << std::endl;
   if (directData.maxFunctionEvals > NCSU_DIRECT_MAXFUNC || 
       numDesignVar > NCSU_DIRECT_MAXDIM)
@@ -632,67 +630,67 @@ optimize_with_direct(double& final_val)
 		  idata, isize, ddata, dsize, cdata, csize, quiet_flag);
 
   if (ierror < 0) {
-    cerr << "NCSU DIRECT failed with fatal error code " << ierror << "\n";
+    std::cerr << "NCSU DIRECT failed with fatal error code " << ierror << "\n";
     switch (ierror) {
     case -1:
-      cerr << "(variable lower bounds must be strictly less than upper bounds)";
+      std::cerr << "(variable lower bounds must be strictly less than upper bounds)";
       break;
     case -2:
-      cerr << "(maximum function evaluations is too large)";
+      std::cerr << "(maximum function evaluations is too large)";
       break;
     case -3:
-      cerr << "(initialization in DIRpreprc failed)";
+      std::cerr << "(initialization in DIRpreprc failed)";
       break;
     case -4:
-      cerr << "(error in creation of the sample points)";
+      std::cerr << "(error in creation of the sample points)";
       break;
     case -5:
-      cerr << "(error occurred in sampling the function)";
+      std::cerr << "(error occurred in sampling the function)";
       break;
     case -6:
-      cerr << "(maximum iterations is too large)";
+      std::cerr << "(maximum iterations is too large)";
       break;
     default:
-      cerr << "(unknown error code)";
+      std::cerr << "(unknown error code)";
     }
-    cerr << "\nSee \"Calling DIRECT\" section in DIRECT Version 2.0 User Guide"
+    std::cerr << "\nSee \"Calling DIRECT\" section in DIRECT Version 2.0 User Guide"
 	 << ".\n" << std::endl;
     std::exit(-1);
   }
   else if (directData.verboseOutput) {
-    cout << "NCSU DIRECT succeeded with code " << ierror << "\n";
+    std::cout << "NCSU DIRECT succeeded with code " << ierror << "\n";
     switch (ierror) {
     case 1:
-      cout << "(maximum function evaluations exceeded)";
+      std::cout << "(maximum function evaluations exceeded)";
       break;;
     case 2:
-      cout << "(maximum iterations reached)";
+      std::cout << "(maximum iterations reached)";
       break;;
     case 3:
-      cout << "(prescribed global minimum reached within tolerance)";
+      std::cout << "(prescribed global minimum reached within tolerance)";
       break;;
     case 4:
-      cout << "(best rectangle reduced from original volume by prescribed "
+      std::cout << "(best rectangle reduced from original volume by prescribed "
 	   << "fraction)";
       break;;
     case 5:
-      cout << "(best rectangle measure is less than prescribed min box size)";
+      std::cout << "(best rectangle measure is less than prescribed min box size)";
       break;;
     default:
-      cout << "(unknown code)";
+      std::cout << "(unknown code)";
       break;;
     }
-    cout << std::endl;
+    std::cout << std::endl;
   }
 
   // FINALIZE
   optimizationProblemInstance = prev_instance;
   final_val = fmin;
 
-  //cout << "fmin = " << fmin << "; theta = ";
+  //std::cout << "fmin = " << fmin << "; theta = ";
   //for (int vi=0; vi<numDesignVar; ++vi)
-  //cout << bestVars(vi) << " ";
-  //cout << std::endl;
+  //std::cout << bestVars(vi) << " ";
+  //std::cout << std::endl;
 
 }
 
@@ -714,18 +712,18 @@ direct_objective_eval(int *n, double c[], double l[], double u[], int point[],
   int np = (*start == 1) ? 1 : *maxI*2;
 
   // loop over trial points, lift scaling, synchronously evaluate
-  MtxDbl curr_vars(1, nx);
+  MtxDbl curr_vars(nx,1);
   int pos = *start-1; // only used for second eval and beyond
   for (int j=0; j<np; j++) {
 
     if (*start == 1)
       for (int i=0; i<nx; i++)
-	curr_vars(0,i) = (c[i]+u[i])*l[i];
+	curr_vars(1,0) = (c[i]+u[i])*l[i];
     else {
       for (int i=0; i<nx; i++) {
 	// c[pos+i*maxfunc] = c(pos,i) in Fortran.
 	double ci=c[pos+i*(*maxfunc)];
-	curr_vars(0,i) = (ci + u[i])*l[i];
+	curr_vars(i,0) = (ci + u[i])*l[i];
       }
       pos = point[pos]-1;
     }
@@ -774,10 +772,10 @@ direct_objective_eval(int *n, double c[], double l[], double u[], int point[],
 // a random guess
 void OptimizationProblem::retrieve_initial_iterate(int it_ind, MtxDbl& iterate)
 {
-  if (it_ind < initialIterates.getNRows()) {
-    assert(initialIterates.getNCols() == numDesignVar);
-    initialIterates.getRows(iterate, it_ind);
-    //printf("opt:retrieve_initial_iterate it_ind=%d NRows=%d\n",it_ind,initialIterates.getNRows()); fflush(stdout);
+  if (it_ind < initialIterates.getNCols()) {
+    assert(initialIterates.getNRows() == numDesignVar);
+    initialIterates.getCols(iterate, it_ind);
+    //printf("opt:retrieve_initial_iterate it_ind=%d NCols=%d\n",it_ind,initialIterates.getNCols()); fflush(stdout);
   }
   else{
     //printf("opt:retrieve_initial_iterate getRandGuess\n"); fflush(stdout);
@@ -785,20 +783,20 @@ void OptimizationProblem::retrieve_initial_iterate(int it_ind, MtxDbl& iterate)
   }
   //printf("iguess=%d EulAng=[ %g",iguess,guess(0,0));
   //for(int i=1; i<guess.getNElems(); i++)
-  //printf(",%g ",guess(0,i));
+  //printf(",%g ",guess(i,0));
   //printf("]\n");
 }
 
 void OptimizationProblem::getRandGuess(MtxDbl& guess) const
 {
   int mymod = 1048576; //2^20 instead of 10^6 to be kind to the computer
-  guess.newSize(1,numDesignVar);
+  guess.newSize(numDesignVar,1);
   //printf("getRandGuess: lowerBounds.size=[%d %d] upperBounds=[%d %d]\n",
-  //lowerBounds.getNRows(),lowerBounds.getNCols(),
+  //lowerBounds.getNRow(),lowerBounds.getNCols(),
   //upperBounds.getNRows(),upperBounds.getNCols()); fflush(stdout);
-  for(int j=0;j<numDesignVar;j++)
-    guess(0,j)=(std::rand() % mymod) *
-      (upperBounds(j,0)-lowerBounds(j,0))/mymod + lowerBounds(j,0);
+  for(int i=0;i<numDesignVar;i++)
+    guess(i,0)=(std::rand() % mymod) *
+      (upperBounds(i,0)-lowerBounds(i,0))/mymod + lowerBounds(i,0);
 }
 
 const MtxDbl& OptimizationProblem::best_point() const

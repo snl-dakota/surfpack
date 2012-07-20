@@ -30,7 +30,7 @@ public:
   
   SurfPackModel() : scaler(sdBuild), outputLevel(NORMAL_OUTPUT) {};
 
-  SurfPackModel(const SurfData& sd,int jout_keep) : sdBuild(sd,jout_keep), scaler(sdBuild), outputLevel(NORMAL_OUTPUT) {};
+  SurfPackModel(const SurfData& sd,int iout_keep) : sdBuild(sd,iout_keep), scaler(sdBuild), outputLevel(NORMAL_OUTPUT) {};
 
   virtual void create() {
     std::cerr << "the create() function has not been implemented for this model type" << std::endl;
@@ -43,29 +43,29 @@ public:
   };
 
 
-  virtual double evaluate(const  MtxDbl& xr) const =0;
+  virtual double evaluate(const  MtxDbl& xr) =0;
 
-  virtual MtxDbl& evaluate(MtxDbl& y, const MtxDbl& xr) const
+  virtual MtxDbl& evaluate(MtxDbl& y, const MtxDbl& xr) 
   {
-    int nrowsxr=xr.getNRows();
-    int ncolsxr=xr.getNCols();
-    assert((ncolsxr==sdBuild.getNVarsr())&&(nrowsxr>0));
-    y.newSize(nrowsxr,1);
+    int nvarsxr=xr.getNRows();
+    int nptsxr=xr.getNCols();
+    assert((nvarsxr==sdBuild.getNVarsr())&&(nptsxr>0));
+    y.newSize(1,nptsxr);
 
-    if(nrowsxr==1) {
+    if(nptsxr==1) {
       y(0,0)=evaluate(xr);
       return y;
     }
       
-    MtxDbl xr_temp(1,ncolsxr);
-    for(int ipt=0; ipt<nrowsxr; ++ipt) {
-      xr.getRows(xr_temp,ipt);
-      y(ipt,0)=evaluate(xr_temp);
+    MtxDbl xr_temp(nvarsxr,1);
+    for(int ipt=0; ipt<nptsxr; ++ipt) {
+      xr.getCols(xr_temp,ipt);
+      y(0,ipt)=evaluate(xr_temp);
     }
     return y;
   };
 
-  virtual double eval_variance(const MtxDbl& xr) const {
+  virtual double eval_variance(const MtxDbl& xr) {
     std::cerr << "This model doesn't have an implemented function to return a variance" << std::endl;
     assert(false);
     // stricter compilers don't allow divide by 0
@@ -75,29 +75,29 @@ public:
     return(DBL_MAX);
   };
 
-  virtual MtxDbl& eval_variance(MtxDbl& var, const MtxDbl& xr) const
+  virtual MtxDbl& eval_variance(MtxDbl& var, const MtxDbl& xr) 
   {
-    int nrowsxr=xr.getNRows();
-    int ncolsxr=xr.getNCols();
-    assert((ncolsxr==sdBuild.getNVarsr())&&(nrowsxr>0));
-    var.newSize(nrowsxr,1);
+    int nvarsxr=xr.getNRows();
+    int nptsxr=xr.getNCols();
+    assert((nvarsxr==sdBuild.getNVarsr())&&(nptsxr>0));
+    var.newSize(1,nptsxr);
 
-    if(nrowsxr==1) {
+    if(nptsxr==1) {
       var(0,0)=eval_variance(xr);
       return var;
     }
       
-    MtxDbl xr_temp(1,ncolsxr);
-    for(int ipt=0; ipt<nrowsxr; ++ipt) {
-      xr.getRows(xr_temp,ipt);
-      var(ipt,0)=eval_variance(xr_temp);
+    MtxDbl xr_temp(nvarsxr,1);
+    for(int ipt=0; ipt<nptsxr; ++ipt) {
+      xr.getCols(xr_temp,ipt);
+      var(0,ipt)=eval_variance(xr_temp);
     }
     return var;
   };
 
-  virtual MtxDbl& evaluate_d1y(MtxDbl& d1y, const MtxDbl& xr) const =0;
+  virtual MtxDbl& evaluate_d1y(MtxDbl& d1y, const MtxDbl& xr) =0;
 
-  virtual MtxDbl& evaluate_d2y(MtxDbl& d2y, const MtxDbl& xr) const =0;
+  virtual MtxDbl& evaluate_d2y(MtxDbl& d2y, const MtxDbl& xr) =0;
 
 
   /// adjust correlations to be feasible with respect to condition

@@ -5,7 +5,6 @@
 
 //#define __SURFPACK_ERR_CHECK__
 //#define __SURFPACK_UNIT_TEST__
-//#define __SURFPACK_DER_TEST__
 
 namespace nkm {
 
@@ -24,138 +23,12 @@ using std::setw;
 using std::string;
 //using std::vector;
 
-#ifdef __SURFPACK_UNIT_TEST__
-int main(){
-  int i, j, k;
-  for(int n=0; n<5; n++)
-    for(k=0; k<=n; k++)
-      printf("nchoosek(%d,%d)=%d\n",n,k,nchoosek(n,k));
-
-  MtxInt poly; 
-  multi_dim_poly_power(poly,4,4);
-  int npoly=poly.getNRows();
-  int nvarsr=poly.getNCols();
-  printf("poly.getNRows()=%d\npoly=...\n",poly.getNRows());
-  
-  for(i=0; i<npoly; i++) {
-    printf("%8d [",i);
-    for(j=0; j<nvarsr; j++)
-      printf(" %d",poly(i,j));
-    printf(" ]\n");
-  }
-  
-  double pi=std::acos(0.0)*2.0;
-  MtxDbl EulAng(6), Rot(4,4), RotShouldBe(4,4); 
-  EulAng(0)=pi/6.0;
-  EulAng(1)=pi/4.0;
-  EulAng(2)=pi/3.0;
-  EulAng(3)=pi/6.0;
-  EulAng(4)=pi/4.0;
-  EulAng(5)=pi/3.0;
-  //This RotShouldBe was evaluated for these EulAng by matlab code that I know works
-  RotShouldBe(0,0)= -0.057800215120219;
-  RotShouldBe(1,0)=  0.353765877365274;
-  RotShouldBe(2,0)=  0.768283046242747;
-  RotShouldBe(3,0)=  0.530330085889911;
-  RotShouldBe(0,1)= -0.695272228311384;
-  RotShouldBe(1,1)= -0.649306566066328;
-  RotShouldBe(2,1)=  0.035320133098213;
-  RotShouldBe(3,1)=  0.306186217847897;
-  RotShouldBe(0,2)=  0.647692568794007;
-  RotShouldBe(1,2)= -0.414729655649473;
-  RotShouldBe(2,2)= -0.183012701892219;
-  RotShouldBe(3,2)=  0.612372435695795;
-  RotShouldBe(0,3)= -0.306186217847897;
-  RotShouldBe(1,3)=  0.530330085889911;
-  RotShouldBe(2,3)= -0.612372435695795;
-  RotShouldBe(3,3)=  0.500000000000000;
-  gen_rot_mat(Rot,EulAng,4);
-  printf("Rot=...\n");
-  for(i=0; i<nvarsr; i++){
-    printf("    [ ");
-    for(j=0; j<nvarsr; j++) {
-      printf("%9f ",Rot(i,j));
-      if(std::fabs(Rot(i,j)-RotShouldBe(i,j))>1.0e-15) {
-	printf("\n(%d,%d):Rot=%.16f RotShouldBe=%.16f\n",i,j,Rot(i,j),RotShouldBe(i,j));
-	fflush(stdout);
-	assert(Rot(i,j)==RotShouldBe(i,j));
-      }
-    }
-    printf("]\n");
-  }
-  printf("We know Rot is ok because it didn't assert(false)\n");
-
-  MtxDbl should_be_identity(4,4);
-  matrix_mult(should_be_identity,Rot,Rot,0.0,1.0,'N','T');
-  printf("should_be_identity=Rot*Rot^T=...\n");
-  for(i=0; i<nvarsr; i++){
-    printf("    [ ");
-    for(j=0; j<nvarsr; j++) {
-      printf("%9f ",should_be_identity(i,j));
-    }
-    printf("]\n");
-  }
-
-  matrix_mult(should_be_identity,Rot,Rot,0.0,1.0,'T','N');
-  printf("should_be_identity=Rot^T*Rot=...\n");
-  for(i=0; i<nvarsr; i++){
-    printf("    [ ");
-    for(j=0; j<nvarsr; j++) {
-      printf("%9f ",should_be_identity(i,j));
-    }
-    printf("]\n");
-  }
-
-
-  int rotnvarsr=5;
-  MtxDbl BaseAxis(2*rotnvarsr,rotnvarsr); BaseAxis.zero();
-  for(i=0; i<rotnvarsr; i++) {
-    BaseAxis(i,i)=1.0;
-    BaseAxis(i+rotnvarsr,i)=-1.0;
-  }
-  MtxDbl Axis;
-
-  int ioct;
-  int noct=static_cast<int>(std::pow(2,rotnvarsr));
-  MtxInt InOct(noct,1); InOct.zero();
-  int NDV=(rotnvarsr*(rotnvarsr-1))/2; //nchoosek(nvarsr,2);
-  MtxDbl lowerBounds(1,NDV); lowerBounds.zero();
-  MtxDbl upperBounds(1,NDV);
-  int mymod=1048576; //2^20 instead of 10^6 to be kind to the computer
-  for(j=0;j<NDV; j++) upperBounds(j)=pi;
-
-  int nguess=2*rotnvarsr*noct*100;
-
-  EulAng.newSize(NDV);
-  for(i=0; i<nguess; i++) {
-    for(j=0;j<NDV;j++)
-      EulAng(j)=(rand()%mymod)*upperBounds(j)/mymod;
-    gen_rot_mat(Rot,EulAng,rotnvarsr);
-    matrix_mult(Axis,BaseAxis,Rot,0.0,1.0);
-    for(k=0;k<2*rotnvarsr;k++){
-      //{k=0;
-      ioct=(Axis(k,0)>=0.0);
-      for(j=1;j<rotnvarsr;j++)
-	ioct+=(Axis(k,j)>=0)*(static_cast<int>(std::pow(2.0,j)));
-      InOct(ioct)++;
-    }
-  }
-  printf("relative # of axis endpoints per octant\n");
-  for(i=0;i<noct;i++)
-    printf("  InOct(%d/%d)=%g\n",i,noct,InOct(i)/(2.0*(nguess*rotnvarsr/noct)));
-
-  return 0;
-
-
-}
-#endif
-
 int if_close_enough(double a, double b)
 {
-  if(std::fabs(a-b)>1.0e-5){
-    std::printf("a=%20.14f b=%20.14f\n",a,b);  std::fflush(stdout);
-    assert((std::fabs(a-b)<=1.0e-5));
-  }
+  //  if(std::fabs(a-b)>1.0e-5){
+  //    std::printf("a=%20.14f b=%20.14f\n",a,b);  std::fflush(stdout);
+  //    assert((std::fabs(a-b)<=1.0e-5));
+  //  }
   return (std::fabs(a-b)<=1.0e-5);
 };
 
@@ -220,19 +93,19 @@ MtxDbl& gen_rand_rot_mat(MtxDbl& rot,int nvarsr)
 }
 
 
-///generates 2*nvarsr random samples between 0 and 1, the sample design is binning optimal with the bins being chosen as the end points of a randomly rotated set of axes (so the BINS are maximin spaced) the design is NOT a latin hypercube and it is not symmetric, opposite octants are sequential
+///generates 2*nvarsr random samples between 0 and 1, the sample design is stored in a matrix with nvarsr rows and 2*nvars columns (one point per column), the sample design is binning optimal with the bins being chosen as the end points of a randomly rotated set of axes (so the BINS, but not the points, are maximin spaced) the design is NOT a latin hypercube and it is not symmetric, opposite octants are stored in sequential columns of the xr matrix.
 MtxDbl& gen_rand_axis_bin_opt_samples_0to1(MtxDbl& xr, int nvarsr) 
 {
   gen_rand_rot_mat(xr,nvarsr);
-  xr.resize(2*nvarsr,nvarsr);
+  xr.resize(nvarsr,2*nvarsr);
   int mymod = 1048576; //2^20 instead of 10^6 to be kind to the computer
-  for(int i=nvarsr-1; i>=0; --i) {
+  for(int j=nvarsr-1; j>=0; --j) {
     //printf("surfpack.cpp: i=%d",i);
-    for(int j=0; j<nvarsr; ++j) {
+    for(int i=0; i<nvarsr; ++i) {
       //printf(" j=%d",j); fflush(stdout);
-      xr(2*i,j)=2.0*std::floor(1.0+xr(i,j))-1.0;
-      xr(2*i+1,j)=0.5*((-xr(2*i,j)*(std::rand() % mymod))/mymod+1.0);
-      xr(2*i,j)=0.5*((xr(2*i,j)*(std::rand() % mymod))/mymod+1.0);
+      xr(i,2*j  )=2.0*std::floor(1.0+xr(i,j))-1.0;
+      xr(i,2*j+1)=0.5*((-xr(i,2*j)*(std::rand() % mymod))/mymod+1.0);
+      xr(i,2*j  )=0.5*(( xr(i,2*j)*(std::rand() % mymod))/mymod+1.0);
     }
     //printf("\n");
   }
@@ -260,7 +133,7 @@ MtxInt& multi_dim_poly_power(MtxInt& poly, int Nvarsr, int Ndeg, int istart, int
   //printf("istart=%d jstart=%d iffirst=%d Nvarsr=%d Ndeg=%d poly.NRows()=%d\n",istart,jstart,iffirst,Nvarsr,Ndeg,poly.getNRows());
   int Npoly, npoly;
 #ifdef __SURFPACK_ERR_CHECK__
-  int istartorig=istart;
+  int jstartorig=jstart;
 #endif
   //determine the total number of polynomials that this call of multi_dim_poly_power() is supposed to find mixed partial powers for
   if(Ndeg<0)
@@ -271,23 +144,23 @@ MtxInt& multi_dim_poly_power(MtxInt& poly, int Nvarsr, int Ndeg, int istart, int
   //istart=jstart=0 (the default when istart and jstart are not specified) is the flag for this function being called by the "user" (as opposed to a bigger multi_dim_poly_power()) and we don't want to require the user to know how big poly should be so we will right size it for him/her, if the user specified nonzero istart and/or jstart then it is his/her responsibility for making sure that poly is already big enough but since I'm a nice guy I put in an assert for when the user runs this in debug mode
   if((istart==0)&&(jstart==0)&&(iffirst==1)) {
     //printf("newSizing: Npoly=%d\n",Npoly);
-    poly.newSize(Npoly,Nvarsr);
+    poly.newSize(Nvarsr,Npoly);
   }
   else{
 #ifdef __SURFPACK_ERR_CHECK__
-    if(!((istart+Npoly<=poly.getNRows())&&(jstart+Nvarsr<=poly.getNCols()))) {
-      printf("Error in multi_dim_poly_power(): you asked me to fill in mixed partial polynomial powers beyond the bounds of the MtxInt& poly that you gave me.  If you want me to resize poly don't specify a nonzero istart or jstart\n, istart=%d Npoly=%d poly.NRows=%d jstart=%d Nvarsr=%d poly.NCols=%d\n",istart,Npoly,poly.getNRows(),jstart,Nvarsr,poly.getNCols());
-      assert((istart+Npoly<=poly.getNRows())&&(jstart+Nvarsr<=poly.getNCols()));
+    if(!((jstart+Npoly<=poly.getNCols())&&(istart+Nvarsr<=poly.getNRows()))) {
+      printf("Error in multi_dim_poly_power(): you asked me to fill in mixed partial polynomial powers beyond the bounds of the MtxInt& poly that you gave me.  If you want me to resize poly don't specify a nonzero istart or jstart\n, jstart=%d Npoly=%d poly.NCols=%d istart=%d Nvarsr=%d poly.NRows=%d\n",jstart,Npoly,poly.getNCols(),istart,Nvarsr,poly.getNRows());
+      assert((jstart+Npoly<=poly.getNCols())&&(istart+Nvarsr<=poly.getNRows()));
     }
 #endif
   }
 
-  int i, j;
+  int ivar, j;
   int ndeg; //this is for recursive calls to smaller multi_dim_poly_power()'s that's why it starts with little "n" instead of big "N"
   if(Ndeg==0) {
     // a Nvarsr-dimensional polynomial of total degree 0 has all mixed partial powers equal to zero, istart and jstart should be 0 but the user could have done something strange
-    for(j=0;j<Nvarsr; j++)
-      poly(istart,jstart+j)=0;
+    for(ivar=0;ivar<Nvarsr; ivar++)
+      poly(istart+ivar,jstart)=0;
   }
   else if(Nvarsr==1) {
     //this is a failsafe for direct user input, it isn't necessary for recursive calls
@@ -301,8 +174,8 @@ MtxInt& multi_dim_poly_power(MtxInt& poly, int Nvarsr, int Ndeg, int istart, int
       //     : 
       //  Ndeg];    
       // make sure to offset by istart and jstart (it shouldn't be necessary but who knows the user might have actually specified istart and jstart)
-      for(i=0;i<=Ndeg;i++)
-	poly(istart+i,jstart)=i;      
+      for(j=0;j<=Ndeg;j++)
+	poly(istart,jstart+j)=j;      
     }
     else{
       //Ndeg<0 says you only want powers of exactly abs(Ndeg) for 1 variable this is [-Ndeg]; istart and jstart "should be" zero but who knows what the user gave us as input
@@ -312,8 +185,8 @@ MtxInt& multi_dim_poly_power(MtxInt& poly, int Nvarsr, int Ndeg, int istart, int
   else if(Ndeg==-1) {
     //Ndeg = -1 says you want all polynomials of EXACTLY degree 1, for which the "mixed" partial powers is just an identity matrix, but make sure to offset it by istart and jstart  
     for(j=0; j<Nvarsr; j++) {
-      for(i=0; i<Nvarsr; i++)
-	poly(istart+i,jstart+j)=0;    
+      for(ivar=0; ivar<Nvarsr; ivar++)
+	poly(istart+ivar,jstart+j)=0;    
       poly(istart+j,jstart+j)=1;
     }
   }
@@ -322,10 +195,10 @@ MtxInt& multi_dim_poly_power(MtxInt& poly, int Nvarsr, int Ndeg, int istart, int
     for(ndeg=0; ndeg<=Ndeg; ndeg++) {
       npoly=nchoosek(ndeg-1+Nvarsr,ndeg);
       multi_dim_poly_power(poly, Nvarsr, -ndeg, istart, jstart, 0);
-      istart+=npoly;
+      jstart+=npoly;
     }
 #ifdef __SURFPACK_ERR_CHECK__
-    assert(istart-istartorig==Npoly); //istartorig should be zero but who knows what the user gave us
+    assert(jstart-jstartorig==Npoly); //jstartorig should be zero but who knows what the user gave us
 #endif      
   }
   else if(Nvarsr==2) { 
@@ -337,26 +210,25 @@ MtxInt& multi_dim_poly_power(MtxInt& poly, int Nvarsr, int Ndeg, int istart, int
     //      :             :      ;...
     //      2        abs(Ndeg)-2 ;...
     //      1        abs(Ndeg)-1 ;...
-    //      0        abs(Ndeg)   ]
-    //done in 2 loops to fill down columns (access memory sequentially)
-    for(i=0; i<=-Ndeg; i++)
-      poly(istart+i,jstart  )=-Ndeg-i;
-    for(i=0; i<=-Ndeg; i++)
-      poly(istart+i,jstart+1)=i;
+    //      0        abs(Ndeg)   ]^T
+    for(j=0; j<=-Ndeg; j++) {
+      poly(istart  ,jstart+j)=-Ndeg-j;
+      poly(istart+1,jstart+j)=j;
+    }
   }
   else{ //we know that Ndeg < -1 and Nvarsr > 2
-    //we want all Nvarsr-dimensional polynomials of exaclty degree abs(Ndeg) so we are going to start with the first column being ideg=abs(Ndeg) decrimenting that and pairing it with ALL (Nvarsr-1)-dimensional polynomials of exactly degree ndeg=abs(Ndeg)-ideg
+    //we want all Nvarsr-dimensional polynomials of exaclty degree abs(Ndeg) so we are going to start with the first row being ideg=abs(Ndeg) decrementing that and pairing it with ALL (Nvarsr-1)-dimensional polynomials of exactly degree ndeg=abs(Ndeg)-ideg
     int nvarsr=Nvarsr-1; //this is for recursive calls to smaller multi_dim_poly_power()'s that's why it starts with little "n" instead of big "N"
     for(int ideg=-Ndeg; ideg>=0; ideg--){
       ndeg=-Ndeg-ideg;
       npoly=nchoosek(ndeg-1+nvarsr,ndeg);
-      for(i=0; i<npoly; i++)
-	poly(istart+i,jstart)=ideg;
-      multi_dim_poly_power(poly,nvarsr,-ndeg,istart,jstart+1,0);
-      istart+=npoly;
+      for(j=0; j<npoly; j++)
+	poly(istart,jstart+j)=ideg;
+      multi_dim_poly_power(poly,nvarsr,-ndeg,istart+1,jstart,0);
+      jstart+=npoly;
     }
 #ifdef __SURFPACK_ERR_CHECK__
-    assert(istart-istartorig==Npoly); //don't expect istartorig to be zero 
+    assert(jstart-jstartorig==Npoly); //don't expect jstartorig to be zero 
 #endif
   }
   
@@ -369,8 +241,6 @@ MtxInt& multi_dim_poly_power(MtxInt& poly, int Nvarsr, int Ndeg, int istart, int
 
 /// if ndeg>=0 generates a matrix "poly" of nvarsr-dimensional polynomial powers that for all polynomials WITHOUT MIXED POWERS up to (and including) degree ndeg.  If ndeg<0 it generates a nvarsr by nvarsr diagonal matrix "poly" of non-mixed polynomials of exact degree abs(ndeg), this diagonal matrix has abs(ndeg) for all its diagonal elements.
 MtxInt& main_effects_poly_power(MtxInt& poly, int nvarsr, int ndeg) {
-
-
 
 #ifdef __SURFPACK_ERR_CHECK__
   assert(nvarsr>0);
@@ -390,371 +260,290 @@ MtxInt& main_effects_poly_power(MtxInt& poly, int nvarsr, int ndeg) {
     return poly;
   }
   
-  poly.newSize(1+nvarsr*ndeg,nvarsr);
+  poly.newSize(nvarsr,1+nvarsr*ndeg);
   poly.zero();
   int ipoly=0;
   for(int ideg=1; ideg<=ndeg; ++ideg)
     for(int ivarsr=0; ivarsr<nvarsr; ++ivarsr)
-      poly(++ipoly,ivarsr)=ideg;
+      poly(ivarsr,++ipoly)=ideg;
 
   return poly;
 }
 
 
-
-//evalBasis evaluates every polynomial basis function in "poly" at every point in xr (the r is for Real), and returns them in matrix g in a reasonably efficient way; it works for arbitrary number of dimensions and polynomial order
-MtxDbl& evaluate_poly_basis(MtxDbl& g, const MtxInt& poly, const MtxDbl& xr) {
-  int npts=xr.getNRows();
-  int nvarsr=xr.getNCols(); //number of real variables
-  int npoly=poly.getNRows();
+MtxInt& poly_to_flypoly(MtxInt& flypoly, const MtxInt& poly, int maxorder) {
+  int npoly=poly.getNCols();
+  int nvars=poly.getNRows();
+  flypoly.newSize(maxorder+1,npoly);
+  for(int ipoly=0; ipoly<npoly; ++ipoly) {
+    int nmult=0;
+    for(int ivar=0; ivar<nvars; ++ivar)
+      for(int i=0; i<poly(ivar,ipoly); ++i) 
+	flypoly(++nmult,ipoly)=ivar;
+    flypoly(0,ipoly)=nmult;
 #ifdef __SURFPACK_ERR_CHECK__
-  if(!((nvarsr>0)&&(nvarsr==poly.getNCols())))
-    assert((nvarsr>0)&&(nvarsr==poly.getNCols()));
+    assert(nmult<=maxorder);
 #endif
-  g.newSize(npts,npoly);
-  
-  int ivarr, ipoly, ipt;
-  for(ipoly=0; ipoly<npoly; ipoly++) {
-#ifdef __SURFPACK_ERR_CHECK__
-    for(ivarr=0;ivarr<nvarsr;ivarr++)
-      assert(poly(ipoly,ivarr)>=0);
-#endif
-    
-    //save multiplications by not doing anything for polynomial powers of zero
-    for(ivarr=0;ivarr<nvarsr;ivarr++)
-      if(poly(ipoly,ivarr)!=0) 
-	break;
+  }
+  return flypoly;
+}
 
-    if(ivarr==nvarsr) {
-      //if all polynomial powers are zero then prod(anything^0)=1.0
-      for(ipt=0; ipt<npts; ipt++)
-	g(ipt,ipoly)=1.0;
-    }
+//this function modifies flycoef as needed so make sure you pass in a COPY of 
+//the original coefficients instead of the original coefficients themselves
+void poly_der_to_flypoly(MtxInt& flypoly, MtxDbl& flycoef, const MtxInt& poly, 
+			 const MtxInt& der, int ider, int maxorder) {
+  int npoly=poly.getNCols();
+  int nvars=poly.getNRows();
+#ifdef __SURFPACK_ERR_CHECK__
+  assert((flycoef.getNRows()==npoly)&&(flycoef.getNCols()==1)&&
+	 (der.getNRows()==nvars)&&(0<=ider)&&(ider<der.getNCols()));
+#endif
+  flypoly.newSize(maxorder+1,npoly); //you really should have sized flypoly
+  //appropriately outside of this function for efficiency, this is just a 
+  //fail safe, you shouldn't be using it
+
+  for(int ipoly=0; ipoly<npoly; ++ipoly) {
+    double tempcoef=flycoef(ipoly,0);
+    if(tempcoef==0.0) 
+      flypoly(0,ipoly)=0;
     else {
-
-      //do simple assignment for the first non-zero power dimension (save assignment of 1.0 and the product of 1.0 times the power of xr)
-      switch(poly(ipoly,ivarr)) {
-      case 0:
-	//we shouldn't need this but better safe than sorry
-	break;
-      case 1:
-	//linear functions are so simple and common that we don't want to use the "expensive" pow function
-	for(ipt=0; ipt<npts; ipt++)
-	  g(ipt,ipoly)=xr(ipt,ivarr);
-	break;
-      case 2:
-	//quadratic functions are so simple and common that we don't want to use the "expensive" pow function
-	for(ipt=0; ipt<npts; ipt++)
-	  g(ipt,ipoly)=xr(ipt,ivarr)*xr(ipt,ivarr);
-	break;
-      default:
-	//we pulled out cubics as being simple and common too, but they're not as simple or common, typical use case for Kriging is power<=2, and we have to stop somewhere
-	for(ipt=0; ipt<npts; ipt++)
-	  g(ipt,ipoly)=std::pow(xr(ipt,ivarr),poly(ipoly,ivarr));
-      }
-      ivarr++;
-     
-      //do every dimension after the first non-zero power dimension in the general fashion... i.e. we have to multiply these by the non-unity product we already have
-      for(; ivarr<nvarsr; ivarr++) 
-	switch(poly(ipoly,ivarr)) {
-	case 0:
-	  //we DO need this
-	  break;
-	case 1:
-	  //linear functions are so simple and common that we don't want to use the "expensive" pow function
-	  for(ipt=0; ipt<npts; ipt++)
-	    g(ipt,ipoly)*=xr(ipt,ivarr);
-	  break;
-	case 2:
-	  //quadratic functions are so simple and common that we don't want to use the "expensive" pow function
-	  for(ipt=0; ipt<npts; ipt++)
-	    g(ipt,ipoly)*=xr(ipt,ivarr)*xr(ipt,ivarr);
-	  break;
-	default:
-	  //we could have pulled out cubics as being simple and common too, but they're not as simple or common, the typical use case for Kriging is power<=2, and we have to stop somewhere
-	  for(ipt=0; ipt<npts; ipt++)
-	    g(ipt,ipoly)*=std::pow(xr(ipt,ivarr),poly(ipoly,ivarr));
+      int nmult=0;
+      for(int ivar=0; ivar<nvars; ++ivar) {
+	//determine the derivative of this multidimensional monomial and
+	//store it as a flypoly representation
+	int thisder=der(ivar,ider);
+	int powafterder=poly(ivar,ipoly)-thisder;
+	if(powafterder<0) {
+	  tempcoef=0.0;
+	  nmult=0;
+	  break; //break out of ivar loop
 	}
+	//since the derivative polynomial's coefficient isn't zero (so far)
+	//we need to know what it is
+	for(int jder=0; jder<thisder; ++jder) 
+	  tempcoef*=(poly(ivar,ipoly)-jder);	  
+
+	for(int i=0; i<powafterder; ++i)
+	  flypoly(++nmult,ipoly)=ivar;
+      }
+      flycoef(ipoly,0)=tempcoef;
+      flypoly(0,ipoly)=nmult;
     }
   }
-      
+  return;
+}
+
+
+MtxDbl& evaluate_flypoly(MtxDbl& y, const MtxInt& flypoly, const MtxDbl& coef, const MtxDbl& xr) {
+  int npts=xr.getNCols();
+  int npoly=flypoly.getNCols();
+#ifdef __SURFPACK_ERR_CHECK__
+  assert((0<npts)&&(0<xr.getNRows())&&(0<npoly)&&(0<flypoly.getNRows())&&
+	 (npoly==coef.getNRows())&&(1==coef.getNCols()));
+  {
+    int maxorder=flypoly(0,0);
+    for(int i=1; i<npoly; ++i)
+      maxorder=(flypoly(0,i)<=maxorder)?maxorder:flypoly(0,i);
+    assert(maxorder<flypoly.getNRows());
+  }
+#endif
+  y.newSize(1,npts);
+  for(int ipt=0; ipt<npts; ++ipt) {
+    double tempy=0.0;
+    for(int ipoly=0; ipoly<npoly; ++ipoly) {
+      int nmult=flypoly(0,ipoly);
+      double term=coef(ipoly,0);
+      for(int imult=1; imult<=nmult; ++imult)
+	term*=xr(flypoly(imult,ipoly),ipt);
+      tempy+=term;
+    }
+    y(0,ipt)=tempy;
+  }
+  return y;
+}
+
+MtxDbl& evaluate_poly(MtxDbl& y, MtxInt& flypoly, const MtxInt& poly, const MtxDbl& coef, const MtxDbl& xr) {
+  int nvars=poly.getNRows();
+  int npoly=poly.getNCols();
+#ifdef __SURFPACK_ERR_CHECK__
+  assert((0<npoly)&&(0<nvars)&&(nvars==xr.getNRows()));
+#endif  
+  int maxorder=0;
+  for(int ipoly=0; ipoly<npoly; ++ipoly) {
+    int thisorder=poly(0,ipoly);
+    for(int ivar=1; ivar<nvars; ++ivar)
+      thisorder+=poly(ivar,ipoly);
+    maxorder=(thisorder<=maxorder)?maxorder:thisorder;
+  }
+  poly_to_flypoly(flypoly, poly, maxorder);
+  return evaluate_flypoly(y, flypoly, coef, xr);
+}
+
+
+MtxDbl& evaluate_poly_der(MtxDbl& dy, MtxInt& flypoly, MtxDbl& flycoef, 
+			  const MtxInt& poly, const MtxInt& der, 
+			  const MtxDbl& coef, const MtxDbl& xr) {
+  int nvars=poly.getNRows();
+  int npoly=poly.getNCols();
+  int npts =xr.getNCols();
+  int nder =der.getNCols();
+#ifdef __SURFPACK_ERR_CHECK__
+  assert((0<nvars)&&(nvars==xr.getNRows())&&(nvars==der.getNRows())&&
+	 (0<npoly)&&(npoly==coef.getNRows())&&(1==coef.getNCols())&&
+	 (0<npts)&&(0<nder));
+#endif
+
+  //determine the maximum total order of any multidimensional monomial in poly
+  //so that we know how many rows flypoly will need.
+  int maxorder=0;
+  for(int ipoly=0; ipoly<npoly; ++ipoly) {
+    int thisorder=poly(0,ipoly);
+    for(int ivar=1; ivar<nvars; ++ivar)
+      thisorder+=poly(ivar,ipoly);
+    maxorder=(thisorder<=maxorder)?maxorder:thisorder;
+  }
+  
+
+  dy.newSize(nder,npts); //we want all the information (derivatives) 
+  //associated with a point to be contiguous in memory (this means in the
+  //same column of the dy); The nkm::SurfMat  templated matrix class 
+  //uses Column Major Ordering (the same convention as MATLAB and FORTRAN) 
+  //to facilitate the use of BLAS and LAPACK (which is written in FORTRAN)
+  //C++ normally uses Row Major Ordering (each column is contiguous, but 
+  //rows are not);
+
+  for(int ider=0; ider<nder; ++ider) { 
+    //we are deliberately not going to assign the result in contiguous 
+    //order BECAUSE we only want to determine each derivative of the 
+    //polynomial once, instead of once for each point, and we don't want 
+    //to have to allocate enough memory to store all the derivatives of 
+    //all the polynomials at the same time.
+
+    //determine the flypoly representation of the polynomial that is the 
+    //der(:,ider) mixed multidimensional derivative of the polynomial in poly
+    flycoef.copy(coef); //need to copy coef so we don't modify the original
+    poly_der_to_flypoly(flypoly, flycoef, poly, der, ider, maxorder);
+    
+   
+    for(int ipt=0; ipt<npts; ++ipt) { //loop over points
+      double sumofterms=0.0; //this is workspace to compute/hold the 
+      //current derivative at the current point so we don't need to 
+      //matrix access "dy" so many times
+      for(int ipoly=0; ipoly<npoly; ++ipoly) { //loop over multidimensional 
+	//monomials in the derivative polynomial
+	double term=flycoef(ipoly,0); //this is workspace to evaluate
+	//the current multidimensional monomial
+	int nmult=flypoly(0,ipoly); //this is the total order of the current
+	//multidimensional monomial
+	for(int imult=1; imult<=nmult; ++imult)
+	  term*=xr(flypoly(imult,ipoly),ipt);
+	sumofterms+=term;
+      }
+      dy(ider,ipt)=sumofterms;
+    }
+  }
+  return dy;
+}
+
+
+
+//this function assumes that flypoly (the fast and "on the fly" polynomial representation) is already known and uses it to evaluate g at xr.
+MtxDbl& evaluate_flypoly_basis(MtxDbl& g, const MtxInt& flypoly, const MtxDbl& xr) {
+  int npts=xr.getNCols();
+  int npoly=flypoly.getNCols();
+#ifdef __SURFPACK_ERR_CHECK__
+  assert((0<npts)&&(0<xr.getNRows())&&(0<npoly)&&(0<flypoly.getNRows()));
+  {
+    int maxorder=flypoly(0,0);
+    for(int i=1; i<npoly; ++i)
+      maxorder=(flypoly(0,i)<=maxorder)?maxorder:flypoly(0,i);
+    assert(maxorder<flypoly.getNRows());
+  }
+#endif
+  g.newSize(npoly,npts);
+  for(int ipt=0; ipt<npts; ++ipt)
+    for(int ipoly=0; ipoly<npoly; ++ipoly) {
+      int nmult=flypoly(0,ipoly);
+      double tempg=1.0;
+      for(int imult=1; imult<=nmult; ++imult)
+	tempg*=xr(flypoly(imult,ipoly),ipt);
+      g(ipoly,ipt)=tempg;
+    }
   return g;
 }
 
-
-///evaluate_poly_der_basis produces dg(ipt+ider*npts,ipoly)=d^sum(der(ider,:)) (g(ipt,ipoly))/prod(dx(ipt,ivar)^der(ider,ivar)) where g is created by evaluate_poly_basis(g,poly,xr); and npts=xr.getNRows(); is the number of points in xr. matrix_mult(dfunc,evaluate_poly_der_basis(dg,poly,der,xr),coef); dfunc.reshape(xr.getNRows(),der.getNRows()); should produce the same dfunc as evaluate_poly_der(dfunc,poly,der,coef,xr); but take more memory to do it... the primary reason for this function's existence is for use in constructing polynomial fits from gradients (and higher order derivatives if desired)
-MtxDbl& evaluate_poly_der_basis(MtxDbl& dg, const MtxInt& poly, const MtxInt& der, const MtxDbl& xr){
-  int nder=der.getNRows();
-  int npts=xr.getNRows();
-  int npoly=poly.getNRows();
-  int nvars=xr.getNCols();
-  assert((poly.getNCols()==nvars)&&(der.getNCols()==nvars));
-  dg.newSize(npts*nder,npoly);
-  dg.zero(); //initialize whole matrix to zero
-  
-  double tempcoef; 
-  int temppolypow;
-  int ivar;
-
-  for(int ipoly=0; ipoly<npoly; ++ipoly) 
-    for(int ider=0; ider<nder; ++ider) {
-      int ideroffset=ider*npts;
-      
-      //temp coef is double so that the poly power will converts from int to 
-      //double "once" instead of for every point, i.e. it's faster
-      tempcoef=1.0;
-      for(ivar=0; ivar<nvars; ++ivar) {
-	//determine the coefficient of the derivative of this 
-	//multidimensional monomial
-	if(der(ider,ivar)>poly(ipoly,ivar)) {
-	  //if the coefficient of the derivative polynomial is zero (because
-	  //we took the derivative of a constant) we don't need to do any more
-	  tempcoef=0.0;
-	  break;
-	}
-	else{
-	  //since the derivative polynomial's coefficient isn't zero (so far)
-	  //we need to know what it is
-	  int thisder=der(ider,ivar);
-	  for(int jder=0; jder<thisder; ++jder) 
-	    tempcoef*=(poly(ipoly,ivar)-jder);	  
-	}
-      }
-      
-#ifdef __SURFPACK_DER_TEST__
-      printf("poly(ipoly=%3d,:)={%d",ipoly,poly(ipoly,0));
-      for(int jvar=1; jvar<nvars; ++jvar)
-	printf(",%d",poly(ipoly,jvar));
-      printf("} der(ider=%3d,:)={%d",ider,der(ider,0));
-      for(int jvar=1; jvar<nvars; ++jvar)
-	printf(",%d",der(ider,jvar));
-      printf("} poly(ipoly=%3d,:)-der(ider=%3d,:)={%2d",ipoly,ider,poly(ipoly,0)-der(ider,0));
-      for(int jvar=1; jvar<nvars; ++jvar)
-	printf(",%2d",poly(ipoly,jvar)-der(ider,jvar));
-      printf("} tempcoef=%g\n",tempcoef);
-#endif
-      
-
-
-      if(tempcoef==0.0) {
-	//do nothing because the corresponding entries in dg need to be zero 
-	//and we initialized the whole matrix to zero	
-      }
-      else{
-	for(ivar=0; ivar<nvars; ++ivar) {
-	  temppolypow=poly(ipoly,ivar)-der(ider,ivar);
-	  if(temppolypow>0) 
-	    break; //the value of ivar is retained
-	}
-	
-	switch(temppolypow) {
-	case 0:
-	  //to get here ivar=nvars which means all powers are zero and 
-	  //anything to the zeroth power is 1, and tempcoef*1 is tempcoef
-	  //so just assign tempcoef
-	  for(int ipt=0; ipt<npts; ++ipt)
-	    dg(ipt+ideroffset,ipoly)=tempcoef;
-	  break;
-	case 1:
-	  //pull out the linear term as a special case because it is 
-	  //common and can be done much faster than pow(xr(ipt,ivar),1);
-	  for(int ipt=0; ipt<npts; ++ipt)
-	    dg(ipt+ideroffset,ipoly)=tempcoef*xr(ipt,ivar);
-	  break;
-	case 2:
-	  //pull out the quadratic term as a special case because it is 
-	  //common and can be done much faster than pow(xr(ipt,ivar),2);
-	  for(int ipt=0; ipt<npts; ++ipt)
-	    dg(ipt+ideroffset,ipoly)=tempcoef*xr(ipt,ivar)*xr(ipt,ivar);
-	  break;
-	default:
-	  //do the generic "pow" case for polynomial powers>=3
-	  for(int ipt=0; ipt<npts; ++ipt)
-	    dg(ipt+ideroffset,ipoly)=tempcoef*std::pow(xr(ipt,ivar),temppolypow);
-	}
-	++ivar;//increase the retained value of ivar by 1
-	
-	//starting from the retained value of ivar multiply in the
-	//contributions from the other variables
-	for(; ivar<nvars; ++ivar) { 
-	  temppolypow=poly(ipoly,ivar)-der(ider,ivar);
-	  switch(temppolypow) {
-	  case 0:
-	    //anything to the zeroth power is one so save the work of
-	    //multiplying by one by doing nothing
-	    break;
-	  case 1:
-	    //pull out the linear term as a special case because it is 
-	    //common and can be done much faster than pow(xr(ipt,ivar),1);
-	    for(int ipt=0; ipt<npts; ++ipt)
-	      dg(ipt+ideroffset,ipoly)*=xr(ipt,ivar);
-	    break;
-	  case 2:
-	    //pull out the quadratic term as a special case because it is 
-	    //common and can be done much faster than pow(xr(ipt,ivar),2);
-	    for(int ipt=0; ipt<npts; ++ipt)
-	      dg(ipt+ideroffset,ipoly)*=xr(ipt,ivar)*xr(ipt,ivar);
-	    break;
-	  default:
-	    //do the generic "pow" case for polynomial powers>=3
-	    for(int ipt=0; ipt<npts; ++ipt)
-	      dg(ipt+ideroffset,ipoly)*=std::pow(xr(ipt,ivar),temppolypow);
-	  } //switch(temppolypow>0)
-	} //for(; ivar<nvar; ++ivar) 	
-      } //if(tempcoef==0.0) {...} else
-    } //for(int ider=0; ider<nder; ++ider)
-  //for(int ipoly=0; ipoly<npoly; ++ipoly) doesn't have a "{" to match
-
-  return dg;  
+//this function determines flypoly (the "on the fly" polynomial representation) from poly and then evaluates g at xr using flypoly
+MtxDbl& evaluate_poly_basis(MtxDbl& g, MtxInt& flypoly, const MtxInt& poly, const MtxDbl& xr) {
+  int nvars=poly.getNRows();
+  int npoly=poly.getNCols();
+#ifdef __SURFPACK_ERR_CHECK__
+  assert(nvars==xr.getNRows());
+#endif  
+  int maxorder=0;
+  for(int ipoly=0; ipoly<npoly; ++ipoly) {
+    int thisorder=poly(0,ipoly);
+    for(int ivar=1; ivar<nvars; ++ivar)
+      thisorder+=poly(ivar,ipoly);
+    maxorder=(thisorder<=maxorder)?maxorder:thisorder;
+  }
+  poly_to_flypoly(flypoly, poly, maxorder);
+  return evaluate_flypoly_basis(g, flypoly, xr);
 }
 
 
-///evaluate_poly_der(dfunc,poly,der,coef,xr); should produce the same dfunc as  matrix_mult(dfunc,evaluate_poly_der_basis(dg,poly,der,xr),coef); dfunc.reshape(xr.getNRows(),der.getNRows()); but use less memory to do it
-MtxDbl& evaluate_poly_der(MtxDbl& result, const MtxInt& poly, const MtxInt& der, const MtxDbl& coef, const MtxDbl& xr){
-  int nder=der.getNRows();
-  int npts=xr.getNRows();
-  int npoly=poly.getNRows();
-  int nvars=xr.getNCols();
-  assert((poly.getNCols()==nvars)&&(der.getNCols()==nvars)&&
-	 (coef.getNRows()==npoly)&&(coef.getNCols()==1));
-  result.newSize(npts,nder);
-  result.zero();
-  int temppolypow;
-  MtxDbl tempres(npts,1);
-  int ivar;
 
+MtxDbl& evaluate_poly_der_basis(MtxDbl& dg, MtxInt& flypoly, MtxDbl& flycoef, 
+				const MtxInt& poly, const MtxInt& der, 
+				const MtxDbl& xr) {
+  int nvars=poly.getNRows();
+  int npoly=poly.getNCols();
+  int nder=der.getNCols();
+  int npts=xr.getNCols();
+#ifdef __SURFPACK_ERR_CHECK__
+  assert((0<nvars)&&(nvars==der.getNRows())&&(nvars==xr.getNRows())&&
+	 (0<npoly)&&(0<nder)&&(0<npts));
+#endif
+
+  int maxorder=0;
+  for(int ipoly=0; ipoly<npoly; ++ipoly) {
+    int thisorder=poly(0,ipoly);
+    for(int ivar=1; ivar<nvars; ++ivar)
+      thisorder+=poly(ivar,ipoly);
+    maxorder=(thisorder<=maxorder)?maxorder:thisorder;
+  }
+
+  flycoef.newSize(npoly,1);
+  int ncol=nder*npts;
+  dg.newSize(npoly,ncol); //layout in memory: polynomial is contigous 
+  //(i.e. a single column), derivatives are outside that, points are outside 
+  //that.  If der was a gradient, then using matlab notation...
+  //dy=reshape(coef'*dg,nder,npts) would be a matrix with a gradient in each
+  //column and different columns being different points.
 
   for(int ider=0; ider<nder; ++ider) {
+    //we are deliberately not going to assign the result in contiguous 
+    //order BECAUSE we only want to determine each derivative of the 
+    //polynomial once, instead of once for each point, and we don't want 
+    //to have to allocate enough memory to store all the derivatives of 
+    //all the polynomials at the same time.
 
-    for(int ipoly=0; ipoly<npoly; ++ipoly) {
-
-      double tempcoef=coef(ipoly,0);
-      if(tempcoef) {
-	//only proceed with this monomial term if its coefficient isn't zero
-	for(ivar=0; ivar<nvars; ++ivar) {
-	  //determine the coefficient of the derivative of this 
-	  //multidimensional monomial
-	  if(der(ider,ivar)>poly(ipoly,ivar)) {
-	    //if the coefficient of the derivative polynomial is zero (because
-	    //we took the derivative of a constant) we don't need to do any 
-	    //more
-	    tempcoef=0.0;
-	    break;
-	  }
-	  else{
-	    //since the derivative polynomial's coefficient isn't zero (so far)
-	    //we need to know what it is
-	    int thisder=der(ider,ivar);
-	    for(int jder=0; jder<thisder; ++jder) 
-	      tempcoef*=static_cast<double>(poly(ipoly,ivar)-jder);	  
-	  }
-	}
-	
-	if(tempcoef==0.0) {
-	  //taking the derivative of a constant term in the multidimensional 
-	  //monomial made the coefficient of derivative monomial zero so 
-	  //rather than calculating the term and then multiplying by zero 
-	  //(voiding the term's "contribution") we're going to take a short
-	  //cut and just not calculate it. i.e. we "do nothing" for this
-	  //derivative monomial term if it's coefficient is zero
-	}
-	else{
-
-	  //find the first variable with a non-zero poly power in the 
-	  //derivative
-	  for(ivar=0; ivar<nvars; ++ivar) {
-	    temppolypow=poly(ipoly,ivar)-der(ider,ivar);
-	    if(temppolypow>0) 
-	      break; //the value of ivar is retained
-	  }
-
-	  if(ivar==nvars) { //using the retained value of ivar
-	    //all poly powers were zero and anything to the zeroth power
-	    //is one and one times tempcoef is tempcoef so just add temp 
-	    //coef (skip the multiplication)
-	    for(int ipt=0; ipt<npts; ipt++)
-	      result(ipt,ider)+=tempcoef;
-	  }
-	  else if(ivar==nvars-1) {
-	    //the only non-zero poly power in the derivative is for the 
-	    //last variable so directly add it's contribution to the result
-	    //don't store it to tempres since we don't need to multiply in
-	    //any contributions from other variables
-	    switch(temppolypow) {
-	    case 1:
-	      for(int ipt=0; ipt<npts; ++ipt)
-		result(ipt,ider)+=tempcoef*xr(ipt,ivar);
-	      break;
-	    case 2:
-	      for(int ipt=0; ipt<npts; ++ipt)
-		result(ipt,ider)+=tempcoef*xr(ipt,ivar)*xr(ipt,ivar);
-	      break;
-	    default:
-	      for(int ipt=0; ipt<npts; ++ipt)
-		result(ipt,ider)+=tempcoef*std::pow(xr(ipt,ivar),temppolypow);
-	    }
-	  }
-	  else{
-	    //there could be more variables with non-zero poly powers in
-	    //the derivative polynomial, so we will store the first 
-	    //variable's contribution to tempres, THEN multiply
-	    //the other variables' contributions, THEN add tempres to result
-	    switch(temppolypow) {
-	    case 1:
-	      for(int ipt=0; ipt<npts; ++ipt)
-		tempres(ipt,0)=tempcoef*xr(ipt,ivar);
-	      break;
-	    case 2:
-	      for(int ipt=0; ipt<npts; ++ipt)
-		tempres(ipt,0)=tempcoef*xr(ipt,ivar)*xr(ipt,ivar);
-	      break;
-	    default:
-	      for(int ipt=0; ipt<npts; ++ipt)
-		tempres(ipt,0)=tempcoef*std::pow(xr(ipt,ivar),temppolypow);
-	    }
-	    ++ivar; //increase the retained value of ivar by 1
-
-	    //starting from the retained value of ivar multiply in the
-	    //contributions from the other variables
-	    for(; ivar<nvars; ++ivar) { 
-	      temppolypow=poly(ipoly,ivar)-der(ider,ivar);
-	      switch(temppolypow) {
-	      case 0:
-		break;
-	      case 1:
-		for(int ipt=0; ipt<npts; ++ipt)
-		  tempres(ipt,0)*=xr(ipt,ivar);
-		break;
-	      case 2:
-		for(int ipt=0; ipt<npts; ++ipt)
-		  tempres(ipt,0)*=xr(ipt,ivar)*xr(ipt,ivar);
-		break;
-	      default:
-		for(int ipt=0; ipt<npts; ++ipt)
-		  tempres(ipt,0)*=std::pow(xr(ipt,ivar),temppolypow);
-	      } //switch(temppolypow)
-	    } //for(; ivar<nvar; ++ivar)
-
-	    //add tempres (the contribution from all variables for this
-	    //multi-dimensional monomial term in the derivative polynomial)
-	    //to result
-	    for(int ipt=0; ipt<npts; ipt++)
-	      result(ipt,ider)+=tempres(ipt,0);
-	      
-
-	  } //if(ivar==nvar){...}else 
-	} //the 2nd if(tempcoef)
-      } //the 1st if(tempcoef)
-    } //for(int ipoly=0; ipoly<npoly; ++ipoly)
-  } //for(int ider=0; ider<nder; ++ider)
-
-  return result;
+    //determine the flypoly representation of the polynomial that is the 
+    //der(:,ider) mixed multidimensional derivative of the polynomial in poly
+    for(int ipoly=0; ipoly<npoly; ++ipoly)
+      flycoef(ipoly,0)=1.0;
+    poly_der_to_flypoly(flypoly, flycoef, poly, der, ider, maxorder);
+   
+    int ipt, icol;
+    for(ipt=0, icol=ider; ipt<npts; ++ipt, icol+=nder) 
+      for(int ipoly=0; ipoly<npoly; ++ipoly) {
+	double tempdg=flycoef(ipoly,0);
+	int nmult=flypoly(0,ipoly);
+	for(int imult=1; imult<=nmult; ++imult)
+	  tempdg*=xr(flypoly(imult,ipoly),ipt);	  
+	dg(ipoly,icol)=tempdg;
+      }
+  }
 }
-
-
-
-
-
 
 
 
@@ -776,3 +565,244 @@ bool surfpack::hasExtension(const string& filename, const string extension)
 }
 
 } // end namespace nkm
+
+#ifdef __SURFPACK_UNIT_TEST__
+//needs surf77_config.h  surfpack_LAPACK_wrappers.h  surfpack_system_headers.h everything else is in the nkm directory
+//g++ -o NKM_SurfPack_UnitMain NKM_SurfPack.cpp NKM_SurfMat.o /usr/lib64/libblas.so /usr/lib64/liblapack.so
+
+using namespace nkm;
+int main(){
+  for(int n=0; n<5; n++)
+    for(int k=0; k<=n; k++)
+      printf("nchoosek(%d,%d)=%d\n",n,k,nchoosek(n,k));
+
+  MtxInt poly; 
+  multi_dim_poly_power(poly,4,4);
+  int npoly=poly.getNCols();
+  int nvarsr=poly.getNRows();
+  printf("poly.getNCols()=%d\npoly=...\n",poly.getNCols());
+  
+  for(int ipoly=0; ipoly<npoly; ipoly++) {
+    printf("%8d [",ipoly);
+    for(int ixr=0; ixr<nvarsr; ixr++)
+      printf(" %d",poly(ixr,ipoly));
+    printf(" ]^T\n");
+  }
+  
+  double pi=std::acos(0.0)*2.0;
+  MtxDbl EulAng(6,1), Rot(4,4), RotShouldBe(4,4); 
+  EulAng(0,0)=pi/6.0;
+  EulAng(1,0)=pi/4.0;
+  EulAng(2,0)=pi/3.0;
+  EulAng(3,0)=pi/6.0;
+  EulAng(4,0)=pi/4.0;
+  EulAng(5,0)=pi/3.0;
+  //This RotShouldBe was evaluated for these EulAng by matlab code that I know works
+  RotShouldBe(0,0)= -0.057800215120219;
+  RotShouldBe(1,0)=  0.353765877365274;
+  RotShouldBe(2,0)=  0.768283046242747;
+  RotShouldBe(3,0)=  0.530330085889911;
+  RotShouldBe(0,1)= -0.695272228311384;
+  RotShouldBe(1,1)= -0.649306566066328;
+  RotShouldBe(2,1)=  0.035320133098213;
+  RotShouldBe(3,1)=  0.306186217847897;
+  RotShouldBe(0,2)=  0.647692568794007;
+  RotShouldBe(1,2)= -0.414729655649473;
+  RotShouldBe(2,2)= -0.183012701892219;
+  RotShouldBe(3,2)=  0.612372435695795;
+  RotShouldBe(0,3)= -0.306186217847897;
+  RotShouldBe(1,3)=  0.530330085889911;
+  RotShouldBe(2,3)= -0.612372435695795;
+  RotShouldBe(3,3)=  0.500000000000000;
+  gen_rot_mat(Rot,EulAng,4);
+  printf("Rot=...\n");
+  for(int ixr=0; ixr<nvarsr; ixr++){
+    printf("    [ ");
+    for(int jxr=0; jxr<nvarsr; jxr++) {
+      printf("%9f ",Rot(ixr,jxr));
+      if(std::fabs(Rot(ixr,jxr)-RotShouldBe(ixr,jxr))>1.0e-15) {
+	printf("\n(%d,%d):Rot=%.16f RotShouldBe=%.16f\n",ixr,jxr,Rot(ixr,jxr),RotShouldBe(ixr,jxr));
+	fflush(stdout);
+	assert(Rot(ixr,jxr)==RotShouldBe(ixr,jxr));
+      }
+    }
+    printf("]\n");
+  }
+  printf("We know Rot is ok because it didn't assert(false)\n");
+
+  MtxDbl should_be_identity(4,4);
+  matrix_mult(should_be_identity,Rot,Rot,0.0,1.0,'N','T');
+  printf("should_be_identity=Rot*Rot^T=...\n");
+  for(int ixr=0; ixr<nvarsr; ixr++){
+    printf("    [ ");
+    for(int jxr=0; jxr<nvarsr; jxr++) {
+      printf("%9f ",should_be_identity(ixr,jxr));
+    }
+    printf("]\n");
+  }
+
+  matrix_mult(should_be_identity,Rot,Rot,0.0,1.0,'T','N');
+  printf("should_be_identity=Rot^T*Rot=...\n");
+  for(int ixr=0; ixr<nvarsr; ixr++){
+    printf("    [ ");
+    for(int jxr=0; jxr<nvarsr; jxr++) {
+      printf("%9f ",should_be_identity(ixr,jxr));
+    }
+    printf("]\n");
+  }
+
+
+  int rotnvarsr=5;
+  MtxDbl BaseAxis(rotnvarsr,2*rotnvarsr); BaseAxis.zero();
+  for(int ixr=0; ixr<rotnvarsr; ixr++) {
+    BaseAxis(ixr,ixr)=1.0;
+    BaseAxis(ixr,ixr+rotnvarsr)=-1.0;
+  }
+  MtxDbl Axis;
+
+  int noct=static_cast<int>(std::pow(2,rotnvarsr));
+  MtxInt InOct(noct,1); InOct.zero();
+  int NDV=(rotnvarsr*(rotnvarsr-1))/2; //nchoosek(nvarsr,2);
+  MtxDbl lowerBounds(NDV,1); lowerBounds.zero();
+  MtxDbl upperBounds(NDV,1);
+  int mymod=1048576; //2^20 instead of 10^6 to be kind to the computer
+  for(int jxr=0; jxr<NDV; jxr++) upperBounds(jxr,0)=pi;
+
+  int nguess=2*rotnvarsr*noct*100;
+
+  EulAng.newSize(NDV,1);
+  for(int iguess=0; iguess<nguess; iguess++) {
+    for(int jxr=0; jxr<NDV; jxr++)
+      EulAng(jxr,0)=(rand()%mymod)*upperBounds(jxr,0)/mymod;
+    gen_rot_mat(Rot,EulAng,rotnvarsr);
+    matrix_mult(Axis,Rot,BaseAxis,0.0,1.0,'T');
+    for(int k=0; k<2*rotnvarsr; k++){
+      int ioct=(Axis(0,k)>=0.0);
+      for(int jxr=1; jxr<rotnvarsr; jxr++)
+	ioct+=(Axis(jxr,k)>=0)*(static_cast<int>(std::pow(2.0,jxr)));
+      InOct(ioct,0)++;
+    }
+  }
+  printf("relative # of axis endpoints per octant\n");
+  for(int ioct=0; ioct<noct; ioct++)
+    printf("  InOct(%d/%d)=%g\n",ioct,noct,InOct(ioct,0)/(2.0*(nguess*rotnvarsr/noct)));
+
+  NDV=3;
+  int npts=2;
+  int ndeg=3;
+  int nder=6;
+  multi_dim_poly_power(poly,NDV,ndeg);
+  npoly=poly.getNCols();
+  assert(npoly==num_multi_dim_poly_coef(NDV,ndeg));
+
+  
+  MtxDbl xr(NDV,npts);
+  MtxDbl y(1,npts), y2(1,npts), y3(1,npts), dy(nder,npts), dy2(1,nder*npts);
+  y3.zero();
+  for(int ixr=0; ixr<NDV; ++ixr) {
+    xr(ixr,0)=1.0;
+    xr(ixr,1)=ixr+1;
+  }
+  
+  MtxDbl g(npoly,npts), g2(npoly,npts), dg(npoly,nder*npts);
+  MtxDbl coef1(npoly,1), coefs(npoly,1), flycoef;
+  MtxInt flypoly, flypoly2, der(NDV,nder);
+  der.zero();
+  der(0,1)=1;
+  der(1,2)=1;
+  der(2,3)=1;
+  der(1,4)=2;
+  der(0,5)=1;
+  der(1,5)=2;
+
+
+  poly_to_flypoly(flypoly,poly,ndeg);  
+  //for(int ipoly=0; ipoly<npoly; ++ipoly) {    
+  //for(int ifly=0; ifly<=ndeg; ++ifly)
+  //  printf("%d ",flypoly(ifly,ipoly));
+  //printf("\n");
+  //}
+  //printf("\n");
+  evaluate_flypoly_basis(g, flypoly, xr);
+  evaluate_poly_basis(g2, flypoly2, poly, xr);
+  printf("Testing Polynomials\n");
+  double tempdouble;
+  for(int ipoly=0; ipoly<npoly; ++ipoly) {
+    coef1(ipoly,0)=1.0;
+    coefs(ipoly,0)=ipoly+1;
+    int ixr=0;
+    printf("g%d(x)=x%d^%d",ipoly,ixr,poly(ixr,ipoly));
+    for(ixr=1; ixr<NDV; ++ixr)
+      printf("*x%d^%d",ixr,poly(ixr,ipoly));
+    printf("=1");
+    int nmult=flypoly(0,ipoly);
+    assert(flypoly(0,ipoly)==flypoly2(0,ipoly));
+    for(int imult=1; imult<=nmult; ++imult) {
+      printf("*x%d",flypoly(imult,ipoly));
+      assert(flypoly(imult,ipoly)==flypoly2(imult,ipoly));
+    }
+    printf(";");
+    for(int ipt=0; ipt<npts; ++ipt) {
+      ixr=0;
+      printf(" g%d(%g",ipoly,xr(ixr,ipt));
+      tempdouble=coefs(ipoly,0)*std::pow(xr(ixr,ipt),poly(ixr,ipoly));
+      for(ixr=1; ixr<NDV; ++ixr) {
+	printf(",%g",xr(ixr,ipt));
+	tempdouble*=std::pow(xr(ixr,ipt),poly(ixr,ipoly));
+      }
+      printf(")=%g;",g(ipoly,ipt));
+      assert(g(ipoly,ipt)==g2(ipoly,ipt));
+      y3(0,ipt)+=tempdouble;
+    }
+    printf("\n");
+  }
+  matrix_mult(y,coefs,g,0.0,1.0,'T','N');
+  evaluate_poly(y2, flypoly, poly, coefs, xr);
+  assert((y.getNRows()==1)&&(y.getNCols()==npts)&&
+	 (y2.getNRows()==1)&&(y2.getNCols()==npts)&&
+	 (y3.getNRows()==1)&&(y3.getNCols()==npts));
+  for(int ipt=0; ipt<npts; ++ipt) {
+    printf("ipt=%d y=%g y2=%g y3=%g\n",ipt,y(0,ipt),y2(0,ipt),y3(0,ipt));
+    assert((y(0,ipt)==y3(0,ipt))&&(y2(0,ipt)==y3(0,ipt)));
+  }
+  printf("we know that polynomials evaluated correcty because it didn't fail the assert assert.\n");
+  
+  printf("\n Begin Testing Polynomial Derivatives\n");
+  evaluate_poly_der(dy, flypoly, flycoef, poly, der, coef1, xr);
+  evaluate_poly_der_basis(dg, flypoly, flycoef, poly, der, xr);
+  matrix_mult(dy2,coef1,dg,0.0,1.0,'T','N');
+  dy2.reshape(nder,npts);
+
+  for(int ider=0; ider<nder; ++ider) {
+    printf("ider=%d\n",ider);
+    flycoef.copy(coef1);
+    poly_der_to_flypoly(flypoly, flycoef, poly, der, ider, ndeg);    
+    evaluate_flypoly_basis(g, flypoly, xr); //this g is really a dg but 
+    //only for derivative ider
+    matrix_mult(y,flycoef,g,0.0,1.0,'T','N');  //this y really holds a dy    
+    for(int ipt=0; ipt<npts; ++ipt)
+      assert((dy(ider,ipt)==y(0,ipt))&&(dy2(ider,ipt)==y(0,ipt)));
+    int totalderorder=0;    
+    for(int ixr=0; ixr<NDV; ++ixr)
+      totalderorder+=der(ixr,ider);
+    for(int ipoly=0; ipoly<npoly; ++ipoly) {
+      int ixr=0;
+      printf("d^%d/dx^[%d",totalderorder,der(ixr,ider));
+      for(ixr=1; ixr<NDV; ++ixr)
+	printf(",%d",der(ixr,ider));
+      ixr=0;
+      printf("](x%d^%d",ixr,poly(ixr,ipoly));
+      for(ixr=1; ixr<NDV; ++ixr)
+	printf("*x%d^%d",ixr,poly(ixr,ipoly));
+      printf(")=%g",flycoef(ipoly,0));
+      int nmult=flypoly(0,ipoly);
+      for(int imult=1; imult<=nmult; ++imult)
+	printf("*x%d",flypoly(imult,ipoly));
+      printf("\n");
+    }
+    printf("\n");
+  }
+  return 0;
+}
+#endif
+

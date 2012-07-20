@@ -1,7 +1,6 @@
 #include "NKM_SurfMat.hpp"
 #include "NKM_SurfData.hpp"
 #include "NKM_KrigingModel.hpp"
-#include "NKM_GradKrigingModel.hpp"
 #include <iostream>
 #include <iomanip>
 using namespace std;
@@ -9,30 +8,35 @@ using std::ostringstream;
 
 #include <cstdlib>
 
+
+
 //#define __PROFILING_TEST__ //not iplemented yet
 //#define __TIMING_BENCH__
-#define __FAST_TEST__
+//#define __FAST_TEST__
 //#define __WITH_PAV_500__
 //#define __FASTER_TEST__
 //#define __EVEN_FASTER_TEST__
 //#define __VALGRIND_TEST__
 //#define __GKM_USE_KM_CORR_LEN_
-#define __CORR_FUNC0__
-#define __CORR_FUNC1__ "matern"
+//#define __CORR_FUNC0__
+//#define __CORR_FUNC1__ "matern"
 //#define __CORR_FUNC2__ "0.5"
-#define __CORR_FUNC2__ "infinity"
-#define __GPAIS_NDIM__ 6
-#define __GPAIS_GLOBAL__
+//#define __CORR_FUNC2__ "infinity"
+//#define __GPAIS_NDIM__ 6
+//#define __GPAIS_GLOBAL__
 //#define __GPAIS_LOCAL__
 //#define __GPAIS_CORRLEN__
-
+#define __DONT_COMPILE__
 using std::cout;
 using std::endl;
 using std::string;
 
-void validate();
-void validate_grad();
-void validate_grad2();
+
+
+void nightly_test();
+
+#ifndef __DONT_COMPILE__
+
 void hack();
 void check_matrix();
 void compare_sample_designs();
@@ -152,6 +156,7 @@ void gen_sample_design_by_pivoted_cholesky() {
   return;
 }
 
+
 void time_build_grad() {  
   std::map< std::string, std::string> gkm_params;
   gkm_params["constraint_type"] = "r";
@@ -186,6 +191,7 @@ void time_build_grad() {
 	 gkmpav500.n_rcond_calls_in_pivot_cholesky);
   */
 }
+#endif
 
 int main(int argc, char* argv[])
 {
@@ -217,6 +223,8 @@ int main(int argc, char* argv[])
   return 0;
 }
 
+
+#ifndef __DONT_COMPILE__
 void check_matrix() 
 {
   nkm::MtxDbl I10(10,10), I5;

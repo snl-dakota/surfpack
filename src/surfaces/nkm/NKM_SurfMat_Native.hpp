@@ -161,9 +161,10 @@ public:
 
   
   //matrix style retrieve of a single element from the matrix by reference
+#ifndef  __SURFMAT_ERR_CHECK__
   inline T& operator()(int i, int j) {
-    //T& operator()(int i, int j) {
-#ifdef __SURFMAT_ERR_CHECK__
+#else
+  T& operator()(int i, int j) {
     assert((data.size()>=NRowsAct*NColsAct)&&(NRowsAct>=NRows)&&(NColsAct>=NCols)&&(jtoi.size()>=NColsAct));
     if(!((0<=i)&&(i<NRows)&&(0<=j)&&(j<NCols))){
       printf("i=%d NRows=%d j=%d NCols=%d",i,NRows,j,NCols);
@@ -319,7 +320,7 @@ public:
   };
 
   ///replace the values in column "jcol" of this matrix with the entries listed in string s; it returns 0 if the string and column have the same number of entries and 1 otherwise this function will NOT expand the size of this matrix if you specify a column index larger than NCols-1.
-  inline void putCols(const std::string& s, int jcol) {
+  inline int putCols(const std::string& s, int jcol) {
 #ifdef __SURFMAT_ERR_CHECK__
     assert((data.size()>=NRowsAct*NColsAct)&&(NRowsAct>=NRows)&&(NColsAct>=NCols)&&(jtoi.size()>=NColsAct));
     assert((0<=jcol)&&(jcol<NCols));

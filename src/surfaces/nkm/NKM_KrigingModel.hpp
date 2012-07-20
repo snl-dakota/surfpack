@@ -14,7 +14,7 @@
 #include "NKM_SurfData.hpp"
 #include "NKM_SurfPackModel.hpp"
 #include "NKM_Optimize.hpp"
-#include "NKM_LinearRegressionModel.hpp"
+//#include "NKM_LinearRegressionModel.hpp"
 #include <map>
 #include <string>
 
@@ -46,6 +46,9 @@ public:
 
   // MtxDbl& makeGuessFeasible(MtxDbl& nat_log_corr_len, OptimizationProblem *opt);
 
+  //returns a string indicating the correlation function
+  std::string get_corr_func() const;
+
   std::string model_summary_string() const;
 
   // BMA TODO: can we redesign so these need not be public?
@@ -56,22 +59,11 @@ public:
   // Creating KrigingModels
 
   /// Default constructor
-  KrigingModel() : ifChooseNug(false), nug(0.0), maxChooseNug(0.2), XR(sdBuild.xr) , Y(sdBuild.y)
+  KrigingModel() : ifChooseNug(false), ifPrescribedNug(false), nug(0.0), XR(sdBuild.xr)
   { /* empty constructor */ };
   
   /// Standard KrigingModel constructor
   KrigingModel(const SurfData& sd, const ParamMap& params);
-
-  // BMA: in theory shouldn't need copy or assignment, given data
-  // members below?!?
-
-//   /// Copy constructor 
-//   KrigingModel(const KrigingModel& other)
-//   {  *this=other; assert(0);  } //effective C++ says not to use class assignment opperator in copy constructor
-
-//   /// Assignment operator
-//   KrigingModel& operator=(const KrigingModel& other)
-//   { XR=other.XR; Y=other.Y; numVarsr=other.numVarsr; RLU=other.RLU; ipvt_RLU=other.ipvt_RLU; likelihood=other.likelihood; rhs=other.rhs; betaHat=other.betaHat; correlations=other.correlations; Poly=other.Poly; Rot=other.Rot; EulAng=other.EulAng; return *this; }
 
   /// After construction a Kriging model must be created with this
   /// function (TODO: add builtFlag for safety)
@@ -81,24 +73,24 @@ public:
   // Evaluating Kriging Models
 
   /// evaluate (y) the Kriging Model at a single point (xr is a Real row vector)
-  virtual double evaluate(const MtxDbl& xr) const;
+  double evaluate(const MtxDbl& xr);
 
   /// evaluate (y) the Kriging Model at a collection of points xr, one per row
-  virtual MtxDbl& evaluate(MtxDbl& y, const MtxDbl& xr) const;
+  MtxDbl& evaluate(MtxDbl& y, const MtxDbl& xr);
 
   /// evaluate the KrigingModel's adjusted variance at a single point
-  virtual double eval_variance(const MtxDbl& xr) const;
+  double eval_variance(const MtxDbl& xr);
 
   /// evaluate the KrigingModel's adjusted variance at a collection of points xr, one per row
-  virtual MtxDbl& eval_variance(MtxDbl& adj_var, const MtxDbl& xr) const;
+  MtxDbl& eval_variance(MtxDbl& adj_var, const MtxDbl& xr);
 
   //double get_unadjusted_variance(){return (estVarianceMLE*scaler.unScaleFactorVarY());};
   
   /// evaluate the partial first derivatives with respect to xr of the models adjusted mean
-  virtual MtxDbl& evaluate_d1y(MtxDbl& d1y, const MtxDbl& xr) const;
+  MtxDbl& evaluate_d1y(MtxDbl& d1y, const MtxDbl& xr);
 
   /// evaluate the partial second derivatives with respect to xr of the models adjusted mean... this gives you the lower triangular, including diagonal, part of the Hessian(s), with each evaluation point being a row in both xr (input) and d2y(output)
-  virtual MtxDbl& evaluate_d2y(MtxDbl& d2y, const MtxDbl& xr) const;
+  MtxDbl& evaluate_d2y(MtxDbl& d2y, const MtxDbl& xr);
 
   // Helpers for solving correlation optimization problems
 
@@ -115,37 +107,6 @@ public:
     return obj;
   };
     
-  /// the objective function, i.e. the negative log(likelihood), and
-  /// its gradient; minimizing the objective function produces a good
-  /// KrigingModel
-  inline void objectiveAndGradient(double& obj_out, MtxDbl& grad_obj_out,
-				   const MtxDbl& nat_log_corr_len) {
-
-    printf("currently you can't calculate analytical gradients of the objective function or constraints\n");
-    assert(false);
-
-    grad_obj_out.newSize(numTheta,1);
-    MtxDbl corr_len(1,numTheta);
-    for(int i=0; i<numTheta; ++i)
-      corr_len(0,i)=std::exp(nat_log_corr_len(0,i));
-    correlations.newSize(1,numTheta);
-    get_theta_from_corr_len(correlations,corr_len);
-    masterObjectiveAndConstraints(correlations, 2, 0);
-    obj_out=obj;
-    //grad_obj_out.copy(gradObj);
-
-    //convert from gradient with respect to theta to gradient with 
-    //respect to nat_log_corr_len
-    for(int i=0; i<numTheta; ++i)
-      grad_obj_out(i,0)=gradObj(i,0)*-2.0*correlations(0,i);
-    //printf("[grad_obj_out={%g",grad_obj_out(0,0));
-    //for(int i=1; i<numTheta; ++i)
-    //printf(", %g",grad_obj_out(i,0));
-    //printf("}]");
-
-    return;
-  };
-  
   /// objective plus condition number constraints
   //void objectiveAndConstraints(double& obj_out, MtxDbl& con_out, 
   inline void objectiveAndConstraints(double& obj_out, MtxDbl& con_out, 
@@ -174,50 +135,11 @@ public:
     return;
   };
 
-  /// objective plus condition number constraints with gradients
-  inline void objectiveAndConstraintsAndGradients(double& obj_out, 
-						  MtxDbl& con_out, 
-						  MtxDbl& grad_obj_out, 
-						  MtxDbl& grad_con_out, 
-						  const MtxDbl& nat_log_corr_len) {
-    printf("currently you can't calculate analytical gradients of the objective function or constraints\n");
-    assert(false);
-
-    con_out.newSize(numConFunc,1);
-    grad_obj_out.newSize(numTheta,1);
-    grad_con_out.newSize(numConFunc,numTheta);
-    //MtxDbl theta(1,numTheta);
-    MtxDbl corr_len(1,numTheta);
-    for(int i=0; i<numTheta; ++i)
-      corr_len(0,i)=std::exp(nat_log_corr_len(0,i));
-    correlations.newSize(1,numTheta);
-    get_theta_from_corr_len(correlations,corr_len);
-    masterObjectiveAndConstraints(correlations, 2, 2);
-    obj_out=obj;
-    for(int i=0; i<numConFunc; ++i)
-      con_out(i,0)=con(i,0);
-
-    //convert from gradient with respect to theta to gradient with 
-    //respect to nat_log_corr_len
-    for(int j=0; j<numTheta; ++j) {
-      grad_obj_out(j,0)=gradObj(j,0)*-2.0*correlations(0,j);
-      for(int i=0; i<numConFunc; ++i)
-	grad_con_out(i,j)=gradCon(i,j)*-2.0*correlations(0,j);
-    }
-
-    //printf("[grad_obj_out={%g",grad_obj_out(0));
-    //for(int i=1; i<numTheta; ++i)
-    //printf(", %g",grad_obj_out(i));
-    //printf("}]");
-
-    return;
-  };
-
   /// return the Number of Trend functions, the trend is represented by an
   /// arbitrary order multidimensional polynomial, individual trend functions
   /// are the separate additive terms in that multidimensional polynomial
   inline int getNTrend() const
-  { return (Poly.getNRows());   } 
+  { return (Poly.getNCols());   } 
 
   // return the likelihood of this model
   inline double getLikelihood()
@@ -242,6 +164,7 @@ private:
 
   // helper functions
   void preAllocateMaxMemory();
+  void reorderCopyRtoRChol();
   void equationSelectingCholR();
   void nuggetSelectingCholR();
 
@@ -274,11 +197,11 @@ private:
   //the following matern_1pt5_... and matern_2pt5_... functions don't really need to be member functions as they don't access any data members
 
   /// multiply exponential corr func by this to get matern 1.5 corr func
-  inline double matern_1pt5_coef(double theta_abs_dx) const{
+  inline double matern_1pt5_coef(double theta_abs_dx) const {
     return 1.0+theta_abs_dx;
   };
   /// multiply matern 1.5 corr func by this to get d1 of matern 1.5 corr func
-  inline double matern_1pt5_d1_mult_r(double theta, double dx) const{
+  inline double matern_1pt5_d1_mult_r(double theta, double dx) const {
     return -theta*theta*dx/matern_1pt5_coef(theta*std::fabs(dx));
   };
   /** multiply matern 1.5 corr func by this to get d2 of matern 1.5 corr func
@@ -296,13 +219,14 @@ private:
   /// multiply matern 2.5 corr func by this to get d1 of matern 2.5 corr func
   inline double matern_2pt5_d1_mult_r(double theta, double dx) const{
     double theta_abs_dx=theta*std::fabs(dx);
-    return -theta*theta*dx*(1-theta_abs_dx)/(3*matern_2pt5_coef(theta_abs_dx));
+    return (-theta*theta*dx*(1.0+theta_abs_dx)/
+	    (3.0*matern_2pt5_coef(theta_abs_dx)));
   };
   /// multiply matern 2.5 corr func by this to get d2 of matern 2.5 corr func
   inline double matern_2pt5_d2_mult_r(double theta, double dx) const{
     double theta_abs_dx=theta*std::fabs(dx);
-    return -theta*theta*
-      (1-(2.0/3.0+2.0*theta_abs_dx)/matern_2pt5_coef(theta_abs_dx));
+    return -theta*theta*(1.0+theta_abs_dx-theta_abs_dx*theta_abs_dx)/
+      (3.0*matern_2pt5_coef(theta_abs_dx));
   };
 
 
@@ -321,34 +245,100 @@ private:
           theta= sqrt(2*maternCorrFuncNu)/corr_len  */
   MtxDbl& get_corr_len_from_theta(MtxDbl& corr_len, const MtxDbl& theta) const;
 
+  MtxDbl& eval_kriging_correlation_matrix(MtxDbl& r, const MtxDbl& xr) const;
+  MtxDbl& eval_gek_correlation_matrix(MtxDbl& r, const MtxDbl& xr) const;
   /** r(i,j)=corr_func(xr(i,:),XR(j,:);theta(:)) choices for correlation 
       function are gaussian, exponential, powered exponential with 1<power<2, 
       and matern with nu=1.5 or 2.5 (gaussian and exponential are pulled out
       for efficient implementation and because they belong to both families).
-      The convention is that capital matrices are for the data the model is 
-      built from, lower case matrices are for arbitrary points to evaluate 
-      the model at */
-  MtxDbl& correlation_matrix(MtxDbl& r, const MtxDbl& xr) const;
+      (note that only matern 1.5, matern 2.5, and gaussian are avaliable for 
+      Gradient Enhanced Kriging) The convention is that capital matrices are 
+      for the data the model is built from, lower case matrices are for 
+      arbitrary points to evaluate the model at. This function calls either
+      the eval_kriging_* or eval_gek_* version of the same function depending 
+      on wheter Kriging or Gradient Enhanced Kriging (GEK) is being used) */
+  inline MtxDbl& correlation_matrix(MtxDbl& r, const MtxDbl& xr) const {
+    if(buildDerOrder==0)
+      return eval_kriging_correlation_matrix(r,xr);
+    else if(buildDerOrder==1)
+      return eval_gek_correlation_matrix(r,xr);
+    else{
+      std::cerr << "unsupported derivative order in\n  inline MtxDbl& correlation_matrix(MtxDbl& r, const MtxDble& xr) const\n";
+      assert(false);
+    }
+  };
 
-  /** dr(i,j)=d(r(i,j))/d(xr(i,k)) combining repeated calls can be used to 
-      get arbitrary (mixed) higher order derivatives */
-  MtxDbl& dcorrelation_matrix_dxI(MtxDbl& dr, const MtxDbl& r, 
-				  const MtxDbl& xr, int Ider) const;
-  MtxDbl& d2correlation_matrix_dxIdxK(MtxDbl& d2r, const MtxDbl& drI, const MtxDbl& r, const MtxDbl& xr, int Ider, int Kder) const;
+  MtxDbl& eval_kriging_dcorrelation_matrix_dxI(MtxDbl& dr, const MtxDbl& r, const MtxDbl& xr, int Ider) const;
+  MtxDbl& eval_gek_dcorrelation_matrix_dxI(MtxDbl& dr, const MtxDbl& r, const MtxDbl& xr, int Ider) const;
+  /** if r(i,j) is the evaluation of the corr_func(XR(:,i),xr(:,j)) then this
+      function returns the matrix dr which is the derivative of matrix r with
+      respect to dimension Ider of xr i.e.
+      dr(i,j)=d(r(i,j))/d(xr(Ider,j)) 
+      combining repeated calls can be used to get arbitrary (mixed) higher 
+      order derivatives BUT this doesn't work when the two or more 
+      derivatives are with respect to the same input variable; any unmixed 
+      higher order derivatives (including when it is a component of an even 
+      higher order mixed order derivative) requires special treatment. This 
+      function calls eitherthe eval_kriging_* or eval_gek_* version of the 
+      same function depending on wheter Kriging or Gradient Enhanced Kriging 
+      (GEK) is being used) */
+  inline MtxDbl& dcorrelation_matrix_dxI(MtxDbl& dr, const MtxDbl& r, 
+					 const MtxDbl& xr, int Ider) const
+  {
+    if(buildDerOrder==0)
+      return eval_kriging_dcorrelation_matrix_dxI(dr, r, xr, Ider);
+    else if(buildDerOrder==1)
+      return eval_gek_dcorrelation_matrix_dxI(dr, r, xr, Ider);
+    else{
+      std::cerr << "unsupported derivative order in\n inline MtxDbl& dcorrelation_matrix_dxI(MtxDbl& dr, const MtxDbl& r, const MtxDbl& xr, int Ider) const\n";
+      assert(false);
+    }
+  };
+  
+  MtxDbl& eval_kriging_d2correlation_matrix_dxIdxJ(MtxDbl& d2r, const MtxDbl& drI, const MtxDbl& r, const MtxDbl& xr, int Ider, int Jder) const;
+  MtxDbl& eval_gek_d2correlation_matrix_dxIdxJ(MtxDbl& d2r, const MtxDbl& drI, const MtxDbl& r, const MtxDbl& xr, int Ider, int Jder) const;
+  /** d2r(i,j)= d^2r(i,j)/dxr(Ider,j)dxr(Jder,j) where j is the point 
+      index for xr, i is the point index for XR, and Ider and Jder are 
+      the dimensions with respect to which the derivatives are being 
+      taken, drI is the first derivative with respect to Ider (which 
+      must be precomputed and passed  in), this function calls either 
+      the eval_kriging_* or eval_gek_* version of the same function 
+      depending on whether Kriging OR Gradient Enhanced Kriging (GEK) 
+      is being used. */
+  inline MtxDbl& d2correlation_matrix_dxIdxJ(MtxDbl& d2r, const MtxDbl& drI, const MtxDbl& r, const MtxDbl& xr, int Ider, int Jder) const
+  {
+    if(buildDerOrder==0)
+      return eval_kriging_d2correlation_matrix_dxIdxJ(d2r,drI,r,xr,Ider,Jder);
+    else if(buildDerOrder==1)
+      return eval_gek_d2correlation_matrix_dxIdxJ(d2r,drI,r,xr,Ider,Jder);
+    else{
+      std::cerr << "unsupported derivative order in\ninline MtxDbl& d2correlation_matrix_dxIdxJ(MtxDbl& d2r, const MtxDbl& drI, const MtxDbl& r, const MtxDbl& xr, int Ider, int Jder) const\n";
+      assert(false);
+    }
+  };
 
   /** R(i,j)=corr_func(XR(i,:),XR(j,:);theta(:)) where choices for for 
       correlation function are gaussian, exponential, powered exponential 
       with 1<power<2, and matern with nu=1.5 or 2.5 (gaussian and exponential 
       are pulled out for efficient implementation and because they belong 
-      to both families).  All correlation functions are implemented as
-      R=something.*exp(Z*theta) (with reshapes) the something depends on the
-      correlation function (for gaussian, exponential, and powered exponential
-      that something is 1) for the matern function that something is
-      matern_1pt5_coef or matern_2pt5_coef) of course the definition of Z 
-      and theta differs for different correlation functions.  Note that Z 
-      only stores what is needed to compute the strictly lower (BELOW the 
-      diagonal) part of R to save memory and computation.  R is symmetric 
-      and has ones on the diagonal. */
+      to both families).  All of the preceeding correlation functions are 
+      available for Kriging, only Gaussian, Matern 1.5 and Matern 2.5 are
+      available for GEK.  All correlation functions are implemented as
+      Kriging R=something.*exp(Z*theta) (with reshapes) the something 
+      depends on the correlation function (for gaussian, exponential, and 
+      powered exponential that something is 1, and the multiplication by 
+      1 is not actually done for the sake of efficiency) for the matern 
+      function that something is matern_1pt5_coef or matern_2pt5_coef) of 
+      course the definition of Z and theta differs for different correlation 
+      functions.  Note that Z only stores what is needed to compute the 
+      strictly lower (BELOW the diagonal) part of the Kriging R to save 
+      memory and computation.  The Kriging R is symmetric and has ones on 
+      the diagonal. The GEK R matrix is blocked into (1+numVarsr) by
+      (1+numVarsr) submatrices.  Each submatric has numPoints by numPoints
+      elements.  The upper-left-most submatrix is the Kriging R matrix
+      the others submatrices are derivatives of the Kriging R with respect
+      to the various dimensions of the first (rows) and second (columns) 
+      inputs of the correlation function */
   void correlation_matrix(const MtxDbl& corr_vec);
 
   /** this function applies the nugget to the R matrix (a member variable)
@@ -419,7 +409,11 @@ private:
       corrFunc stores an enumerated type
   */
   short corrFunc;
+
+  ///the power of the powered exponential family of correlation functions 
   double powExpCorrFuncPow;
+  
+  /// the "nu" parameter of the Matern family of correlation functions
   double maternCorrFuncNu;
 
   /** used to determine the "small feasible region" that we need to search to
@@ -451,13 +445,15 @@ private:
       correlation lengths of the Gaussian Process error model */
   std::string optimizationMethod;
 
+  /** did the user specify correlation Lengths (either to use directly or 
+      to use as the starting location of local optimization) */
+  bool ifUserSpecifiedCorrLengths;
+
   /// number of starting locations for (possibly multistart) local optimization to try
   int numStarts;
 
   /// maximum number of sets of roughness parameters to try
   int maxTrials;
-  int maxTrialsGlobal; //used if optimization_method = global_local
-  int maxTrialsLocal; //used if optimization_method = global_local
 
   ///used if optimization_method = global_local
   int maxTrialsGlobal; 
@@ -468,34 +464,37 @@ private:
   //"rcond" is now the only allowed constraint type, the eig option was removed
   //std::string constraintType;
 
-  /** ifChooseNug=1 tells KrigingModel to choose the smallest nugget it 
+  /** the number of constraint FUNCTIONS (typically these are nonlinear), 
+      this number does NOT include box edge constraints for the inputs,
+      those are handled separately, the method of computing analytical 
+      derivatives of eigenvalues was questionable also the eigenvalue 
+      approach was for the 2 norm condition number of the R matrix when 
+      what we care about is actually the 1 norm condition number of the 
+      R matrix, so the option for analytical constraints were removed which 
+      means numConFunc should be exactly 1 */
+  int numConFunc; 
+
+  /** the correlation matrix R is considered to be "ill-conditioned" if
+      if it's condition number exceeds this value. The constraint is that
+      R not be ill conditioned */
+  double maxCondNum;
+
+  /** ifChooseNug==true tells KrigingModel to choose the smallest nugget it 
       needs to fix ill conditioning, ifChooseNug=0 tells KrigingModel not 
       to choose one (the default value for the nugget is zero) but the 
       user still has the option to prescribe a nugget the Nugget must be 
       a positive number */
   bool ifChooseNug; 
 
-  /// which if any preset nugget formula should be used to calculate a nugget size.
-  int nuggetFormula;
-
-  bool ifUserSpecifiedCorrLengths;
-  
-  int numVarsr;
-
-  /// NUMber of THETA for Real input variables... this is the number of correlation parameters (for real input variables), for Kriging numTheta=numVarsr, for radial basis functions numTheta=1 (radial basis functions, a derived class, are independent of direction)
-  int numTheta;
-
-  double aveDistBetweenPts;
-  double maxNatLogCorrLen;
-  double minNatLogCorrLen;
-
-  int numPoints; 
-  int numRowsR;
-  
-  /** the number of constraint FUNTIONS (typically these are nonlinear), 
-      this number does NOT include box edge constraints for the inputs,
-      those are handled separately */
-  int numConFunc; 
+  /** if ifPrescribedNug==true then the user has prescribed a nugget, 
+      (think of the nugget a measurement noise term, it should be 
+      roughly the variance of the measurement noise divided by the 
+      variance of the output at the build data points) this will 
+      cause the GP to smooth the data.  Typically this will be more 
+      than sufficient to handle ill conditioning, but if not the bound 
+      on rcond will be used to restrict the allowable range of correlation
+      parameters so that all data points will be used */
+  bool ifPrescribedNug;
 
   /** the nugget value sets the ammount of smoothing (approximation instead
       of interpolation) that the KrigingModel will use, it can also be used
@@ -503,32 +502,72 @@ private:
       choose the smallest nugget needed to fix ill conditioning */
   double nug;
 
-  /** the maximum value the KrigingModel is allowed to choose to fix ill
-      conditioning, however the user can prescribe a larger value to nug.
-      if nug=maxChooseNug is not sufficient to decrease the condtion number
-      of the correlation matrix below maxCondNum, then the correlation 
-      parameter will be chosen to reduce R's condition number to the 
-      prescribed level */
-  double maxChooseNug;
+  /// the number of build points available
+  int numPoints;
 
-  /** the correlation matrix R is considered to be "ill-conditioned" if
-      if it's condition number exceeds this value.  We are using the term
-      "ill-conditioned" loosely, because the qualtity of a KrigingModel
-      is frequently improved when the condition number is restricted to be 
-      less than the number of points (yes that is a heuristic and we're 
-      looking for a better one) */
-  double maxCondNum;
+  /** which points are we keeping, for when using Pivoted Cholesky to select 
+      an optimal subset of points to retain, if we're not selecting a subset 
+      of points then this is ALL points.  When GEK is used all but the last
+      point is required to be a whole point */
+  MtxInt iPtsKeep; 
+
+  /** the number of points retained after using Pivoted Cholesky to select
+      an optimal subset of points. For GEK partial points are included in 
+      this number */
+  int numPointsKeep;
+ 
+  /** only meaningful is GEK is used, 
+      for Kriging numWholePointsKeep=numPointsKeep
+      for GEK numWholePointsKeep is either numPointKeep or numPointsKeep-1 */
+  int numWholePointsKeep; 
+
+  /** only meaningful if GEK is used, the number of derivatives the last 
+      retained point */
+  int numExtraDerKeep; 
+
+  /** the number of equations available to build the Kriging Model
+      for regular Kriging numEqnAvail=numPoints;
+      for Gradient Enhanced Kriging (GEK) numEqnAvail=(1+numVarsr)*numPoints */
+  int numEqnAvail;
+
+  /** the number of rows (and columns) in the R matrix.  For Kriging this
+      is identical to numPointsKeep.  For GEK this is 
+      (1+numVarsr)*numWholePointsKeep +
+      (numPointsKeep-numWholePointsKeep)*(1+numExtraDerKeep) */
+  int numRowsR;
+
+  /** do we have an anchor point, i.e. one point that the user has required us
+      to retain when we select a subset of points to build our Kriging model 
+      from */
+  bool ifHaveAnchorPoint;
+
+  /// if we have an Anchor point what is its index?
+  int  iAnchorPoint;
 
   /** the input the model was constructed from; convention is capital
       matrices are data model is built from, lower case matrices are
       arbitrary points to evaluate model at, using XR instead of X in
-      anticipation of mixed real and integer input
+      anticipation of mixed real and integer input, use a reference XR 
+      as shortcut/shorthand-notation to xr in the surfdata
   */
-  MtxDbl& XR;
+  MtxDbl& XR; 
+  MtxDbl XRreorder;  //a reordered (by pivoted cholesky subset selection)
+  //version of XR to make emulator EVALUATION fast
 
-  /** the output the model was constructed from; convention is capital
-      matrices are data model is built from, lower case matrices are
-      arbitrary points to evaluate model at */
+  /** the output at ALL available build data points, reshaped to a vector. 
+      If GEK is used the function value and derivatives at a point are 
+      sequential (i.e. a "whole point" at a time) */
+  MtxDbl Yall;
+
+  /** the likely reorderd subset of build point output data that the model 
+      was constructed from. If GEK is used, all but the last point is 
+      guaranteed to be a whole point (a function value immediately followed
+      by the entire gradient in standard gradient order); the last retained
+      point can be partial (i.e. can be missing some or all derivatives, but is 
+      guaranteed to have the function value, the derivatives in the final 
+      gradient were not reorderd before trailing entries were dropped). The
+      convention is capital matrices are data model is built from, lower case
+      matrices are arbitrary points to evaluate model at */
   MtxDbl Y;   
 
   /** the trend basis functions evaluated at all available build data points
@@ -575,18 +614,36 @@ private:
   /** the polynomial powers for individual dimensions in each (trend) "basis 
       function" (for now the only choice of polynomial basis functions are
       multidimensional monomials) in a multidimensional polynomial of 
-      arbitrary order */
+      arbitrary order
+      For example if a multidimensional monomial is 
+          coef * x0^0 * x1^2 * x2^0 * x3^1 *x4^0
+      It's "Poly" representation would be 
+	  [0 2 0 1 0]^T (matlab notation) with an associated coefficient 
+	  stored in betaHat
+      Each monomial in a polynomial is a column of the "Poly" matrix
+      This format has many features that make it good for a "permanent"
+      record of polynomials, for example it is convenient for taking 
+      analytical derivatives.  But it is not particularly efficient to 
+      evaluate when a set of numPoints points is stored as a matrix with 
+      numVarsr rows and numPoints columns (where each column is a point).
+  */
   MtxInt Poly;  
-  bool ifReducedPoly; /// only use main effects (no interaction/mixed terms) in the polynomial basis
-  int polyOrderRequested; /// this is what the user asked for, highest total order of any term in the polynomial basis
-  int polyOrder; /// this is what was actually used, can be less than what the user asked for if the correlation matrix was ill conditioned and we had to drop points to fix the ill conditioning and had to drop trend order to make it less than the remaining points.
-  MtxInt numTrend; //the number of equations needed for trend functions of order 0 through polyOrderRequested
-  int nTrend;
 
-  /** the Euler angles to generate the input dimensions' Rotation matrix */
-  MtxDbl EulAng; 
+  /** flyPoly is "work space" for an on the fly generated 
+      represenation of polynomials that is concise/fast to evaluate,
+      particularly when a set of numPoints points is stored as a
+      matrix with numVarsr rows and numPoints columns (where each column
+      is a point).  But the "flypoly" style representation is not a
+      convenient format for performing analytical derivatives of polynomials.
+      However, converting from a "poly" representation to a "flypoly" 
+      representation is trivially easy. See comments in NKM_SurfPack.hpp 
+      for a description of the "flypoly" format. */
+  MtxInt flyPoly; 
 
-  MtxDbl Rot; ///the input dimensions' Rotation matrix
+  /** the vector of coefficients of the trend functions (unadjusted mean)
+      betaHat=(G*R^-1*G^T)^-1*(G*R^-1*Y) i.e. the generalized by R^-1 
+      least squares fit, the generalization makes it unbiased */
+  MtxDbl betaHat;
 
   /// modified coefficients for on the fly derivatives of the trend functions
   MtxDbl derivBetaHat;
@@ -647,99 +704,77 @@ private:
       is built from, lower case matrices are for arbitrary points to 
       evaluate the model at */
   MtxDbl RChol;
+
+  /** working memory for the factorization of R so that the equilibrated
+      Cholesky Lapack wrapper won't have to allocate memory each time it is
+      called, done for computational efficiency */
   MtxDbl scaleRChol;
+
+  /** working memory for efficient computation of rcond when using pivoted 
+      Choleksy to select an optimal subset of points to retain */
   MtxDbl sumAbsColR;
+
+  /** working memory for efficient computation of rcond when using pivoted 
+      Choleksy to select an optimal subset of points to retain */
   MtxDbl oneNormR;
+
+  /** working memory for the bisection search for the maximum number of 
+      points that can be retained after using Pivoted Cholesky to peform
+      an optimal (in terms of unique information content) reordering 
+      of points/equations, used when using Pivoted Cholesky to select an 
+      optimal subset of points to retain */
   MtxDbl lapackRcondR;
+
+  /** working memory for efficient computation of rcond when using pivoted 
+      Choleksy to select an optimal subset of points to retain */
   MtxDbl rcondDblWork;
+
+  /** working memory for efficient computation of rcond when using pivoted 
+      Choleksy to select an optimal subset of points to retain */
   MtxInt rcondIntWork;
-  MtxInt iEqnKeep;
-  bool ifHaveAnchorPoint;
-  int  iAnchorPoint;
-  int numEqnAvail;
-  int numEqnKeep;
-
-  MtxDbl Yall;
-  MtxDbl Gall;
-
-  /** LU decomposition of R (the correlation matrix after possible
-      modification by the inclusion of a nugget).  Keep this around to 
-      evaluate the adjusted variance. We may want to replace with Rinv, 
-      that would facilitate efficient evaluation of the integral of 
-      adjusted variance;  The convention is that capital matrices are for 
-      the data the model is built from, lower case matrices are for 
-      arbitrary points to evaluate the model at */
-  //MtxDbl RLU; 
-
-  /** pivot indices for LU decomposition of R (the possibly modified by
-      a nugget correlation matrix R).  Keep this around to
-      evaluate the adjusted variance.  We may want to replace with Rinv,
-      that would facilitate efficient evaluation of the integral of
-      adjusted variance */
-  //MtxInt ipvt_RLU; 
-
-  /// the log(likelihood) of the Kriging Model
-  double likelihood; 
-
-  /** rhs=Rinv*(Y-G(XR)*betaHat); The convention is that capital matrices 
-      are for the data the model is built from, lower case matrices are 
-      for arbitrary points to evaluate the model at */
-  MtxDbl rhs; 
-
-  /// the vector of coefficients of the trend functions (unadjusted mean)
-  MtxDbl betaHat;
-
-  /// the vector of correlation parameters (NOT correlation LENGTHS)
-  MtxDbl correlations;
-
-  /// the natural log of the corrletion LENGTHS (NOT correlation PARAMETERS)
-  MtxDbl natLogCorrLen;
 
   /** the rcond (estimated reciprocal of the condition number) of the 
       modified correlation matrix, R */
   double rcondR; 
-  double rcond_Gtran_Rinv_G;
 
-  /** the matrix of trend function evaluations, G=G(XR); The convention is
-      that capital matrices are for the data the model is built from, lower
-      case matrices are for arbitrary points to evaluate the model at */
-  MtxDbl G;
-
-  /** the Z matrix, Z=Z(XR), Z(ij,k)=-(XR(i,k)-XR(j,k))^2, facilitates
-      the efficient evaluation of the correlation matrix R and its
-      derivatives with respect to theta (the vector of correlation
-      parameters); The convention is that capital matrices are for the
-      data the model is built from, lower case matrices are for 
-      arbitrary points to evaluate model at */
-  MtxDbl Z;
-  MtxDbl Ztheta;
-
-  /// misc members moved from KrigingProblem?!?
-
-  /** the correlation matrix, after possible inclusion of a
-      nugget, use of a nugget causes the KrigingModel to smooth i.e.
-      approximate rather than interpolate and can be used to fix 
-      ill-conditioning. */
-  MtxDbl R;
-
-  ///keep around to evaluate the integral of adjusted variance, this currently only getting calculated when optimization_method=local is selected
-  //MtxDbl Rinv; //(numPoints,numPoints)
+  /// rcond of (G^T*R^-1*G)
+  double rcond_G_Rinv_Gtran;
 
   /// keep around to evaluate adjusted variance
-  MtxDbl Rinv_G;
+  MtxDbl Rinv_Gtran;
 
   /// keep around to evaluate adjusted variance
-  //MtxDbl Gtran_Rinv_G_LU;
-  MtxDbl Gtran_Rinv_G_Chol;
-  MtxDbl Gtran_Rinv_G_Chol_Scale;
-  MtxDbl Gtran_Rinv_G_Chol_DblWork;
-  MtxInt Gtran_Rinv_G_Chol_IntWork;
+  MtxDbl G_Rinv_Gtran_Chol;
 
-  /// keep around to evaluate adjusted variance
+  /** working memory used to calculate G_Rinv_Gtran_Chol efficiently (so we 
+      don't have to constantly allocate/deallocate memory) */
+  MtxDbl G_Rinv_Gtran_Chol_Scale;
+
+  /** working memory used to calculate G_Rinv_Gtran_Chol efficiently (so we 
+      don't have to constantly allocate/deallocate memory) */
+  MtxDbl G_Rinv_Gtran_Chol_DblWork;
+
+  /** working memory used to calculate G_Rinv_Gtran_Chol efficiently (so we 
+      don't have to constantly allocate/deallocate memory) */
+  MtxInt G_Rinv_Gtran_Chol_IntWork;
+
+  /// working memory G*R^-1*Y
+  MtxDbl G_Rinv_Y;
+
+  //working memory eps=epsilon=Y-G^T*betaHat
+  MtxDbl eps;
+
+
+  /** rhs=Rinv*(Y-G^T*betaHat); The convention is that capital matrices 
+      are for the data the model is built from, lower case matrices are 
+      for arbitrary points to evaluate the model at */
+  MtxDbl rhs; 
+
+  /// need keep around to evaluate adjusted variance
   double estVarianceMLE;
 
-  MtxDbl temp;
-  MtxDbl temp2;
+  /// the log(likelihood) of the Kriging Model
+  double likelihood; 
 
   /// part of infrastructure to allow masterObjectivesAndConstraints to just "return" (have copied out) the answer if the same point is used in sequential calls
   int prevObjDerMode;
@@ -834,7 +869,7 @@ void nkm::KrigingModel::serialize(Archive & archive,
   //don't archive rcondDblWork, we need it during the construction of a model but not afterward
   //don't archive rcondIntWork, we need it during the construction of a model but not afterward
   archive & rcondR;
-  archive & rcond_Gtran_Rinv_G;
+  archive & rcond_G_Rinv_Gtran;
   archive & Rinv_Gtran;
   archive & G_Rinv_Gtran_Chol;
   //don't archive G_Rinv_Gtran_Chol_Scale, we need it during the construction of a model but not afterward
