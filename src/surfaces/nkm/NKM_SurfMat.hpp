@@ -2,7 +2,6 @@
 //do not #define __SURFMAT_HPP__ here, that should/must only be done in either CustomSurfMat.hpp OR TeuchosSurfMat.hpp, to keep them from being included directly when the other has already been included
 
 //#define __SURFMAT_ERR_CHECK__
-//#define __SURFMAT_ZERO_MEM__
 
 #include "surfpack_LAPACK_wrappers.h"
 

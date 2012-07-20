@@ -5,11 +5,8 @@ INCLUDES = -I$(top_builddir) -I$(top_srcdir)/src
 noinst_LTLIBRARIES = libnkm.la
 
 libnkm_la_SOURCES = NKM_GradKrigingModel.cpp \
-	NKM_GradKrigingModel.hpp \
 	NKM_KrigingModel.cpp \
 	NKM_KrigingModel.hpp \
-	NKM_LinearRegressionModel.cpp \
-	NKM_LinearRegressionModel.hpp \
 	NKM_Optimize.cpp \
 	NKM_Optimize.hpp \
 	NKM_SurfData.cpp \

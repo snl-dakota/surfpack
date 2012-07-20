@@ -12,9 +12,14 @@
 #include <sstream>
 #include <vector>
 
+//#define __SURFDATA_SCALING_UNIT_TEST__
 //#define __SURFDATA_ERR_CHECK__
 
 namespace nkm {
+
+  using std::cout;
+  using std::cerr;
+  using std::endl;
 
 class SurfPackModel;
 class SurfData;
@@ -276,7 +281,17 @@ private:
     if((nrows_der==1)&&(jder==-99999))
       jder=0;
 #ifdef __SURFDATA_ERR_CHECK__
-    assert((0<jder)&&(jder<nrows_der)&&(der.getNCols()==nvarsr)&&(der.minElem()>=0)&&(0<=j_y)&&(j_y<nout));
+    if(!((0<=jder)&&(jder<ncols_der)&&(der.getNRows()==nvarsr)&&(0<=der.minElem())&&(0<=iy)&&(iy<nout))) {
+      std::cerr << "need (0<=jder)&&(jder<ncols_der) jder=" << jder
+		<< " ncols_der=" << ncols_der << "\n"
+		<< "need (der.getNRows()==nvarsr) der.getNRows()=" 
+		<< der.getNRows() << " nvarsr=" << nvarsr << "\n"
+		<< "need (0<=der.minElem()) der.minElem()=" << der.minElem()
+		<< "\nneed (0<=iy)&&(iy<nout) iy=" << iy << " nout=" << nout
+		<< std::endl;
+      std::cerr << std::endl;
+      assert(false);
+    }
 #endif 
     double temp_double=1.0/std::fabs(unscaley(0,j_y));
     for(int ivarsr=0; ivarsr<nvarsr; ++ivarsr)

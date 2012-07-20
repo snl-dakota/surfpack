@@ -67,7 +67,7 @@ void OptimizationProblem::initial_iterate(int j, double x0)
 
 void OptimizationProblem::add_initial_iterates(MtxDbl& init_iterates_to_add)
 {
-  assert(init_iterates_to_add.getNCols()==numDesignVar);
+  assert(init_iterates_to_add.getNRows()==numDesignVar);
   int numsofar=initialIterates.getNRows();
   int numtoadd=init_iterates_to_add.getNRows();
   //printf("numsofar=%d numtoadd=%d\n",numsofar,numtoadd);
@@ -471,7 +471,7 @@ where
   MtxDbl upper_bounds(N1,1);
   theModel.makeGuessFeasible(guess,this); //need to find a better place to put this
   for(int ivar=0; ivar<numDesignVar; ivar++) {
-    query_pt(ivar,0)=guess(0,ivar);
+    query_pt(ivar,0)=guess(ivar,0);
     lower_bounds(ivar,0)=lowerBounds(ivar,0);
     upper_bounds(ivar,0)=upperBounds(ivar,0);
   }

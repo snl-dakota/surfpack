@@ -189,6 +189,7 @@ void time_build_grad() {
 
 int main(int argc, char* argv[])
 {
+  nightly_test();
   //boost_save_loadtest();
   //time_build_grad();
   //compare_sample_designs_pav(2);
@@ -2500,3 +2501,491 @@ void corrlen_build_and_eval_mean_adjvar() {
   fclose(fp);
   return;
 }
+#endif //__DONT_COMPILE__
+
+
+
+void nightly_test()
+{
+  //filenames for 2D surfdata
+  string validate2d_10 ="grad_validate2d_10.spd";
+  string validate2d_100="grad_validate2d_100.spd";
+  string validate2d_500="grad_validate2d_500.spd"; //GEK skips to save time
+  string validate2d_10K="grad_validate2d_10K.spd";
+  nkm::SurfData sd2d10( validate2d_10 , 2, 0, 3, 0, 1, 0);
+  nkm::SurfData sd2d500(validate2d_500, 2, 0, 3, 0, 1, 0);
+  nkm::SurfData sd2d100(validate2d_100, 2, 0, 3, 0, 1, 0);
+  nkm::SurfData sd2d10K(validate2d_10K, 2, 0, 3, 0, 1, 0);
+
+  //filenames for 10D surfdata
+  string paviani10d_50  ="grad_paviani10d_50.spd";
+  string paviani10d_500 ="grad_paviani10d_500.spd"; //GEK skips to save time
+  string paviani10d_10K ="grad_paviani10d_10K.spd";
+  nkm::SurfData sdpav50( paviani10d_50 , 10, 0, 1, 0, 1, 0);
+  nkm::SurfData sdpav500(paviani10d_500, 10, 0, 1, 0, 1, 0);
+  nkm::SurfData sdpav10K(paviani10d_10K, 10, 0, 1, 0, 1, 0);
+
+  nkm::MtxDbl yeval10( 1,   10); //only for 2D
+  nkm::MtxDbl yeval50( 1,   50); //only for paviani
+  nkm::MtxDbl yeval100(1,  100); //only for 2D
+  nkm::MtxDbl yeval500(1,  500);
+  nkm::MtxDbl yeval10K(1,10000);
+
+  //for GEK will evaluate the derivative and compare them to what's
+  //in the surfdata that GEK was built from, derivative reproduction
+  //checking is only implemented for the 2D GEK test functions, it's 
+  //not implemented for the 10D paviani test function
+  nkm::MtxDbl d1y2d10(    2, 10);
+  nkm::MtxDbl d1y2d100(   2,100);
+  nkm::MtxDbl d1ysd2d10(  2, 10); //sd
+  nkm::MtxDbl d1ysd2d100( 2,100); //sd
+
+  std::map< std::string, std::string> km_params;
+
+  std::cout << "********************************************************************************\n"
+	    << "********************************************************************************\n"
+	    << "Running \"nightly\" Kriging Model tests\n" 
+	    << "********************************************************************************\n"
+	    << "********************************************************************************\n"
+	    << std::endl;
+  { //the { is for scope we don't want km500, iout, error_stats, or the boost 
+    //serialization variablesto exist afterwards
+    std::cout << "Running Kriging \"all defaults\" (no specified settings) "
+	      << "test on 2D Rosenbrock with 500 points" << std::endl;
+    int iout=0; //Rosenbrock
+    sd2d500.setIOut(iout);
+    sd2d10K.setIOut(iout);
+    nkm::MtxDbl error_stats(3,4); error_stats.zero();
+    nkm::KrigingModel km500(sd2d500, km_params); km500.create();
+    //evaluate error the 500 pt kriging model at build points
+    km500.evaluate(yeval500,sd2d500.xr);
+    for(int j=0; j<500; ++j)
+      error_stats(2,0)+=std::pow(yeval500(0,j)-sd2d500.y(iout,j),2);
+    error_stats(2,1)=std::sqrt(error_stats(2,0)/500.0);
+    
+    //evaluate error the 500 pt kriging model at 10K new points
+    km500.evaluate(yeval10K,sd2d10K.xr);
+    for(int j=0; j<10000; ++j)
+      error_stats(2,2)+=std::pow(yeval10K(0,j)-sd2d10K.y(iout,j),2);
+    error_stats(2,3)=std::sqrt(error_stats(2,2)/10000.0);
+
+    std::cout << "# of samples, SSE at build points, RMSE at build points, SSE at 10K points, RMSE at 10K points"
+	      << "\n" << setw(12) << 500
+	      << ", " << setw(19) << setprecision(7) << error_stats(2,0)
+	      << ", " << setw(20) << setprecision(7) << error_stats(2,1)
+	      << ", " << setw(17) << setprecision(7) << error_stats(2,2)
+	      << ", " << setw(18) << setprecision(7) 
+	      << error_stats(2,3) << std::endl;
+
+#ifdef SURFPACK_HAVE_BOOST_SERIALIZATION
+    std::cout << "Testing Kriging Save and Reload: ";
+    nkm::MtxDbl yRL10K(1,10000); //compare reload eval to original eval
+    nkm::SurfPackModel *kmOrigPtr=&km500;
+    {
+      std::ofstream nkm_km_ofstream("km.sav");
+      
+      boost::archive::text_oarchive output_archive(nkm_km_ofstream);
+      output_archive << kmOrigPtr;
+    }
+    nkm::SurfPackModel *kmReload;
+    {
+      std::ifstream nkm_km_ifstream("km.sav");
+      boost::archive::text_iarchive input_archive(nkm_km_ifstream);
+      input_archive >> kmReload;
+    }
+    kmReload->evaluate(yRL10K,sd2d10K.xr);  
+    delete kmReload; 
+
+    bool ifdiff=false;
+    for(int j=0; j<10000; ++j) {
+      ifdiff=!(yeval10K(0,j)==yRL10K(0,j));
+      if(ifdiff) break;
+    }
+    if(ifdiff==false)
+      std::cout << "Passed" << std::endl;
+    else
+      std::cout << "Failed" << std::endl;
+#endif
+      std::cout << "********************************************************************************" << std::endl;
+  } //end of default settings Kriging test
+  { //the { is for scope we don't want der_order, oss, km100, iout, error_stats,
+    //d1error_stats or the boost serialization variables to exist afterwards
+    std::cout << "Running Gradient Enhanced Kriging (GEK) \"all defaults\" "
+	      << "(no specified settings\nother than derivative_order) test "
+	      << "on 2D Rosenbrock with 100 points" << std::endl;
+    
+    int der_order=1;
+    std::ostringstream oss;
+    oss << der_order;
+    km_params["derivative_order"]=oss.str();
+    int iout=0; //Rosenbrock
+    sd2d500.setIOut(iout);
+    sd2d10K.setIOut(iout);
+    nkm::MtxDbl error_stats(3,4); error_stats.zero();
+    nkm::MtxDbl d1error_stats(2,4); d1error_stats.zero();
+    nkm::KrigingModel km100(sd2d100, km_params); km100.create();
+    //evaluate error the 100 pt kriging model at build points
+    km100.evaluate(yeval100,sd2d100.xr);
+    for(int j=0; j<100; ++j)
+      error_stats(1,0)+=std::pow(yeval100(0,j)-sd2d100.y(iout,j),2);
+    error_stats(1,1)=std::sqrt(error_stats(1,0)/100);
+    
+    //evaluate error the 100 pt kriging model at 10K points
+    km100.evaluate(yeval10K,sd2d10K.xr);
+    for(int j=0; j<10000; ++j)
+      error_stats(1,2)+=std::pow(yeval10K(0,j)-sd2d10K.y(iout,j),2);
+    error_stats(1,3)=std::sqrt(error_stats(1,2)/10000.0); 
+
+    km100.evaluate_d1y(d1y2d100,sd2d100.xr);
+    for(int j=0; j<100; ++j) {
+      d1error_stats(1,0)+=std::pow(d1y2d100(0,j)-d1ysd2d100(0,j),2);
+      d1error_stats(1,2)+=std::pow(d1y2d100(1,j)-d1ysd2d100(1,j),2);
+    }
+    d1error_stats(1,1)=std::sqrt(d1error_stats(1,0)/100.0);
+    d1error_stats(1,3)=std::sqrt(d1error_stats(1,2)/100.0);
+    std::cout << "# of samples, SSE at build points, RMSE at build points, SSE at 10K points, RMSE at 10K points"
+	      << "\n" << setw(12) << 100 
+	      << ", " << setw(19) << setprecision(7) << error_stats(1,0)
+	      << ", " << setw(20) << setprecision(7) << error_stats(1,1)
+	      << ", " << setw(17) << setprecision(7) << error_stats(1,2)
+	      << ", " << setw(18) << setprecision(7) << error_stats(1,3) 
+	      << "\n" 
+	      << "# of samples, d1y0 SSE at build points, d1y0 RMSE at build points, d1y1 SSE at build points, d1y1 RMSE at build points"
+	      << "\n" << setw(12) << 100
+	      << ", " << setw(24) << setprecision(7) 
+	      << d1error_stats(1,0)
+	      << ", " << setw(25) << setprecision(7)
+	      << d1error_stats(1,1)
+		      << ", " << setw(24) << setprecision(7)
+	      << d1error_stats(1,2) 
+	      << ", " << setw(25) << setprecision(7)
+	      << d1error_stats(1,3) << std::endl;
+#ifdef SURFPACK_HAVE_BOOST_SERIALIZATION
+    std::cout << "Testing GEK Save and Reload: ";
+    nkm::MtxDbl yRL10K(1,10000); //compare reload eval to original eval
+    nkm::MtxDbl d1yRL2d100( 2,100); //compare reload eval to orginal eval
+    nkm::SurfPackModel *kmOrigPtr=&km100;
+    {
+      std::ofstream nkm_km_ofstream("km.sav");
+      
+      boost::archive::text_oarchive output_archive(nkm_km_ofstream);
+      output_archive << kmOrigPtr;
+    }
+    nkm::SurfPackModel *kmReload;
+    {
+      std::ifstream nkm_km_ifstream("km.sav");
+      boost::archive::text_iarchive input_archive(nkm_km_ifstream);
+      input_archive >> kmReload;
+    }
+    kmReload->evaluate(yRL10K,sd2d10K.xr);  
+    kmReload->evaluate_d1y(d1yRL2d100,sd2d100.xr);
+    delete kmReload; 
+
+    bool ifdiff=false;
+    for(int j=0; j<10000; ++j) {
+      ifdiff=!(yeval10K(0,j)==yRL10K(0,j));
+      if(ifdiff) break;
+    }
+    if(ifdiff==false)
+      for(int j=0; j<100; ++j) {
+	ifdiff=!((d1y2d100(0,j)==d1yRL2d100(0,j))&&
+		 (d1y2d100(1,j)==d1yRL2d100(1,j)));
+	if(ifdiff) break;
+      }
+    if(ifdiff==false)
+      std::cout << "Passed" << std::endl;
+    else
+      std::cout << "Failed" << std::endl;
+#endif
+      std::cout << "********************************************************************************" << std::endl;
+  } //end of GEK default (not set) parameters test
+
+  //now we want to test a whole bunch of different options
+
+  //we're going to test 5 correlation functions
+  //0 Gaussian (Matern infinity)
+  //1 Matern 5/2
+  //2 Matern 3/2
+  //3 Exponential (Matern 1/2)
+  //4 Powered Exponential with power=1.5;
+  //the first three of these are available for GEK all 5 of these are 
+  //available for Kriging
+  nkm::MtxInt num_corr_func_tests(2,1);
+  num_corr_func_tests(0,0)=5; //Kriging
+  num_corr_func_tests(1,0)=3; //GEK
+
+  std::vector<std::string> test_corr_func_family(5), test_corr_func_param(5), 
+    model_name(2), output_name_2D(3), handle_ill_cond(2);
+  test_corr_func_family[0]="matern"; test_corr_func_param[0]="infinity";
+  test_corr_func_family[1]="matern"; test_corr_func_param[1]="2.5";
+  test_corr_func_family[2]="matern"; test_corr_func_param[2]="1.5";
+  test_corr_func_family[3]="matern"; test_corr_func_param[3]="0.5";
+  test_corr_func_family[4]="powered_exponential"; 
+  test_corr_func_param[4]="1.5";
+
+  model_name[0]="Kriging";
+  model_name[1]="Gradient Enhanced Kriging";
+
+  output_name_2D[0]="Rosenbrock";
+  output_name_2D[1]="Shubert";
+  output_name_2D[2]="Herbie";
+
+  handle_ill_cond[0]="via pivoted Cholesky";
+  handle_ill_cond[1]="by adding a nugget";
+
+
+  km_params["order"] = "2";
+  km_params["reduced_polynomial"]=nkm::toString<bool>(true);
+  km_params["optimization_method"]="global_local";
+
+  for(int der_order=0; der_order<=1; ++der_order) {
+    { //for scope
+      std::ostringstream oss;
+      oss << der_order;
+      km_params["derivative_order"]=oss.str();
+    } //for scope
+    //do 2D test functions
+    km_params["lower_bounds"]="-2.0 -2.0";
+    km_params["upper_bounds"]="2.0 2.0";
+    //loop over test functions
+    for(int iout=0; iout<3; ++iout) {
+      sd2d10.setIOut(iout);
+      sd2d100.setIOut(iout);
+      sd2d500.setIOut(iout);
+      sd2d10K.setIOut(iout);
+      if(der_order==1) {
+	sd2d10.getDerY( d1ysd2d10 ,1,iout);
+	sd2d100.getDerY(d1ysd2d100,1,iout);
+      }
+
+      //loop over correlation functions
+      for(int icorrfunc=0; icorrfunc<num_corr_func_tests(der_order,0); 
+	  ++icorrfunc) {
+	
+	km_params[test_corr_func_family[icorrfunc]]=
+	  test_corr_func_param[icorrfunc];
+	for(int icond=0; icond<2; ++icond) {
+	  if(icond==1)
+	    km_params["find_nugget"]="1";
+	  
+	  
+	  nkm::MtxDbl error_stats(3,4); error_stats.zero();
+	  nkm::MtxDbl d1error_stats(2,4); d1error_stats.zero();
+	  nkm::KrigingModel km10( sd2d10 , km_params);       
+	  std::cout << "****************************************************************************\n"
+		    << model_name[der_order] << " on the 2D " 
+		    << output_name_2D[iout] << " test function\nUsing the " 
+		    << km10.get_corr_func() << " correlation function\n" 
+		    << "With correlation lengths found by the "
+		    << km_params["optimization_method"] << " optimization method\n"
+		    << "Handling ill-conditioning " << handle_ill_cond[icond] 
+		    << "\n"
+		    << "****************************************************************************"
+		    << std::endl;
+	  km10.create();
+	  
+	  //evaluate error the 10 pt kriging model at build points  
+	  km10.evaluate(yeval10,sd2d10.xr);
+	  for(int j=0; j<10; ++j)
+	    error_stats(0,0)+=std::pow(yeval10(0,j)-sd2d10.y(iout,j),2);
+	  error_stats(0,1)=std::sqrt(error_stats(0,0)/10.0);
+	  
+	  //evaluate error the 10 pt kriging model at 10K new points
+	  km10.evaluate(yeval10K,sd2d10K.xr);
+	  for(int j=0; j<10000; ++j)
+	    error_stats(0,2)+=std::pow(yeval10K(0,j)-sd2d10K.y(iout,j),2);
+	  error_stats(0,3)=std::sqrt(error_stats(0,2)/10000.0);
+
+	  nkm::KrigingModel km100(sd2d100, km_params); km100.create();
+	  //evaluate error the 100 pt kriging model at build points
+	  km100.evaluate(yeval100,sd2d100.xr);
+	  for(int j=0; j<100; ++j)
+	    error_stats(1,0)+=std::pow(yeval100(0,j)-sd2d100.y(iout,j),2);
+	  error_stats(1,1)=std::sqrt(error_stats(1,0)/100);
+	  
+	  //evaluate error the 100 pt kriging model at 10K points
+	  km100.evaluate(yeval10K,sd2d10K.xr);
+	  for(int j=0; j<10000; ++j)
+	    error_stats(1,2)+=std::pow(yeval10K(0,j)-sd2d10K.y(iout,j),2);
+	  error_stats(1,3)=std::sqrt(error_stats(1,2)/10000.0);
+	  
+	  if(der_order==0) {
+	    nkm::KrigingModel km500(sd2d500, km_params); km500.create();
+	    //evaluate error the 500 pt kriging model at build points
+	    km500.evaluate(yeval500,sd2d500.xr);
+	    for(int j=0; j<500; ++j)
+	      error_stats(2,0)+=std::pow(yeval500(0,j)-sd2d500.y(iout,j),2);
+	    error_stats(2,1)=std::sqrt(error_stats(2,0)/500.0);
+	    
+	    //evaluate error the 500 pt kriging model at 10K new points
+	    km500.evaluate(yeval10K,sd2d10K.xr);
+	    for(int j=0; j<10000; ++j)
+	      error_stats(2,2)+=std::pow(yeval10K(0,j)-sd2d10K.y(iout,j),2);
+	    error_stats(2,3)=std::sqrt(error_stats(2,2)/10000.0);
+	  } else{
+	    km10.evaluate_d1y(d1y2d10,sd2d10.xr);
+	    for(int j=0; j<10; ++j) {
+	      d1error_stats(0,0)+=std::pow(d1y2d10(0,j)-d1ysd2d10(0,j),2);
+	      d1error_stats(0,2)+=std::pow(d1y2d10(1,j)-d1ysd2d10(1,j),2);
+	    }
+	    d1error_stats(0,1)=std::sqrt(d1error_stats(0,0)/10.0);
+	    d1error_stats(0,3)=std::sqrt(d1error_stats(0,2)/10.0);
+	    km100.evaluate_d1y(d1y2d100,sd2d100.xr);
+	    for(int j=0; j<100; ++j) {
+	      d1error_stats(1,0)+=std::pow(d1y2d100(0,j)-d1ysd2d100(0,j),2);
+	      d1error_stats(1,2)+=std::pow(d1y2d100(1,j)-d1ysd2d100(1,j),2);
+	    }
+	    d1error_stats(1,1)=std::sqrt(d1error_stats(1,0)/100.0);
+	    d1error_stats(1,3)=std::sqrt(d1error_stats(1,2)/100.0);
+	  }
+	  	    
+	  std::cout << "# of samples, SSE at build points, RMSE at build points, SSE at 10K points, RMSE at 10K points";
+	  std::cout << "\n" << setw(12) << 10 
+		    << ", " << setw(19) << setprecision(7) << error_stats(0,0)
+		    << ", " << setw(20) << setprecision(7) << error_stats(0,1)
+		    << ", " << setw(17) << setprecision(7) << error_stats(0,2)
+		    << ", " << setw(18) << setprecision(7) << error_stats(0,3);
+	  std::cout << "\n" << setw(12) << 100 
+		    << ", " << setw(19) << setprecision(7) << error_stats(1,0)
+		    << ", " << setw(20) << setprecision(7) << error_stats(1,1)
+		    << ", " << setw(17) << setprecision(7) << error_stats(1,2)
+		    << ", " << setw(18) << setprecision(7) << error_stats(1,3);
+	  if(der_order==0)
+	    std::cout << "\n" << setw(12) << 500
+		      << ", " << setw(19) << setprecision(7) << error_stats(2,0)
+		      << ", " << setw(20) << setprecision(7) << error_stats(2,1)
+		      << ", " << setw(17) << setprecision(7) << error_stats(2,2)
+		      << ", " << setw(18) << setprecision(7) 
+		      << error_stats(2,3);
+	  std::cout << std::endl;
+	  if(der_order>=1) {
+	    std::cout << "# of samples, d1y0 SSE at build points, d1y0 RMSE at build points, d1y1 SSE at build points, d1y1 RMSE at build points";
+	    std::cout << "\n" << setw(12) << 10 
+		      << ", " << setw(24) << setprecision(7) 
+		      << d1error_stats(0,0)
+		      << ", " << setw(25) << setprecision(7)
+		      << d1error_stats(0,1)
+		      << ", " << setw(24) << setprecision(7)
+		      << d1error_stats(0,2) 
+		      << ", " << setw(25) << setprecision(7)
+		      << d1error_stats(0,3);
+	    std::cout << "\n" << setw(12) << 100
+		      << ", " << setw(24) << setprecision(7) 
+		      << d1error_stats(1,0)
+		      << ", " << setw(25) << setprecision(7)
+		      << d1error_stats(1,1)
+		      << ", " << setw(24) << setprecision(7)
+		      << d1error_stats(1,2) 
+		      << ", " << setw(25) << setprecision(7)
+		      << d1error_stats(1,3) << std::endl;
+	  }
+
+
+	  //fprintf(fpout,"%12d, %19.6g, %20.6g, %17.6g, %18.6g\n",10,
+	  if(icond==1)
+	    km_params.erase("find_nugget");	  
+	}//icond for 2D: Pivoted Cholesky, add a nugget
+	
+	//can't specify both Matern and Powered Exponential or will get an error
+	km_params.erase(test_corr_func_family[icorrfunc]);
+      }//icorrfunc
+      
+    } //iout: rosenbrock, shubert, herbie
+    
+    //now do the paviani 10D test function
+    km_params["lower_bounds"]=
+      " 2.0  2.0  2.0  2.0  2.0  2.0  2.0  2.0  2.0  2.0";
+    km_params["upper_bounds"]=
+      "10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0";
+    
+    for(int icorrfunc=0; icorrfunc<num_corr_func_tests(der_order,0); 
+	++icorrfunc) {
+      
+      km_params[test_corr_func_family[icorrfunc]]=
+	test_corr_func_param[icorrfunc];
+      for(int icond=0; icond<2; ++icond) {
+	if(icond==1)
+	  km_params["find_nugget"]="1";
+	
+	nkm::MtxDbl error_stats(2,4); error_stats.zero();
+	nkm::KrigingModel km50( sdpav50 , km_params); 
+	std::cout << "****************************************************************************\n"
+		  << model_name[der_order] << " on the 10D Paviani" 
+		  << " test function\nUsing the " 
+		  << km50.get_corr_func() << " correlation function\n" 
+		  << "With correlation lengths found by the "
+		  << km_params["optimization_method"] << "optimization method\n"
+		  << "Handling ill-conditioning " << handle_ill_cond[icond] 
+		  << "\n"
+		  << "****************************************************************************"
+		  << std::endl;
+	km50.create();
+	
+	//evaluate error the 50 pt kriging model at build points  
+	km50.evaluate(yeval50,sdpav50.xr);
+	for(int j=0; j<50; ++j)
+	  error_stats(0,0)+=std::pow(yeval50(0,j)-sdpav50.y(0,j),2);
+	error_stats(0,1)=std::sqrt(error_stats(0,0)/50.0);
+	
+	//evaluate error the 50 pt kriging model at 10K new points
+	km50.evaluate(yeval10K,sdpav10K.xr);
+	for(int j=0; j<10000; ++j)
+	  error_stats(0,2)+=std::pow(yeval10K(0,j)-sdpav10K.y(0,j),2);
+	error_stats(0,3)=std::sqrt(error_stats(0,2)/10000.0);
+	
+	if(der_order==0) {
+	  nkm::KrigingModel km500(sdpav500, km_params); km500.create();
+	  
+	  //evaluate error the 500 pt kriging model at build points
+	  km500.evaluate(yeval500,sdpav500.xr);
+	  for(int j=0; j<500; ++j)
+	    error_stats(1,0)+=std::pow(yeval500(0,j)-sdpav500.y(0,j),2);
+	  error_stats(1,1)=std::sqrt(error_stats(1,0)/500.0);
+	  
+	  //evaluate error the 500 pt kriging model at 10K new points
+	  km500.evaluate(yeval10K,sdpav10K.xr);
+	  for(int j=0; j<10000; ++j)
+	    error_stats(1,2)+=std::pow(yeval10K(0,j)-sdpav10K.y(0,j),2);
+	  error_stats(1,3)=std::sqrt(error_stats(1,2)/10000.0);
+	}
+	
+	std::cout << "# of samples, SSE at build points, RMSE at build points, SSE at 10K points, RMSE at 10K points";
+	std::cout << "\n" << setw(12) << 10 
+		  << ", " << setw(19) << setprecision(7) << error_stats(0,0)
+		  << ", " << setw(20) << setprecision(7) << error_stats(0,1)
+		  << ", " << setw(17) << setprecision(7) << error_stats(0,2)
+		  << ", " << setw(18) << setprecision(7) << error_stats(0,3);
+	if(der_order==0)
+	  std::cout << "\n" << setw(12) << 500
+		    << ", " << setw(19) << setprecision(7) << error_stats(1,0)
+		    << ", " << setw(20) << setprecision(7) << error_stats(1,1)
+		    << ", " << setw(17) << setprecision(7) << error_stats(1,2)
+		    << ", " << setw(18) << setprecision(7) << error_stats(1,3);
+	std::cout << std::endl;
+	
+	if(icond==1) //if use nugget then it doesn't use pivoted Cholesky
+	  km_params.erase("find_nugget");	  
+      } //icond for Paviani: pivoted Cholesky, add a nugget
+      //can't specify both Matern and Powered Exponential or will get an error
+      km_params.erase(test_corr_func_family[icorrfunc]);
+    } //icorrfunc for Paviani
+  } //der_order: Kriging, GEK
+
+  sd2d10.clear();
+  sd2d500.clear();
+  sd2d100.clear();
+  sd2d10K.clear();
+
+  sdpav50.clear();
+  sdpav500.clear();
+  sdpav10K.clear();
+
+  yeval10.clear();
+  yeval50.clear();
+  yeval100.clear();
+  yeval500.clear();
+
+  return;
+}
+
+

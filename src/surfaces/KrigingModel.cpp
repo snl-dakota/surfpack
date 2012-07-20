@@ -21,10 +21,10 @@ surfdata_to_nkm_surfdata(const SurfData& sd, nkm::SurfData& nkm_sd)
   unsigned x_size = sd.xSize();
   unsigned f_size = sd.fSize();
 
-  nkm::MtxDbl XR(num_points, x_size), Y(num_points, f_size);
+  nkm::MtxDbl XR(x_size,num_points), Y(f_size, num_points);
   std::vector<std::vector<nkm::MtxDbl> > derY(f_size);
   // track the active derivative order for each function
-  nkm::MtxInt der_order(1,f_size); 
+  nkm::MtxInt der_order(f_size,1); 
   der_order.zero(); //set contents to zero
 
   if(num_points>0) {
@@ -33,16 +33,16 @@ surfdata_to_nkm_surfdata(const SurfData& sd, nkm::SurfData& nkm_sd)
     const SurfPoint& point=sd[0];
     if(point.fGradientsSize() > 0) {
       for(unsigned f_index=0; f_index<f_size; ++f_index)
-	++der_order(0,f_index);
+	++der_order(f_index,0);
       if(point.fHessiansSize() > 0)
 	for(unsigned f_index=0; f_index<f_size; ++f_index)
-	  ++der_order(0,f_index);
+	  ++der_order(f_index,0);
     }
     
     for(unsigned f_index=0; f_index<f_size; ++f_index) {
-      derY[f_index].resize(der_order(0,f_index)+1);
-      for(unsigned der_order_index=1; static_cast<int>(der_order_index)<=der_order(0,f_index); ++der_order_index)
-	derY[f_index][der_order_index].newSize(num_points,nkm::num_multi_dim_poly_coef(x_size,-der_order_index));
+      derY[f_index].resize(der_order(f_index,0)+1);
+      for(unsigned der_order_index=1; static_cast<int>(der_order_index)<=der_order(f_index,0); ++der_order_index)
+	derY[f_index][der_order_index].newSize(nkm::num_multi_dim_poly_coef(x_size,-der_order_index),num_points);
     }
   }
 
@@ -51,9 +51,9 @@ surfdata_to_nkm_surfdata(const SurfData& sd, nkm::SurfData& nkm_sd)
     const SurfPoint& point = sd[point_index];
     const VecDbl x = point.X();
     for (unsigned x_index=0; x_index<x_size; ++x_index)
-      XR(point_index, x_index) = x[x_index];
+      XR(x_index,point_index) = x[x_index];
     for (unsigned f_index=0; f_index<f_size; ++f_index) 
-      Y(point_index, f_index) = point.F(f_index);
+      Y(f_index,point_index) = point.F(f_index);
 
 
     // given NKM ordering of derY, probably need to loop differently
@@ -63,28 +63,28 @@ surfdata_to_nkm_surfdata(const SurfData& sd, nkm::SurfData& nkm_sd)
     // there should be 0 or f_size gradients (could throw error)
     if (point.fGradientsSize() > 0) {
       for (unsigned f_index=0; f_index < f_size; ++f_index) {
-	assert(der_order(0,f_index)>=1);  //could change this to a throw
+	assert(der_order(f_index,0)>=1);  //could change this to a throw
 	const vector<double>& sd_gradient = point.fGradient(f_index);
 	//cout << "Surfpack gradient for point " << point_index << ", function "
 	//     << f_index << ": [ ";
 	for (unsigned x_index=0; x_index < x_size; ++x_index) {
 	  // accessing each gradient element
 	  //cout << sd_gradient[x_index] << " ";
-	  derY[f_index][1](point_index,x_index) =sd_gradient[x_index];
+	  derY[f_index][1](x_index,point_index) =sd_gradient[x_index];
 	}
 	//cout << "]" << endl;
       }
     }
     else{
       for (unsigned f_index=0; f_index < f_size; ++f_index) 
-	assert(der_order(0,f_index)==0);  //could change this to a throw
+	assert(der_order(f_index,0)==0);  //could change this to a throw
     }
 
     // example of mapping second derivatives
     // there should be 0 or f_size Hessians (could throw error)
     if (point.fHessiansSize() > 0) {
       for (unsigned f_index=0; f_index<f_size; ++f_index) {
-	assert(der_order(0,f_index)>=2);  //could change this to a throw
+	assert(der_order(f_index,0)>=2);  //could change this to a throw
 
 	const SurfpackMatrix<double>& sd_hessian = point.fHessian(f_index);
 	//cout << "Surfpack Hessian for point " << point_index << ", function "
@@ -92,7 +92,7 @@ surfdata_to_nkm_surfdata(const SurfData& sd, nkm::SurfData& nkm_sd)
 	unsigned der_index=0;
 	for (unsigned xj_index=0; xj_index < x_size; ++xj_index) 
 	  for (unsigned xk_index=xj_index; xk_index < x_size; ++xk_index, ++der_index)
-	    derY[f_index][2](point_index,der_index)=
+	    derY[f_index][2](der_index,point_index)=
 	      sd_hessian(xj_index,xk_index);
 
 	//for (unsigned xj_index=0; xj_index < x_size; ++xj_index) {
@@ -107,7 +107,7 @@ surfdata_to_nkm_surfdata(const SurfData& sd, nkm::SurfData& nkm_sd)
     }
     else{
       for(unsigned f_index=0; f_index<f_size; ++f_index)
-	assert(der_order(0,f_index)<2);
+	assert(der_order(f_index,0)<2);
     }
   }
 
@@ -116,6 +116,7 @@ surfdata_to_nkm_surfdata(const SurfData& sd, nkm::SurfData& nkm_sd)
   const SurfPoint& constraint_point = sd.getConstraintPoint();
 
   nkm_sd = nkm::SurfData(XR, Y, der_order, derY);
+  
 }
 
 
@@ -124,6 +125,7 @@ KrigingModel::KrigingModel(const SurfData& sd, const ParamMap& args)
 {
   nkm::SurfData nkmSurfData;
   surfdata_to_nkm_surfdata(sd, nkmSurfData);
+  /*
   int der_order=0;
   ParamMap::const_iterator param_it;
   param_it = args.find("derivative_order");
@@ -139,7 +141,6 @@ KrigingModel::KrigingModel(const SurfData& sd, const ParamMap& args)
     assert(der_order<=1);
   }
   if(der_order==0)
-    nkmKrigingModel = new nkm::KrigingModel(nkmSurfData, args);
   else if(der_order==1) {
     if(nkmSurfData.getDerOrder()<1) {
       std::cerr << "error in KrigingModel::KrigingModel()\nyou requested that we build a Gradient Enhanced Kriging Model but did not provide gradient information" << std::endl;
@@ -148,8 +149,10 @@ KrigingModel::KrigingModel(const SurfData& sd, const ParamMap& args)
     nkmKrigingModel = new nkm::GradKrigingModel(nkmSurfData, args);
     //std::cerr << "built Gradient Enhanced Kriging Model" << std::endl;
   }
-
+  */
+  nkmKrigingModel = new nkm::KrigingModel(nkmSurfData, args);
   nkmKrigingModel->create();
+
 }
 
 
@@ -162,18 +165,18 @@ KrigingModel::~KrigingModel()
 
 double KrigingModel::evaluate(const VecDbl& x) const
 {
-  nkm::MtxDbl nkm_x(1, ndims);
+  nkm::MtxDbl nkm_x(ndims,1);
   for(size_t i=0; i<ndims; ++i)
-    nkm_x(0, i) = x[i];
+    nkm_x(i,0) = x[i];
   return (nkmKrigingModel->evaluate(nkm_x));
 }
 
 
 double KrigingModel::variance(const VecDbl& x) const
 {
-  nkm::MtxDbl nkm_x(1, ndims);
+  nkm::MtxDbl nkm_x(ndims,1);
   for(size_t i=0; i<ndims; ++i)
-    nkm_x(0, i) = x[i];
+    nkm_x(i,0) = x[i];
   //double adj_var=nkmKrigingModel->eval_variance(nkm_x);
   //printf("KrigingModel::variance() adj_var=%g\n",adj_var);
   //return (adj_var);
@@ -183,37 +186,37 @@ double KrigingModel::variance(const VecDbl& x) const
 
 VecDbl KrigingModel::gradient(const VecDbl& x) const
 {
-  nkm::MtxDbl nkm_x(1, ndims);
+  nkm::MtxDbl nkm_x(ndims,1);
   for(size_t i=0; i<ndims; ++i)
-    nkm_x(0, i) = x[i];
+    nkm_x(i,0) = x[i];
 
-  nkm::MtxDbl nkm_d1y(1, ndims);
+  nkm::MtxDbl nkm_d1y(ndims,0);
   nkmKrigingModel->evaluate_d1y(nkm_d1y, nkm_x);
 
   VecDbl d1y(ndims, 0.0); 
   for(size_t i=0; i<ndims; ++i)
-    d1y[i] = nkm_d1y(0,i);
+    d1y[i] = nkm_d1y(i,0);
 
   return d1y;
 }
 
 MtxDbl KrigingModel::hessian(const VecDbl& x) const
 {
-  nkm::MtxDbl nkm_x(1, ndims);
+  nkm::MtxDbl nkm_x(ndims,1);
   for(size_t i=0; i<ndims; ++i)
-    nkm_x(0, i) = x[i];
+    nkm_x(i,0) = x[i];
 
   int num_lower_elem=(ndims+1)*ndims/2;
-  nkm::MtxDbl nkm_d2y(1, num_lower_elem);
+  nkm::MtxDbl nkm_d2y(num_lower_elem,1);
   nkmKrigingModel->evaluate_d2y(nkm_d2y, nkm_x);
 
   MtxDbl d2y(ndims, ndims, 0.0); 
   int k=0;
   for(size_t j=0; j<ndims; ++j) {
-    d2y(j,j)=nkm_d2y(0,k);
+    d2y(j,j)=nkm_d2y(k,0);
     k++;
     for(size_t i=j+1; i<ndims; ++i) {
-      d2y(i,j) = nkm_d2y(0,k);
+      d2y(i,j) = nkm_d2y(k,0);
       d2y(j,i) = d2y(i,j);
       k++;
     }
@@ -225,9 +228,12 @@ MtxDbl KrigingModel::hessian(const VecDbl& x) const
 
 std::string KrigingModel::asString() const
 {
+
   return (nkmKrigingModel->model_summary_string());
   // TODO: be able to write NKM_KrigingModel as a string
   //assert(false);
+
+
 }
 
 
@@ -280,8 +286,11 @@ void KrigingModelFactory::sufficient_data(const SurfData& sd)
 typedef std::pair<double,VecDbl> KMPair;
 SurfpackModel* KrigingModelFactory::Create(const SurfData& sd)
 {
+
+
   this->add("ndims",surfpack::toString(sd.xSize()));
   this->config();
 
   return new KrigingModel(sd, params);
+
 }

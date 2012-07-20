@@ -13,6 +13,8 @@ using std::cerr;
 using std::endl;
 using std::ostringstream;
 
+
+//#define __KRIG_ERR_TEST__
 //#define __NKM_UNBIASED_LIKE__
 
 //#define __KRIGING_DER_TEST__
@@ -385,6 +387,46 @@ KrigingModel::KrigingModel(const SurfData& sd, const ParamMap& params)
   if (param_it != params.end() && param_it->second.size() > 0)
     outputLevel=static_cast<short>(std::atoi(param_it->second.c_str()));
 
+  // ********************************************************************
+  // does the user want to use derivative information to build the 
+  // Kriging model (e.g. Gradient Enhanced Kriging)
+  // ******************************************************************** 
+
+  buildDerOrder=0; //default is regular Kriging (i.e. not GEK)
+  param_it = params.find("derivative_order");
+  if(param_it != params.end() && param_it->second.size() > 0)
+    buildDerOrder = std::atoi(param_it->second.c_str()); 
+  if(buildDerOrder==0) {//Kriging
+    numEqnAvail=numPoints;
+    nDer=1;
+    Der.newSize(numVarsr,nDer); Der.zero();
+  } else if(buildDerOrder==1) { //Gradient Enhanced Kriging (GEK)
+    numEqnAvail=(1+numVarsr)*numPoints;
+    multi_dim_poly_power(Der, numVarsr, 1);  //use all mixed partial 
+    //derivatives, up to first order, of the basis functions
+    nDer=Der.getNCols(); //for GradKrigingModel nDer=(1+numVarsr);
+    //printf("nDer=%d\n",nDer);
+    int data_der_order=sdBuild.getDerOrder();
+    if(data_der_order<1) {
+      std::cerr << "the order of derivative information available in the "
+		<< "build data is " << data_der_order << "\n"
+		<< "You need to supply gradients of the output in order to "
+		<< "construct a\nGradient Enhanced Kriging (GEK) Model." 
+		<< std::endl;
+      assert(false);
+    }
+  }
+  else{
+    std::cerr << "derivative_order=" << buildDerOrder  
+	      << " in the nkm::KrigingModel constructor.\n"
+	      << "For Kriging you must use derivative_order=0.\n"
+	      << "For Gradient Enhanced Kriging (GEK) you must use "
+	      << "derivative_order=1.\nHigher order derivative "
+	      << "enhanced Kriging (e.g. Hessian Enhanced Kriging)\n"
+	      << "has not been implemented." << std::cerr;
+    assert(false);
+  }
+
   // *************************************************************  
   // detect an anchor point if present this is the one point that 
   // we make sure that the equationSelectingCholR does not discard
@@ -681,7 +723,8 @@ KrigingModel::KrigingModel(const SurfData& sd, const ParamMap& params)
   // number, this determines which derivatives of the constraint
   // function can be computed analytically so handle that here too
   // *************************************************************
-  constraintType="rcond";
+  //constraintType="rcond"; //rcond is now the only option for type of 
+  //constraint against ill conditioning
   numConFunc=1;
   
   //convert to the Dakota bitflag convention for derivative orders
@@ -755,8 +798,38 @@ KrigingModel::KrigingModel(const SurfData& sd, const ParamMap& params)
   // this ends the input parsing now finish up the prep work
   // *************************************************************
 
-  // BMA TODO: allow user (or at least developer) to specify whether
-  // to use rotations or just the identity
+  // precompute and store the trend function for all build points 
+  if(buildDerOrder==0) //for Kriging
+    eval_trend_fn(Gall, XR); 
+  else if(buildDerOrder>=1) { //for GEK
+    //actually this is generic to higher order derivative enhanced Kriging
+    //(e.g. Hessian Enhanced Kriging) provided that Der is appropriately
+    //defined
+    eval_der_trend_fn(Gall, Der, XR);
+  } else{
+    std::cerr << "bogus buildDerOrder=" << buildDerOrder 
+	      << " in the constructor when evaluating Gall" << std::endl;
+    assert(false);
+  }
+  
+  if((ifChooseNug==true)||(ifPrescribedNug==true)) {
+    //if we're using a nugget then we aren't using pivoted cholesky to 
+    //select an optimal subset of points, that means that the order of 
+    //points aren't going to change so we'll set Y and Gtran to what
+    //we know they need to be
+    iPtsKeep.newSize(numPoints,1);
+    for(int ipt=0; ipt<numPoints; ++ipt)
+      iPtsKeep(ipt,0)=ipt;
+
+    Y.copy(Yall);
+    
+    polyOrder=maxAllowedPolyOrder;    
+    nTrend=numTrend(maxAllowedPolyOrder,0);
+    Gtran.newSize(numEqnAvail,nTrend);
+    for(int itrend=0; itrend<nTrend; ++itrend)
+      for(int i=0; i<numEqnAvail; ++i)
+	Gtran(i,itrend)=Gall(itrend,i);
+  }
 
   // initialize trend function (and rotations)
   // this initializes EulAng, Rot, Poly, G (trend), and Z (diff on XR)
@@ -784,7 +857,7 @@ void KrigingModel::create()
   prevObjDerMode=prevConDerMode=0; //tells us not to reuse previous work used
   //to calculate the objective, constraints and their derivatives the first 
   //time they are asked for
-  prevTheta.newSize(1,numTheta); 
+  prevTheta.newSize(numTheta,1); 
   prevTheta.zero(); //not necessary just useful to debug
 
   //printf("KM.create():1: nug=%g\n",nug);
@@ -928,12 +1001,14 @@ void KrigingModel::create()
   if(outputLevel >= NORMAL_OUTPUT)
     std::cout << model_summary_string();
 
-  //deallocate matrices we no longer need after emulator has been created
+  //make a reordered copy of (the retained portion of) XR for evaluation speed
+  XRreorder.newSize(numVarsr,numPointsKeep);
+  for(int ipt=0; ipt<numPointsKeep; ++ipt) {
+    int isrc=iPtsKeep(ipt,0);
+    for(int ixr=0; ixr<numVarsr; ++ixr)
+      XRreorder(ixr,ipt)=XR(ixr,isrc);
+  }
 
-  //temporary variables used by masterObjectiveAndConstraints
-
-  temp.clear();
-  temp2.clear();
 
   //variables whose values needed to be retained between sequential call to masterObjectiveAndConstraints for precompute and store strategy to work
   prevObjDerMode=prevConDerMode=0;
@@ -941,20 +1016,41 @@ void KrigingModel::create()
   Z.clear(); //matrix
   Ztheta.clear(); //vector
   R.clear(); //matrix
-  G.clear(); //matrix
-  Yall.clear();
-  Gall.clear();
-  rcondDblWork.clear();
-  rcondIntWork.clear();
-  sumAbsColR.clear();
-  lapackRcondR.clear();
-  oneNormR.clear();
-
+  G_Rinv_Gtran_Chol_Scale.clear(); //vector
+  G_Rinv_Gtran_Chol_DblWork.clear(); //vector
+  G_Rinv_Gtran_Chol_IntWork.clear(); //vector 
+  G_Rinv_Y.clear(); //vector
+  eps.clear(); //vector
+  prevTheta.clear(); //vector 
   con.clear(); //vector
-  gradObj.clear(); //vector
-  gradCon.clear(); //matrix
   hessObj.clear(); //matrix used to compute hessObj
 }
+
+
+std::string KrigingModel::get_corr_func() const {
+  std::ostringstream oss;
+
+  switch(corrFunc) {
+  case GAUSSIAN_CORR_FUNC:
+    oss << "Gaussian";
+    break;
+  case EXP_CORR_FUNC:
+    oss << "exponential";
+    break;
+  case POW_EXP_CORR_FUNC:
+    oss << "powered exponential with power=" << powExpCorrFuncPow;
+    break;
+  case MATERN_CORR_FUNC:
+    oss << "Matern " << static_cast<int>(maternCorrFuncNu*2.0) << "/2";
+    break;
+  default:
+    std::cerr << "unknown correlation function enumerated as " << corrFunc
+	      << std::endl;
+    assert(false);
+  }
+  return (oss.str());
+}
+
 
 std::string KrigingModel::model_summary_string() const {
   MtxDbl temp_out_corr_lengths(1,numVarsr);
@@ -970,11 +1066,21 @@ std::string KrigingModel::model_summary_string() const {
 
   std::ostringstream oss;
   oss << "--- Surfpack Kriging Diagnostics ---\n";
-  oss << "KM: #pts=" << numPoints << "; used " << numEqnKeep << "/" << numEqnAvail << " pts; Correlation lengths=(" << temp_out_corr_lengths(0,0);
-  for(int i=1; i<numVarsr; ++i)
-    oss << ", " << temp_out_corr_lengths(0,i);
-  oss << "); unadjusted variance=" << estVarianceMLE * scaler.unScaleFactorVarY() << "; log(likelihood)=" << likelihood << "; using the ";
-
+  if(buildDerOrder==0)
+    oss << "KM: #real inputs=" << numVarsr << "; #pts=" << numPoints 
+	<< "; used " << numPointsKeep << "/" << numPoints << " pts;\n";
+  else if(buildDerOrder==1)
+    oss << "GEK: #real inputs=" << numVarsr << "; #pts=" << numPoints 
+	<< "; #eqns=" << numEqnAvail << "; used " 
+	<< numRowsR << "/" << numEqnAvail << " eqns;\n";
+  else{
+    oss << "error std::string KrigingModel::model_summary_string() const\n"
+	<< "buildDerOrder=" << buildDerOrder << "; it should be 0 for Kriging"
+	<< " or 1 for Gradient Enhanced Kriging (GEK);"
+	<< " the model_summary_string() function will need to be modified "
+	<< "to handle other build derivative orders.\n";
+  }
+  oss << "using the ";
   if(corrFunc==GAUSSIAN_CORR_FUNC)
     oss << "Gaussian";
   else if(corrFunc==EXP_CORR_FUNC)
@@ -987,23 +1093,55 @@ std::string KrigingModel::model_summary_string() const {
     std::cerr << "unknown corr func in model_summary_string()\n";
     assert(NULL);
   }
-  oss << " correlation function; the trend is a ";
+  oss << " correlation function;\n"
+      << "Correlation lengths=[" << temp_out_corr_lengths(0,0);
+  for(int ixr=1; ixr<numVarsr; ++ixr)
+    oss << ", " << temp_out_corr_lengths(ixr,0);
+  oss << "]^T;\nunadjusted variance=" 
+      << estVarianceMLE * scaler.unScaleFactorVarY() 
+      << "; \"per equation\" log(likelihood)=" << likelihood << ";\n"
+      << "rcond(R)=" << rcondR << "; rcond(G_Rinv_Gtran)=" 
+      << rcond_G_Rinv_Gtran << "; [if either rcond is less\n"
+      << "than 2^-40 (approx 9.095*10^-13) then the matrix is ill-conditioned "
+      << "and\nthat \"voids the warranty\" of the Kriging Model]; nugget=" 
+      << nug << "; the trend\nis a ";
   if(polyOrder>1) {
     if(ifReducedPoly==true)
       oss << "reduced_";
     else oss <<"full ";
   }
-  oss << "polynomial of order=" << polyOrder << "(order " << polyOrderRequested << 
-    " was desired); rcond(R)=" << rcondR << "; rcond(Gtran_Rinv_G)=" << rcond_Gtran_Rinv_G 
-      << "; nugget=" << nug << ".\n";
-  //printf("mod_sum_str nug=%22.16g\n",nug);
-
-  oss << "Beta= (" << betaHat(0,0);
-  for(int i=1; i<nTrend; ++i)
-    oss << "," << betaHat(i,0);
-  oss << ")\n";
+  oss << "polynomial of order=" << polyOrder 
+      << " (order " << polyOrderRequested << " was desired, order " 
+      << maxAllowedPolyOrder << " was allowable);\n"
+      << "the trend basis function coefficients (for scaled inputs and "
+      << "outputs)\nBeta= [" << betaHat(0,0);
+  for(int itrend=1; itrend<nTrend; ++itrend)
+    oss << "," << betaHat(itrend,0);
+  oss << "]^T\n";
   oss << "------------------------------------\n";
   return (oss.str());  
+}
+
+void KrigingModel::preAllocateMaxMemory() {
+  //this preallocates the maximum sizce of arrays whose size depends on how many equations were discarded by pivoted Cholesky and they could possibly be allocated to a different size than their maximum the first time they are allocated.
+  
+  nTrend=numTrend(maxAllowedPolyOrder,0);
+  Y.newSize(numEqnAvail,1);
+  Gtran.newSize(numEqnAvail,nTrend);
+  Rinv_Gtran.newSize(numEqnAvail,nTrend);
+  G_Rinv_Gtran_Chol.newSize(nTrend,nTrend);
+  rhs.newSize(numEqnAvail,1);
+  betaHat.newSize(nTrend,1);
+  G_Rinv_Y.newSize(nTrend,1);
+  eps.newSize(numEqnAvail,1);
+  iPtsKeep.newSize(numPoints,1);
+  RChol.newSize(numEqnAvail,numEqnAvail);
+  if((buildDerOrder==1)&&(ifChooseNug==false)&&(ifPrescribedNug==false)) 
+    scaleRChol.newSize(numEqnAvail,2);
+  else
+    scaleRChol.newSize(numEqnAvail,1);
+
+  return;
 }
 
 // BMA TODO: combine these two functions?
@@ -1094,6 +1232,7 @@ MtxDbl& KrigingModel::evaluate(MtxDbl& y, const MtxDbl& xr) const
   matrix_mult(y, r, rhs    , 1.0, 1.0);
   
   scaler.unScaleYOther(y);
+
   //printf("y is correct for ValidateMain because it isn't being unscaled\n");
 
   return y;
@@ -1814,24 +1953,101 @@ MtxDbl& KrigingModel::correlation_matrix(MtxDbl& r, const MtxDbl& xr) const
 	    }
 	  }
 	  for(k=0; k<numVarsr-1; ++k) 
-	    for(j=0; j<numRowsR; ++j) {
-	      jeqn=iEqnKeep(j,0);
-	      for(i=0; i<nrowsxr; ++i) 
-		r(i,j)*=matern_1pt5_coef(correlations(0,k)*
-					 std::fabs(xr(i,k)-XR(jeqn,k)));
-	    }
-	}else if(maternCorrFuncNu==2.5) {
-	  //this value of k was pulled out of above and below to save doing an 
-	  //extra loop for just the exp() operation and an extra loop for one 
-	  //of the matern coefficients
-	  k=numVarsr-1; 
-	  for(j=0; j<numRowsR; ++j) {
-	    jeqn=iEqnKeep(j,0);
-	    for(i=0; i<nrowsxr; ++i) {
-	      temp_double=correlations(0,k)*std::fabs(xr(i,k)-XR(jeqn,k));
-	      r(i,j)=std::exp(r(i,j)-temp_double)*matern_2pt5_coef(temp_double);
-	    }
+	    r(i+1+k,j)*=krig_r; //dr_dXR
+	}
+	if(numPointsKeep>numWholePointsKeep) {
+	  //the last XR point isn't a "whole point" we dropped some derivatives
+	  //out of its gradient to meet the bound on rcond, numExtraDerKeep
+	  //is the number of derivatives kept for the last point.  The 
+	  //derivatives of the last point have NOT been reordered, they appear
+	  //in the same order as the input variables
+#ifdef __KRIG_ERR_CHECK__
+	  assert((ipt==numWholePointsKeep)&&
+		 (ipt==numPointsKeep-1)&&
+		 (i==neqn_per_pt*numWholePointsKeep));
+#endif
+	  //printf("deltax=xr(0,%d)-XRreorder(0,%d);\n",j,ipt);
+	  deltax=xr(0,j)-XRreorder(0,ipt);
+	  krig_r=-correlations(0,0)*deltax*deltax; //=- is correct
+	  for(k=1; k<numVarsr-1; ++k) {
+	    deltax=xr(k,j)-XRreorder(k,ipt);
+	    krig_r-=correlations(k,0)*deltax*deltax; //-= is correct
 	  }
+	  k=numVarsr-1;
+	  deltax=xr(k,j)-XRreorder(k,ipt);
+	  krig_r=std::exp(krig_r-correlations(k,0)*deltax*deltax);
+	  r(i,j)=krig_r; //r(XR(i,:),xr) (the correlation function)
+	  krig_r*=2.0; //now it's 2*kriging's correlation function to save 
+	  //some ops
+	  //dr_dXR_k=2*theta(k)*(xr(k,j)-XRreorder(k,ipt))*r(xr(k,j),XRreorder(k,ipt))
+	  for(k=0; k<numExtraDerKeep; ++k)
+	    r(i+1+k,j)=correlations(k,0)*(xr(k,j)-XRreorder(k,ipt))*krig_r; //dr_dXR
+	}    
+      }
+    }
+  } else if((corrFunc==MATERN_CORR_FUNC)&&(maternCorrFuncNu==1.5)) {
+    //this starts the section for the Matern 3/2 correlation function
+    
+    double theta_abs_dx;
+    if(numVarsr==1) {
+      double theta=correlations(0,0); //save array access lookup
+      double theta_squared= theta*theta;
+      double exp_neg_theta_abs_dx;
+      for(j=0; j<nptsxr; ++j) {
+	for(ipt=0, i=0; ipt<numWholePointsKeep; ++ipt, i+=2) {
+	  deltax=(xr(0,j)-XRreorder(0,ipt));
+	  theta_abs_dx=theta*std::fabs(deltax);
+	  exp_neg_theta_abs_dx=std::exp(-theta_abs_dx);	
+	  r(i  ,j)=(1.0+theta_abs_dx)*exp_neg_theta_abs_dx; //1D correlation 
+	  //function
+	  r(i+1,j)=theta_squared*deltax*exp_neg_theta_abs_dx; //this is a first 
+	  //derivative with respect to XR not xr
+	}
+	if(numPointsKeep>numWholePointsKeep) {
+	  //since there's part of another point left and we know that 
+	  //there is only one derivative it means that were missing that 
+	  //derivative and only have the function value
+#ifdef __KRIG_ERR_CHECK__
+	  assert((ipt==numWholePointsKeep)&&
+		 (ipt==numPointsKeep-1)&&
+		 (i==neqn_per_pt*numWholePointsKeep)&&
+		 (i==numRowsR-1));
+#endif
+	  theta_abs_dx=theta*std::fabs(xr(0,j)-XRreorder(0,ipt));
+	  r(i,j)=(1.0+theta_abs_dx)*std::exp(-theta_abs_dx); //1D correlation
+	  //function
+	}
+      }      
+    }
+    else{ //there is more than 1 dimension 
+      double matern_coef, matern_coef_prod, sum_neg_theta_abs_dx;
+      for(j=0; j<nptsxr; ++j) {
+	for(ipt=0, i=0; ipt<numWholePointsKeep; ++ipt, i+=neqn_per_pt) {
+	  deltax=xr(0,j)-XRreorder(0,ipt);
+	  theta_abs_dx=correlations(0,0)*std::fabs(deltax);
+	  matern_coef=1.0+theta_abs_dx;
+	  matern_coef_prod=matern_coef;
+	  r(i+1,j)= //dr_dXR/r
+	    correlations(0,0)*correlations(0,0)*deltax/matern_coef;
+	  sum_neg_theta_abs_dx=-theta_abs_dx; //=- is correct
+	  for(k=1; k<numVarsr-1; ++k) {
+	    deltax=xr(k,j)-XRreorder(k,ipt);
+	    theta_abs_dx=correlations(k,0)*std::fabs(deltax);
+	    matern_coef=1.0+theta_abs_dx;
+	    matern_coef_prod*=matern_coef;
+	    r(i+1+k,j)= //dr_dXR/r
+	      correlations(k,0)*correlations(k,0)*deltax/matern_coef;
+	    sum_neg_theta_abs_dx-=theta_abs_dx; //-= is correct
+	  }
+	  k=numVarsr-1;
+	  deltax=xr(k,j)-XRreorder(k,ipt);
+	  theta_abs_dx=correlations(k,0)*std::fabs(deltax);
+	  matern_coef=1.0+theta_abs_dx;
+	  krig_r=matern_coef_prod*matern_coef*
+	    std::exp(sum_neg_theta_abs_dx-theta_abs_dx);
+	  r(i,j)=krig_r; //r(XR(i,:),xr) (the correlation function)
+	  r(i+1+k,j)= //dr_dXR
+	    correlations(k,0)*correlations(k,0)*deltax/matern_coef*krig_r;
 	  for(k=0; k<numVarsr-1; ++k) 
 	    for(j=0; j<numRowsR; ++j) {
 	      jeqn=iEqnKeep(j,0);
@@ -1843,28 +2059,58 @@ MtxDbl& KrigingModel::correlation_matrix(MtxDbl& r, const MtxDbl& xr) const
 	  std::cerr << "invalid Matern Nu\n";
 	  assert(NULL);
 	}
+	if(numPointsKeep>numWholePointsKeep) {
+	  //the last XR point isn't a "whole point" we dropped some derivatives
+	  //out of its gradient to meet the bound on rcond, numExtraDerKeep
+	  //is the number of derivatives kept for the last point.  The 
+	  //derivatives of the last point have NOT been reordered, they appear
+	  //in the same order as the input variables
+#ifdef __KRIG_ERR_CHECK__
+	  assert((ipt==numWholePointsKeep)&&
+		 (ipt==numPointsKeep-1)&&
+		 (i==neqn_per_pt*numWholePointsKeep));
+#endif
+	  theta_abs_dx=correlations(0,0)*std::fabs(xr(0,j)-XRreorder(0,ipt));
+	  matern_coef_prod=1.0+theta_abs_dx;
+	  sum_neg_theta_abs_dx=-theta_abs_dx; //=- is correct
+	  for(k=1; k<numVarsr-1; ++k) {
+	    theta_abs_dx=correlations(k,0)*std::fabs(xr(k,j)-XRreorder(k,ipt));
+	    matern_coef_prod*=(1.0+theta_abs_dx);
+	    sum_neg_theta_abs_dx-=theta_abs_dx; //-= is correct
+	  }
+	  k=numVarsr-1;
+	  theta_abs_dx=correlations(k,0)*std::fabs(xr(k,j)-XRreorder(k,ipt));
+	  krig_r=matern_coef_prod*(1.0+theta_abs_dx)*
+	    std::exp(sum_neg_theta_abs_dx-theta_abs_dx);
+	  r(i,j)=krig_r; //r(XR(i,:),xr) (the correlation function)
+	  for(k=0; k<numExtraDerKeep; ++k) {
+	    deltax=xr(k,j)-XRreorder(k,ipt);	    
+	    r(i+1+k,j)=krig_r * //r(i+1+k,j)=dr_dXR
+	      correlations(k,0)*correlations(k,0)*deltax/
+	      (1.0+correlations(k,0)*std::fabs(deltax));
+	  }
+	}    
       }
-      else{
-	std::cerr << "unknown corrFunc A\n";
-	assert(NULL);
-      }
-    } else if(corrFunc==POW_EXP_CORR_FUNC) { 
-      //k=0 was pulled out from below to avoid doing an extra loop just to 
-      //initialize all of r to zero
-      for(j=0; j<numRowsR; ++j) {
-	jeqn=iEqnKeep(j,0);
-	for(i=0; i<nrowsxr; ++i) 
-	    r(i,j)=-correlations(0,0)* //=- is correct
-	      std::pow(std::fabs(xr(i,0)-XR(jeqn,0)),powExpCorrFuncPow); 
-      }
-
-      //all but first and last k
-      for(k=1;k<numVarsr-1;++k)
-	for(j=0; j<numRowsR; ++j) {
-	  jeqn=iEqnKeep(j,0);
-	  for(i=0; i<nrowsxr; ++i) 
-	    r(i,j)-=correlations(0,k)* //-= is correct
-	      std::pow(std::fabs(xr(i,k)-XR(jeqn,k)),powExpCorrFuncPow); 
+    }
+  } else if((corrFunc==MATERN_CORR_FUNC)&&(maternCorrFuncNu==2.5)) {
+    //this starts the section for the Matern 5/2 correlation function
+    
+    const double one_third=1.0/3.0;
+    double theta_abs_dx;
+    if(numVarsr==1) {
+      double theta=correlations(0,0); //save array access lookup
+      double theta_squared= theta*theta;
+      double exp_neg_theta_abs_dx;
+      for(j=0; j<nptsxr; ++j) {
+	for(ipt=0, i=0; ipt<numWholePointsKeep; ++ipt, i+=2) {
+	  deltax=(xr(0,j)-XRreorder(0,ipt));
+	  theta_abs_dx=theta*std::fabs(deltax);
+	  exp_neg_theta_abs_dx=std::exp(-theta_abs_dx);	
+	  r(i  ,j)=(1.0+theta_abs_dx+theta_abs_dx*theta_abs_dx*one_third)*
+	    exp_neg_theta_abs_dx; //1D correlation function
+	  r(i+1,j)=theta_squared*deltax*(1.0+theta_abs_dx)*one_third*
+	    exp_neg_theta_abs_dx; //this is a first derivative with respect 
+	  //to XR not xr
 	}
 
       //this value of k was pulled out of above to save doing an extra loop 
@@ -1877,9 +2123,78 @@ MtxDbl& KrigingModel::correlation_matrix(MtxDbl& r, const MtxDbl& xr) const
 			  std::pow(std::fabs(xr(i,k)-XR(jeqn,k)),
 				   powExpCorrFuncPow));
       }      
-    } else{
-      std::cerr << "unknown corrFunc B\n";
-      assert(NULL);
+    }
+    else{ //there is more than 1 dimension
+      double matern_coef, matern_coef_prod, sum_neg_theta_abs_dx;
+      for(j=0; j<nptsxr; ++j) {
+	for(ipt=0, i=0; ipt<numWholePointsKeep; ++ipt, i+=neqn_per_pt) {
+	  deltax=xr(0,j)-XRreorder(0,ipt);
+	  theta_abs_dx=correlations(0,0)*std::fabs(deltax);
+	  matern_coef=1.0+theta_abs_dx+theta_abs_dx*theta_abs_dx*one_third;
+	  matern_coef_prod=matern_coef;
+	  r(i+1,j)= //dr_dXR/r
+	    correlations(0,0)*correlations(0,0)*deltax*(1.0+theta_abs_dx)*
+	    one_third/matern_coef;
+	  sum_neg_theta_abs_dx=-theta_abs_dx; //=- is correct
+	  for(k=1; k<numVarsr-1; ++k) {
+	    deltax=xr(k,j)-XRreorder(k,ipt);
+	    theta_abs_dx=correlations(k,0)*std::fabs(deltax);
+	    matern_coef=1.0+theta_abs_dx+theta_abs_dx*theta_abs_dx*one_third;
+	    matern_coef_prod*=matern_coef;
+	    r(i+1+k,j)= //dr_dXR/r
+	      correlations(k,0)*correlations(k,0)*deltax*(1.0+theta_abs_dx)*
+	      one_third/matern_coef;
+	    sum_neg_theta_abs_dx-=theta_abs_dx; //-= is correct
+	  }
+	  k=numVarsr-1;
+	  deltax=xr(k,j)-XRreorder(k,ipt);
+	  theta_abs_dx=correlations(k,0)*std::fabs(deltax);
+	  matern_coef=1.0+theta_abs_dx+theta_abs_dx*theta_abs_dx*one_third;
+	  krig_r=matern_coef_prod*matern_coef*
+	    std::exp(sum_neg_theta_abs_dx-theta_abs_dx);
+	  r(i,j)=krig_r; //r(XR(i,:),xr) (the correlation function)
+	  r(i+1+k,j)= //dr_dXR
+	    correlations(k,0)*correlations(k,0)*deltax*(1.0+theta_abs_dx)*
+	    one_third/matern_coef*krig_r;
+	  for(k=0; k<numVarsr-1; ++k) 
+	    r(i+1+k,j)*=krig_r; //dr_dXR
+	}
+	if(numPointsKeep>numWholePointsKeep) {
+	  //the last XR point isn't a "whole point" we dropped some derivatives
+	  //out of its gradient to meet the bound on rcond, numExtraDerKeep
+	  //is the number of derivatives kept for the last point.  The 
+	  //derivatives of the last point have NOT been reordered, they appear
+	  //in the same order as the input variables
+#ifdef __KRIG_ERR_CHECK__
+	  assert((ipt==numWholePointsKeep)&&
+		 (ipt==numPointsKeep-1)&&
+		 (i==neqn_per_pt*numWholePointsKeep));
+#endif
+	  theta_abs_dx=correlations(0,0)*std::fabs(xr(0,j)-XRreorder(0,ipt));
+	  matern_coef_prod=1.0+theta_abs_dx+theta_abs_dx*theta_abs_dx*one_third;
+	  sum_neg_theta_abs_dx=-theta_abs_dx; //=- is correct
+	  for(k=1; k<numVarsr-1; ++k) {
+	    theta_abs_dx=correlations(k,0)*std::fabs(xr(k,j)-XRreorder(k,ipt));
+	    matern_coef_prod*=
+	      (1.0+theta_abs_dx+theta_abs_dx*theta_abs_dx*one_third);
+	    sum_neg_theta_abs_dx-=theta_abs_dx; //-= is correct
+	  }
+	  k=numVarsr-1;
+	  theta_abs_dx=correlations(k,0)*std::fabs(xr(k,j)-XRreorder(k,ipt));
+	  krig_r=matern_coef_prod*
+	    (1.0+theta_abs_dx+theta_abs_dx*theta_abs_dx*one_third)*
+	    std::exp(sum_neg_theta_abs_dx-theta_abs_dx);
+	  r(i,j)=krig_r; //r(XR(i,:),xr) (the correlation function)
+	  for(k=0; k<numExtraDerKeep; ++k) {
+	    deltax=xr(k,j)-XRreorder(k,ipt);
+	    theta_abs_dx=correlations(k,0)*std::fabs(deltax);
+	    r(i+1+k,j)=krig_r * //r(i+1+k,j)=dr_dXR
+	      correlations(k,0)*correlations(k,0)*deltax*(1.0+theta_abs_dx)/
+	      (3.0*(1.0+theta_abs_dx)+theta_abs_dx*theta_abs_dx);
+
+	  }
+	}    
+      }
     }    
   }
   return r;
@@ -1945,10 +2260,81 @@ MtxDbl& KrigingModel::dcorrelation_matrix_dxI(MtxDbl& dr, const MtxDbl& r,
 	  dr(ipt,j)=r(ipt,j)*
 	    matern_2pt5_d1_mult_r(temp_dbl,xr(ipt,Ider)-XR(jeqn,Ider));
       }
-    else{
-      std::cerr << "invalid Matern Nu in dcorrelation_matrix_dxI\n";
-      assert(NULL);
-    }    
+    }
+  } else if((corrFunc==MATERN_CORR_FUNC)&&(maternCorrFuncNu==2.5)) {
+    // *******************************************************************
+    // Matern 5/2 Correlation Function 
+    // 1D MATERN_CORR_FUNC 2.5 is twice differentiable everywhere (and 
+    // twice+ differentiable where x1!=x2)
+    // *******************************************************************
+    double theta=correlations(Ider,0); //save matrix dereference for speed
+    double theta_squared=theta*theta;
+    double theta_abs_dx;
+    double deltax;
+    if(numVarsr==1) {
+      double r_theta_squared_div_3_matern_coef;
+      for(j=0; j<nptsxr; ++j) {
+	for(ipt=0, i=0; ipt<numWholePointsKeep; ++ipt, i+=2) {
+	  deltax=(xr(Ider,j)-XRreorder(Ider,ipt));
+	  theta_abs_dx=theta*std::fabs(deltax);
+	  r_theta_squared_div_3_matern_coef=r(i,j)*theta_squared/
+	    (3.0*(1.0+theta_abs_dx)+theta_abs_dx*theta_abs_dx);
+	  dr(i  ,j)=-r_theta_squared_div_3_matern_coef*
+	    deltax*(1.0+theta_abs_dx);
+	  dr(i+1,j)=r_theta_squared_div_3_matern_coef*
+	    (1.0+theta_abs_dx-theta_abs_dx*theta_abs_dx);
+	}
+	// since there is only one dimension if there is a partial point
+	// it will be a function value only, and actually recalculating it
+	// will likely be faster on average then checking if there's a 
+	// partial point and calculating it if needed
+	ipt=numPointsKeep-1;
+	i=numRowsR-1;
+	deltax=(xr(Ider,j)-XRreorder(Ider,ipt));	
+	theta_abs_dx=theta*std::fabs(deltax);
+	dr(i,j)=-r(i,j)*theta_squared/
+	  (3.0*(1.0+theta_abs_dx)+theta_abs_dx*theta_abs_dx)*
+	  deltax*(1.0+theta_abs_dx);
+      }
+    } else{
+      double theta_squared_div_3_matern_coef;
+      double matern_d1_mult_r;
+      for(j=0; j<nptsxr; ++j) {
+	for(ipt=0, i=0; ipt<numWholePointsKeep; ++ipt, i+=neqn_per_pt) {
+	  deltax=xr(Ider,j)-XRreorder(Ider,ipt);
+	  theta_abs_dx=theta*std::fabs(deltax);
+	  theta_squared_div_3_matern_coef=theta_squared/
+	    (3.0*(1.0+theta_abs_dx)+theta_abs_dx*theta_abs_dx);
+	  matern_d1_mult_r=-theta_squared_div_3_matern_coef*
+	    deltax*(1.0+theta_abs_dx);
+	  dr(i  ,j)=r(i,j)*matern_d1_mult_r;
+	  for(k=0; k<numVarsr; ++k)
+	    dr(i+1+k,j)=r(i+1+k,j)*matern_d1_mult_r;
+	  dr(i+1+Ider,j)=r(i,j)*theta_squared_div_3_matern_coef*
+	    (1.0+theta_abs_dx-theta_abs_dx*theta_abs_dx);
+	}
+	if(numPointsKeep>numWholePointsKeep) {
+	  //ipt and i should be what we need them to be
+#ifdef __KRIG_ERR_CHECK__
+	  assert((ipt==numWholePointsKeep)&&
+		 (ipt==numPointsKeep-1)&&
+		 (i==neqn_per_pt*numWholePointsKeep));
+#endif
+	  deltax=xr(Ider,j)-XRreorder(Ider,ipt);
+	  theta_abs_dx=theta*std::fabs(deltax);
+	  theta_squared_div_3_matern_coef=theta_squared/
+	    (3.0*(1.0+theta_abs_dx)+theta_abs_dx*theta_abs_dx);
+	  matern_d1_mult_r=-theta_squared_div_3_matern_coef*
+	    deltax*(1.0+theta_abs_dx);
+	  dr(i  ,j)=r(i,j)*matern_d1_mult_r;
+	  for(k=0; k<numExtraDerKeep; ++k)
+	    dr(i+1+k,j)=r(i+1+k,j)*matern_d1_mult_r;
+	  if(Ider<numExtraDerKeep)
+	    dr(i+1+Ider,j)=r(i,j)*theta_squared_div_3_matern_coef*
+	      (1.0+theta_abs_dx-theta_abs_dx*theta_abs_dx);
+	}
+      }
+    }
   } else{
     std::cerr << "unknown corrFunc in dcorrelation_matrix_dxI\n";
     assert(NULL);
@@ -2098,10 +2484,15 @@ void KrigingModel::correlation_matrix(const MtxDbl& theta)
   //fflush(stdout);
   //assert((nrowsZ==nchoosek(numPoints,2))&&(numVarsr==theta.getNCols()));
 
-  Ztheta.newSize(nrowsZ,1);
-  matrix_mult(Ztheta,Z,theta,0.0,1.0,'N','T');
-  numRowsR=numEqnAvail; //numEqnAvail=numPoints for regular (not derivative enhanced Kriging)
-  R.newSize(numPoints,numPoints);
+  if(buildDerOrder==0)
+    numRowsR=numPoints;
+  else if(buildDerOrder==1)
+    numRowsR=numPoints*nDer;
+  else{
+    std::cerr << "buildDerOrder=" << buildDerOrder << " in void KrigingModel::correlation_matrix(const MtxDbl& theta).  It must either be 0 for Kriging or 1 for Gradient Enhanced Kriging.  Higher order build derivatives, (e.g. Hessian Enhanced Kriging) have not been implemented." << std::endl;
+    assert(false);
+  }
+  R.newSize(numRowsR,numRowsR);
 
   double Rij_temp;
   int ij=0;
@@ -2213,10 +2604,355 @@ void KrigingModel::correlation_matrix(const MtxDbl& theta)
   }
   fclose(fp);
   */
+
+  if(buildDerOrder>0) {
+    //Gaussian Matern1.5 and Matern2.5 are valid correlation functions for 
+    //Gradient Enhanced Kriging
+    double temp_double;
+    int zij, j;
+
+
+    if(corrFunc==GAUSSIAN_CORR_FUNC) {
+      //now handle the first order derivative submatrices, indiviually the first
+      //order derivative SUBmatrices are anti-symmetric but the whole matrix is
+      //symmetric
+      int Ii, Ij, Jj, Ji; //first letter identifies index OF derivative submatrix 
+      //second letter identifies index INTO derivative SUBmatrix
+      for(int Ider=0; Ider<numVarsr; ++Ider) {
+	zij=0;
+	double two_theta_Ider=2.0*theta(Ider,0);
+	for(j=0; j<numPoints-1; ++j) {//j<numPoints-1 avoids an i loop of length 0
+	  //diagonal (_j,_j) of off diagonal (I_, _) submatrix 
+	  Ij=(Ider+1)*numPoints+j;
+	  R(Ij, j)=0.0;
+	  R( j,Ij)=0.0;
+	  //Ij=(Ider+1)*numPoints+j;
+	  for(int i=j+1; i<numPoints; ++i, ++zij) {
+	    //off diagonal (_i,_j) of off-diagonal (I_, _) submatrix 
+	    Ii=(Ider+1)*numPoints+i;
+	    temp_double=-two_theta_Ider*deltaXR(zij,Ider)*R( i, j); 	    
+	    //here  temp_double=
+	    //                  R(Ii, j) = dR(i,j)/dXR1(Ider,i)
+	    //                  R( j,Ii) = dR(i,j)/dXR2(Ider,j)
+	    //and  -temp_double=
+	    //                  R(Ij, i) = dR(i,j)/dXR1(Ider,j)
+	    //                  R( i,Ij) = dR(i,j)/dXR2(Ider,i)
+	    //where XR1 is the first argument of the correlation function
+	    //and XR2 is the second argument of the correlation function
+	    R(Ii, j)= temp_double; 
+	    R( j,Ii)= temp_double; //whole R matrix is symmetric
+	    R(Ij, i)=-temp_double; 
+	    R( i,Ij)=-temp_double; //off-diagonal 1st order (actually all odd 
+	    //order) derivative SUBmatrices are anti-symmetric
+	  }
+	}
+	//diagonal (_j,_j) of off diagonal (I_, _) submatrix 
+	j=numPoints-1; //avoids an i loop of length 0
+	Ij=(Ider+1)*numPoints+j;
+	R(Ij,j)=0.0;
+	R(j,Ij)=0.0;    
+      }
+      
+      //note that all 2nd order (actually all even order) derivative SUBmatrices 
+      //are symmetric because the hadamard product of 2 (actually any even 
+      //number of) anti-symmetric matrices is a symmetric matrix
+      double two_theta_Jder;
+      for(int Jder=0; Jder<numVarsr; ++Jder) {
+	//do the on diagonal (J_,J_) submatrix 
+	two_theta_Jder=2.0*theta(Jder,0);
+	zij=0;      
+	for(j=0; j<numPoints-1; ++j) { //j<numPoints-1 avoids an i loop of length 0
+	  //diagonal (_j,_j) of on diagonal (J_,J_) submatrix
+	  Jj=(Jder+1)*numPoints+j; 
+	  R(Jj,Jj)=two_theta_Jder; //R(Jj,Jj)=2*theta(Jder,0)*R(j,j); R(j,j)=1; 
+	  for(int i=j+1; i<numPoints; ++i) {
+	    //off diagonal (_i,_j) of on-diagonal (J_,J_) submatrix
+	    Ji=(Jder+1)*numPoints+i;
+	    temp_double=two_theta_Jder*deltaXR(zij,Jder)*R(Ji, j)+
+	    two_theta_Jder*R( i, j);
+	    R(Ji,Jj)=temp_double;
+	    R(Jj,Ji)=temp_double;
+	    ++zij;
+	  }
+	}
+	//diagonal (_j,_j) of on diagonal (J_,J_) submatrix 
+	j=numPoints-1; //avoids an i loop of length 0
+	Jj=(Jder+1)*numPoints+j;
+	R(Jj,Jj)=two_theta_Jder; //R(j,j)=1 R(Jj,Jj)=2*theta(Jder,0)*R(j,j)
+	
+	
+	//do the off diagonal (I_,J_) submatrices
+	for(int Ider=Jder+1; Ider<numVarsr; ++Ider) {
+	  //off diagonal (I_,J_) submatrix
+	  zij=0;
+	  for(j=0; j<numPoints-1; ++j) {//j<numPoints-1 avoids an i loop of length 0
+	    //diagonal (_j,_j) of off-diagonal (I_,J_) submatrix
+	    Jj=(Jder+1)*numPoints+j; 
+	    Ij=(Ider+1)*numPoints+j;
+	    R(Ij,Jj)=0.0;
+	    R(Jj,Ij)=0.0;
+	    
+	    
+	    for(int i=j+1; i<numPoints; ++i) {
+	      //off diagonal (_i,_j) of off-diagonal (I_,J_) submatrix 
+	      Ii=(Ider+1)*numPoints+i;
+	      Ji=(Jder+1)*numPoints+i;
+	      temp_double=two_theta_Jder*deltaXR(zij,Jder)*R(Ii, j);
+	      R(Ii,Jj)= temp_double; 
+	      R(Ij,Ji)= temp_double; 
+	      R(Ji,Ij)= temp_double; 
+	      R(Jj,Ii)= temp_double; 
+	      ++zij;
+	    }
+	  }
+	  //diagonal (_j,_j) of off-diagonal (I_,J_) submatrix
+	  j=numPoints-1; //avoids an i loop of length 0
+	  Ij=(Ider+1)*numPoints+j;
+	  Jj=(Jder+1)*numPoints+j;
+	  R(Ij,Jj)=0.0;
+	  R(Jj,Ij)=0.0;
+	}
+      }
+    } else if((corrFunc==MATERN_CORR_FUNC)&&(maternCorrFuncNu==1.5)) {
+      //The second derivative of the Matern1.5 correlation function 
+      //is not strictly defined at XR(i,Ider)==XR(j,Jder) but the limit
+      //of the second derivative from both sides is defined and is the same
+      //this follows 
+      //Lockwood, Brian A. and Anitescu, Mihai, "Gradient-Enhanced
+      //    Universal Kriging for Uncertainty Proagation" 
+      //    Preprint ANL/MCS-P1808-1110 
+      //
+      //d2r_dXIdXJ with Ider==Jder
+      // = theta^2*exp(-theta*|XI-XJ|)-theta^3*|XI-XJ|*exp(-theta*|XI-XJ|) 
+      // = -theta^2*(1-2/matern_1pt5_coef)*r(XI,XJ) 
+      // = -matern_1pt5_d2_mult_r(theta,+/-(XI-XJ))*r(XI,XJ) (note the 
+      //    negative sign, it should be here, but does not appear when 
+      //    evalutation 2nd derivative of GP, because there it is second 
+      //    derivative with respect to the SAME argument, here it is the 
+      //    second derivative with respect to different arguments)
+
+      //now handle the first order derivative submatrices, indiviually the first
+      //order derivative SUBmatrices are anti-symmetric but the whole matrix is
+      //symmetric
+      int Ii, Ij, Jj, Ji; //first letter identifies index OF derivative 
+      //submatrix second letter identifies index INTO derivative SUBmatrix
+      for(int Ider=0; Ider<numVarsr; ++Ider) {
+	zij=0;
+	double theta_Ider=theta(Ider,0);
+	for(j=0; j<numPoints-1; ++j) {//j<numPoints-1 avoids an i loop of 
+	  //length 0
+
+	  //diagonal (_j,_j) of off diagonal (I_, _) submatrix 
+	  Ij=(Ider+1)*numPoints+j;
+	  R(Ij, j)=0.0;
+	  R( j,Ij)=0.0;
+	  //Ij=(Ider+1)*numPoints+j;
+	  for(int i=j+1; i<numPoints; ++i) {
+	    //off diagonal (_i,_j) of off-diagonal (I_, _) submatrix 
+	    Ii=(Ider+1)*numPoints+i;
+	    temp_double=
+	      matern_1pt5_d1_mult_r(theta_Ider,deltaXR(zij,Ider))*R( i, j);
+	    R(Ii, j)= temp_double; 
+	    R( j,Ii)= temp_double; //whole R matrix is symmetric
+	    R(Ij, i)=-temp_double; 
+	    R( i,Ij)=-temp_double; //off-diagonal 1st order (actually all odd 
+	    //order) derivative SUBmatrices are anti-symmetric
+	    ++zij;
+	  }
+	}
+	//diagonal (_j,_j) of off diagonal (I_, _) submatrix 
+	j=numPoints-1; //avoids an i loop of length 0
+	Ij=(Ider+1)*numPoints+j;
+	R(Ij, j)=0.0;
+	R( j,Ij)=0.0;    
+      }
+      
+      //note that all 2nd order (actually all even order) derivative SUBmatrices 
+      //are symmetric because the hadamard product of 2 (actually any even 
+      //number of) anti-symmetric matrices is a symmetric matrix
+      double theta_Jder;
+      double theta_Jder_squared;
+      for(int Jder=0; Jder<numVarsr; ++Jder) {
+	//do the on diagonal (J_,J_) submatrix 
+	theta_Jder=theta(Jder,0);
+	theta_Jder_squared=theta_Jder*theta_Jder;
+	zij=0;      
+	for(j=0; j<numPoints-1; ++j) { //j<numPoints-1 avoids an i loop of length 0
+	  //diagonal (_j,_j) of on diagonal (J_,J_) submatrix
+	  Jj=(Jder+1)*numPoints+j; 
+	  R(Jj,Jj)=theta_Jder_squared;
+	  for(int i=j+1; i<numPoints; ++i) {
+	    //off diagonal (_i,_j) of on-diagonal (J_,J_) submatrix
+	    Ji=(Jder+1)*numPoints+i;
+	    temp_double=//neg sign because d^2/dXR1dXR2 instead of d^2/dXR1^2
+	      -matern_1pt5_d2_mult_r(theta_Jder,deltaXR(zij,Jder))*R( i, j);
+	    R(Ji,Jj)=temp_double;
+	    R(Jj,Ji)=temp_double;
+	    ++zij;
+	  }
+	}
+	//diagonal (_j,_j) of on diagonal (J_,J_) submatrix 
+	j=numPoints-1; //avoids an i loop of length 0
+	Jj=(Jder+1)*numPoints+j;
+	R(Jj,Jj)=theta_Jder_squared;
+	
+	
+	//do the off diagonal (I_,J_) submatrices
+	for(int Ider=Jder+1; Ider<numVarsr; ++Ider) {
+	  //off diagonal (I_,J_) submatrix
+	  zij=0;
+	  for(j=0; j<numPoints-1; ++j) {//j<numPoints-1 avoids an i loop of length 0
+	    //diagonal (_j,_j) of off-diagonal (I_,J_) submatrix
+	    Jj=(Jder+1)*numPoints+j; 
+	    Ij=(Ider+1)*numPoints+j;
+	    R(Ij,Jj)=0.0;
+	    R(Jj,Ij)=0.0;
+	    
+	    for(int i=j+1; i<numPoints; ++i) {
+	      //off diagonal (_i,_j) of off-diagonal (I_,J_) submatrix 
+	      Ii=(Ider+1)*numPoints+i;
+	      Ji=(Jder+1)*numPoints+i;
+	      temp_double=
+		matern_1pt5_d1_mult_r(theta_Jder,-deltaXR(zij,Jder))*R(Ii, j);
+	      R(Ii,Jj)= temp_double; 
+	      R(Ij,Ji)= temp_double; 
+	      R(Ji,Ij)= temp_double; 
+	      R(Jj,Ii)= temp_double; 
+	      ++zij;
+	    }
+	  }
+	  //diagonal (_j,_j) of off-diagonal (I_,J_) submatrix
+	  j=numPoints-1; //avoids an i loop of length 0
+	  Ij=(Ider+1)*numPoints+j;
+	  Jj=(Jder+1)*numPoints+j;
+	  R(Ij,Jj)=0.0;
+	  R(Jj,Ij)=0.0;
+	}
+      }
+
+    } else if((corrFunc==MATERN_CORR_FUNC)&&(maternCorrFuncNu==2.5)) {
+      //now handle the first order derivative submatrices, indiviually the first
+      //order derivative SUBmatrices are anti-symmetric but the whole matrix is
+      //symmetric
+      int Ii, Ij, Jj, Ji; //first letter identifies index OF derivative 
+      //submatrix second letter identifies index INTO derivative SUBmatrix
+      for(int Ider=0; Ider<numVarsr; ++Ider) {
+	zij=0;
+	double theta_Ider=theta(Ider,0);
+	for(j=0; j<numPoints-1; ++j) {//j<numPoints-1 avoids an i loop of 
+	  //length 0
+
+	  //diagonal (_j,_j) of off diagonal (I_, _) submatrix 
+	  Ij=(Ider+1)*numPoints+j;
+	  R(Ij, j)=0.0;
+	  R( j,Ij)=0.0;
+	  //Ij=(Ider+1)*numPoints+j;
+	  for(int i=j+1; i<numPoints; ++i) {
+	    //off diagonal (_i,_j) of off-diagonal (I_, _) submatrix 
+	    Ii=(Ider+1)*numPoints+i;
+	    temp_double=
+	      matern_2pt5_d1_mult_r(theta_Ider,deltaXR(zij,Ider))*R( i, j);
+	    R(Ii, j)= temp_double; 
+	    R( j,Ii)= temp_double; //whole R matrix is symmetric
+	    R(Ij, i)=-temp_double; 
+	    R( i,Ij)=-temp_double; //off-diagonal 1st order (actually all odd 
+	    //order) derivative SUBmatrices are anti-symmetric
+	    ++zij;
+	  }
+	}
+	//diagonal (_j,_j) of off diagonal (I_, _) submatrix 
+	j=numPoints-1; //avoids an i loop of length 0
+	Ij=(Ider+1)*numPoints+j;
+	R(Ij, j)=0.0;
+	R( j,Ij)=0.0;    
+      }
+      
+      //note that all 2nd order (actually all even order) derivative SUBmatrices 
+      //are symmetric because the hadamard product of 2 (actually any even 
+      //number of) anti-symmetric matrices is a symmetric matrix
+      double theta_Jder;
+      double theta_Jder_squared_div_3;
+      for(int Jder=0; Jder<numVarsr; ++Jder) {
+	//do the on diagonal (J_,J_) submatrix 
+	theta_Jder=theta(Jder,0);
+	theta_Jder_squared_div_3=theta_Jder*theta_Jder/3.0;
+	zij=0;      
+	for(j=0; j<numPoints-1; ++j) { //j<numPoints-1 avoids an i loop of length 0
+	  //diagonal (_j,_j) of on diagonal (J_,J_) submatrix
+	  Jj=(Jder+1)*numPoints+j; 
+	  R(Jj,Jj)=theta_Jder_squared_div_3;
+	  for(int i=j+1; i<numPoints; ++i) {
+	    //off diagonal (_i,_j) of on-diagonal (J_,J_) submatrix
+	    Ji=(Jder+1)*numPoints+i;
+	    temp_double=//neg sign because d^2/dXR1dXR2 instead of d^2/dXR1^2
+	      -matern_2pt5_d2_mult_r(theta_Jder,deltaXR(zij,Jder))*R( i, j);
+	    R(Ji,Jj)=temp_double;
+	    R(Jj,Ji)=temp_double;
+	    ++zij;
+	  }
+	}
+	//diagonal (_j,_j) of on diagonal (J_,J_) submatrix 
+	j=numPoints-1; //avoids an i loop of length 0
+	Jj=(Jder+1)*numPoints+j;
+	R(Jj,Jj)=theta_Jder_squared_div_3;
+	
+	
+      	//do the off diagonal (I_,J_) submatrices
+	for(int Ider=Jder+1; Ider<numVarsr; ++Ider) {
+	  //off diagonal (I_,J_) submatrix
+	  zij=0;
+	  for(j=0; j<numPoints-1; ++j) {//j<numPoints-1 avoids an i loop of length 0
+	    //diagonal (_j,_j) of off-diagonal (I_,J_) submatrix
+	    Jj=(Jder+1)*numPoints+j; 
+	    Ij=(Ider+1)*numPoints+j;
+	    R(Ij,Jj)=0.0;
+	    R(Jj,Ij)=0.0;
+	    	    
+	    for(int i=j+1; i<numPoints; ++i) {
+	      //off diagonal (_i,_j) of off-diagonal (I_,J_) submatrix 
+	      Ii=(Ider+1)*numPoints+i;
+	      Ji=(Jder+1)*numPoints+i;
+	      temp_double=
+		matern_2pt5_d1_mult_r(theta_Jder,-deltaXR(zij,Jder))*R(Ii, j);
+	      R(Ii,Jj)= temp_double; 
+	      R(Ij,Ji)= temp_double; 
+	      R(Ji,Ij)= temp_double; 
+	      R(Jj,Ii)= temp_double; 
+	      ++zij;
+	    }
+	  }
+	  //diagonal (_j,_j) of off-diagonal (I_,J_) submatrix
+	  j=numPoints-1; //avoids an i loop of length 0
+	  Ij=(Ider+1)*numPoints+j;
+	  Jj=(Jder+1)*numPoints+j;
+	  R(Ij,Jj)=0.0;
+	  R(Jj,Ij)=0.0;
+	}
+      }
+    } else{
+      std::cerr << "Unknown or Invalid Correlation function for Gradient Enhanced Kriging in void KrigingModel::correlation_matrix(const MtxDbl& theta)\n";
+      assert(false);
+    }
+    /*
+    printf("theta=[%14.8g",theta(0,0));
+    for(int k=1; k<numVarsr; ++k)
+      printf(" %14.8g",theta(k,0));
+    printf("]^T\n");
+    printf("M3/2 GEK R=\n");
+    for(int i=0; i<numEqnAvail; ++i) {
+      for(int j=0; j<numEqnAvail; ++j)
+	printf("%14.8g ",R(i,j));
+      printf("\n");
+    }
+    printf("\n\n");
+    */
+    
+  }
+
   return; 
 }
 
-/** the Z matrix is defined as Z(ij,k)=-(XR(i,k)-XR(j,k))^2 where
+/** the Z matrix is defined as Z(k,ij)=-(XR(i,k)-XR(j,k))^2 where
     ij=i+j*XR.getNRows(), it enables the efficient repeated calculation
     of the R matrix during model construction:
     R=reshape(exp(Z*theta),XR.getNRows(),XR.getNRows()) where theta is
@@ -2235,10 +2971,86 @@ MtxDbl& KrigingModel::gen_Z_matrix()
 
   Z.newSize(nrowsZ,ncolsXR);
 
-  register double mult_term;
-  //register int ijk=0;
-  //double *Z_ptr=Z.ptr(0); //done for speed, undone for robustness because matrices can now have fewer apparent rows than actual rows (it shouldn't happen for Kriging that isn't gradient enhanced, but future mods might change that) 2011.06.01
-  const double *XR_k_ptr; //done for speed
+  int ij=0;
+  if(corrFunc==GAUSSIAN_CORR_FUNC)  {
+    // ****************************************************************
+    // The Gausssian Correlation Function
+    // can be used for Gradient Enhanced Kriging (GEK)
+    // (or more generally, for derivative enhanced Kriging) because
+    // it is C infinity continuous. 
+    // It uses Z(k,ij) = -(XR(k,i)-XR(k,j))^2
+    // if GEK is used we will also compute and store
+    // deltaXR(ij,k) = XR(k,i)-XR(k,j), the order of indexes is correct
+    // this transposed ordering is useful for efficient computation of 
+    // the GEK R matrix (using the SUBmatrix construction process)
+    // ****************************************************************
+    double dXR; //a temporary variable to make squaring easier
+    if(buildDerOrder>0)
+      for(int j=0; j<numPoints-1; ++j)
+	for(int i=j+1; i<numPoints; ++i, ++ij)
+	  for(int k=0; k<numVarsr; k++) {
+	    dXR=XR(k,i)-XR(k,j);
+	    deltaXR(ij,k)=dXR;
+	    Z(k,ij)=-dXR*dXR;
+	  }
+    else
+      for(int j=0; j<numPoints-1; ++j)
+	for(int i=j+1; i<numPoints; ++i, ++ij)
+	  for(int k=0; k<numVarsr; k++) {
+	    dXR=XR(k,i)-XR(k,j);
+	    Z(k,ij)=-dXR*dXR;
+	  }
+  } else if((corrFunc==EXP_CORR_FUNC)||(corrFunc==MATERN_CORR_FUNC)) {
+    // ****************************************************************
+    // The Exponential and Matern 3/2 and 5/2 Correlation Functions
+    // all use Z(k,ij) = -|XR(k,i)-XR(k,j)|
+    // the Exponential Correlation Function 
+    //     can NOT be used for Gradient Enhanced Kriging (GEK)
+    // the Matern 3/2 and 5/2 Correlation Functions 
+    //     CAN be used for Gradient Enhanced Kriging (GEK)
+    // if GEK is used we will also compute and store
+    //     deltaXR(ij,k) = XR(k,i)-XR(k,j), the order of indexes is 
+    //     correct this transposed ordering is useful for efficient 
+    //     computation of the GEK R matrix (using the SUBmatrix 
+    //     construction process)
+    // ****************************************************************
+    if(buildDerOrder>0) {
+      if(corrFunc==EXP_CORR_FUNC) {
+	std::cerr << "the exponential correlation function is not a valid choice for Gradient Enhanced Kriging\n";
+	assert(!((corrFunc==EXP_CORR_FUNC)&&(buildDerOrder>0)));
+      }
+      for(int j=0; j<numPoints-1; ++j)
+	for(int i=j+1; i<numPoints; ++i, ++ij)
+	  for(int k=0; k<numVarsr; k++) {	
+	    deltaXR(ij,k)=XR(k,i)-XR(k,j);
+	    Z(k,ij)=-std::fabs(deltaXR(ij,k));
+	  }
+    } else
+      for(int j=0; j<numPoints-1; ++j)
+	for(int i=j+1; i<numPoints; ++i, ++ij)
+	  for(int k=0; k<numVarsr; k++)
+	    Z(k,ij)=-std::fabs(XR(k,i)-XR(k,j));
+  } else if(corrFunc==POW_EXP_CORR_FUNC) {
+    // ****************************************************************
+    // The Powered Exponential Correlation Function
+    // uses Z(k,ij) = -(|XR(k,i)-XR(k,j)|^powExpCorrFuncPow)
+    // where 1.0<powExpCorrFuncPow<2.0
+    // It can NOT be used for Gradient Enhanced Kriging (GEK)
+    // ****************************************************************
+    if(buildDerOrder>0) {
+      std::cerr << "the powered exponential correlation function is not a valid choice for Gradient Enhanced Kriging\n";
+      assert(!((corrFunc==POW_EXP_CORR_FUNC)&&(buildDerOrder>0)));
+    }
+    for(int j=0; j<numPoints-1; ++j)
+      for(int i=j+1; i<numPoints; ++i, ++ij) 
+	for(int k=0; k<numVarsr; k++) 
+	  Z(k,ij)=-std::pow(std::fabs(XR(k,i)-XR(k,j)),powExpCorrFuncPow);
+  } else{
+    std::cerr << "unknown Correlation Function in MtxDbl& KrigingModel::gen_Z_matrix()\n";
+    assert(false);
+  }  
+  return Z;
+}
 
   if(corrFunc==GAUSSIAN_CORR_FUNC) 
     for(int k=0; k<ncolsXR; k++) {
@@ -2250,29 +3062,650 @@ MtxDbl& KrigingModel::gen_Z_matrix()
 	  Z(ij,k)=-mult_term*mult_term;
 	}
     }
-  else if((corrFunc==EXP_CORR_FUNC)||(corrFunc==MATERN_CORR_FUNC)) 
-    for(int k=0; k<ncolsXR; k++) {
-      XR_k_ptr=XR.ptr(0,k);
-      int ij=0;
-      for(int j=0; j<nrowsXR-1; ++j)
-	for(int i=j+1; i<nrowsXR; ++i, ++ij) 
-	  Z(ij,k)=-std::fabs(XR_k_ptr[i]-XR_k_ptr[j]);
+  } else if(buildDerOrder==1) {
+    //Gradient Enhanced Kriging, R is blocked into (1+numVarsr) by (1+numVarsr)
+    //submatrices.  Each submatrix has numPoints by numPoints elements, i.e.
+    //the same size as the Kriging R matrix, in fact the upper-left-most 
+    //submatrix is the Kriging R matrix, we need to reorder this so that 
+    //"Whole Points" (a function value immediately followed by its gradient)
+    //are listed in the order given in iPtsKeep
+    
+    int i, j;
+    for(int jpt=0, j=0; jpt<numPoints; ++jpt) 
+      for(int jder=-1; jder<numVarsr; ++jder, ++j) {
+	int jsrc=iPtsKeep(jpt,0)+(jder+1)*numPoints;
+	for(int ipt=0, i=0; ipt<numPoints; ++ipt)
+	  for(int ider=-1; ider<numVarsr; ++ider, ++i)
+	    RChol(i,j)=R(iPtsKeep(ipt,0)+(ider+1)*numPoints,jsrc);
+      }
+  } else {
+    std::cerr << "buildDerOrder=" << buildDerOrder 
+	      << " in void KrigingModel::reorderCopyRtoRChol(); "
+	      << "for Kriging buildDerOrder must be 0; "
+	      << "for Gradient Enhanced Kriging buildDerOrder must be 1; "
+	      << "Higher order derivative enhanced Kriging "
+	      << "(e.g Hessian Enhanced Kriging) has not been implemented"
+	      << std::endl;
+    assert(false);
+  }
+  return;
+}
+
+void KrigingModel::nuggetSelectingCholR(){
+  if(buildDerOrder==0)
+    numExtraDerKeep=0;
+  else if(buildDerOrder==1)
+    numExtraDerKeep=numVarsr; //the last point will have all of the gradient
+  else{
+    std::cerr << "buildDerOrder=" << buildDerOrder 
+	      << " in void KrigingModel::nuggetSelectingCholR(); "
+	      << "for Kriging buildDerOrder must be 0; "
+	      << "for Gradient Enhanced Kriging buildDerOrder must be 1; "
+	      << "Higher order derivative enhanced Kriging "
+	      << "(e.g Hessian Enhanced Kriging) has not been implemented"
+	      << std::endl;
+    assert(false);
+  }
+  numWholePointsKeep=numPointsKeep=numPoints;
+  //point order is the default point order
+  for(int ipt=0; ipt<numPointsKeep; ++ipt)
+    iPtsKeep(ipt,0)=ipt;
+  //but if GEK is used I still need to reorder from derivative submatrix 
+  //blocks to whole point order  
+  reorderCopyRtoRChol();  
+
+  //See the end of the KrigingModel constructor for why Y and Gtran are
+  //what we already need them to be.
+  //the maximumAllowedPolyOrder given the number of Points is already 
+  //selected, and Gtran is already what we need it to be
+
+  nug=0.0;  
+  double min_allowed_rcond=1.0/maxCondNum;
+  int ld_RChol=RChol.getNRowsAct();
+  int chol_info;
+  scaleRChol.newSize(numEqnAvail,1); //scaling/equilibrating is only 
+  //necessary if GEK is used (because Kriging already has all ones on 
+  //the diagonal of R; GEK doesn't) but the generic Cholesky 
+  //factorization won't know in advance whether it's needed or not
+  rcondDblWork.newSize(3*ld_RChol,1);
+  rcondIntWork.newSize(ld_RChol,1);
+  //you can calculate rcond essentially "for free" if you do it at the 
+  //same time as the Cholesky factorization
+  Chol_fact_workspace(RChol,scaleRChol,rcondDblWork,rcondIntWork,
+		      chol_info,rcondR);
+  //this rcondR is for the equilibrated R/RChol (so pretend it has all
+  //ones on the diagonal)
+  if(rcondR<=min_allowed_rcond) {
+    double dbl_num_eqn=static_cast<double>(numEqnAvail);
+    double sqrt_num_eqn=std::sqrt(dbl_num_eqn);
+    min_allowed_rcond*=sqrt_num_eqn; //one norm is within a factor of N^0.5 
+    //of 2 norm
+    rcondR/=sqrt_num_eqn; //one norm is within a factor of N^0.5 of 2 norm
+    double min_eig_worst=(rcondR*dbl_num_eqn)/(1.0+(dbl_num_eqn-1.0)*rcondR);
+    double max_eig_worst=dbl_num_eqn-(dbl_num_eqn-1.0)*min_eig_worst;
+    nug=(min_allowed_rcond*max_eig_worst-min_eig_worst)/
+      (1.0-min_allowed_rcond);
+    //this nugget will make the worst case scenario meet (with an ==) 
+    //the maxCondNum constraint, I (KRD) don't expect this to 
+    //ever == fail because I don't expect rcond to be *N^-0.5 without 
+    //nugget and be *N^0.5 with nugget while the maximum eigen value 
+    //of R (without nugget) is N-(N-1)*min_eigval (that comes from 
+    //assumming all eigenvalues except the largest are the smallest 
+    //possible for the given rcond) note that rcond is the LAPACK 
+    //ESTIMATE of the 1 norm condition number so there are no 100% 
+    //guarantees.
+    apply_nugget_build(); //multiply the diagonal elements by (1.0+nug)
+    reorderCopyRtoRChol();  
+
+    Chol_fact_workspace(RChol,scaleRChol,rcondDblWork,rcondIntWork,
+			chol_info,rcondR);
+  }
+  return;
+}
+
+
+/* use Pivoted Cholesky to efficiently select an optimal subset
+   of available build points from which to construct the Gaussian
+   Process.  Here "optimal" means that, given the current set of 
+   assumed correlation parameters, this subset maximizes the 
+   amount of unique information content in R, note that this is
+   equivalent to a "best spaced" (for the chosen correlation
+   function and its parameters) set of points and the output at 
+   those points does is not considered.  Thus if you have 2 points
+   that are very close together but on opposite sides of a 
+   discontinutity it is highly likely that at least one of them 
+   will get discarded */
+void KrigingModel::equationSelectingCholR(){ 
+  if(!((buildDerOrder==0)||(buildDerOrder==1))) {
+    std::cerr << "buildDerOrder=" << buildDerOrder 
+	      << " in void KrigingModel::equationSelectingCholR().  "
+	      << "For Kriging buildDerOrder must equal 0.  "
+	      << "For Gradient Enhanced Kriging (GEK) buildDerOrder "
+	      << "must equal 1.  Higher order derivative enhanced "
+	      << "Kriging (e.g. Hessian Enhanced Kriging) has not "
+	      << "been implemented." << std::endl;
+    assert(false);
+  }
+
+  polyOrder=maxAllowedPolyOrder;
+  
+  //printf("Entered equationSelectingCholR()\n");
+  double min_allowed_rcond=1.0/maxCondNum;
+  //printf("min_allowed_rcond=%g\n",min_allowed_rcond);
+  //exit(0);
+  //double min_allowed_pivot_est_rcond=256.0/maxCondNum;
+
+  int ld_RChol=RChol.getNRowsAct();
+  //printf("ld_RChol=%d\n",ld_RChol);
+  int chol_info;
+  RChol.newSize(numPoints,numPoints);
+  scaleRChol.newSize(numEqnAvail,3); //maximum space needed
+  rcondDblWork.newSize(3*ld_RChol,1);
+  rcondIntWork.newSize(ld_RChol,1);
+  ld_RChol=RChol.getNRowsAct();
+
+  iPtsKeep.newSize(numPoints,1);
+  //assign the default order to points
+  for(int ipt=0; ipt<numPoints; ++ipt)
+    iPtsKeep(ipt,0)=ipt;
+
+  if(buildDerOrder==0) {
+    //We're using regular Kriging not GEK and for large matrices
+    //the pivoted Cholesky algorithm is nowhere close to as fast
+    //as the highly optimized level 3 LAPACK Cholesky so to make
+    //this run faster on average we're going to attempt to use
+    //the LAPACK cholesky take a look at the rcondR and then only
+    //do Pivoted Cholesky if we actually need to
+    RChol.copy(R);
+
+    //no scaling is necessary since have all ones on the diagonal 
+    //of the Kriging R but the generic equilibrated Cholesky 
+    //factoriztion function doesn't know that in advance
+    Chol_fact_workspace(RChol,scaleRChol,rcondDblWork,rcondIntWork,
+			chol_info,rcondR);
+    if(min_allowed_rcond<rcondR) {
+      numRowsR=numWholePointsKeep=numPointsKeep=numPoints;
+
+      Y.copy(Yall);
+
+      nTrend=numTrend(maxAllowedPolyOrder,0);
+      Gtran.newSize(numPoints,nTrend);
+      for(int itrend=0; itrend<nTrend; ++itrend) 
+	for(int ipt=0; ipt<numPoints; ++ipt)
+	  Gtran(ipt,itrend)=Gall(itrend,ipt);
+
+      return;
     }
-  else if(corrFunc==POW_EXP_CORR_FUNC)
-    for(int k=0; k<ncolsXR; k++) {
-      XR_k_ptr=XR.ptr(0,k);
-      int ij=0;
-      for(int j=0; j<nrowsXR-1; ++j)
-	for(int i=j+1; i<nrowsXR; ++i, ++ij) 
-	  Z(ij,k)=-std::pow(std::fabs(XR_k_ptr[i]-XR_k_ptr[j]),
-			    powExpCorrFuncPow);
+  }
+
+  // *******************************************************************
+  // in this section I need to get an optimally reordered Cholesky 
+  // factorization of the Kriging or GEK R matrix and I need to compute
+  // the one norm for all sizes of that optimally reordered R matrix
+  // *******************************************************************
+  // We got here in one of two ways
+  //
+  // 1) We're doing Kriging and we actually need to do Pivoted Cholesky
+  //
+  // 2) We're doing Gradient Enhanced Kriging, and reordering "whole 
+  //    points" (function value immediately followed by its derivatives) 
+  //    according to the order of the Pivoted Cholesky on the Kriging R
+  //    works a lot better and is a lot faster than doing Pivoted 
+  //    Cholesky on the GEK R.  In fact because the GEK R is so much 
+  //    larger than the Kriging R, the cost of doing pivoted Cholesky on
+  //    the Kriging R will be insignificant compared to the cost of 
+  //    doing LAPACK Cholesky on the GEK R so I'm just going to go ahead 
+  //    and reorder the GEK R whether I need to or not (which I don't 
+  //    know at this point anyway) rather than risk having to do the 
+  //    LAPACK Cholesky twice
+
+  //if the user specifies an anchor point it must be the first point to
+  //prevent it from being pivoted away
+  if(ifHaveAnchorPoint&&(iAnchorPoint!=0)) {
+    iPtsKeep(iAnchorPoint,0)=0;
+    iPtsKeep(0,0)=iAnchorPoint;
+  }
+  else iAnchorPoint=0;
+
+  for(int jpt=0; jpt<numPoints; ++jpt) {
+    int jsrc=iPtsKeep(jpt,0);
+    for(int ipt=0; ipt<numPoints; ++ipt)
+      RChol(ipt,jpt)=R(iPtsKeep(ipt,0),jsrc);
+  }
+  
+  int info=0;
+  char uplo='B'; //'B' means we have both halves of R in RChol so the 
+  //fortran doesn't have to copy one half to the other, having both 
+  //halves makes the memory access faster (can always go down columns)
+  numPointsKeep=numPoints;
+  PIVOTCHOL_F77(&uplo, &numPoints, RChol.ptr(0,0), &ld_RChol,
+    		iPtsKeep.ptr(0,0), &numPointsKeep, &min_allowed_rcond, 
+		&info); 
+
+  //for(int ipt=0; ipt<numPoints; ++ipt)
+  //printf("F77 iPtsKeep(%d)=%d\n",ipt,iPtsKeep(ipt,0));
+  //printf("\n");
+
+  //printf("*********************************\n");
+
+  if(ifHaveAnchorPoint&&(iAnchorPoint!=0)) {    
+    iPtsKeep(0,0)=iAnchorPoint;
+    for(int ipt=1; ipt<numPoints; ++ipt) {
+      iPtsKeep(ipt,0)-=1; //Fortran indices start at 1 not zero so 
+      //we have to convert to C++ indices which start from 0
+      if(iPtsKeep(ipt,0)==iAnchorPoint)
+	iPtsKeep(ipt,0)=0;
     }
   else{
     std::cerr << "unknown corrFunc\n";
     assert(NULL);
   }
+  else {
+    for(int ipt=0; ipt<numPoints; ++ipt) {
+      iPtsKeep(ipt,0)-=1; //Fortran indices start at 1 not zero so 
+      //we have to convert to C++ indices which start from 0
+      //printf("iPtsKeep(%2d,0)=%d\n",ipt,iPtsKeep(ipt,0));
+    }
+    //printf("\n");
+  }
+
+  //if I feed LAPACK a one norm of R and a Cholesky factorization of
+  //R it will give me back an rcond for O(N^2) ops which is practically
+  //free compared to the O(N^3) ops that the Cholesky factorization 
+  //costs, the wonderful thing is if I just drop equations off the end
+  //of a pivoted Cholesky factorization I can get the rcondR for any 
+  //number of rows/columns of the pivoted R matrix, but to make this 
+  //efficient I need to get the one norms of R cheaply (easily doable,
+  //that's what happens in the next if Kriging els if GEK statement)
+  //and I'll use bisection to find the last equation I can retain
+  int iprev_lapack_rcondR;
+  int icurr_lapack_rcondR=numEqnAvail-1;
+  int num_eqn_keep=numEqnAvail;   
+  oneNormR.newSize(numEqnAvail,1);
+  sumAbsColR.newSize(numEqnAvail,1);
+  if(buildDerOrder==0) {
+    //Kriging we need to compute the one-norms for the reordered Kriging
+    //R matrix
+    //the one norm is the largest of the sums of the absolute value of 
+    //any of the columns, of course how many rows there are affects what 
+    //the sums of absolute value of the columns are and how many columns 
+    //there are affects which is the largest but we can build this up in 
+    //such a way as to reuse the information from smaller numbers of 
+    //rows/columns for larger numbers of rows/columns
+
+    int jsrc=iPtsKeep(0,0);
+    for(int ipt=0; ipt<numPoints; ++ipt) 
+      sumAbsColR(ipt,0)=std::fabs(R(iPtsKeep(ipt,0),jsrc));
+    oneNormR(0,0)=sumAbsColR(0,0); //this is the one norm for the 1 by
+    //1 reordered R matrix
+    
+    double tempdouble;
+    for(int jpt=1; jpt<numPoints; ++jpt) {
+      jsrc=iPtsKeep(jpt,0);
+      for(int ipt=0; ipt<numPoints; ++ipt) 	
+	sumAbsColR(ipt,0)+=std::fabs(R(iPtsKeep(ipt,0),jsrc));
+      tempdouble=sumAbsColR(0,0);
+      for(int ipt=1; ipt<=jpt; ++ipt) 
+	if(tempdouble<sumAbsColR(ipt,0))
+	  tempdouble=sumAbsColR(ipt,0);
+      oneNormR(jpt,0)=tempdouble; //this is the one norm for the 
+      //jpt by jpt reordered R matrix
+    }
+    uplo='L'; //get it into the same state as GEK
+    iprev_lapack_rcondR=0; //a 1 by 1 matrix has a condition number of 1
+
+  } else if(buildDerOrder==1){
+    //Gradient Enhanced Kriging
+    //it works better (and is a lot faster) if we reorder whole points 
+    //according to the Pivoted Cholesky ON THE KRIGING R order in iPtsKeep
+    //so we'll calculate the one norm for all sizes of the reordered
+    //GEK R and then Cholesky factorize the GEK R 
+    reorderCopyRtoRChol(); 
+    /*
+    printf("R=\n");
+    for(int i=0; i<numEqnAvail; ++i) {
+      for(int j=0; j<numEqnAvail; ++j)
+	printf("%14.8g ",RChol(i,j));
+      printf("\n");
+    }
+    printf("\n");
+    */
+    scaleRChol.newSize(numEqnAvail,2); 
+    for(int i=0; i<numEqnAvail; ++i) {
+      scaleRChol(i,1)=std::sqrt(RChol(i,i));
+      scaleRChol(i,0)=1.0/scaleRChol(i,1);
+    }
+
+    //equilibrate RChol
+    for(int j=0; j<numEqnAvail; ++j) {
+      for(int i=0; i<numEqnAvail; ++i)
+	RChol(i,j)*=scaleRChol(i,0)*scaleRChol(j,0);
+      RChol(j,j)=1.0; //there is zero correlation between an individual 
+      //point's function value and its derivatives so we know how to fix 
+      //round of error so just do it
+    }
+    /*
+    printf("RE=\n");
+    for(int i=0; i<numEqnAvail; ++i) {
+      for(int j=0; j<numEqnAvail; ++j)
+	printf("%14.8g ",RChol(i,j));
+      printf("\n");
+    }
+    printf("\n");
+    */
+    //the one norm number is the largest of the sums of the absolute 
+    //value of any of the columns of the matrix, of course how many rows
+    //there are affects what the sums of absolute value of the columns 
+    //are and how many columns there are affects which is the largest
+    //but we can build this up in such a way as to reuse the information
+    //from smaller numbers of rows/columns for larger numbers of rows/ 
+    //columns
+    
+    //right now RChol holds the reordered R matrix
+    for(int i=0; i<numEqnAvail; ++i)
+      sumAbsColR(i,0)=std::fabs(RChol(i,0));
+    oneNormR(0,0)=sumAbsColR(0,0); //this is the one norm for the 1 by
+    //1 reordered R matrix
+    
+    double tempdouble;
+    for(int j=1; j<numEqnAvail; ++j) {
+      for(int i=0; i<numEqnAvail; ++i)
+	sumAbsColR(i,0)+=std::fabs(RChol(i,j));
+      tempdouble=sumAbsColR(0,0);
+      for(int i=1; i<=j; ++i) 
+	if(tempdouble<sumAbsColR(i,0))
+	  tempdouble=sumAbsColR(i,0);
+      oneNormR(j,0)=tempdouble;  //this is the one norm for the 
+      //j by j reordered R matrix
+    }
+    
+    //do the (highly optimized) LAPACK Cholesky Decomposition of all 
+    //the equations (but sorted into the point order determined by 
+    //the pivoting cholesky above) 
+    uplo='L';
+    DPOTRF_F77(&uplo,&numEqnAvail,RChol.ptr(0,0),&ld_RChol,&info);
   
-  return Z;
+    //Kriging already has the rcondR so to get GEK into an equivalent
+    //state we will feed LAPACK the one norm of the full GEK R (after 
+    //the reordering and equilibration) and it will give me back GEK's
+    //rcondR
+    DPOCON_F77(&uplo,&numEqnAvail,RChol.ptr(0,0),&ld_RChol,
+	       oneNormR.ptr(icurr_lapack_rcondR,0),
+	       &rcondR,rcondDblWork.ptr(0,0),rcondIntWork.ptr(0,0),
+	       &info);
+
+    //printf("rcond(RE)=%g icurr_lapack_rcondR=%d\n",rcondR,icurr_lapack_rcondR);
+
+    //the first derivatives of the correlation at a point are uncorrelated
+    //with the correlation function at the same point, i.e. the (1+numVarsr)
+    //by (1+numVarsr) correlation matrix has a condition number of 1
+    iprev_lapack_rcondR=numVarsr; //no 1+ because C++ indexes start at zero
+  }
+
+  // *****************************************************************
+  // in this section we will efficiently determine the maximum number
+  // of equations that we can retain by doing a bisection search using 
+  // O(log2(N)) calls of LAPACK's rcond estimate (each of which cost
+  // only O(n^2) ops where n is the number of eqns in the current 
+  // subset
+  // *****************************************************************
+
+  lapackRcondR.newSize(numEqnAvail,1);
+  lapackRcondR(iprev_lapack_rcondR,0)=1.0; //since the condition number
+  //is one at iprev_lapack_rcondR we know we can keep at least this many
+  //equations
+
+  lapackRcondR(icurr_lapack_rcondR,0)=rcondR; //the maximum number
+  //of equations we can keep is icurr_lapack_rcondR=numEqnAvail-1
+  //and we know the rcondR for that many equations
+
+  //note num_eqn_keep is now numEqnAvail
+  int inext_lapack_rcondR=icurr_lapack_rcondR; //the last available eqn
+  if((rcondR<=min_allowed_rcond)&&
+     (inext_lapack_rcondR-iprev_lapack_rcondR==1)) {
+    //at this point the previous lapack rcondR==1.0
+    rcondR=1.0;
+    inext_lapack_rcondR=iprev_lapack_rcondR;
+    //printf("if1\n");
+  }
+
+  //do the bisection search if necessary, at most ceil(log2()) more 
+  //calls to the LAPACK rcond function
+  int rcond_iter=0;
+  int max_rcond_iter=
+    std::ceil(std::log(static_cast<double>
+		       (inext_lapack_rcondR-iprev_lapack_rcondR))
+	      /std::log(2.0));
+  while((lapackRcondR(inext_lapack_rcondR,0)<=min_allowed_rcond)&&
+        (inext_lapack_rcondR>iprev_lapack_rcondR)) {
+    //printf("inWhile\n");
+    ++rcond_iter;
+    icurr_lapack_rcondR=(iprev_lapack_rcondR+inext_lapack_rcondR)/2;
+    num_eqn_keep=icurr_lapack_rcondR+1;
+
+    //the LAPACK rcond function
+    DPOCON_F77(&uplo,&num_eqn_keep,RChol.ptr(0,0),&ld_RChol,
+	       oneNormR.ptr(icurr_lapack_rcondR,0),
+	       &rcondR,rcondDblWork.ptr(0,0),rcondIntWork.ptr(0,0),
+	       &info);
+    lapackRcondR(icurr_lapack_rcondR,0)=rcondR;
+    //printf("rcond_iter=%d icurr_lapack_rcondR=%d rcondR=%g\n",
+    //rcond_iter,icurr_lapack_rcondR,rcondR);
+
+    if(rcondR<min_allowed_rcond)
+      inext_lapack_rcondR=icurr_lapack_rcondR;
+    else if(min_allowed_rcond<rcondR)
+      iprev_lapack_rcondR=icurr_lapack_rcondR;
+    else if(min_allowed_rcond==rcondR) {
+      //num_eqn_keep=icurr_lapack_rcondR+1;
+      break;
+    }
+    if((inext_lapack_rcondR-iprev_lapack_rcondR==1)||
+       (max_rcond_iter<rcond_iter)) {
+      num_eqn_keep=iprev_lapack_rcondR+1;
+      rcondR=lapackRcondR(iprev_lapack_rcondR,0);
+      break;
+    }
+  }
+  //printf(" pivoted_rcondR=%g numRowsR=%d\n",rcondR,num_eqn_keep);
+  
+  numRowsR=num_eqn_keep; //this is the maximum number of equations that 
+  //we can keep
+  
+  // ***************************************************************
+  // in this section we downsize the arrays being retained and keep 
+  // only the optimal subset, in or working copies
+  // ***************************************************************
+
+  RChol.resize(num_eqn_keep,num_eqn_keep); //resize() instead of newSize() 
+  //because we want to keep the current contents in the same 2D 
+  //order
+  /*
+  if(num_eqn_keep>=10) {
+    printf("RChol(1:10,1:10)=\n");
+    for(int i=0; i<10; ++i) {
+      for(int j=0; j<10; ++j)
+	printf("%12.6g ",RChol(i,j));
+      printf("\n");
+    }
+    printf("\n\n");
+  }
+  */
+  polyOrder=maxAllowedPolyOrder; //redundant but for clarity
+  while((numRowsR<=numTrend(polyOrder,0))&&(polyOrder>0))
+    --polyOrder;
+  nTrend=numTrend(polyOrder,0);
+  //printf("num_eqn_keep=%d numRowsR=%d polyOrder=%d nTrend=%d rcondR=%g lapackRcondR(num_eqn_keep-1,0)=%g\n",num_eqn_keep,numRowsR,polyOrder,nTrend,rcondR,lapackRcondR(num_eqn_keep-1,0));
+
+  //we need to downsize Gtran now but we only need to downsize Poly at 
+  //the end of create()
+  Gtran.newSize(num_eqn_keep,nTrend); //newSize() because we don't care 
+  //about the current contents of Gtran
+  
+  Y.newSize(num_eqn_keep,1); //newSize() because we don't care about 
+  //the current contents of Y
+
+  if(buildDerOrder==0) {
+    // keep only the useful parts for Kriging
+    numWholePointsKeep=numPointsKeep=num_eqn_keep;
+    numExtraDerKeep=0;
+
+    /*
+    if(numPointsKeep>10) {
+      
+      MtxDbl RCholDEBUG(numPointsKeep,numPointsKeep);
+      for(int jpt=0; jpt<numPointsKeep; ++jpt) {
+	int jsrc=iPtsKeep(jpt,0);
+	for(int ipt=0; ipt<numPointsKeep; ++ipt)
+	  RCholDEBUG(ipt,jpt)=R(iPtsKeep(ipt,0),jsrc);
+      }
+      double rcondRDEBUG;
+      int chol_info_debug;
+      
+      printf("Rreorder(1:10,1:10)=\n");
+      for(int ipt=0; ipt<10; ++ipt) {
+	for(int jpt=0; jpt<10; ++jpt)
+	  printf("%12.6g ",RCholDEBUG(ipt,jpt));
+	printf("\n");
+      }
+      printf("\n\n");
+
+      Chol_fact_workspace(RCholDEBUG,scaleRChol,rcondDblWork,rcondIntWork,
+			  chol_info_debug,rcondRDEBUG);
+
+      printf("RChol(1:10,1:10)=\n");
+      for(int ipt=0; ipt<10; ++ipt) {
+	for(int jpt=0; jpt<10; ++jpt)
+	  printf("%12.6g ",RChol(ipt,jpt));
+	printf("\n");
+      }
+      printf("\n\n");
+
+      printf("RCholDEBUG(1:10,1:10)=\n");
+      for(int ipt=0; ipt<10; ++ipt) {
+	for(int jpt=0; jpt<10; ++jpt)
+	  printf("%12.6g ",RCholDEBUG(ipt,jpt));
+	printf("\n");
+      }
+      printf("\n\n");
+
+      printf("[RChol-RCholDEBUG](1:10,1:10)=\n");
+      for(int ipt=0; ipt<10; ++ipt) {
+	for(int jpt=0; jpt<10; ++jpt)
+	  printf("%12.6g ",RChol(ipt,jpt)-RCholDEBUG(ipt,jpt));
+	printf("\n");
+      }
+      printf("\n\n");
+
+      printf("rcondR=%g rcondRDEBUG=%g numPointsKeep=%d\nErrorRChol=\n",
+	     rcondR,rcondRDEBUG,numPointsKeep);
+
+    }
+    */
+
+    //keep the useful part of Y
+    for(int ipt=0; ipt<numPointsKeep; ++ipt)
+      Y(ipt,0)=Yall(iPtsKeep(ipt,0),0);
+
+    //keep the useful part of G (actually G^T)
+    for(int itrend=0; itrend<nTrend; ++itrend) 
+      for(int ipt=0; ipt<numPointsKeep; ++ipt)
+	Gtran(ipt,itrend)=Gall(itrend,iPtsKeep(ipt,0));
+
+    /*
+    for(int ipt=0; ipt<numPointsKeep; ++ipt) {
+      printf("Gtran(%3d,:)=[%12.6g",ipt,Gtran(ipt,0));
+      for(int itrend=1; itrend<nTrend; ++itrend) 
+	printf(", %12.6g",Gtran(ipt,itrend));
+      printf("] XR(:,%3d)=[%12.6g",ipt,XR(0,iPtsKeep(ipt,0)));
+      for(int k=1; k<numVarsr; ++k)
+	printf(", %12.6g",XR(k,iPtsKeep(ipt,0)));
+      printf("]^T Y(%3d,0)=%12.6g\n",ipt,Y(ipt,0));
+    }      
+    printf("\n");
+    */
+
+
+  } else if(buildDerOrder==1) {
+    // keep on the useful parts for Gradient Ehanced Kriging
+
+    //integer division automatically rounds down
+    numWholePointsKeep=num_eqn_keep/(1+numVarsr);
+  
+    //we also need to round up
+    numPointsKeep=
+      static_cast<int>(std::ceil(static_cast<double>(num_eqn_keep)/
+				 static_cast<double>(1+numVarsr)));
+    
+    if(numPointsKeep==numWholePointsKeep) {
+      //perhaps a better name would be numLastDerKeep... this is the number
+      //of derivatives retained for the last point.
+      numExtraDerKeep==numVarsr;
+    } else
+      numExtraDerKeep=num_eqn_keep-(1+numWholePointsKeep*(1+numVarsr));
+    
+    //we need to undo the equilibration of RChol, recall that scaleRChol
+    //is already in the pivoted Cholesky order
+    for(int j=0; j<num_eqn_keep; ++j) 
+      for(int i=j; i<num_eqn_keep; ++i)
+	RChol(i,j)*=scaleRChol(i,1); //note that this assumes that the 
+    //nkm::SurfMat class uses the lower triangular part of of RChol
+    //otherwise (if this function uses the lower triangular part but 
+    //surfmat uses the upper triangular part) you'd need 
+    //RChol(j,i)=RChol(i,j)*scaleRChol(i,j) but you could do a
+    //RChol(j,i)=RChol(i,j)*=ScaleRChol(i,1); just to be safe
+
+    //keep the useful part of G (actually G^T)
+    for(int itrend=0; itrend<nTrend; ++itrend) {
+      int i, ipt;
+      for(ipt=0, i=0; ipt<numWholePointsKeep; ++ipt) {
+	int isrc=iPtsKeep(ipt,0)*(1+numVarsr);
+	for(int k=0; k<1+numVarsr; ++k, ++isrc, ++i)
+	  Gtran(i,itrend)=Gall(itrend,isrc);
+      }
+      if(numPointsKeep>numWholePointsKeep) {
+#ifdef __KRIG_ERR_CHECK__
+	assert((ipt==numWholePointsKeep)&&
+	       (i==(numWholePointsKeep*(1+numVarsr)))&&
+	       (numWholePointsKeep+1==numPointsKeep));
+#endif
+	int isrc=iPtsKeep(ipt,0)*(1+numVarsr);
+	Gtran(i,itrend)=Gall(itrend,isrc);
+	++i; 
+	++isrc;
+	for(int k=0; k<numExtraDerKeep; ++k, ++isrc, ++i)
+	  Gtran(i,itrend)=Gall(itrend,isrc);
+      }
+    }
+    
+    //keep the useful part of Y, also we need to undo the 
+    //equilibration of RChol
+    { //{ to impose scope
+      int i, ipt;
+      for(ipt=0, i=0; ipt<numWholePointsKeep; ++ipt) {
+	int isrc=iPtsKeep(ipt,0)*(1+numVarsr);
+	for(int k=0; k<1+numVarsr; ++k, ++isrc, ++i)
+	  Y(i,0)=Yall(isrc,0);
+      }
+      if(numPointsKeep>numWholePointsKeep) {
+#ifdef __KRIG_ERR_CHECK__
+	assert((ipt==numWholePointsKeep)&&
+	       (i==(numWholePointsKeep*(1+numVarsr)))&&
+	       (numWholePointsKeep+1==numPointsKeep));
+#endif
+	int isrc=iPtsKeep(ipt,0)*(1+numVarsr);
+	Y(i,0)=Yall(isrc,0);
+	++i; 
+	++isrc;
+	for(int k=0; k<numExtraDerKeep; ++k, ++isrc, ++i)
+	  Y(i,0)=Yall(isrc,0);
+      }
+    } //{} to impose scope
+  } //else if(buildDerOrder==1) {
+      
+  iPtsKeep.resize(numPointsKeep,1);
+
+  return;
 }
 
 // BMA TODO: combine shared code from these various functions?
@@ -2301,8 +3734,8 @@ void KrigingModel::masterObjectiveAndConstraints(const MtxDbl& theta, int obj_de
   // ERROR if(con_der_mode>=4) (4=2^2=> 2nd derivative) calculate the constraint functions and their gradients and Hessians
   // ERROR if(con_der_mode>3) ERROR
 
-  //printf("constraintType=|%c| maxConDerMode=%d con_der_mode=%d maxObjDerMode=%d obj_der_mode=%d\n",
-  //constraintType,maxConDerMode,con_der_mode,maxObjDerMode,obj_der_mode);
+  //printf("maxConDerMode=%d con_der_mode=%d maxObjDerMode=%d obj_der_mode=%d\n",
+  //maxConDerMode,con_der_mode,maxObjDerMode,obj_der_mode);
 
   //might want to replace this with a thrown exception
   assert((maxObjDerMode<=7)&&(maxConDerMode<=3)&&
@@ -2381,9 +3814,19 @@ void KrigingModel::masterObjectiveAndConstraints(const MtxDbl& theta, int obj_de
     double min_allowed_rcond=1.0/maxCondNum;
     if((rcondR<=min_allowed_rcond)||(numRowsR<=numTrend(polyOrder,0))) {
       //nTrend=numTrend(polyOrder,0);
-      printf("singular correlation matrix rcondR=%g numRowsR=%d numTrend=%d\n",
-	     rcondR,numRowsR,numTrend(polyOrder,0));
-      obj=HUGE_VAL;
+      printf("singular correlation matrix rcondR=%g numRowsR=%d numTrend=%d numEqnAvail=%d\n",
+	     rcondR,numRowsR,nTrend,numEqnAvail);
+      MtxDbl corr_len_temp(numVarsr,1);
+      get_corr_len_from_theta(corr_len_temp, theta);
+      printf("corr_len=[%g",corr_len_temp(0,0));
+      for(int kk=1; kk<numVarsr; ++kk)
+	printf(",%g",corr_len_temp(kk,0));
+      printf("]^T\n");
+
+      obj=HUGE_VAL; //the objective would actually be infinite, but it might
+      //say nan if we let it continue and we don't want to trust the optimizer
+      //to handle nan's correctly
+            
       con.newSize(numConFunc,1);
       for(int i=0; i<numConFunc; ++i)
 	con(i,0)=1.0; //say the constraints are violated
@@ -2433,9 +3876,10 @@ void KrigingModel::masterObjectiveAndConstraints(const MtxDbl& theta, int obj_de
     //  will loop over k to fill up the gradient of the objective function
     
     //Do the generalized (by R^-1) least squares using min # of ops
-    Rinv_G.newSize(numRowsR,nTrend); //precompute and store
-    solve_after_Chol_fact(Rinv_G,RChol,G);
-    //solve_after_LU_fact(Rinv_G,RLU,ipvt_RLU,G,'N','N'); //O(N^3) ops
+    //printf("numPoints=%d numPointsKeep=%d numRowsR=%d nTrend=%d\n",
+    //   numPoints,numPointsKeep,numRowsR,nTrend);
+    Rinv_Gtran.newSize(numRowsR,nTrend); //precompute and store
+    solve_after_Chol_fact(Rinv_Gtran,RChol,Gtran);
 
     Gtran_Rinv_G_Chol.newSize(nTrend,nTrend);
     matrix_mult(Gtran_Rinv_G_Chol,G,Rinv_G,0.0,1.0,'T','N');

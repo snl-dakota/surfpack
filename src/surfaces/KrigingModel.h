@@ -13,7 +13,6 @@
 #include "SurfpackModel.h"
 
 #include "nkm/NKM_KrigingModel.hpp"
-#include "nkm/NKM_GradKrigingModel.hpp"
 
 class ScaledSurfData;
 
@@ -52,7 +51,7 @@ private:
 
   // use class data to keep in scope for wrapped model
   //nkm::KrigingModel* nkmKrigingModel;
-  nkm::SurfPackModel* nkmKrigingModel;
+  nkm::KrigingModel* nkmKrigingModel;
 
 #ifdef SURFPACK_HAVE_BOOST_SERIALIZATION
   // allow serializers access to private data
