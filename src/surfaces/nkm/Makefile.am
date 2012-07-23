@@ -4,7 +4,7 @@ INCLUDES = -I$(top_builddir) -I$(top_srcdir)/src
 
 noinst_LTLIBRARIES = libnkm.la
 
-libnkm_la_SOURCES = NKM_GradKrigingModel.cpp \
+libnkm_la_SOURCES = \
 	NKM_KrigingModel.cpp \
 	NKM_KrigingModel.hpp \
 	NKM_Optimize.cpp \
@@ -21,16 +21,16 @@ libnkm_la_SOURCES = NKM_GradKrigingModel.cpp \
 #	NKM_BlockPivotChol.f
 #	NKM_SurfMat_Teuchos.hpp
 
-noinst_PROGRAMS = TestMain
+#noinst_PROGRAMS = TestMain
 if BUILD_STANDALONE
-noinst_PROGRAMS += ValidateMain
+noinst_PROGRAMS = ValidateMain
 endif
 
-TestMain_SOURCES = NKM_TestMain.cpp
-TestMain_LDADD = libnkm.la
-TestMain_LDADD += $(top_builddir)/packages/CONMIN/src/libconmin.la
-TestMain_LDADD += $(top_builddir)/packages/NCSUOpt/libncsuopt.a
-TestMain_LDADD += $(LAPACK_LIBS) $(BLAS_LIBS) $(LIBS) $(FLIBS)
+#TestMain_SOURCES = NKM_TestMain.cpp
+#TestMain_LDADD = libnkm.la
+#TestMain_LDADD += $(top_builddir)/packages/CONMIN/src/libconmin.la
+#TestMain_LDADD += $(top_builddir)/packages/NCSUOpt/libncsuopt.a
+#TestMain_LDADD += $(LAPACK_LIBS) $(BLAS_LIBS) $(LIBS) $(FLIBS)
 
 if BUILD_STANDALONE
 ValidateMain_SOURCES = NKM_ValidateMain.cpp
