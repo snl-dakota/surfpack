@@ -543,6 +543,7 @@ MtxDbl& evaluate_poly_der_basis(MtxDbl& dg, MtxInt& flypoly, MtxDbl& flycoef,
 	dg(ipoly,icol)=tempdg;
       }
   }
+  return dg;
 }
 
 
