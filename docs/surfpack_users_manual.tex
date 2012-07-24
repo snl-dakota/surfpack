@@ -373,7 +373,7 @@ derivative data, so this option is not available in stand-alone compilations
 of Surfpack.  GEK is available for use when Surfpack is called by Sandia's 
 DAKOTA software package for Optimization and Uncertainty Quantification.  
 Directly linking to nkm object files can also enable the use of GEK because 
-nkm::SurfData class is capable of reading/writing derivatives from/to a 
+the nkm::SurfData class is capable of reading/writing derivatives from/to a 
 .spd file.  However, the use of the nkm::SurfData class has not yet been 
 promoted to the rest of Surfpack.\newline
 
@@ -455,7 +455,7 @@ is to be evaluated).  The real, symmetric, positive-definite correlation
 matrix, $\underline{\underline{R}}$, of the error model contains evaluations 
 of the correlation function, $r$, at all pairwise combination of points 
 (rows) in the sample design, $\underline{\underline{X}}$.  The standard 
-convention is that each row of sample design matrix contains a point.
+convention is that each row of a sample design matrix contains a point.
 \begin{displaymath}
 R_{i,j}=R_{j,i}=r\left(\underline{X_i},\underline{X_j}\right)=r\left(\underline{X_j},\underline{X_i}\right)
 \end{displaymath}
@@ -479,7 +479,8 @@ families of correlation functions:
       modified Bessel function of order $\nu$. The Matern function is 
       commonly implemented with $\nu$ restricted to $\nu=i+\frac{1}{2}$, 
       where $i$ is a non negative because these values of $\nu$ result 
-      in greatly simplified formulas.  For example Matern with $\nu=frac{1}{2}$
+      in greatly simplified formulas.  For example, Matern with 
+      $\nu=\frac{1}{2}$
       is the exponential correlation function.  Matern with $\nu=\infty$
       is the squared-exponential or ``Gaussian'' correlation function.
       Discontinuities in the Matern correlation function's derivatives can
@@ -600,7 +601,7 @@ choosing a nugget include:
       number The estimated rcond of $\underline{\underline{R}}$ can be 
       used to calculate a still quite small upper bound on the nugget 
       which might be needed to alleviate ill conditioning.  This is the 
-      what is added as need when the \verb1find_nugget1 option of the 
+      what is added, as needed, when the \verb1find_nugget1 option of the 
       Surfpack Kriging model is added.
 \item Treating $\eta$ as another parameter to be selected by the
       same process used to choose $\underline{\theta}$.  Two 
@@ -656,21 +657,21 @@ later.\newline
 In the Surfpack Kriging model, the domain of correlation length space over
 which the objective function is optimized is $d/4 \le L_k \le 8d$ where
 $d$ is the average distance between points; $d=N^{-1/M}$ when the input space
-has be normalized to a unit hypercube or unit hype-rectangle (centered at 
+has be normalized to a unit hypercube or unit hyper-rectangle (centered at 
 zero).  Here $M$ is the number of input variables.  In Surfpack this 
 normalization is always done because it make the definition of $d$ simple 
 and significantly improves the conditioning of 
 $\left(\underline{\underline{G}}\ \underline{\underline{R}}^{-1} \underline{\underline{G}}^T\right)$. 
 The user can use the \verb1lower_bounds1 and \verb1upper_bounds1 keywords
 (each of these keywords is followed by a list of $M$ real numbers) to specify
-the size of the input space.  If bounds are not specified the minimum and 
-maximum values of the coordinates of build data points in each dimension 
+the size of the input space.  If bounds are not specified, then the minimum 
+and maximum values of the coordinates of build data points in each dimension 
 are used. The \verb1dimension_groups1 keyword can be used to specify $M$ 
 integers to indicate which group each input belongs to, if this is done
-then relative distance within each group is preserved when the build data is
-scaled, i.e. the scaled inputs space will be a unit hyper-rectangle rather 
-than a unit hypercube.  By default each dimension is considered to have its 
-own group.\newline
+then the distance aspect ratios within each group is preserved when the build 
+data is scaled, i.e. the scaled inputs space will be a unit hyper-rectangle 
+rather than a unit hypercube.  By default each dimension is considered to have 
+its own group.\newline
 
 The options for \verb1optimization_method1 available in the Surfpack Kriging
 model are 
@@ -715,7 +716,7 @@ Surfpack Kriging model when neither the \verb1nugget1 nor \verb1find_nugget1
 keywords are specified.\newline
 
 Because the Kriging $\underline{\underline{R}}$ matrix has all ones on its
-diagonal the first point listed (index zero) will always be retained when
+diagonal, the first point listed (index zero) will always be retained when
 pivoted Cholesky is used to select an optimal subset of points from which
 to build the Kriging Model.  The user can directly specify which point to
 use/retain as the ``anchor point'' via the \verb1anchor_index1 keyword 
