@@ -37,6 +37,10 @@ ValidateMain_SOURCES = NKM_ValidateMain.cpp
 ValidateMain_LDADD = libnkm.la
 ValidateMain_LDADD += $(top_builddir)/packages/CONMIN/src/libconmin.la
 ValidateMain_LDADD += $(top_builddir)/packages/NCSUOpt/libncsuopt.a
+if HAVE_BOOST
+ValidateMain_LDFLAGS = @BOOST_LDFLAGS@
+ValidateMain_LDADD += -lboost_serialization
+endif
 ValidateMain_LDADD += $(LAPACK_LIBS) $(BLAS_LIBS) $(LIBS) $(FLIBS)
 endif
 
