@@ -3,10 +3,12 @@
 #include "NKM_KrigingModel.hpp"
 #include <iostream>
 #include <iomanip>
+#include <sys/time.h>
+#include <cstdlib>
 using namespace std;
 using std::ostringstream;
 
-#include <cstdlib>
+
 
 
 
@@ -35,14 +37,13 @@ using std::string;
 
 void nightly_test();
 
-#ifndef __DONT_COMPILE__
+
 
 void hack();
 void check_matrix();
 void compare_sample_designs();
 void compare_sample_designs_pav(int nvarsr);
 void nested_Krig_vs_GEK_herbie_smooth_herbie_2D_4D_8D();
-void boost_save_loadtest();
 void global_build_and_eval_mean_adjvar();
 void local_corrlen_build_and_eval_mean_adjvar();
 void corrlen_build_and_eval_mean_adjvar();
@@ -157,55 +158,200 @@ void gen_sample_design_by_pivoted_cholesky() {
 }
 
 
-void time_build_grad() {  
-  std::map< std::string, std::string> gkm_params;
-  gkm_params["constraint_type"] = "r";
-  gkm_params["order"] = "2";
-  gkm_params["reduced_polynomial"]=nkm::toString<bool>(true);
+void timing_tests() {  
+  std::map< std::string, std::string> km_params;
+  struct timeval tv;  
+
+  nkm::MtxDbl yeval(1,10000);  
+  int ndim;
+  string sdbuildfilename;
+  string sdevalfilename;
+  string problemname;
+  string modelname;
+  int nout;
+  int iout;
   
+  std::cout << "********************************************************************************\n"
+	    << "********************************************************************************\n"
+	    << "Running Timing/Performance Tests\n"
+	    << "********************************************************************************"
+	    << std::endl;
+
   
-  gkm_params["lower_bounds"]="-2.0 -2.0";
-  gkm_params["upper_bounds"]="2.0 2.0";
-  string paviani10d_500 ="grad_validate2d_10.spd";
-  nkm::SurfData sdpav500( paviani10d_500 , 2, 0, 3, 0, 1, 0);
-  /*
-  gkm_params["lower_bounds"]=" 2.0  2.0  2.0  2.0  2.0  2.0  2.0  2.0  2.0  2.0";
-  gkm_params["upper_bounds"]="10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0";
-  string paviani10d_500 ="grad_paviani10d_500.spd";
-  nkm::SurfData sdpav500( paviani10d_500 , 10, 0, 1, 0, 1, 0);
-  */
-  nkm::GradKrigingModel gkmpav500(sdpav500, gkm_params); 
-  gkmpav500.create();
-  printf("pav10D 500pt GKM: time_spent_on_pivot_cholesky=%g time_spent_on_rcond_in_pivot_cholesky=%g\n",  
-	 gkmpav500.time_spent_on_pivot_cholesky,
-	 gkmpav500.time_spent_on_rcond_in_pivot_cholesky);
-  /*
-  printf("pav10D 500pt GKM: time_spent_on_pivot_cholesky={%g,%g,(%g),%g,%g} time_spent_on_rcond_in_pivot_cholesky=%g n_pivot_cholesky_calls=%d nrcond_calls_in_pivot_cholesky=%d\n",  
-	 gkmpav500.time_spent_on_pivot_cholesky_block1,
-	 gkmpav500.time_spent_on_pivot_cholesky_blocks1_2,
-	 gkmpav500.time_spent_on_pivot_cholesky_block4,
-	 gkmpav500.time_spent_on_pivot_cholesky_blocks1_2_3,
-	 gkmpav500.time_spent_on_pivot_cholesky,
-	 gkmpav500.time_spent_on_rcond_in_pivot_cholesky,
-	 gkmpav500.n_pivot_cholesky_calls,
-	 gkmpav500.n_rcond_calls_in_pivot_cholesky);
-  */
+  km_params["optimization_method"]="global";
+  for(int itest=0; itest<6; ++itest) {
+    if(itest<4) {
+      nout=3;
+      ndim=2;
+      sdbuildfilename="grad_validate2d_500.spd";
+      sdevalfilename ="grad_validate2d_10K.spd";
+      km_params["lower_bounds"]="-2.0 -2.0";
+      km_params["upper_bounds"]="2.0 2.0";
+      if(itest<2) {
+	iout=0;
+	problemname="2D Rosenbrock";
+      }
+      else{
+	iout=2;
+	problemname="2D Herbie";
+      }
+      if((itest==0)||(itest==2)) {
+	km_params["derivative_order"]="0";
+	modelname="Kriging";
+      }
+      else {
+	km_params["derivative_order"]="1";
+	modelname="Gradient Enhanced Kriging";
+      }
+    }
+    else if(itest<6) {
+      sdevalfilename="grad_paviani10d_10K.spd";
+      nout=1;
+      iout=0;
+      ndim=10;
+      problemname="10D Paviani";      
+      km_params["lower_bounds"]=
+	" 2.0  2.0  2.0  2.0  2.0  2.0  2.0  2.0  2.0  2.0";
+      km_params["upper_bounds"]=
+	"10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0";
+      if(itest==4) {
+	sdbuildfilename="grad_paviani10d_2500.spd";    
+	km_params["derivative_order"]="0";
+	modelname="Kriging";
+      }
+      else {
+	sdbuildfilename="grad_paviani10d_500.spd";    
+	km_params["derivative_order"]="1";
+	modelname="Gradient Enhanced Kriging";
+      }
+    }
+
+    std::cout << 
+"********************************************************************************\n"
+	      << "Building a " << modelname << " model for " << problemname
+	      << "\nfrom data file \"" << sdbuildfilename << "\" using "
+	      << km_params["optimization_method"] << " optimization" 
+	      << std::endl;
+
+    int sd_der_order=1;
+    int ncol_skip=0;
+    int ndim_int=0;
+
+    //time the reading of eval surfdata
+    gettimeofday(&tv, NULL);
+    long int sde_read_start_sec=tv.tv_sec;
+    long int sde_read_start_usec=tv.tv_usec;
+    nkm::SurfData sde(sdevalfilename,
+		      ndim,ndim_int,nout,iout,sd_der_order,ncol_skip);
+    gettimeofday(&tv, NULL);
+    long int sde_read_stop_sec=tv.tv_sec;
+    long int sde_read_stop_usec=tv.tv_usec;
+    double sde_read_time=
+      static_cast<double>(sde_read_stop_sec -sde_read_start_sec)+
+      static_cast<double>(sde_read_stop_usec-sde_read_start_usec)/1000000.0;
+
+    //time the reading of build surfdata
+    gettimeofday(&tv, NULL);
+    long int sdb_read_start_sec=tv.tv_sec;
+    long int sdb_read_start_usec=tv.tv_usec;
+    nkm::SurfData sdb(sdbuildfilename,
+		     ndim,ndim_int,nout,iout,sd_der_order,ncol_skip);
+    gettimeofday(&tv, NULL);
+    long int sdb_read_stop_sec=tv.tv_sec;
+    long int sdb_read_stop_usec=tv.tv_usec;
+    double sdb_read_time=
+      static_cast<double>(sdb_read_stop_sec -sdb_read_start_sec)+
+      static_cast<double>(sdb_read_stop_usec-sdb_read_start_usec)/1000000.0;
+
+    //time the model constructor (processing of km params and initialize 
+    //some things)
+    gettimeofday(&tv, NULL);
+    long int km_construct_start_sec =tv.tv_sec;
+    long int km_construct_start_usec=tv.tv_usec;
+    nkm::KrigingModel km(sdb, km_params); 
+    gettimeofday(&tv, NULL);
+    long int km_construct_stop_sec =tv.tv_sec;
+    long int km_construct_stop_usec=tv.tv_usec;
+    double km_construct_time=
+      static_cast<double>(km_construct_stop_sec -km_construct_start_sec)+
+      static_cast<double>(km_construct_stop_usec-km_construct_start_usec)/
+      1000000.0;
+
+    //time the model creation (the optimization to find correlation lengths)
+    gettimeofday(&tv, NULL);
+    long int km_create_start_sec =tv.tv_sec;
+    long int km_create_start_usec=tv.tv_usec;
+    km.create();
+    gettimeofday(&tv, NULL);
+    long int km_create_stop_sec =tv.tv_sec;
+    long int km_create_stop_usec=tv.tv_usec;
+    double km_create_time=
+      static_cast<double>(km_create_stop_sec -km_create_start_sec)+
+      static_cast<double>(km_create_stop_usec-km_create_start_usec)/1000000.0;
+
+    //time the evaluation of the model adjuseted mean at 10K points
+    gettimeofday(&tv, NULL);
+    long int km_eval_start_sec =tv.tv_sec;
+    long int km_eval_start_usec=tv.tv_usec;
+    km.evaluate(yeval,sde.xr);
+    gettimeofday(&tv, NULL);
+    long int km_eval_stop_sec =tv.tv_sec;
+    long int km_eval_stop_usec=tv.tv_usec;
+    double km_eval_time=
+      static_cast<double>(km_eval_stop_sec -km_eval_start_sec)+
+      static_cast<double>(km_eval_stop_usec-km_eval_start_usec)/1000000.0;
+
+    //might want to also time the putting of the evalutated means into the eval
+    //surfdata
+    sde.y.putRows(yeval,iout); 
+    //sde.putDerY(yeval,0); //could also do this
+    //sde.putDerY(yeval,0,iout); //could also do this
+
+    //time the writing of eval surfdata
+    gettimeofday(&tv, NULL);
+    long int sde_write_start_sec =tv.tv_sec;
+    long int sde_write_start_usec=tv.tv_usec;
+    sde.write("timing_test_output.spd");
+    gettimeofday(&tv, NULL);
+    long int sde_write_stop_sec =tv.tv_sec;
+    long int sde_write_stop_usec=tv.tv_usec;
+    double sde_write_time=
+      static_cast<double>(sde_write_stop_sec -sde_write_start_sec)+
+      static_cast<double>(sde_write_stop_usec-sde_write_start_usec)/1000000.0;
+
+    std::cout << "When building a " << modelname << " model for " << problemname
+	      << "\nfrom data file \"" << sdbuildfilename << "\" using "
+	      << km_params["optimization_method"] << " optimization\n" 
+	      << "reading the evaluation surfdata (10K points) took " 
+	      << sde_read_time << " seconds\n"
+	      << "reading the build surfdata took " 
+	      << sdb_read_time << " seconds\n"
+	      << "model constructor took " 
+	      << km_construct_time << " seconds\n"
+	      << "model create() took " 
+	      << km_create_time << " seconds\n"
+	      << "model evaluation at 10K points took "
+	      << km_eval_time << " seconds\n"
+	      << "writing the evaluation surfdata (10K points) took " 
+	      << sde_write_time << " seconds" 
+	      << std::endl;
+  }
+  std::cout << "********************************************************************************"
+	    << std::endl;
+  return;
 }
-#endif
 
 int main(int argc, char* argv[])
 {
-  nightly_test();
-  //boost_save_loadtest();
-  //time_build_grad();
+  timing_tests();
+  //nightly_test();
+
+
   //compare_sample_designs_pav(2);
   //compare_sample_designs_pav(4);
   //compare_sample_designs_pav(8);
   //compare_sample_designs();
   //hack();
-  //validate();
-  //validate_grad();
-  //validate_grad2();
   //check_matrix();
   //gen_sample_design_by_pivoted_cholesky();
   //nested_Krig_vs_GEK_herbie_smooth_herbie_2D_4D_8D();
@@ -224,7 +370,7 @@ int main(int argc, char* argv[])
 }
 
 
-#ifndef __DONT_COMPILE__
+
 void check_matrix() 
 {
   nkm::MtxDbl I10(10,10), I5;
@@ -252,7 +398,6 @@ void check_matrix()
   nkm::matrix_mult(IA2,Ainv,A);
   nkm::solve_after_Chol_fact(IA3,AChol,A);
 
-
   nkm::MtxDbl B(15,15), BChol(15,15), Binv(15,15), Binv2(15,15), IB(15,15), IB2(15,15), IB3(15,15), IB4(14,14);
 
   B.copy(A);
@@ -265,8 +410,6 @@ void check_matrix()
   nkm::solve_after_Chol_fact(IB3,BChol,B);
   nkm::solve_after_Chol_fact(Binv2,BChol,I10);
   nkm::matrix_mult(IB4,Binv2,B,0.0,1.0,'N','T');
-
-
 
   FILE *fp=fopen("test_mat.txt","w");
   nrows=I10.getNRows();
@@ -601,80 +744,8 @@ void check_matrix()
   return;
 }
 
-#ifdef SURFPACK_HAVE_BOOST_SERIALIZATION
-void boost_save_loadtest(){
 
-  printf("testing boost save and load\n");
-
-  //filenames
-  string validate2d_100="grad_validate2d_100.spd";
-  string validate2d_10K="grad_validate2d_10K.spd";
-
-  nkm::SurfData sd2d100(validate2d_100, 2, 0, 3, 0, 1, 0);
-  nkm::SurfData sd2d10K(validate2d_10K, 2, 0, 3, 0, 1, 0);
-
-  nkm::MtxDbl yevalOrig(    10000,1);
-  nkm::MtxDbl yevalRestored(10000,1);
-
-  int jout;
-  std::map< std::string, std::string> km_params;
-  km_params["constraint_type"] = "r";
-  km_params["order"] = "2";
-  km_params["reduced_polynomial"]=nkm::toString<bool>(true);
-
-  jout=0; //the 0th output column is Rosenbrock  
-  sd2d100.setJOut(jout);
-  sd2d10K.setJOut(jout);
-
-  km_params["lower_bounds"]="-2.0 -2.0";
-  km_params["upper_bounds"]="2.0 2.0";
-  //km_params["optimization_method"]="local";
-  //km_params["optimization_method"]="none";
-  //km_params["nugget_formula"]="2";
-  
-  nkm::KrigingModel kmOrig( sd2d100 , km_params); kmOrig.create();
-  nkm::SurfPackModel *kmOrigPtr=&kmOrig;
-  {
-    std::ofstream nkm_km_ofstream("km.sav");
-  
-    boost::archive::text_oarchive output_archive(nkm_km_ofstream);
-    output_archive << kmOrigPtr;
-  }
-  nkm::SurfPackModel *kmRestored;
-  {
-    std::ifstream nkm_km_ifstream("km.sav");
-    boost::archive::text_iarchive input_archive(nkm_km_ifstream);
-    input_archive >> kmRestored;
-  }
-  std::cout <<"Restored: " << kmRestored->model_summary_string() << std::endl;
-    
-  nkm::MtxDbl xr(sd2d10K.xr);
-  kmOrig.evaluate(yevalOrig,sd2d10K.xr);
-  kmRestored->evaluate(yevalRestored,xr);
-  delete kmRestored;
-
-  double rmse=0;
-  double mean=0;
-  double var=0;
-  for(int i=0; i<10000; ++i) {
-    mean+=yevalOrig(i,0);
-    var+=yevalOrig(i,0)*yevalOrig(i,0);
-    double temp=yevalOrig(i,0)-yevalRestored(i,0);
-    rmse+=temp*temp;
-  }
-  mean/=10000.0;
-  var=var/10000.0-mean*mean;
-  rmse=std::sqrt(rmse/10000.0);
-  printf("rmse=%22.16g stddev=%22.16g\n",rmse,std::sqrt(var));
-
-  sd2d100.clear();
-  sd2d10K.clear();
-  yevalOrig.clear();
-  yevalRestored.clear();
-
-  return;
-}
-#endif
+#ifndef __DONT_COMPILE__
 
 void nested_Krig_vs_GEK_herbie_smooth_herbie_2D_4D_8D(){
   //string build_herbie_2D="gradHerbie_NestedLHS_2D_1024pts.spd";
@@ -727,8 +798,9 @@ void nested_Krig_vs_GEK_herbie_smooth_herbie_2D_4D_8D(){
       herbie_krig_params["lower_bounds"]="-2.0 -2.0";
       herbie_krig_params["upper_bounds"]="2.0 2.0";
       herbie_GEK_params=herbie_krig_params;
+      herbie_GEK_params["derivative_order"]="1";
       smooth_krig_params=herbie_krig_params;
-      smooth_GEK_params =herbie_krig_params;
+      smooth_GEK_params =herbie_GEK_params;
 
       build_herbie_filename=build_herbie_2D;
       build_smooth_filename=build_smooth_2D;
@@ -740,8 +812,9 @@ void nested_Krig_vs_GEK_herbie_smooth_herbie_2D_4D_8D(){
       herbie_krig_params["lower_bounds"]="-2.0 -2.0 -2.0 -2.0";
       herbie_krig_params["upper_bounds"]="2.0 2.0 2.0 2.0";
       herbie_GEK_params=herbie_krig_params;
+      herbie_GEK_params["derivative_order"]="1";
       smooth_krig_params=herbie_krig_params;
-      smooth_GEK_params =herbie_krig_params;
+      smooth_GEK_params =herbie_GEK_params;
 
       build_herbie_filename=build_herbie_4D;
       build_smooth_filename=build_smooth_4D;
@@ -753,8 +826,9 @@ void nested_Krig_vs_GEK_herbie_smooth_herbie_2D_4D_8D(){
       herbie_krig_params["lower_bounds"]="-2.0 -2.0 -2.0 -2.0 -2.0 -2.0 -2.0 -2.0";
       herbie_krig_params["upper_bounds"]="2.0 2.0 2.0 2.0 2.0 2.0 2.0 2.0";
       herbie_GEK_params=herbie_krig_params;
+      herbie_GEK_params["derivative_order"]="1";
       smooth_krig_params=herbie_krig_params;
-      smooth_GEK_params =herbie_krig_params;
+      smooth_GEK_params =herbie_GEK_params;
 
       build_herbie_filename=build_herbie_8D;
       build_smooth_filename=build_smooth_8D;
@@ -1007,7 +1081,7 @@ void nested_Krig_vs_GEK_herbie_smooth_herbie_2D_4D_8D(){
 	if(iref<Nref) { //Npts*(1+Ndim) equations makes for a BIG correlation matrix 
 	  //(slow emulator construction) and I don't need the largest Npts for the
 	  //Gradient Enhanced Kriging Paper
-	  nkm::GradKrigingModel gkm(sd_build_temp,herbie_GEK_params); gkm.create();
+	  nkm::KrigingModel gkm(sd_build_temp,herbie_GEK_params); gkm.create();
 	  gkm.evaluate(yeval,sd_valid_herbie.xr);
 	  for(int i=0; i<NptsValid; ++i) {
 	    double tmpdbl=yeval(i,0)-sd_valid_herbie.y(i,0);
@@ -1057,7 +1131,7 @@ void nested_Krig_vs_GEK_herbie_smooth_herbie_2D_4D_8D(){
 	  //(slow emulator construction) and I don't need the largest Npts for the
 	  //Gradient Enhanced Kriging Paper
 
-	  nkm::GradKrigingModel gkm(sd_build_temp,smooth_GEK_params); gkm.create();
+	  nkm::KrigingModel gkm(sd_build_temp,smooth_GEK_params); gkm.create();
 	  gkm.evaluate(yeval,sd_valid_smooth.xr);
 	  for(int i=0; i<NptsValid; ++i) {
 	    double tmpdbl=yeval(i,0)-sd_valid_smooth.y(i,0);
@@ -1088,22 +1162,6 @@ void nested_Krig_vs_GEK_herbie_smooth_herbie_2D_4D_8D(){
   return;
 } //end of function
 
-void hack()
-{
-  string filename="ORIG_DATA.spd";
-  nkm::SurfData orig_data( filename , 6, 0, 10, 0, 1);
-  
-  std::map< std::string, std::string> km_params;
-  km_params["order"] = "2";
-
-
-  for(int jout=0; jout<10; ++jout) {
-    orig_data.setJOut(jout);
-    nkm::KrigingModel km(orig_data , km_params); km.create();
-  }
-  return;
-}
-
 void compare_sample_designs() {
   
   string build_filename ="build_file.spd";
@@ -1113,7 +1171,7 @@ void compare_sample_designs() {
   FILE* fpout=fopen("compare_out.txt","w");
   
   nkm::MtxDbl yeval(16384,1);
-  int jout; //the 0th output column is Rosenbrock    
+  int iout; //the 0th output column is Rosenbrock    
   double rmse;
 
 
@@ -1123,46 +1181,45 @@ void compare_sample_designs() {
 
   km_params["order"] = "2";
   km_params["reduced_polynomial"]=nkm::toString<bool>(true);
-  
 
-  jout=0;
-  sd2dbuild.setJOut(jout);
-  sd2dvalid.setJOut(jout);
+  iout=0;
+  sd2dbuild.setIOut(iout);
+  sd2dvalid.setIOut(iout);
   nkm::KrigingModel kmros( sd2dbuild, km_params); kmros.create();
 
   //evaluate error the rosenbrock kriging model at 2^14=16384 validation points
   kmros.evaluate(yeval,sd2dvalid.xr);
   rmse=0.0;
   for(int i=0; i<16384; ++i)
-    rmse+=std::pow(yeval(i,0)-sd2dvalid.y(i,jout),2);
+    rmse+=std::pow(yeval(i,0)-sd2dvalid.y(iout,i),2);
   rmse=std::sqrt(rmse/16384.0);
   fprintf(fpout,"%22.16g\n",rmse);
 
 
-  jout=1;
-  sd2dbuild.setJOut(jout);
-  sd2dvalid.setJOut(jout);
+  iout=1;
+  sd2dbuild.setIOut(iout);
+  sd2dvalid.setIOut(iout);
   nkm::KrigingModel kmshu( sd2dbuild, km_params); kmshu.create();
 
   //evaluate error the shubert kriging model at 2^14=16384 validation points
   kmshu.evaluate(yeval,sd2dvalid.xr);
   rmse=0.0;
   for(int i=0; i<16384; ++i)
-    rmse+=std::pow(yeval(i,0)-sd2dvalid.y(i,jout),2);
+    rmse+=std::pow(yeval(i,0)-sd2dvalid.y(iout,i),2);
   rmse=std::sqrt(rmse/16384.0);
   fprintf(fpout,"%22.16g\n",rmse);
 
 
-  jout=2;
-  sd2dbuild.setJOut(jout);
-  sd2dvalid.setJOut(jout);
+  iout=2;
+  sd2dbuild.setIOut(iout);
+  sd2dvalid.setIOut(iout);
   nkm::KrigingModel kmherb( sd2dbuild, km_params); kmherb.create();
 
   //evaluate error the herbie kriging model at 2^14=16384 validation points
   kmherb.evaluate(yeval,sd2dvalid.xr);
   rmse=0.0;
   for(int i=0; i<16384; ++i)
-    rmse+=std::pow(yeval(i,0)-sd2dvalid.y(i,jout),2);
+    rmse+=std::pow(yeval(i,0)-sd2dvalid.y(iout,i),2);
   rmse=std::sqrt(rmse/16384.0);
   fprintf(fpout,"%22.16g\n",rmse);
 
@@ -1220,203 +1277,6 @@ void compare_sample_designs_pav(int nvarsr) {
 }
 
 
-void validate_grad2() {
-  printf("validating Gradient Enhanced Kriging Model\n");
-  //string buildfilename ="grad_validate2d_8a.spd";
-  //string buildfilename ="grad_validate2d_16a.spd";
-  string buildfilename ="grad_validate2d_32a.spd";
-  //string buildfilename ="dakota_sbo_rosen_10_first11.spd";
-  //nkm::SurfData sdbuild(buildfilename, 2, 0, 1, 0, 1, 0);
-  nkm::SurfData sdbuild(buildfilename, 2, 0, 3, 0, 1, 0);
-  string validfilename="grad_validate2d_10K.spd";
-  nkm::SurfData sdvalid(validfilename, 2, 0, 3, 0, 1, 0);
-  
-  int NptsBuild=sdbuild.getNPts();
-  nkm::MtxDbl yevalbuild(NptsBuild,1);
-  nkm::MtxDbl yeval10K(10000,1);
-  int jout=0; //the 0th output column is Rosenbrock  
-  //int jout=2; //the 2nd output column is herbie  
-  
-  nkm::MtxDbl roserror_grad(1,4); roserror_grad.zero();
-  nkm::MtxDbl roserror(1,4); roserror.zero();
-  sdbuild.setJOut(jout);
-  sdvalid.setJOut(jout);
-  
-  std::map< std::string, std::string> km_params;
-  //km_params["lower_bounds"]="-1.4 0.8";
-  //km_params["upper_bounds"]="-1.0 1.2";
-  km_params["lower_bounds"]="-2 -2";
-  km_params["upper_bounds"]= "2 2";
-  km_params["order"] = "2";
-  km_params["reduced_polynomial"]=nkm::toString<bool>(true);
-  
-  nkm::GradKrigingModel gkmros(sdbuild, km_params); gkmros.create();
-  nkm::KrigingModel kmros(sdbuild, km_params); kmros.create();
-
-  
-  //evaluate error the NptsBuild pt rosenbrock grad kriging model at 10K points
-  gkmros.evaluate(yeval10K,sdvalid.xr);
-  for(int i=0; i<10000; ++i)
-    roserror_grad(0,2)+=std::pow(yeval10K(i,0)-sdvalid.y(i,jout),2);
-  roserror_grad(0,3)=std::sqrt(roserror_grad(0,2)/10000.0);
-
-  //evaluate error the NptsBuild pt rosenbrock Grad kriging model at build points  
-  gkmros.evaluate(yevalbuild,sdbuild.xr);
-  for(int i=0; i<NptsBuild; ++i)
-    roserror_grad(0,0)+=std::pow(yevalbuild(i,0)-sdbuild.y(i,0),2);
-  roserror_grad(0,1)=std::sqrt(roserror_grad(0,0)/NptsBuild);
-
-  //evaluate error the NptsBuild pt rosenbrock grad kriging model at 10K points
-  kmros.evaluate(yeval10K,sdvalid.xr);
-  for(int i=0; i<10000; ++i)
-    roserror(0,2)+=std::pow(yeval10K(i,0)-sdvalid.y(i,jout),2);
-  roserror(0,3)=std::sqrt(roserror(0,2)/10000.0);
-
-  //evaluate error the NptsBuild pt rosenbrock Grad kriging model at build points  
-  kmros.evaluate(yevalbuild,sdbuild.xr);
-  for(int i=0; i<NptsBuild; ++i)
-    roserror(0,0)+=std::pow(yevalbuild(i,0)-sdbuild.y(i,0),2);
-  roserror(0,1)=std::sqrt(roserror(0,0)/NptsBuild);
-
-
-  FILE *fpout=fopen("grad_Kriging.validate","w");
-  
-  fprintf(fpout,"rosenbrock\n");
-  fprintf(fpout,"Grad Kriging:\n");
-  fprintf(fpout,"%12d, %19.6g, %20.6g, %17.6g, %18.6g\n",NptsBuild,roserror_grad(0,0),roserror_grad(0,1),roserror_grad(0,2),roserror_grad(0,3));
-  fprintf(fpout,"Kriging:\n");
-  fprintf(fpout,"%12d, %19.6g, %20.6g, %17.6g, %18.6g\n",NptsBuild,roserror(0,0),roserror(0,1),roserror(0,2),roserror(0,3));
-
-  
-  fclose(fpout);
-
-  return;
-}
-
-
-/*
-void validate_grad()
-{
-  printf("validating Gradient Enhanced Kriging Model\n");
-
-  //filenames
-
-  string validate2d_100 ="grad_validate2d_100.spd";
-  string validate2d_10K="validate2d_10K.spd";
-
-  nkm::SurfData sd2d100( validate2d_100 , 2, 0, 3, 0, 1, 0);
-  nkm::SurfData sd2d10K(validate2d_10K, 2, 0, 3, 0, 0, 0);
-
-//string paviani10d_50  ="grad_paviani10d_50.spd";
-//string paviani10d_10K ="paviani10d_10K.spd";
-
-
-
-  nkm::MtxDbl yeval100(    10,1);
-  nkm::MtxDbl yeval10K(10000,1);
-
-  int jout;
-
-  std::map< std::string, std::string> km_params;
-  km_params["constraint_type"] = "r";
-  //km_params["order"] = "linear";
-  km_params["order"] = "2";
-  km_params["reduced_polynomial"]=nkm::toString<bool>(true);
-
-  std::map< std::string, std::string> gkm_params;
-  gkm_params=km_params;
-  //gkm_params["optimization_method"]="none";
-
-  
-  km_params["lower_bounds"]="-2.0 -2.0";
-  km_params["upper_bounds"]="2.0 2.0";
-
-
-  printf("*****************************************************************\n");
-  printf("*** running shubert 2D tests ************************************\n");
-  printf("*****************************************************************\n");
-
-  nkm::MtxDbl shuerror(3,4); shuerror.zero();
-  jout=1;
-  sd2d100.setJOut( jout);
-  sd2d10K.setJOut(jout);
-
-  gkm_params=km_params;
-  nkm::GradKrigingModel gkmshu100( sd2d100 , gkm_params); gkmshu100.create();
-
-  //evaluate error the 10 pt shubert kriging model at 10K points
-  gkmshu100.evaluate(yeval10K,sd2d10K.xr);
-  for(int i=0; i<10000; ++i)
-    shuerror(0,2)+=std::pow(yeval10K(i,0)-sd2d10K.y(i,jout),2);
-  shuerror(0,3)=std::sqrt(shuerror(0,2)/10000.0);
-
-  //evaluate error the 10 pt shubert kriging model at build points  
-  gkmshu100.evaluate(yeval100,sd2d100.xr);
-  for(int i=0; i<100; ++i)
-    shuerror(0,0)+=std::pow(yeval100(i,0)-sd2d100.y(i,jout),2);
-  shuerror(0,1)=std::sqrt(shuerror(0,0)/100.0);
-
-#ifdef NONO
-  printf("*****************************************************************\n");
-  printf("*** running paviani 10D tests ***********************************\n");
-  printf("*****************************************************************\n");
-
-  km_params["lower_bounds"]=" 2.0  2.0  2.0  2.0  2.0  2.0  2.0  2.0  2.0  2.0";
-  km_params["upper_bounds"]="10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0";
-
-  gkm_params=km_params;
-
-  nkm::MtxDbl paverror(3,4); paverror.zero();
-  nkm::SurfData sdpav50(  paviani10d_50  , 10, 0, 1, 0, 1, 0);
-
-  nkm::SurfData sdpav10K( paviani10d_10K , 10, 0, 1, 0, 0, 0);
-  nkm::GradKrigingModel gkmpav50( sdpav50 , gkm_params); gkmpav50.create();
-
-
-  nkm::MtxDbl yeval50(50,1);
-
-  //evaluate error the 10 pt paviani10d kriging model at 10K points
-  gkmpav50.evaluate(yeval10K,sdpav10K.xr);
-  for(int i=0; i<10000; ++i)
-    paverror(0,2)+=std::pow(yeval10K(i,0)-sdpav10K.y(i,0),2);
-  paverror(0,3)=std::sqrt(paverror(0,2)/10000.0);
-
-  sdpav10K.clear();
-
-  //evaluate error the 50 pt paviani10d kriging model at build points  
-  gkmpav50.evaluate(yeval50,sdpav50.xr);
-  for(int i=0; i<50; ++i)
-    paverror(0,0)+=std::pow(yeval50(i,0)-sdpav50.y(i,0),2);
-  paverror(0,1)=std::sqrt(paverror(0,0)/50.0);
-
-  sdpav50.clear();
-  yeval50.clear();
-#endif
-
-  printf("*****************************************************************\n");
-  printf("*** writing output **********************************************\n");
-  printf("*****************************************************************\n");
-
-
-  FILE *fpout=fopen("grad_Kriging.validate","w");
-
-  fprintf(fpout,"shubert\n");
-  fprintf(fpout,"# of samples, SSE at build points, RMSE at build points, SSE at 10K points, RMSE at 10K points\n");
-  fprintf(fpout,"%12d, %19.6g, %20.6g, %17.6g, %18.6g\n",10,shuerror(0,0),shuerror(0,1),shuerror(0,2),shuerror(0,3));
-
-
-#ifdef NONO
-  fprintf(fpout,"paviani\n");
-  fprintf(fpout,"# of samples, SSE at build points, RMSE at build points, SSE at 10K points, RMSE at 10K points\n");
-  fprintf(fpout,"%12d, %19.6g, %20.6g, %17.6g, %18.6g\n",50,paverror(0,0),paverror(0,1),paverror(0,2),paverror(0,3));
-#endif
-
-  fclose(fpout);
-  return;
-}
-*/
-
-
 std::string mtxdbl_2_string(nkm::MtxDbl& md) { 
   std::ostringstream oss;
   oss.precision(16);
@@ -1429,956 +1289,7 @@ std::string mtxdbl_2_string(nkm::MtxDbl& md) {
   return oss.str();
 }
 
-
-
-void validate_grad()
-{
-  printf("validating Gradient Enhanced Kriging Model\n");
-
-  //filenames
-
-#ifndef __TIMING_BENCH__  
-#ifndef __PROFILING_TEST__
-  string validate2d_10 ="grad_validate2d_10.spd";
-#endif
-  string validate2d_100="grad_validate2d_100.spd";
-#ifndef __PROFILING_TEST__
-  string validate2d_500="grad_validate2d_500.spd";
-#endif
-  string validate2d_10K="validate2d_10K.spd";
-
-#ifndef __PROFILING_TEST__
-  nkm::SurfData sd2d10( validate2d_10 , 2, 0, 3, 0, 1, 0);
-#endif
-  nkm::SurfData sd2d100(validate2d_100, 2, 0, 3, 0, 1, 0);
-#ifndef __PROFILING_TEST__
-  nkm::SurfData sd2d500(validate2d_500, 2, 0, 3, 0, 1, 0);
-#endif
-  nkm::SurfData sd2d10K(validate2d_10K, 2, 0, 3, 0, 0, 0);
-#endif
-
-#ifndef __PROFILING_TEST__
-  string paviani10d_50  ="grad_paviani10d_50.spd";
-  string paviani10d_500 ="grad_paviani10d_500.spd";
-  string paviani10d_2500="grad_paviani10d_2500.spd";
-  string paviani10d_10K ="paviani10d_10K.spd";
-#endif
-
-
-#ifndef __PROFILING_TEST__
-  nkm::MtxDbl yeval10(    10,1);
-#endif
-#ifndef __TIMING_BENCH__
-  nkm::MtxDbl yeval100(  100,1);
-#ifndef __PROFILING_TEST__
-  nkm::MtxDbl yeval500(  500,1);
-#endif
-#endif
-  nkm::MtxDbl yeval10K(10000,1);
-
-  int jout;
-
-  std::map< std::string, std::string> km_params;
-  km_params["constraint_type"] = "r";
-  //km_params["order"] = "linear";
-  //km_params["order"] = "2";
-  //km_params["reduced_polynomial"]=nkm::toString<bool>(true);
-
-
-  std::map< std::string, std::string> gkm_params;
-  gkm_params=km_params;
-  //gkm_params["optimization_method"]="none";
-
-#ifndef __TIMING_BENCH__  
-  printf("*****************************************************************\n");
-  printf("*** running rosenbrock 2D tests *********************************\n");
-  printf("*****************************************************************\n");
-
-  nkm::MtxDbl corr_lengths;
-  nkm::MtxDbl roserror(3,4); roserror.zero();
-  
-  jout=0; //the 0th output column is Rosenbrock  
-#ifndef __PROFILING_TEST__
-  sd2d10.setJOut( jout);
-#endif
-  sd2d100.setJOut(jout);
-#ifndef __PROFILING_TEST__
-  sd2d500.setJOut(jout);
-#endif
-  sd2d10K.setJOut(jout);
-
-  km_params["lower_bounds"]="-2.0 -2.0";
-  km_params["upper_bounds"]="2.0 2.0";
-  //km_params["optimization_method"]="local";
-  //km_params["optimization_method"]="none";
-  //km_params["nugget_formula"]="2";
-
-#ifndef __PROFILING_TEST__
-#ifndef __GKM_USE_KM_CORR_LEN__
-  gkm_params=km_params;
-#endif
-  
-#ifdef __GKM_USE_KM_CORR_LEN__
-  nkm::KrigingModel kmros10(sd2d10,km_params); kmros10.create();
-  gkm_params["correlation_lengths"]=mtxdbl_2_string(kmros10.get_correlation_lengths(corr_lengths));
-#endif
-  nkm::GradKrigingModel gkmros10( sd2d10 , gkm_params); gkmros10.create();
-#endif
-
-#ifndef __VALGRIND_TEST__
-#ifndef __EVEN_FASTER_TEST__
-#ifdef __GKM_USE_KM_CORR_LEN__
-  nkm::KrigingModel kmros100(sd2d100,km_params); kmros100.create();
-  gkm_params["correlation_lengths"]=mtxdbl_2_string(kmros100.get_correlation_lengths(corr_lengths));
-#endif
-  nkm::GradKrigingModel gkmros100(sd2d100, gkm_params); gkmros100.create();
-
-
-#ifndef __FASTER_TEST__
-#ifndef __PROFILING_TEST__
-#ifdef __GKM_USE_KM_CORR_LEN__
-  nkm::KrigingModel kmros500(sd2d500,km_params); kmros500.create();
-  gkm_params["correlation_lengths"]=mtxdbl_2_string(kmros500.get_correlation_lengths(corr_lengths));  
-#endif
-  nkm::GradKrigingModel gkmros500(sd2d500, gkm_params); gkmros500.create();
-#endif //__PROFILING_TEST__
-#endif //__FASTER_TEST__
-#endif //__EVEN_FASTER_TEST__
-#endif
-  //exit(0);
-
-#ifndef __PROFILING_TEST__  
-  //evaluate error the 10 pt rosenbrock kriging model at 10K points
-  gkmros10.evaluate(yeval10K,sd2d10K.xr);
-  for(int i=0; i<10000; ++i)
-    roserror(0,2)+=std::pow(yeval10K(i,0)-sd2d10K.y(i,jout),2);
-  roserror(0,3)=std::sqrt(roserror(0,2)/10000.0);
-#endif  //__PROFILING_TEST__
-
-#ifndef __VALGRIND_TEST__
-#ifndef __EVEN_FASTER_TEST__
-  //evaluate error the 100 pt rosenbrock kriging model at 10K points
-  gkmros100.evaluate(yeval10K,sd2d10K.xr);
-  for(int i=0; i<10000; ++i)
-    roserror(1,2)+=std::pow(yeval10K(i,0)-sd2d10K.y(i,jout),2);
-  roserror(1,3)=std::sqrt(roserror(1,2)/10000.0);
-
-#ifndef __FASTER_TEST__  
-#ifndef __PROFILING_TEST__
-  //evaluate error the 500 pt rosenbrock kriging model at 10K points
-  gkmros500.evaluate(yeval10K,sd2d10K.xr);
-  for(int i=0; i<10000; ++i)
-    roserror(2,2)+=std::pow(yeval10K(i,0)-sd2d10K.y(i,jout),2);
-  roserror(2,3)=std::sqrt(roserror(2,2)/10000.0);
-  
-  //sd2d10K.clear();
-
-  //evaluate error the 500 pt rosenbrock kriging model at build points
-  gkmros500.evaluate(yeval500,sd2d500.xr);
-  for(int i=0; i<500; ++i)
-    roserror(2,0)+=std::pow(yeval500(i,0)-sd2d500.y(i,jout),2);
-  roserror(2,1)=std::sqrt(roserror(2,0)/500.0);
-#endif //__PROFILING_TEST__
-#endif //__FASTER_TEST__
-
-
-  //evaluate error the 100 pt rosenbrock kriging model at build points
-  gkmros100.evaluate(yeval100,sd2d100.xr);
-  for(int i=0; i<100; ++i)
-    roserror(1,0)+=std::pow(yeval100(i,0)-sd2d100.y(i,jout),2);
-  roserror(1,1)=std::sqrt(roserror(1,0)/100.0);
-#endif //__EVEN_FASTER_TEST__
-#endif //__VALGRIND_TEST__
-
-#ifndef __PROFILING_TEST__
-  //evaluate error the 10 pt rosenbrock kriging model at build points  
-  gkmros10.evaluate(yeval10,sd2d10.xr);
-  for(int i=0; i<10; ++i)
-    roserror(0,0)+=std::pow(yeval10(i,0)-sd2d10.y(i,jout),2);
-  roserror(0,1)=std::sqrt(roserror(0,0)/10.0);
-  
-#ifndef __VALGRIND_TEST__
-  printf("*****************************************************************\n");
-  printf("*** running shubert 2D tests ************************************\n");
-  printf("*****************************************************************\n");
-
-  nkm::MtxDbl shuerror(3,4); shuerror.zero();
-  jout=1;
-  sd2d10.setJOut( jout);
-  sd2d100.setJOut(jout);
-  sd2d500.setJOut(jout);
-  sd2d10K.setJOut(jout);
-
-#ifndef __GKM_USE_KM_CORR_LEN__
-  gkm_params=km_params;
-#endif
-
-#ifdef __GKM_USE_KM_CORR_LEN__
-  nkm::KrigingModel kmshu10(sd2d10,km_params); kmshu10.create();
-  gkm_params["correlation_lengths"]=mtxdbl_2_string(kmshu10.get_correlation_lengths(corr_lengths));  
-#endif
-  nkm::GradKrigingModel gkmshu10( sd2d10 , gkm_params); gkmshu10.create();
-
-#ifndef __EVEN_FASTER_TEST__
-#ifdef __GKM_USE_KM_CORR_LEN__
-  nkm::KrigingModel kmshu100(sd2d100,km_params); kmshu100.create();
-  gkm_params["correlation_lengths"]=mtxdbl_2_string(kmshu100.get_correlation_lengths(corr_lengths));  
-#endif
-  nkm::GradKrigingModel gkmshu100(sd2d100, gkm_params); gkmshu100.create();
-
-#ifndef __FASTER_TEST__
-#ifdef __GKM_USE_KM_CORR_LEN__
-  nkm::KrigingModel kmshu500(sd2d500,km_params); kmshu500.create();
-  gkm_params["correlation_lengths"]=mtxdbl_2_string(kmshu500.get_correlation_lengths(corr_lengths));  
-#endif
-  nkm::GradKrigingModel gkmshu500(sd2d500, gkm_params); gkmshu500.create();
-#endif //FASTER_TEST
-#endif //EVEN_FASTER_TEST
-
-  //evaluate error the 10 pt shubert kriging model at 10K points
-  gkmshu10.evaluate(yeval10K,sd2d10K.xr);
-  for(int i=0; i<10000; ++i)
-    shuerror(0,2)+=std::pow(yeval10K(i,0)-sd2d10K.y(i,jout),2);
-  shuerror(0,3)=std::sqrt(shuerror(0,2)/10000.0);
-
-#ifndef __EVEN_FASTER_TEST__
-  //evaluate error the 100 pt shubert kriging model at 10K points
-  gkmshu100.evaluate(yeval10K,sd2d10K.xr);
-  for(int i=0; i<10000; ++i)
-    shuerror(1,2)+=std::pow(yeval10K(i,0)-sd2d10K.y(i,jout),2);
-  shuerror(1,3)=std::sqrt(shuerror(1,2)/10000.0);
-
-#ifndef __FASTER_TEST__   
-  //evaluate error the 500 pt shubert kriging model at 10K points
-  gkmshu500.evaluate(yeval10K,sd2d10K.xr);
-  for(int i=0; i<10000; ++i)
-    shuerror(2,2)+=std::pow(yeval10K(i,0)-sd2d10K.y(i,jout),2);
-  shuerror(2,3)=std::sqrt(shuerror(2,2)/10000.0);
-  
-
-  //evaluate error the 500 pt shubert kriging model at build points
-  gkmshu500.evaluate(yeval500,sd2d500.xr);
-  for(int i=0; i<500; ++i)
-    shuerror(2,0)+=std::pow(yeval500(i,0)-sd2d500.y(i,jout),2);
-  shuerror(2,1)=std::sqrt(shuerror(2,0)/500.0);
-#endif //FASTER_TEST
-
-  //evaluate error the 100 pt shubert kriging model at build points
-  gkmshu100.evaluate(yeval100,sd2d100.xr);
-  for(int i=0; i<100; ++i)
-    shuerror(1,0)+=std::pow(yeval100(i,0)-sd2d100.y(i,jout),2);
-  shuerror(1,1)=std::sqrt(shuerror(1,0)/100.0);
-#endif //EVEN_FASTER_TEST
-
-  //evaluate error the 10 pt shubert kriging model at build points  
-  gkmshu10.evaluate(yeval10,sd2d10.xr);
-  for(int i=0; i<10; ++i)
-    shuerror(0,0)+=std::pow(yeval10(i,0)-sd2d10.y(i,jout),2);
-  shuerror(0,1)=std::sqrt(shuerror(0,0)/10.0);
-
-  printf("*****************************************************************\n");
-  printf("*** running herbie 2D tests *************************************\n");
-  printf("*****************************************************************\n");
-
-  nkm::MtxDbl herberror(3,4); herberror.zero();
-
-  jout=2;
-  sd2d10.setJOut( jout);
-  sd2d100.setJOut(jout);
-  sd2d500.setJOut(jout);
-  sd2d10K.setJOut(jout);
-
-#ifndef __GKM_USE_KM_CORR_LEN__
-  gkm_params=km_params;
-#endif
-
-#ifdef __GKM_USE_KM_CORR_LEN__
-  nkm::KrigingModel kmherb10(sd2d10,km_params); kmherb10.create();
-  gkm_params["correlation_lengths"]=mtxdbl_2_string(kmherb10.get_correlation_lengths(corr_lengths));
-#endif
-  nkm::GradKrigingModel gkmherb10( sd2d10 , gkm_params); gkmherb10.create();
-
-#ifndef __EVEN_FASTER_TEST__
-#ifdef __GKM_USE_KM_CORR_LEN__
-  nkm::KrigingModel kmherb100(sd2d100,km_params); kmherb100.create();
-  gkm_params["correlation_lengths"]=mtxdbl_2_string(kmherb100.get_correlation_lengths(corr_lengths));
-#endif
-  nkm::GradKrigingModel gkmherb100(sd2d100, gkm_params); gkmherb100.create();
-
-#ifndef __FASTER_TEST__
-#ifdef __GKM_USE_KM_CORR_LEN__
-  nkm::KrigingModel kmherb500(sd2d500,km_params); kmherb500.create();
-  gkm_params["correlation_lengths"]=mtxdbl_2_string(kmherb500.get_correlation_lengths(corr_lengths));
-#endif
-  nkm::GradKrigingModel gkmherb500(sd2d500, gkm_params); gkmherb500.create();
-#endif //FASTER_TEST
-#endif //EVEN_FASTER_TEST
-
-  //evaluate error the 10 pt herbie kriging model at 10K points
-  gkmherb10.evaluate(yeval10K,sd2d10K.xr);
-  for(int i=0; i<10000; ++i)
-    herberror(0,2)+=std::pow(yeval10K(i,0)-sd2d10K.y(i,jout),2);
-  herberror(0,3)=std::sqrt(herberror(0,2)/10000.0);
-
-#ifndef __EVEN_FASTER_TEST__
-  //evaluate error the 100 pt herbie kriging model at 10K points
-  gkmherb100.evaluate(yeval10K,sd2d10K.xr);
-  for(int i=0; i<10000; ++i)
-    herberror(1,2)+=std::pow(yeval10K(i,0)-sd2d10K.y(i,jout),2);
-  herberror(1,3)=std::sqrt(herberror(1,2)/10000.0);
-
-#ifndef __FASTER_TEST__   
-  //evaluate error the 500 pt herbie kriging model at 10K points
-  gkmherb500.evaluate(yeval10K,sd2d10K.xr);
-  for(int i=0; i<10000; ++i)
-    herberror(2,2)+=std::pow(yeval10K(i,0)-sd2d10K.y(i,jout),2);
-  herberror(2,3)=std::sqrt(herberror(2,2)/10000.0);
-  
-
-  //evaluate error the 500 pt herbie kriging model at build points
-  gkmherb500.evaluate(yeval500,sd2d500.xr);
-  for(int i=0; i<500; ++i)
-    herberror(2,0)+=std::pow(yeval500(i,0)-sd2d500.y(i,jout),2);
-  herberror(2,1)=std::sqrt(herberror(2,0)/500.0);
-#endif //FASTER_TEST
-
-  //evaluate error the 100 pt herbie kriging model at build points
-  gkmherb100.evaluate(yeval100,sd2d100.xr);
-  for(int i=0; i<100; ++i)
-    herberror(1,0)+=std::pow(yeval100(i,0)-sd2d100.y(i,jout),2);
-  herberror(1,1)=std::sqrt(herberror(1,0)/100.0);
-#endif //EVEN_FASTER_TEST
-
-  //evaluate error the 10 pt herbie kriging model at build points  
-  gkmherb10.evaluate(yeval10,sd2d10.xr);
-  for(int i=0; i<10; ++i)
-    herberror(0,0)+=std::pow(yeval10(i,0)-sd2d10.y(i,jout),2);
-  herberror(0,1)=std::sqrt(herberror(0,0)/10.0);
-  
-  sd2d10.clear();
-  sd2d100.clear();
-  sd2d500.clear();
-  sd2d10K.clear();
-  yeval10.clear();
-  yeval100.clear();
-#endif //__VALGRIND_TEST__
-#endif //__PROFILING_TEST__
-#endif //__TIMING_BENCH__  
-
-#ifndef __PROFILING_TEST__
-#ifndef __VALGRIND_TEST__
-#ifndef __EVEN_FASTER_TEST__
-  printf("*****************************************************************\n");
-  printf("*** running paviani 10D tests ***********************************\n");
-  printf("*****************************************************************\n");
-
-  km_params["lower_bounds"]=" 2.0  2.0  2.0  2.0  2.0  2.0  2.0  2.0  2.0  2.0";
-  km_params["upper_bounds"]="10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0";
-
-#ifndef __GKM_USE_KM_CORR_LEN__
-  gkm_params=km_params;
-#endif
-
-
-  nkm::MtxDbl paverror(3,4); paverror.zero();
-#ifndef __TIMING_BENCH__
-  nkm::SurfData sdpav50(  paviani10d_50  , 10, 0, 1, 0, 1, 0);
-#ifndef __FASTER_TEST__
-#ifdef __WITH_PAV_500__
-  nkm::SurfData sdpav500( paviani10d_500 , 10, 0, 1, 0, 1, 0);
-#endif //__WITH_PAV_500__
-#endif //FASTER TEST
-#endif //TIMING_BENCH
-#ifndef __FASTER_TEST__
-#ifndef __FAST_TEST__
-  nkm::SurfData sdpav2500(paviani10d_2500, 10, 0, 1, 0, 1, 0);
-#endif //FAST
-#endif //FASTER
-
-
-  nkm::SurfData sdpav10K( paviani10d_10K , 10, 0, 1, 0, 0, 0);
-#ifndef __TIMING_BENCH__
-#ifdef __GKM_USE_KM_CORR_LEN__
-  nkm::KrigingModel kmpav50(sdpav50,km_params); kmpav50.create();
-  gkm_params["correlation_lengths"]=mtxdbl_2_string(kmpav50.get_correlation_lengths(corr_lengths));
-#endif
-  nkm::GradKrigingModel gkmpav50( sdpav50 , gkm_params); gkmpav50.create();
-  //printf("pav10D 50pt GKM: time_spent_on_pivot_cholesky=%g time_spent_on_rcond_in_pivot_cholesky=%g n_pivot_cholesky_calls=%d nrcond_calls_in_pivot_cholesky=%d\n",gkmpav50.time_spent_on_pivot_cholesky,gkmpav50.time_spent_on_rcond_in_pivot_cholesky,gkmpav50.n_pivot_cholesky_calls,gkmpav50.n_rcond_calls_in_pivot_cholesky);
-
-#endif //TIMING_BENCH
-
-
-#ifndef __FASTER_TEST__
-#ifndef __TIMING_BENCH__
-#ifdef __WITH_PAV_500__
-#ifdef __GKM_USE_KM_CORR_LEN__
-  nkm::KrigingModel kmpav500(sdpav500,km_params); kmpav500.create();
-  gkm_params["correlation_lengths"]=mtxdbl_2_string(kmpav500.get_correlation_lengths(corr_lengths));
-#endif
-  nkm::GradKrigingModel gkmpav500(sdpav500, gkm_params); gkmpav500.create();
-  printf("pav10D 500pt GKM: time_spent_on_pivot_cholesky={%g,%g,(%g),%g,%g} time_spent_on_rcond_in_pivot_cholesky=%g n_pivot_cholesky_calls=%d nrcond_calls_in_pivot_cholesky=%d\n",  
-	 gkmpav500.time_spent_on_pivot_cholesky_block1,
-	 gkmpav500.time_spent_on_pivot_cholesky_blocks1_2,
-	 gkmpav500.time_spent_on_pivot_cholesky_block4,
-	 gkmpav500.time_spent_on_pivot_cholesky_blocks1_2_3,
-	 gkmpav500.time_spent_on_pivot_cholesky,
-	 gkmpav500.time_spent_on_rcond_in_pivot_cholesky,
-	 gkmpav500.n_pivot_cholesky_calls,
-	 gkmpav500.n_rcond_calls_in_pivot_cholesky);
-
-#endif //__WITH_PAV_500__
-#endif //TIMING_BENCH
-
-#ifndef __FAST_TEST__
-#ifdef __GKM_USE_KM_CORR_LEN__
-  nkm::KrigingModel kmpav2500(sdpav2500,km_params); kmpav2500.create();
-  gkm_params["correlation_lengths"]=mtxdbl_2_string(kmpav2500.get_correlation_lengths(corr_lengths));
-#endif
-  nkm::GradKrigingModel gkmpav2500(sdpav2500, gkm_params); gkmpav2500.create();
-  //cout << kmpav2500.model_summary_string();
-#endif //FAST_TEST
-#endif //FASTER_TEST
-
-#ifndef __TIMING_BENCH__
-  nkm::MtxDbl yeval50(50,1);
-#endif
-#ifndef __FASTER_TEST__
-#ifndef __FAST_TEST__
-  nkm::MtxDbl yeval2500(2500,1);
-#endif //FAST_TEST
-#endif //FASTER_TEST
-
-#ifndef __TIMING_BENCH__
-  //evaluate error the 10 pt paviani10d kriging model at 10K points
-  gkmpav50.evaluate(yeval10K,sdpav10K.xr);
-  for(int i=0; i<10000; ++i)
-    paverror(0,2)+=std::pow(yeval10K(i,0)-sdpav10K.y(i,0),2);
-  paverror(0,3)=std::sqrt(paverror(0,2)/10000.0);
-
-#ifndef __FASTER_TEST__
-#ifdef __WITH_PAV_500__
-  //evaluate error the 100 pt paviani10d kriging model at 10K points
-  gkmpav500.evaluate(yeval10K,sdpav10K.xr);
-  for(int i=0; i<10000; ++i)
-    paverror(1,2)+=std::pow(yeval10K(i,0)-sdpav10K.y(i,0),2);
-  paverror(1,3)=std::sqrt(paverror(1,2)/10000.0);
-#endif //__WITH_PAV_500__
-#endif //FASTER_TEST
-#endif //TIMING_BENCH
-
-#ifndef __FASTER_TEST__
-#ifndef __FAST_TEST__      
-  //evaluate error the 2500 pt paviani10d kriging model at 10K points
-  gkmpav2500.evaluate(yeval10K,sdpav10K.xr);
-  for(int i=0; i<10000; ++i)
-    paverror(2,2)+=std::pow(yeval10K(i,0)-sdpav10K.y(i,0),2);
-  paverror(2,3)=std::sqrt(paverror(2,2)/10000.0);
-#endif //FAST_TEST
-#endif //FASTER_TEST
-
-#ifdef __TIMING_BENCH__  
-  sdpav10K.y.copy(yeval10K);
-  string pav10Kout="grad_paviani10d_10K_nkm_out.spd";
-  sdpav10K.write(pav10Kout);
-#endif //TIMING_BENCH
-
-  sdpav10K.clear();
-
-#ifndef __FASTER_TEST__
-#ifndef __FAST_TEST__
-  //evaluate error the 2500 pt paviani10d kriging model at build points
-  gkmpav2500.evaluate(yeval2500,sdpav2500.xr);
-  for(int i=0; i<2500; ++i)
-    paverror(2,0)+=std::pow(yeval2500(i,0)-sdpav2500.y(i,0),2);
-  paverror(2,1)=std::sqrt(paverror(2,0)/2500.0);
-  
-  sdpav2500.clear();
-  yeval2500.clear();
-#endif //__FAST_TEST__
-
-#ifndef __TIMING_BENCH__    
-#ifdef __WITH_PAV_500__
-  //evaluate error the 500 pt paviani10d kriging model at build points
-  gkmpav500.evaluate(yeval500,sdpav500.xr);
-  for(int i=0; i<500; ++i)
-    paverror(1,0)+=std::pow(yeval500(i,0)-sdpav500.y(i,0),2);
-  paverror(1,1)=std::sqrt(paverror(1,0)/500.0);
-
-  sdpav500.clear();
-#endif //__WITH_PAV_500__
-#endif //__TIMING_BENCH__
-#endif //__FASTER_TEST__
-
-#ifndef __TIMING_BENCH__  
-  //evaluate error the 50 pt paviani10d kriging model at build points  
-  gkmpav50.evaluate(yeval50,sdpav50.xr);
-  for(int i=0; i<50; ++i)
-    paverror(0,0)+=std::pow(yeval50(i,0)-sdpav50.y(i,0),2);
-  paverror(0,1)=std::sqrt(paverror(0,0)/50.0);
-
-  sdpav50.clear();
-  yeval50.clear();
-
-  yeval500.clear();
-#endif //__TIMING_BENCH__  
-#endif //__EVEN_FASTER_TEST__
-#endif //__VALGRIND_TEST__
-#endif //__PROFILING_TEST__
-  printf("*****************************************************************\n");
-  printf("*** writing output **********************************************\n");
-  printf("*****************************************************************\n");
-
-  FILE *fpout=fopen("grad_Kriging.validate","w");
-
-#ifndef __TIMING_BENCH__
-  fprintf(fpout,"rosenbrock\n");
-  fprintf(fpout,"# of samples, SSE at build points, RMSE at build points, SSE at 10K points, RMSE at 10K points\n");
-#ifndef __PROFILING_TEST__
-  fprintf(fpout,"%12d, %19.6g, %20.6g, %17.6g, %18.6g\n",10,roserror(0,0),roserror(0,1),roserror(0,2),roserror(0,3));
-#endif //__PROFILING_TEST__
-
-#ifndef __VALGRIND_TEST__
-#ifndef __EVEN_FASTER_TEST__
-  fprintf(fpout,"%12d, %19.6g, %20.6g, %17.6g, %18.6g\n",100,roserror(1,0),roserror(1,1),roserror(1,2),roserror(1,3));
-#ifndef __FASTER_TEST__
-#ifndef __PROFILING_TEST__
-  fprintf(fpout,"%12d, %19.6g, %20.6g, %17.6g, %18.6g\n",500,roserror(2,0),roserror(2,1),roserror(2,2),roserror(2,3));
-#endif //__PROFILING_TEST__
-#endif //FASTER_TEST
-#endif //EVEN_FASTER_TEST
-
-#ifndef __PROFILING_TEST__  
-  fprintf(fpout,"shubert\n");
-  fprintf(fpout,"# of samples, SSE at build points, RMSE at build points, SSE at 10K points, RMSE at 10K points\n");
-  fprintf(fpout,"%12d, %19.6g, %20.6g, %17.6g, %18.6g\n",10,shuerror(0,0),shuerror(0,1),shuerror(0,2),shuerror(0,3));
-#ifndef __EVEN_FASTER_TEST__
-  fprintf(fpout,"%12d, %19.6g, %20.6g, %17.6g, %18.6g\n",100,shuerror(1,0),shuerror(1,1),shuerror(1,2),shuerror(1,3));
-#ifndef __FASTER_TEST__
-  fprintf(fpout,"%12d, %19.6g, %20.6g, %17.6g, %18.6g\n",500,shuerror(2,0),shuerror(2,1),shuerror(2,2),shuerror(2,3));
-#endif //FASTER_TEST
-#endif //EVEN_FASTER_TEST
-
-  fprintf(fpout,"herbie\n");
-  fprintf(fpout,"# of samples, SSE at build points, RMSE at build points, SSE at 10K points, RMSE at 10K points\n");
-  fprintf(fpout,"%12d, %19.6g, %20.6g, %17.6g, %18.6g\n",10,herberror(0,0),herberror(0,1),herberror(0,2),herberror(0,3));
-#ifndef __EVEN_FASTER_TEST__
-  fprintf(fpout,"%12d, %19.6g, %20.6g, %17.6g, %18.6g\n",100,herberror(1,0),herberror(1,1),herberror(1,2),herberror(1,3));
-#ifndef __FASTER_TEST__
-  fprintf(fpout,"%12d, %19.6g, %20.6g, %17.6g, %18.6g\n",500,herberror(2,0),herberror(2,1),herberror(2,2),herberror(2,3));
-#endif //FASTER_TEST
-
-  fprintf(fpout,"paviani\n");
-  fprintf(fpout,"# of samples, SSE at build points, RMSE at build points, SSE at 10K points, RMSE at 10K points\n");
-  fprintf(fpout,"%12d, %19.6g, %20.6g, %17.6g, %18.6g\n",50,paverror(0,0),paverror(0,1),paverror(0,2),paverror(0,3));
-#ifndef __FASTER_TEST__
-  fprintf(fpout,"%12d, %19.6g, %20.6g, %17.6g, %18.6g\n",500,paverror(1,0),paverror(1,1),paverror(1,2),paverror(1,3));
-  fprintf(fpout,"%12d, %19.6g, %20.6g, %17.6g, %18.6g\n",2500,paverror(2,0),paverror(2,1),paverror(2,2),paverror(2,3));
-#endif //__FASTER_TEST__
-#endif //__EVEN_FASTER_TEST__
-#endif //__PROFILING_TEST__
-#endif //__VALGRIND_TEST__
-#endif //TIMING_BENCH
-
-#ifndef __PROFILING_TEST__
-#ifdef TIMING_BENCH
-  fprintf(fpout,"paviani\n");
-  fprintf(fpout,"# of samples, SSE at build points, RMSE at build points, SSE at 10K points, RMSE at 10K points\n");
-  fprintf(fpout,"%12d, %19.6g, %20.6g, %17.6g, %18.6g\n",2500,paverror(2,0),paverror(2,1),paverror(2,2),paverror(2,3));
-#endif //TIMING_BENCH
-#endif //__PROFILING_TEST__
-
-  fclose(fpout);
-  return;
-}
-
-
-
-
-void validate()
-{
-  printf("validating Kriging Model\n");
-
-  //filenames
-
-#ifndef __TIMING_BENCH__  
-#ifndef __VALGRIND_TEST__
-  string validate2d_10 ="grad_validate2d_10.spd";
-  string validate2d_500="grad_validate2d_500.spd";
-  nkm::SurfData sd2d10( validate2d_10 , 2, 0, 3, 0, 1, 0);
-  nkm::SurfData sd2d500(validate2d_500, 2, 0, 3, 0, 1, 0);
-#endif
-  string validate2d_100="grad_validate2d_100.spd";
-  string validate2d_10K="grad_validate2d_10K.spd";
-  nkm::SurfData sd2d100(validate2d_100, 2, 0, 3, 0, 1, 0);
-  nkm::SurfData sd2d10K(validate2d_10K, 2, 0, 3, 0, 1, 0);
-#endif
-
-#ifndef __VALGRIND_TEST__
-  string paviani10d_50  ="grad_paviani10d_50.spd";
-  string paviani10d_500 ="grad_paviani10d_500.spd";
-  string paviani10d_2500="grad_paviani10d_2500.spd";
-  string paviani10d_10K ="grad_paviani10d_10K.spd";
-#endif
-
-#ifndef __VALGRIND_TEST__
-  nkm::MtxDbl yeval10(    10,1);
-#endif
-#ifndef __TIMING_BENCH__
-  nkm::MtxDbl yeval100(  100,1);
-#ifndef __VALGRIND_TEST__
-  nkm::MtxDbl yeval500(  500,1);
-#endif
-#endif
-  nkm::MtxDbl yeval10K(10000,1);
-
-  int jout;
-
-  std::map< std::string, std::string> km_params;
-  km_params["constraint_type"] = "r";
-  //km_params["order"] = "linear";
-  km_params["order"] = "2";
-  km_params["reduced_polynomial"]=nkm::toString<bool>(true);
-  //km_params["powered_exponential"]="1";
-  //km_params["powered_exponential"]="1.5";
-  //km_params["powered_exponential"]="2";
-  //km_params["matern"] = "0.5";
-  //km_params["matern"] = "1.5";
-  //km_params["matern"] = "2.5";
-  //km_params["matern"] = "infinity";
-
-#ifndef __TIMING_BENCH__  
-  printf("*****************************************************************\n");
-  printf("*** running rosenbrock 2D tests *********************************\n");
-  printf("*****************************************************************\n");
-
-  nkm::MtxDbl roserror(3,4); roserror.zero();
-  
-  jout=0; //the 0th output column is Rosenbrock  
-#ifndef __VALGRIND_TEST__
-  sd2d10.setJOut( jout);
-#endif
-  sd2d100.setJOut(jout);
-#ifndef __VALGRIND_TEST__
-  sd2d500.setJOut(jout);
-#endif
-
-  sd2d10K.setJOut(jout);
-
-  km_params["lower_bounds"]="-2.0 -2.0";
-  km_params["upper_bounds"]="2.0 2.0";
-  //km_params["optimization_method"]="local";
-  //km_params["optimization_method"]="none";
-  //km_params["nugget_formula"]="2";
-
-#ifndef __VALGRIND_TEST__
-  nkm::KrigingModel kmros10( sd2d10 , km_params); kmros10.create();
-#endif
-  nkm::KrigingModel kmros100(sd2d100, km_params); kmros100.create();
-#ifndef __VALGRIND_TEST__
-  nkm::KrigingModel kmros500(sd2d500, km_params); kmros500.create();
-#endif
-
-
-  //exit(0);
-
-
-#ifndef __VALGRIND_TEST__
-  //evaluate error the 10 pt rosenbrock kriging model at 10K points
-  kmros10.evaluate(yeval10K,sd2d10K.xr);
-  for(int i=0; i<10000; ++i)
-    roserror(0,2)+=std::pow(yeval10K(i,0)-sd2d10K.y(i,jout),2);
-  roserror(0,3)=std::sqrt(roserror(0,2)/10000.0);
-#endif
-
-  //evaluate error the 100 pt rosenbrock kriging model at 10K points
-  kmros100.evaluate(yeval10K,sd2d10K.xr);
-  for(int i=0; i<10000; ++i)
-    roserror(1,2)+=std::pow(yeval10K(i,0)-sd2d10K.y(i,jout),2);
-  roserror(1,3)=std::sqrt(roserror(1,2)/10000.0);
-
-#ifndef __VALGRIND_TEST__  
-  //evaluate error the 500 pt rosenbrock kriging model at 10K points
-  kmros500.evaluate(yeval10K,sd2d10K.xr);
-  for(int i=0; i<10000; ++i)
-    roserror(2,2)+=std::pow(yeval10K(i,0)-sd2d10K.y(i,jout),2);
-  roserror(2,3)=std::sqrt(roserror(2,2)/10000.0);
-  
-  //sd2d10K.clear();
-
-  //evaluate error the 500 pt rosenbrock kriging model at build points
-  kmros500.evaluate(yeval500,sd2d500.xr);
-  for(int i=0; i<500; ++i)
-    roserror(2,0)+=std::pow(yeval500(i,0)-sd2d500.y(i,jout),2);
-  roserror(2,1)=std::sqrt(roserror(2,0)/500.0);
-#endif
-
-  //evaluate error the 100 pt rosenbrock kriging model at build points
-  kmros100.evaluate(yeval100,sd2d100.xr);
-  int N100=sd2d100.getNPts();
-  for(int i=0; i<N100; ++i)
-    roserror(1,0)+=std::pow(yeval100(i,0)-sd2d100.y(i,jout),2);
-  roserror(1,1)=std::sqrt(roserror(1,0)/N100);
-
-#ifndef __VALGRIND_TEST__
-  //evaluate error the 10 pt rosenbrock kriging model at build points  
-  kmros10.evaluate(yeval10,sd2d10.xr);
-  for(int i=0; i<10; ++i)
-    roserror(0,0)+=std::pow(yeval10(i,0)-sd2d10.y(i,jout),2);
-  roserror(0,1)=std::sqrt(roserror(0,0)/10.0);
-  
-  printf("*****************************************************************\n");
-  printf("*** running shubert 2D tests ************************************\n");
-  printf("*****************************************************************\n");
-
-  nkm::MtxDbl shuerror(3,4); shuerror.zero();
-  jout=1;
-  sd2d10.setJOut( jout);
-  sd2d100.setJOut(jout);
-  sd2d500.setJOut(jout);
-  sd2d10K.setJOut(jout);
-
-  nkm::KrigingModel kmshu10( sd2d10 , km_params); kmshu10.create();
-  nkm::KrigingModel kmshu100(sd2d100, km_params); kmshu100.create();
-  nkm::KrigingModel kmshu500(sd2d500, km_params); kmshu500.create();
-
-
-  //evaluate error the 10 pt shubert kriging model at 10K points
-  kmshu10.evaluate(yeval10K,sd2d10K.xr);
-  for(int i=0; i<10000; ++i)
-    shuerror(0,2)+=std::pow(yeval10K(i,0)-sd2d10K.y(i,jout),2);
-  shuerror(0,3)=std::sqrt(shuerror(0,2)/10000.0);
-
-  //evaluate error the 100 pt shubert kriging model at 10K points
-  kmshu100.evaluate(yeval10K,sd2d10K.xr);
-  for(int i=0; i<10000; ++i)
-    shuerror(1,2)+=std::pow(yeval10K(i,0)-sd2d10K.y(i,jout),2);
-  shuerror(1,3)=std::sqrt(shuerror(1,2)/10000.0);
-  
-  //evaluate error the 500 pt shubert kriging model at 10K points
-  kmshu500.evaluate(yeval10K,sd2d10K.xr);
-  for(int i=0; i<10000; ++i)
-    shuerror(2,2)+=std::pow(yeval10K(i,0)-sd2d10K.y(i,jout),2);
-  shuerror(2,3)=std::sqrt(shuerror(2,2)/10000.0);
-  
-
-  //evaluate error the 500 pt shubert kriging model at build points
-  kmshu500.evaluate(yeval500,sd2d500.xr);
-  for(int i=0; i<500; ++i)
-    shuerror(2,0)+=std::pow(yeval500(i,0)-sd2d500.y(i,jout),2);
-  shuerror(2,1)=std::sqrt(shuerror(2,0)/500.0);
- 
-
-  //evaluate error the 100 pt shubert kriging model at build points
-  kmshu100.evaluate(yeval100,sd2d100.xr);
-  for(int i=0; i<100; ++i)
-    shuerror(1,0)+=std::pow(yeval100(i,0)-sd2d100.y(i,jout),2);
-  shuerror(1,1)=std::sqrt(shuerror(1,0)/100.0);
-
-  //evaluate error the 10 pt shubert kriging model at build points  
-  kmshu10.evaluate(yeval10,sd2d10.xr);
-  for(int i=0; i<10; ++i)
-    shuerror(0,0)+=std::pow(yeval10(i,0)-sd2d10.y(i,jout),2);
-  shuerror(0,1)=std::sqrt(shuerror(0,0)/10.0);
-
-  printf("*****************************************************************\n");
-  printf("*** running herbie 2D tests *************************************\n");
-  printf("*****************************************************************\n");
-
-  nkm::MtxDbl herberror(3,4); herberror.zero();
-
-  jout=2;
-  sd2d10.setJOut( jout);
-  sd2d100.setJOut(jout);
-  sd2d500.setJOut(jout);
-  sd2d10K.setJOut(jout);
-
-  nkm::KrigingModel kmherb10( sd2d10 , km_params); kmherb10.create();
-  nkm::KrigingModel kmherb100(sd2d100, km_params); kmherb100.create();
-  nkm::KrigingModel kmherb500(sd2d500, km_params); kmherb500.create();
-
-  //evaluate error the 10 pt herbie kriging model at 10K points
-  kmherb10.evaluate(yeval10K,sd2d10K.xr);
-  for(int i=0; i<10000; ++i)
-    herberror(0,2)+=std::pow(yeval10K(i,0)-sd2d10K.y(i,jout),2);
-  herberror(0,3)=std::sqrt(herberror(0,2)/10000.0);
-
-  //evaluate error the 100 pt herbie kriging model at 10K points
-  kmherb100.evaluate(yeval10K,sd2d10K.xr);
-  for(int i=0; i<10000; ++i)
-    herberror(1,2)+=std::pow(yeval10K(i,0)-sd2d10K.y(i,jout),2);
-  herberror(1,3)=std::sqrt(herberror(1,2)/10000.0);
-  
-  //evaluate error the 500 pt herbie kriging model at 10K points
-  kmherb500.evaluate(yeval10K,sd2d10K.xr);
-  for(int i=0; i<10000; ++i)
-    herberror(2,2)+=std::pow(yeval10K(i,0)-sd2d10K.y(i,jout),2);
-  herberror(2,3)=std::sqrt(herberror(2,2)/10000.0);
-  
-
-  //evaluate error the 500 pt herbie kriging model at build points
-  kmherb500.evaluate(yeval500,sd2d500.xr);
-  for(int i=0; i<500; ++i)
-    herberror(2,0)+=std::pow(yeval500(i,0)-sd2d500.y(i,jout),2);
-  herberror(2,1)=std::sqrt(herberror(2,0)/500.0);
-
-  //evaluate error the 100 pt herbie kriging model at build points
-  kmherb100.evaluate(yeval100,sd2d100.xr);
-  for(int i=0; i<100; ++i)
-    herberror(1,0)+=std::pow(yeval100(i,0)-sd2d100.y(i,jout),2);
-  herberror(1,1)=std::sqrt(herberror(1,0)/100.0);
-
-  //evaluate error the 10 pt herbie kriging model at build points  
-  kmherb10.evaluate(yeval10,sd2d10.xr);
-  for(int i=0; i<10; ++i)
-    herberror(0,0)+=std::pow(yeval10(i,0)-sd2d10.y(i,jout),2);
-  herberror(0,1)=std::sqrt(herberror(0,0)/10.0);
-  
-  sd2d10.clear();
-  sd2d500.clear();
-  yeval10.clear();
-#endif
-  sd2d100.clear();
-  sd2d10K.clear();
-  yeval100.clear();
-#endif
-#ifndef __VALGRIND_TEST__
-  printf("*****************************************************************\n");
-  printf("*** running paviani 10D tests ***********************************\n");
-  printf("*****************************************************************\n");
-
-  km_params["lower_bounds"]=" 2.0  2.0  2.0  2.0  2.0  2.0  2.0  2.0  2.0  2.0";
-  km_params["upper_bounds"]="10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0";
-
-
-  nkm::MtxDbl paverror(3,4); paverror.zero();
-#ifndef __TIMING_BENCH__
-  nkm::SurfData sdpav50( paviani10d_50 , 10, 0, 1, 0, 1, 0);
-  nkm::SurfData sdpav500(paviani10d_500, 10, 0, 1, 0, 1, 0);
-#endif
-#ifndef __FAST_TEST__
-  nkm::SurfData sdpav2500(paviani10d_2500, 10, 0, 1, 0, 1, 0);
-#endif
-  nkm::SurfData sdpav10K(paviani10d_10K, 10, 0, 1, 0, 1, 0);
-#ifndef __TIMING_BENCH__
-  nkm::KrigingModel kmpav50( sdpav50 , km_params); kmpav50.create();
-  nkm::KrigingModel kmpav500(sdpav500, km_params); kmpav500.create();
-#endif
-#ifndef __FAST_TEST__
-  nkm::KrigingModel kmpav2500(sdpav2500, km_params); kmpav2500.create();
-  //cout << kmpav2500.model_summary_string();
-#endif
-
-#ifndef __TIMING_BENCH__
-  nkm::MtxDbl yeval50(50,1);
-#endif
-#ifndef __FAST_TEST__
-  nkm::MtxDbl yeval2500(2500,1);
-#endif
-
-#ifndef __TIMING_BENCH__
-  //evaluate error the 10 pt paviani10d kriging model at 10K points
-  kmpav50.evaluate(yeval10K,sdpav10K.xr);
-  for(int i=0; i<10000; ++i)
-    paverror(0,2)+=std::pow(yeval10K(i,0)-sdpav10K.y(i,0),2);
-  paverror(0,3)=std::sqrt(paverror(0,2)/10000.0);
-
-  //evaluate error the 100 pt paviani10d kriging model at 10K points
-  kmpav500.evaluate(yeval10K,sdpav10K.xr);
-  for(int i=0; i<10000; ++i)
-    paverror(1,2)+=std::pow(yeval10K(i,0)-sdpav10K.y(i,0),2);
-  paverror(1,3)=std::sqrt(paverror(1,2)/10000.0);
-#endif
-
-#ifndef __FAST_TEST__      
-  //evaluate error the 2500 pt paviani10d kriging model at 10K points
-  kmpav2500.evaluate(yeval10K,sdpav10K.xr);
-  for(int i=0; i<10000; ++i)
-    paverror(2,2)+=std::pow(yeval10K(i,0)-sdpav10K.y(i,0),2);
-  paverror(2,3)=std::sqrt(paverror(2,2)/10000.0);
-#endif
-
-#ifdef __TIMING_BENCH__  
-  sdpav10K.y.copy(yeval10K);
-  string pav10Kout="paviani10d_10K_nkm_out.spd";
-  sdpav10K.write(pav10Kout);
-#endif
-
-  sdpav10K.clear();
-
-#ifndef __TIMING_BENCH__  
-#ifndef __FAST_TEST__
-  //evaluate error the 2500 pt paviani10d kriging model at build points
-  kmpav2500.evaluate(yeval2500,sdpav2500.xr);
-  for(int i=0; i<2500; ++i)
-    paverror(2,0)+=std::pow(yeval2500(i,0)-sdpav2500.y(i,0),2);
-  paverror(2,1)=std::sqrt(paverror(2,0)/2500.0);
-  
-  sdpav2500.clear();
-  yeval2500.clear();
-#endif
-  
-  //evaluate error the 500 pt paviani10d kriging model at build points
-  kmpav500.evaluate(yeval500,sdpav500.xr);
-  for(int i=0; i<500; ++i)
-    paverror(1,0)+=std::pow(yeval500(i,0)-sdpav500.y(i,0),2);
-  paverror(1,1)=std::sqrt(paverror(1,0)/500.0);
-
-  sdpav500.clear();
-
-  //evaluate error the 50 pt paviani10d kriging model at build points  
-  kmpav50.evaluate(yeval50,sdpav50.xr);
-  for(int i=0; i<50; ++i)
-    paverror(0,0)+=std::pow(yeval50(i,0)-sdpav50.y(i,0),2);
-  paverror(0,1)=std::sqrt(paverror(0,0)/50.0);
-
-  sdpav50.clear();
-  yeval50.clear();
-
-  yeval500.clear();
-#endif
-#endif   
-  printf("*****************************************************************\n");
-  printf("*** writing output **********************************************\n");
-  printf("*****************************************************************\n");
-
-  FILE *fpout=fopen("new_Kriging.validate","w");
-
-#ifndef __TIMING_BENCH__
-  fprintf(fpout,"rosenbrock\n");
-  fprintf(fpout,"# of samples, SSE at build points, RMSE at build points, SSE at 10K points, RMSE at 10K points\n");
-#ifndef __VALGRIND_TEST__
-  fprintf(fpout,"%12d, %19.6g, %20.6g, %17.6g, %18.6g\n",10,roserror(0,0),roserror(0,1),roserror(0,2),roserror(0,3));
-#endif
-  fprintf(fpout,"%12d, %19.6g, %20.6g, %17.6g, %18.6g\n",100,roserror(1,0),roserror(1,1),roserror(1,2),roserror(1,3));
-#ifndef __VALGRIND_TEST__
-  fprintf(fpout,"%12d, %19.6g, %20.6g, %17.6g, %18.6g\n",500,roserror(2,0),roserror(2,1),roserror(2,2),roserror(2,3));
-  
-  fprintf(fpout,"shubert\n");
-  fprintf(fpout,"# of samples, SSE at build points, RMSE at build points, SSE at 10K points, RMSE at 10K points\n");
-  fprintf(fpout,"%12d, %19.6g, %20.6g, %17.6g, %18.6g\n",10,shuerror(0,0),shuerror(0,1),shuerror(0,2),shuerror(0,3));
-  fprintf(fpout,"%12d, %19.6g, %20.6g, %17.6g, %18.6g\n",100,shuerror(1,0),shuerror(1,1),shuerror(1,2),shuerror(1,3));
-  fprintf(fpout,"%12d, %19.6g, %20.6g, %17.6g, %18.6g\n",500,shuerror(2,0),shuerror(2,1),shuerror(2,2),shuerror(2,3));
-
-  fprintf(fpout,"herbie\n");
-  fprintf(fpout,"# of samples, SSE at build points, RMSE at build points, SSE at 10K points, RMSE at 10K points\n");
-  fprintf(fpout,"%12d, %19.6g, %20.6g, %17.6g, %18.6g\n",10,herberror(0,0),herberror(0,1),herberror(0,2),herberror(0,3));
-  fprintf(fpout,"%12d, %19.6g, %20.6g, %17.6g, %18.6g\n",100,herberror(1,0),herberror(1,1),herberror(1,2),herberror(1,3));
-  fprintf(fpout,"%12d, %19.6g, %20.6g, %17.6g, %18.6g\n",500,herberror(2,0),herberror(2,1),herberror(2,2),herberror(2,3));
-#endif
-#endif
-#ifndef __VALGRIND_TEST__
-  fprintf(fpout,"paviani\n");
-  fprintf(fpout,"# of samples, SSE at build points, RMSE at build points, SSE at 10K points, RMSE at 10K points\n");
-  fprintf(fpout,"%12d, %19.6g, %20.6g, %17.6g, %18.6g\n",50,paverror(0,0),paverror(0,1),paverror(0,2),paverror(0,3));
-  fprintf(fpout,"%12d, %19.6g, %20.6g, %17.6g, %18.6g\n",500,paverror(1,0),paverror(1,1),paverror(1,2),paverror(1,3));
-  fprintf(fpout,"%12d, %19.6g, %20.6g, %17.6g, %18.6g\n",2500,paverror(2,0),paverror(2,1),paverror(2,2),paverror(2,3));
-#endif  
-  fclose(fpout);
-  
-  return;
-}
-
-//used for quick develop/test of matlab implementation of adaptive importance sampling
+//used for quick develop/test of matlab implementation of GPAIS
 void global_build_and_eval_mean_adjvar() {
   int Nvarsr=__GPAIS_NDIM__;
   std::map< std::string, std::string> km_params;
@@ -2411,7 +1322,7 @@ void global_build_and_eval_mean_adjvar() {
   return;
 }
 
-//used for quick develop/test of matlab implementation of adaptive importance sampling
+//used for quick develop/test of matlab implementation of GPAIS
 void local_corrlen_build_dont_eval() {
   //the point of this is to a local optimization (starting from a good initial guess)
   //and have the calling function grab the resulting correlation lengths out of the 
@@ -2436,7 +1347,7 @@ void local_corrlen_build_dont_eval() {
   return;
 }
 
-//used for quick develop/test of matlab implementation of adaptive importance sampling
+//used for quick develop/test of matlab implementation of GPAIS
 void local_corrlen_build_and_eval_mean_adjvar() {
   int Nvarsr=__GPAIS_NDIM__;
   ifstream infile("corrlen.txt",ios::in);
@@ -2473,7 +1384,7 @@ void local_corrlen_build_and_eval_mean_adjvar() {
   return;
 }
 
-//used for quick develop/test of matlab implementation of adaptive importance sampling
+//used for quick develop/test of matlab implementation of GPAIS
 void corrlen_build_and_eval_mean_adjvar() {
   int Nvarsr=__GPAIS_NDIM__;
   ifstream infile("corrlen.txt",ios::in);
@@ -2510,6 +1421,7 @@ void corrlen_build_and_eval_mean_adjvar() {
   return;
 }
 #endif //__DONT_COMPILE__
+
 
 
 
