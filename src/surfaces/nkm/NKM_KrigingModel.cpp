@@ -1038,7 +1038,7 @@ MtxDbl& KrigingModel::evaluate_d2y(MtxDbl& d2y, const MtxDbl& xr)
     scaler.scaleXrOther(xr_scaled);
   //assert(numVarsr == xr.getNCols());
 
-  MtxInt der(nder,numVarsr); 
+  MtxInt der(numVarsr,nder); 
   MtxInt thisder(numVarsr,1);
   multi_dim_poly_power(der,numVarsr,-2); 
 
@@ -1056,6 +1056,8 @@ MtxDbl& KrigingModel::evaluate_d2y(MtxDbl& d2y, const MtxDbl& xr)
 
     der.getCols(thisder,ider);
     double d2y_unscale_factor=scaler.unScaleFactorDerY(thisder);
+    //std::cout << "thisder=[" << thisder(0,0) << ", " << thisder(1,0) 
+    //<< "]^T unscalefactor=" << d2y_unscale_factor << std::endl;
 
     //find the first dimension we are taking a first derviative of
     for(ixr=0; ixr<numVarsr; ++ixr)
@@ -1080,7 +1082,8 @@ MtxDbl& KrigingModel::evaluate_d2y(MtxDbl& d2y, const MtxDbl& xr)
 
     //dcorrelation_matrix_dxI(d2r, d1r, xr_scaled, jvar);
     d2correlation_matrix_dxIdxJ(d2r, d1r, r, xr_scaled, ixr, jxr);
-    
+    //std::cout << "ider=" << ider << " size(d2r)=[" << d2r.getNRows() 
+    //	      << ", " << d2r.getNCols() << "]" << std::endl;
     matrix_mult(temp_vec,rhs,d2r,0.0,1.0,'T','N');
 
     for(int ipt=0; ipt<nptsxr; ++ipt)
@@ -1980,7 +1983,7 @@ MtxDbl& KrigingModel::eval_gek_dcorrelation_matrix_dxI(MtxDbl& dr, const MtxDbl&
 	// will likely be faster on average then checking if there's a 
 	// partial point and calculating it if needed
 	ipt=numPointsKeep-1;
-	i=numRowsR-1;
+	i=ipt*2;
 	dr(i  ,j)=r(i,j)*two_theta*(XRreorder(Ider,ipt)-xr(Ider,j));
       }
     else{
@@ -2039,7 +2042,7 @@ MtxDbl& KrigingModel::eval_gek_dcorrelation_matrix_dxI(MtxDbl& dr, const MtxDbl&
 	// will likely be faster on average then checking if there's a 
 	// partial point and calculating it if needed
 	ipt=numPointsKeep-1;
-	i=numRowsR-1;
+	i=ipt*2;
 	deltax=(xr(Ider,j)-XRreorder(Ider,ipt));	
 	dr(i,j)=r(i,j)*neg_theta_squared*deltax/(1.0+theta*std::fabs(deltax));
       }
@@ -2101,7 +2104,7 @@ MtxDbl& KrigingModel::eval_gek_dcorrelation_matrix_dxI(MtxDbl& dr, const MtxDbl&
 	// will likely be faster on average then checking if there's a 
 	// partial point and calculating it if needed
 	ipt=numPointsKeep-1;
-	i=numRowsR-1;
+	i=ipt*2;
 	deltax=(xr(Ider,j)-XRreorder(Ider,ipt));	
 	theta_abs_dx=theta*std::fabs(deltax);
 	dr(i,j)=-r(i,j)*theta_squared/
@@ -2382,7 +2385,7 @@ MtxDbl& KrigingModel::eval_gek_d2correlation_matrix_dxIdxJ(MtxDbl& d2r, const Mt
 	// will likely be faster on average then checking if there's a 
 	// partial point and calculating it if needed
 	ipt=numPointsKeep-1;
-	i=numRowsR-1;
+	i=ipt*2;
 	d2r(i,j)=neg_two_thetaJ*
 	  ((xr(Jder,j)-XRreorder(Jder,ipt))*drI(i,j)+r(i,j));
       }
@@ -2497,7 +2500,7 @@ MtxDbl& KrigingModel::eval_gek_d2correlation_matrix_dxIdxJ(MtxDbl& d2r, const Mt
 	// will likely be faster on average then checking if there's a 
 	// partial point and calculating it if needed
 	ipt=numPointsKeep-1;
-	i=numRowsR-1;
+	i=ipt*2;
 	thetaJ_abs_dx=thetaJ*std::fabs(xr(Jder,j)-XRreorder(Jder,ipt));
 	d2r(i,j)=r(i,j)/(1.0+thetaJ_abs_dx)*thetaJ_squared*(thetaJ_abs_dx-1.0);
       }
@@ -2635,7 +2638,7 @@ MtxDbl& KrigingModel::eval_gek_d2correlation_matrix_dxIdxJ(MtxDbl& d2r, const Mt
 	// will likely be faster on average then checking if there's a 
 	// partial point and calculating it if needed
 	ipt=numPointsKeep-1;
-	i=numRowsR-1;
+	i=ipt*2;
 	thetaJ_abs_dx=thetaJ*std::fabs(xr(Jder,j)-XRreorder(Jder,ipt));
 	d2r(i,j)=r(i,j)*thetaJ_squared/
 	  (3.0*(1.0+thetaJ_abs_dx)+thetaJ_abs_dx*thetaJ_abs_dx)*

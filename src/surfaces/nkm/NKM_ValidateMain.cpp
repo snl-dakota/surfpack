@@ -5,36 +5,19 @@
 #include <iomanip>
 #include <sys/time.h>
 #include <cstdlib>
+
+
+#define __DONT_COMPILE__
+using std::cout;
+using std::endl;
+using std::string;
 using namespace std;
 using std::ostringstream;
 
 
 
-
-
-//#define __PROFILING_TEST__ //not iplemented yet
-//#define __TIMING_BENCH__
-//#define __FAST_TEST__
-//#define __WITH_PAV_500__
-//#define __FASTER_TEST__
-//#define __EVEN_FASTER_TEST__
-//#define __VALGRIND_TEST__
-//#define __GKM_USE_KM_CORR_LEN_
-//#define __CORR_FUNC0__
-//#define __CORR_FUNC1__ "matern"
-//#define __CORR_FUNC2__ "0.5"
-//#define __CORR_FUNC2__ "infinity"
-//#define __GPAIS_NDIM__ 6
-//#define __GPAIS_GLOBAL__
-//#define __GPAIS_LOCAL__
-//#define __GPAIS_CORRLEN__
-#define __DONT_COMPILE__
-using std::cout;
-using std::endl;
-using std::string;
-
-
-
+int valgrind_test(int itest);
+void timing_tests();
 void nightly_test();
 
 
@@ -44,11 +27,13 @@ void check_matrix();
 void compare_sample_designs();
 void compare_sample_designs_pav(int nvarsr);
 void nested_Krig_vs_GEK_herbie_smooth_herbie_2D_4D_8D();
-void global_build_and_eval_mean_adjvar();
-void local_corrlen_build_and_eval_mean_adjvar();
-void corrlen_build_and_eval_mean_adjvar();
-void build_dont_eval();
-void local_corrlen_build_dont_eval();
+void GPAIS_build_and_eval_mean_adjvar(int Nvarsr, 
+				      std::string& model_type,
+				      std::string& optimization_method,
+				      std::string& corr_func_family,
+				      std::string& corr_func_param);
+
+
 
 void gen_sample_design_by_pivoted_cholesky() {
   int NumGuesses=100;
@@ -156,6 +141,120 @@ void gen_sample_design_by_pivoted_cholesky() {
 
   return;
 }
+
+//small fast tests to run valgrind on to catch memory errors and other debugging
+int valgrind_test(int itest){
+  std::cout << "********************************************************************************\n"
+	    << "Running Valgrind/debugging test # " << itest << "\n"
+	    << "********************************************************************************"
+	    << std::endl;
+
+  int ndim=2;
+  int ndim_int=0;
+  int nout=3;
+  int iout=0;
+  int sd_der_order=1;
+  int ncol_skip=0;
+  std::string sdbuildfilename;
+  std::string sdevalfilename="grad_validate2d_10.spd";
+  std::map< std::string, std::string> km_params;  
+  //km_params["matern"]="2.5";
+  if(itest<6) {
+    sdbuildfilename="grad_validate2d_10.spd";
+    std::cout << "test function = 2D Rosenbrock\n"
+	      << "build file=\"" << sdbuildfilename << "\"\n" 
+	      << "eval file=\"" << sdevalfilename << "\"" 
+	      << std::endl;
+
+
+    if(itest>=3) { //tests 3, 4, 5 are GEK
+      km_params["derivative_order"]="1";
+      std::cout << "Model Type is Gradient Enhanced Kriging" << std::endl;
+    }
+    else //tests 0, 1, 2 are Kriging
+      std::cout << "Model Type is Kriging" << std::endl;
+
+    if((itest==1)||(itest==4)) { //find a nugget if it is needed
+      km_params["find_nugget"]="1";
+      std::cout << "Handling ill conditioning by adding a nugget (it "
+		<< "might not be activated)" << std::endl;
+    }
+    else if((itest==2)||(itest==5)) {//prescribed nugget
+      km_params["nugget"]="0.001";
+      std::cout << "Adding a prescribed nugget" << std::endl;
+    }
+    else{
+      //test 0 and test 3 use pivoted cholesky to handle ill conditioning
+      std::cout << "Handling ill conditioning with pivoted Cholesky (it " 
+		<< "might not be activated)" << std::endl;
+    }
+  }
+  else if(itest<10) {    
+    sdbuildfilename="grad_validate2d_100.spd";
+    std::cout << "test function = 2D Rosenbrock\n"
+	      << "build file=\"" << sdbuildfilename << "\"\n" 
+	      << "eval file=\"" << sdevalfilename << "\"" 
+	      << std::endl;
+    
+    if(itest>=8) { //tests 8 and 9 are GEK
+      km_params["derivative_order"]="1";
+      std::cout << "Model Type is Gradient Enhanced Kriging" << std::endl;
+    }
+    else //tests 6 and 7 are Kriging
+      std::cout << "Model Type is Kriging" << std::endl;     
+
+    if((itest==7)||(itest==9)) { //find a nugget if it is needed
+      km_params["find_nugget"]="1";
+      std::cout << "Handling ill conditioning by adding a nugget (this should\n"
+		<< "get activated for the Gaussian correlation function)"
+		<< std::endl;
+    }
+    else{
+      //tests 6 and 8 use pivoted cholesky
+      std::cout << "Handling ill conditioning with pivoted Cholesky (this\n" 
+		<< "should get activated for the Gaussian correlation function)"
+		<< std::endl;
+    }
+  }
+  else{
+    std::cerr << "unknown valgrind test number, itest=" << itest << std::endl;
+    return 1;
+  }
+  std::cout << "********************************************************************************"
+	    << std::endl;
+
+  std::cerr << "reading evaluation surfdata" << std::endl;
+  nkm::SurfData sde(sdevalfilename,
+		    ndim,ndim_int,nout,iout,sd_der_order,ncol_skip);
+  std::cerr << "reading build surfdata" << std::endl;
+  nkm::SurfData sdb(sdbuildfilename,
+		    ndim,ndim_int,nout,iout,sd_der_order,ncol_skip);
+  std::cerr << "calling model constructor" << std::endl;  
+  nkm::KrigingModel km(sdb, km_params);   
+  std::cerr << "calling create()" << std::endl;  
+  km.create();
+  std::cerr << "declaring ye, d1ye, d2ye, vye" << std::endl;
+  nkm::MtxDbl ye(1,10), d1ye(2,10), d2ye(3,10), vye(1,10);
+  std::cerr << "evaluating model adjusted mean, ye" << std::endl;
+  km.evaluate(ye,sde.xr);
+  std::cerr << "storing adjusted mean in evaluation surfdata" << std::endl;  
+  sde.y.putRows(ye,iout); 
+  std::cerr << "evaluating first derivative of y, d1ye" << std::endl;
+  km.evaluate_d1y(d1ye,sde.xr);
+  std::cerr << "storing d1ye in evaluation surfdata" << std::endl;
+  sde.putDerY(d1ye,1); 
+  std::cerr << "evaluating second derivative of y, d2ye" << std::endl;
+  km.evaluate_d2y(d2ye,sde.xr);
+  std::cerr << "storing d2ye in evaluation surfdata" << std::endl;
+  sde.putDerY(d2ye,2); 
+  std::cerr << "writing evaluation surfdata" << std::endl;
+  sde.write("valgrind_test_output.spd");
+  std::cerr << "evaluating adjusted variance" << std::endl;
+  km.eval_variance(vye,sde.xr);
+  return 0;
+}
+
+
 
 
 void timing_tests() {  
@@ -343,29 +442,93 @@ void timing_tests() {
 
 int main(int argc, char* argv[])
 {
-  timing_tests();
-  //nightly_test();
+  
+  if(argc < 2) {
+    std::cerr << "you need to specify what test you want to run" << std::endl;
+    return 1;
+  }
+  std::string testname;
+  {  
+    std::ostringstream oss;
+    oss << argv[1];
+    testname=oss.str();
+  }
+  if(testname=="timing")
+    timing_tests();
+  else if(testname=="nightly")
+    nightly_test();
+  else if(testname=="valgrind") {
+    int itest=0;
+    if(argc>=3) {
+      std::stringstream ss;
+      ss << argv[2];
+      ss >> itest;
+    }
+    return valgrind_test(itest);
+  }
+  else if(testname=="GPAIS") {
+    //command line input is like this
+    //e.g. <executable_name> GPAIS 6D GEK global matern infinity
+    //e.g. <executable_name> GPAIS 6D gek global powered_exponential 2
+    //
+    //e.g. <executable_name> GPAIS 2D kriging local matern 0.5
+    //e.g. <executable_name> GPAIS 2D Krig local powered_exponential 1
+    if(argc!=7) {
+      std::cerr << "some examples of GPAIS commmand line input are:\n"
+		<< argv[0] << " GPAIS 6D GEK global matern infinity\n"
+		<< argv[0] << " GPAIS 6D gek global powered_exponential 2\n"
+		<< argv[0] << " GPAIS 2D kriging local matern 0.5\n"
+		<< argv[0] << " GPAIS 2D Krig local powered_exponential 1\n"
+		<< argv[0] << " GPAIS 2D KM none matern 1.5\n"
+		<< argv[0] << " GPAIS 2D krig none matern 1.5\n"
+		<< "example 1 is equivalent to example 2\n"
+		<< "example 3 is equivalent to example 4\n"
+		<< "example 5 is equivalent to example 6\n" 
+		<< "examples 3 through 6 require a file named \"corrlen.txt\""
+		<< " to be present\n"
+		<< "files named \"buildfile.spd;\" and \"evalfile_in.spd\" "
+		<< "must always be present"
+		<< std::endl;
+      return 1;
+    }
+    int Nvarsr;
+    { //{ if for scoping
+      std::stringstream ss;
+      ss << argv[2];
+      ss >> Nvarsr; //this should take the integer before the "D"
+    }
+    std::string model_type;
+    { //{ is for scoping
+      std::ostringstream oss;
+      oss << argv[3];
+      model_type = oss.str();
+    }
+    std::string optimization_method;
+    { //{ is for scoping
+      std::ostringstream oss;
+      oss << argv[3];
+      optimization_method = oss.str();
+    }
+    std::string corr_func_family;
+    { //{ is for scoping
+      std::ostringstream oss;
+      oss << argv[3];
+      corr_func_family = oss.str();
+    }
+    std::string corr_func_param;
+    { //{ is for scoping
+      std::ostringstream oss;
+      oss << argv[3];
+      corr_func_param = oss.str();
+    }
+    GPAIS_build_and_eval_mean_adjvar(Nvarsr, model_type, optimization_method,
+				     corr_func_family, corr_func_param);
+  }
+  else{
+    std::cerr << "unknown test name" << std::endl;
+    return 1;
+  }
 
-
-  //compare_sample_designs_pav(2);
-  //compare_sample_designs_pav(4);
-  //compare_sample_designs_pav(8);
-  //compare_sample_designs();
-  //hack();
-  //check_matrix();
-  //gen_sample_design_by_pivoted_cholesky();
-  //nested_Krig_vs_GEK_herbie_smooth_herbie_2D_4D_8D();
-#ifdef __GPAIS_GLOBAL__
-  global_build_and_eval_mean_adjvar();
-#endif
-  //build_dont_eval();
-#ifdef __GPAIS_LOCAL__
-  local_corrlen_build_and_eval_mean_adjvar();
-#endif
-  //local_corrlen_build_dont_eval();
-#ifdef __GPAIS_CORRLEN__
-  corrlen_build_and_eval_mean_adjvar();
-#endif
   return 0;
 }
 
@@ -1275,7 +1438,7 @@ void compare_sample_designs_pav(int nvarsr) {
 
   return;
 }
-
+#endif
 
 std::string mtxdbl_2_string(nkm::MtxDbl& md) { 
   std::ostringstream oss;
@@ -1289,141 +1452,65 @@ std::string mtxdbl_2_string(nkm::MtxDbl& md) {
   return oss.str();
 }
 
-//used for quick develop/test of matlab implementation of GPAIS
-void global_build_and_eval_mean_adjvar() {
-  int Nvarsr=__GPAIS_NDIM__;
-  std::map< std::string, std::string> km_params;
-  km_params["constraint_type"] = "r";
-  km_params["order"] = "0";
-  km_params["optimization_method"]="global";
-#ifdef __CORR_FUNC0__
-  km_params[__CORR_FUNC1__]=__CORR_FUNC2__;
-#endif  
 
-  //km_params["reduced_polynomial"]=nkm::toString<bool>(true);
+
+
+//used for quick develop/test of matlab implementation of GPAIS
+void GPAIS_build_and_eval_mean_adjvar(int Nvarsr, 
+				      std::string& model_type,
+				      std::string& optimization_method,
+				      std::string& corr_func_family,
+				      std::string& corr_func_param) {
+  std::map< std::string, std::string> km_params;
+  km_params[corr_func_family]=corr_func_param;
+  km_params["optimization_method"]=optimization_method;
+  int der_order;
+  //make the model type uppercase
+  std::transform(model_type.begin(), model_type.end(), model_type.begin(), ::toupper);
+  if(model_type=="GEK") {    
+    km_params["derivative_order"]="1";
+    der_order=1;
+  }
+  else{
+    km_params["derivative_order"]="0";
+    der_order=0;
+  }
+
+  km_params["order"] = "0"; //polynomial trend order = 0 is most robust which
+  //is good for pathelogical problems
+  km_params["find_nugget"]="1"; //use a nugget rather than pivoted Cholesky
+  //to handle ill conditioning, this is critical for GPAIS to work well
+
+  if((optimization_method=="local")||
+     (optimization_method=="none")) {
+    //*local is local starting from a set of specified correlation lengths
+    //*none is use the specified set of correlation lengths without 
+    // optimization, i.e. to reproduce a model
+    std::ifstream infile("corrlen.txt",ios::in);
+    std::string corrlen_str;
+    getline(infile,corrlen_str);
+    km_params["correlation_lengths"]=corrlen_str;
+  }
+
   string buildfile="buildfile.spd";
   string evalfile_in ="evalfile_in.spd";
-  //string evalfile_out  ="evalfile.out";
-  nkm::SurfData sdbuild(buildfile, Nvarsr, 0, 1, 0, 0, 0);
+  nkm::SurfData sdbuild(buildfile, Nvarsr, 0, 1, 0, der_order, 0);
   nkm::SurfData sdeval(evalfile_in, Nvarsr, 0, 1, 0, 0, 0);  
   int Neval=sdeval.getNPts();
   nkm::KrigingModel km(sdbuild,km_params); km.create();
-  nkm::MtxDbl y(Neval,1);
-  nkm::MtxDbl vary(Neval,1);
+  nkm::MtxDbl y(1,Neval);
+  nkm::MtxDbl vary(1,Neval);
   km.evaluate(y,sdeval.xr);
   km.eval_variance(vary,sdeval.xr);
   FILE* fp=fopen("evalfile.out","w");
-  for(int i=0; i<Neval; ++i) {
-    for(int j=0; j<Nvarsr; ++j)
-      fprintf(fp,"%22.16g ",sdeval.xr(i,j));
-    fprintf(fp,"%22.16g %22.16g\n",y(i,0),vary(i,0));
+  for(int ipt=0; ipt<Neval; ++ipt) {
+    for(int ivar=0; ivar<Nvarsr; ++ivar)
+      fprintf(fp,"%22.16g ",sdeval.xr(ivar,ipt));
+    fprintf(fp,"%22.16g %22.16g\n",y(0,ipt),vary(0,ipt));
   }
   fclose(fp);
   return;
 }
-
-//used for quick develop/test of matlab implementation of GPAIS
-void local_corrlen_build_dont_eval() {
-  //the point of this is to a local optimization (starting from a good initial guess)
-  //and have the calling function grab the resulting correlation lengths out of the 
-  //command line model summary
-  int Nvarsr=__GPAIS_NDIM__;
-  ifstream infile("corrlen.txt",ios::in);
-  string corrlen_str;
-  getline(infile,corrlen_str);
-  std::map< std::string, std::string> km_params;
-  km_params["constraint_type"] = "r";
-  km_params["order"] = "0";
-  //km_params["reduced_polynomial"]=nkm::toString<bool>(true);
-  km_params["optimization_method"]="local";
-  km_params["correlation_lengths"]=corrlen_str;
-#ifdef __CORR_FUNC0__
-  km_params[__CORR_FUNC1__]=__CORR_FUNC2__;
-#endif  
-
-  string buildfile="buildfile.spd";
-  nkm::SurfData sdbuild(buildfile, Nvarsr, 0, 1, 0, 0, 0);
-  nkm::KrigingModel km(sdbuild,km_params); km.create();
-  return;
-}
-
-//used for quick develop/test of matlab implementation of GPAIS
-void local_corrlen_build_and_eval_mean_adjvar() {
-  int Nvarsr=__GPAIS_NDIM__;
-  ifstream infile("corrlen.txt",ios::in);
-  string corrlen_str;
-  getline(infile,corrlen_str);
-  std::map< std::string, std::string> km_params;
-  km_params["constraint_type"] = "r";
-  km_params["order"] = "0";
-  //km_params["reduced_polynomial"]=nkm::toString<bool>(true);
-  km_params["optimization_method"]="local";
-  km_params["correlation_lengths"]=corrlen_str;
-#ifdef __CORR_FUNC0__
-  km_params[__CORR_FUNC1__]=__CORR_FUNC2__;
-#endif  
-
-  string buildfile="buildfile.spd";
-  string evalfile_in ="evalfile_in.spd";
-  //string evalfile_out  ="evalfile.out";
-  nkm::SurfData sdbuild(buildfile, Nvarsr, 0, 1, 0, 0, 0);
-  nkm::SurfData sdeval(evalfile_in, Nvarsr, 0, 1, 0, 0, 0);  
-  int Neval=sdeval.getNPts();
-  nkm::KrigingModel km(sdbuild,km_params); km.create();
-  nkm::MtxDbl y(Neval,1);
-  nkm::MtxDbl vary(Neval,1);
-  km.evaluate(y,sdeval.xr);
-  km.eval_variance(vary,sdeval.xr);
-  FILE* fp=fopen("evalfile.out","w");
-  for(int i=0; i<Neval; ++i) {
-    for(int j=0; j<Nvarsr; ++j)
-      fprintf(fp,"%22.16g ",sdeval.xr(i,j));
-    fprintf(fp,"%22.16g %22.16g\n",y(i,0),vary(i,0));
-  }
-  fclose(fp);
-  return;
-}
-
-//used for quick develop/test of matlab implementation of GPAIS
-void corrlen_build_and_eval_mean_adjvar() {
-  int Nvarsr=__GPAIS_NDIM__;
-  ifstream infile("corrlen.txt",ios::in);
-  string corrlen_str;
-  getline(infile,corrlen_str);
-  std::map< std::string, std::string> km_params;
-  km_params["constraint_type"] = "r";
-  km_params["order"] = "0";
-  //km_params["reduced_polynomial"]=nkm::toString<bool>(true);
-  km_params["optimization_method"]="none";
-  km_params["correlation_lengths"]=corrlen_str;
-#ifdef __CORR_FUNC0__
-  km_params[__CORR_FUNC1__]=__CORR_FUNC2__;
-#endif  
-
-  string buildfile="buildfile.spd";
-  string evalfile_in ="evalfile_in.spd";
-  //string evalfile_out  ="evalfile.out";
-  nkm::SurfData sdbuild(buildfile, Nvarsr, 0, 1, 0, 0, 0);
-  nkm::SurfData sdeval(evalfile_in, Nvarsr, 0, 1, 0, 0, 0);  
-  int Neval=sdeval.getNPts();
-  nkm::KrigingModel km(sdbuild,km_params); km.create();
-  nkm::MtxDbl y(Neval,1);
-  nkm::MtxDbl vary(Neval,1);
-  km.evaluate(y,sdeval.xr);
-  km.eval_variance(vary,sdeval.xr);
-  FILE* fp=fopen("evalfile.out","w");
-  for(int i=0; i<Neval; ++i) {
-    for(int j=0; j<Nvarsr; ++j)
-      fprintf(fp,"%22.16g ",sdeval.xr(i,j));
-    fprintf(fp,"%22.16g %22.16g\n",y(i,0),vary(i,0));
-  }
-  fclose(fp);
-  return;
-}
-#endif //__DONT_COMPILE__
-
-
-
 
 void nightly_test()
 {

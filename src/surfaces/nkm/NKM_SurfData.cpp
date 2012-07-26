@@ -1051,7 +1051,7 @@ void SurfData::writeText(ostream& os, bool write_labels) const
     if (write_labels) {
       ss.setf(ios_base::left, ios_base::adjustfield);
 
-      ss << '#';
+      ss << '%';
       int correction = 1;      
       for(int ixr=0; ixr<nvarsr; ++ixr) {
         ss << setw(nkm::surfpack::field_width - correction) << xrLabels[ixr] 
@@ -1068,7 +1068,7 @@ void SurfData::writeText(ostream& os, bool write_labels) const
 	if(derOrder(iy,0)>0) {
 	  MtxInt der;
 	  multi_dim_poly_power(der,nvarsr,derOrder(iy,0));
-	  int nder_up_to_derOrder=der.getNRows();
+	  int nder_up_to_derOrder=der.getNCols();
 	  for(int jder=1; jder<nder_up_to_derOrder; ++jder) {
 	    //start at jder=1 rather than 0 because we already handled the function/response value 
 	    int this_der_order=0;
@@ -1076,7 +1076,7 @@ void SurfData::writeText(ostream& os, bool write_labels) const
 	      this_der_order+=der(ixr,jder);
 	    ostringstream der_label_os;
 	    der_label_os << "d^" << this_der_order << "/dxr^(" << der(0,jder);
-	    for(int ixr=0; ixr<nvarsr; ++ixr)
+	    for(int ixr=1; ixr<nvarsr; ++ixr)
 	      der_label_os << "," << der(ixr,jder);
 	    der_label_os <<")";
 	    ss << setw(nkm::surfpack::field_width) << der_label_os.str() << " ";
