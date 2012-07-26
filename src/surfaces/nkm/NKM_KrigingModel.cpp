@@ -798,11 +798,12 @@ std::string KrigingModel::model_summary_string() const {
     std::cerr << "unknown corr func in model_summary_string()" << std::endl;
     assert(false);
   }
-  oss << " correlation function;\n"
+  oss << " correlation function with (unscaled)\n"
       << "Correlation lengths=[" << temp_out_corr_lengths(0,0);
   for(int ixr=1; ixr<numVarsr; ++ixr)
     oss << ", " << temp_out_corr_lengths(ixr,0);
-  oss << "]^T;\nunadjusted variance=" 
+  oss << "]^T\nfound by the \"" << optimizationMethod 
+      << "\" optimization_method;\nunadjusted variance=" 
       << estVarianceMLE * scaler.unScaleFactorVarY() 
       << "; \"per equation\" log(likelihood)=" << likelihood << ";\n"
       << "rcond(R)=" << rcondR << "; rcond(G_Rinv_Gtran)=" 
