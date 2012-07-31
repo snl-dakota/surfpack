@@ -14,7 +14,7 @@
 
 \begin{document}
 
-\title{Surfpack Version 1.X User's Manual}
+\title{Surfpack User's Manual \\ Version 1.1}
 
 \author{Keith R. Dalbey, Anthony A. Giunta$^1$, Mark D. Richards$^2$, Eric C. Cyr$^2$ \\Laura P. Swiler$^1$, Shane L. Brown$^1$, Michael S. Eldred$^1$}
 
@@ -47,15 +47,7 @@ for the United States Department of Energy's National Nuclear Security Administr
 contract DE-AC04-94AL85000.
 \end{center}
 
-
-
-
-
-
-
 \pagebreak
-
-
 
 \section {Overview}\label{sec:overview}
 Surfpack is a collection of surface-fitting methods and accompanying metrics to evaluate or predict the quality of the generated surfaces.  The concept of creating a global approximation or ``fit'' from a collection of data samples is utilized in many scientific disciplines, but the nomenclature varies widely from field to field.  The results from the application of such methods are commonly called empirical models, response surfaces, surrogate models, function approximations, or meta-models.  Many different algorithms have been developed to generalize from a set of data; these algorithms have different strengths and weaknesses.  The goals of Surfpack are
@@ -79,7 +71,7 @@ Surfpack is being developed primarily under Linux and is targeted to all flavors
 \subsection{Requirements}
 \begin{itemize}
 \item {\bf C++}.  A majority of the source code for Surfpack is written in C++.  Surfpack makes frequent use of the standard C and C++ libraries, including the Standard Template Library.  The Kriging algorithm calls some FORTRAN code (pivoted Cholesky and some optimizers such as CONMIN).  
-\item {\bf  77}.  The MARS algorithm is implemented in FORTRAN.  
+\item {\bf Fortran 77}.  The MARS algorithm is implemented in FORTRAN.  
 \item {\bf BLAS}.  Many of the data-fitting algorithms rely on the Basic Linear Algebra Subroutines to perform rudimentary linear algebra operations.
 \item {\bf LAPACK}.  Surfpack makes use of the following LAPACK~\cite{anderson}  driver routines: dpotrf, dpocon, dpotrs, dlange, dgetrf, dgetri, dgels, dgglse.  Implementations of LAPACK across different platforms seem to vary in terms of how many of these algorithms they support.  Therefore, source for these functions and their dependencies is included in the Surfpack distribution.  However, BLAS and LAPACK routines are usually highly optimized for each platform; performance is best when pre-compiled, native versions of these functions are available.
 \end{itemize}
@@ -345,54 +337,53 @@ The polynomial regression model can take a single parameter: an integer \texttt{
 
 
 \subsection{Kriging Interpolation }\label{models:surf:kriging}
-The Kriging model in version 1.0 of surfpack was originally written by
-A. Giunta and L. Watson\cite{giunta}.  However, the Kriging model has been
-completely rewritten with a large number of additional options for Surfpack 
-1.X.  Other references cited in the Surfpack 1.0 user manual include 
-\cite{romero}, and \cite{koehler}.\newline
 
-The set of interpolation techniques known as Kriging, also referred to 
-as Gaussian processes, were originally developed in the geostatistics 
-and spatial statistics communities to produce maps of underground 
-geologic deposits based on a set of widely and irregularly spaced 
-borehole sites\cite{cressie}. Building a Kriging
-model typically involves the
+The Kriging model in Surfpack version 1.0 was that of Giunta and
+Watson~\cite{giunta}, with reference to~\cite{romero}
+and~\cite{koehler}. However, the Kriging model has been re-implemented
+with numerous additional options for Surfpack 1.1.\newline
+
+The set of interpolation techniques known as Kriging, also referred to
+as Gaussian processes, were originally developed in the geostatistics
+and spatial statistics communities to produce maps of underground
+geologic deposits based on a data from widely and irregularly spaced
+boreholes~\cite{cressie}. Building a Kriging model typically requires
 \begin{enumerate}
-\item Choice of a trend function,
-\item Choice of a correlation function, and
-\item Estimation of correlation parameters.
+\item Choice of a trend function;
+\item Choice of a correlation function; and
+\item Estimation of correlation parameters from data.
 \end{enumerate}
-The Surfpack 1.X Kriging model also allows gradient information to be used
-to construct the emulator.  The default is to construct a Kriging model 
-without using derivative information but Gradient Enhanced Kriging (GEK) can 
-be specified by using the \verb1derivative_order1 keyword followed by the 
-value ``1'' to indicate first order derivative (gradient) information.  
-However, the SurfPack Data ``.spd'' file format used outside of the new 
-Kriging model (nkm) directory does not support the specification of 
-derivative data, so this option is not available in stand-alone compilations 
-of Surfpack.  GEK is available for use when Surfpack is called by Sandia's 
-DAKOTA software package for Optimization and Uncertainty Quantification.  
-Directly linking to nkm object files can also enable the use of GEK because 
-the nkm::SurfData class is capable of reading/writing derivatives from/to a 
-.spd file.  However, the use of the nkm::SurfData class has not yet been 
-promoted to the rest of Surfpack.\newline
 
-A Kriging emulator, 
-$\hat{f}\left(\underline{x}\right)$, consists of a trend function 
-(frequently a least squares fit to the data,
-$\underline{g}\left(\underline{x}\right)^T\underline{\beta}$) plus a 
-Gaussian process error model, $\epsilon\left(\underline{x}\right)$, 
+The Surfpack 1.1 Kriging model can use both function value and
+gradient information (when available) to construct the emulator.  The
+default is to construct a Kriging model without using derivative
+information, but gradient-enhanced Kriging (GEK) can be selected with
+the \verb1derivative_order1 keyword followed by the value ``1'' to
+indicate first order derivative (gradient) information.\newline
+
+GEK is available when Surfpack is called by Sandia's DAKOTA software
+package for optimization and uncertainty quantification, and via
+direct C++ interfacing to the Kriging model class (as it supports
+reading and writing derivative data through its supporting
+nfm::SurfData class).  However, since the current Surfpack data {\tt
+  .spd} file format does not support derivative data, GEK is not
+available in stand-alone Surfpack executables.\newline
+
+A Kriging emulator, $\hat{f}\left(\underline{x}\right)$, consists of a
+trend function (frequently a least squares fit to the data,
+$\underline{g}\left(\underline{x}\right)^T\underline{\beta}$) plus a
+Gaussian process error model, $\epsilon\left(\underline{x}\right)$,
 that is used to correct the trend function.
 \begin{displaymath}
 \hat{f}\left(\underline{x}\right)=\underline{g}\left(\underline{x}\right)^T\underline{\beta}+\epsilon\left(\underline{x}\right)
 \end{displaymath}
-This represents an estimated distribution for the unknown true surface,
-$f\left(\underline{x}\right)$.  The error model, 
-$\epsilon\left(\underline{x}\right)$, makes an adjustment to the
-trend function so that the emulator will interpolate, and have zero
-uncertainty at, the data points it was built from.   The covariance 
-between the error at two arbitrary points, $\underline{x}$
-and $\underline{x'}$, is modeled as 
+This represents an estimated distribution for the unknown true
+surface, $f\left(\underline{x}\right)$.  The error model,
+$\epsilon\left(\underline{x}\right)$, makes an adjustment to the trend
+function so that the emulator will interpolate, and have zero
+uncertainty at, the data points it was built from.  The covariance
+between the error at two arbitrary points, $\underline{x}$ and
+$\underline{x'}$, is modeled as
 \begin{displaymath}
 {\rm Cov}\left(y\left(\underline{x}\right),y\left(\underline{x'}\right)\right)={\rm Cov}\left(\epsilon\left(\underline{x}\right),\epsilon\left(\underline{x'}\right)\right)=\sigma^2\ r\left(\underline{x},\underline{x'}\right).
 \end{displaymath}
@@ -410,36 +401,39 @@ and $\Delta^2$ is the variance of the measurement error.  In this work,
 the term ``nugget'' refers to the ratio 
 $\eta=\frac{\Delta^2}{\sigma^2}$.\newline
 
-By convention, the terms simple Kriging, ordinary Kriging, and universal 
-Kriging are used to indicate the three most common choices for the trend
-function.  In simple Kriging, the trend is treated as a known constant, 
-usually zero, $g\left(\underline{x}\right)\beta\equiv 0$.  Universal 
-Kriging \cite{matheron1971theory} uses a general polynomial trend model 
-$\underline{g}\left(\underline{x}\right)^T\underline{\beta}$ whose 
-coefficients are determined by least squares regression. Ordinary Kriging
-is essentially universal Kriging with a trend order of zero, i.e. the 
-trend function is treated as an unknown constant and 
-$g\left(\underline{x}\right)=1$. $N_{\beta}$ is the number of basis
-functions in $\underline{g}\left(\underline{x}\right)$ and therefore
-number of elements in the vector $\underline{\beta}$.  \newline
+By convention, the terms simple Kriging, ordinary Kriging, and
+universal Kriging are used to indicate the three most common choices
+for the trend function.  In simple Kriging, the trend is treated as a
+known constant, usually zero, $g\left(\underline{x}\right)\beta\equiv
+0$.  Universal Kriging~\cite{matheron1971theory} uses a general
+polynomial trend model
+$\underline{g}\left(\underline{x}\right)^T\underline{\beta}$ whose
+coefficients are determined by least squares regression. Ordinary
+Kriging is essentially universal Kriging with a trend order of zero,
+i.e. the trend function is treated as an unknown constant, so
+$g\left(\underline{x}\right)=1$ and $\underline{\beta}$ is estimated
+from data. Let $N_{\beta}$ denote the number of basis functions in
+$\underline{g}\left(\underline{x}\right)$ and therefore number of
+elements in the vector $\underline{\beta}$.  \newline
 
 Universal Kriging is implemented in Surfpack and the default trend
-function is a main effects (no interaction terms) quadratic polynomial.  
-If the \verb1order1 keyword is used to specify a different polynomial 
-order (any non negative integer is valid input for \verb1order1) then a 
-full polynomial with be used unless the \verb1reduced_polynomial1 keyword 
-is also used to indicate a main effects polynomial. If the amount of build
-data is insufficient for the requested polynomial order it will be reduced 
-automatically.\newline
+function is a main effects (no interaction terms) quadratic
+polynomial.  If the \verb1order1 keyword is used to specify a
+different polynomial order (any nonnegative integer is valid input for
+\verb1order1) then a full polynomial with be used unless the
+\verb1reduced_polynomial1 keyword is also used to indicate a main
+effects polynomial. If the build data is insufficient to construct a
+polynomial of the requested order, the order will be automatically
+reduced.\newline
 
 For a finite number of sample points, $N$, there will be uncertainty
-about the most appropriate value of the vector, $\underline{\beta}$, 
+about the most appropriate value of the vector, $\underline{\beta}$,
 which can therefore be described as having a distribution of possible
-values.  If one assumes zero prior knowledge about this distribution, 
-which is referred to as the ``vague prior'' assumption, then the maximum
-likelihood value of $\underline{\beta}$ can be computed via least 
-squares generalized by the inverse of the error model's correlation 
-matrix, $\underline{\underline{R}}$ 
+values.  If one assumes zero prior knowledge about this distribution,
+which is referred to as the ``vague prior'' assumption, then the
+maximum likelihood value of $\underline{\beta}$ can be computed via
+least squares generalized by the inverse of the error model's
+correlation matrix, $\underline{\underline{R}}$
 \begin{displaymath}
 \underline{\hat{\beta}}=\left(\underline{\underline{G}}\ \underline{\underline{R}}^{-1}\underline{\underline{G}}^T\right)^{-1}\left(\underline{\underline{G}}\ \underline{\underline{R}}^{-1}\underline{Y}\right).
 \end{displaymath}
@@ -447,7 +441,7 @@ Here $\underline{\underline{G}}$ is a $N_\beta$ by $N$ matrix that
 contains the evaluation of the least 
 squares basis functions at all points in $\underline{\underline{X}}$, 
 such that $G_{l,i}=g_l\left(\underline{X_i}\right)$.  
-The notational conventions used in this section on Kriging are that vectors
+The notation conventions used in this section on Kriging are that vectors
 are indicated by single underlines, matrices are indicated by double underlines,
 capital letters are associated with data used to build the model, and lower 
 case letters are used for arbitrary points (e.g. where the emulator
@@ -497,23 +491,24 @@ families of correlation functions:
       \end{displaymath}
       where $0<\gamma\le2$, $0<\nu$, and $0<\theta_k$.
 \end{itemize}
-Gneiting et al. \cite{gneiting2007geostatistical} provide a more 
+Gneiting, et al.,~\cite{gneiting2007geostatistical} provide a more 
 thorough discussion of the properties of and relationships between these
 three families.  Some additional correlation functions include the 
-Dagum family \cite{berg2008dagum} and cubic splines.\newline
+Dagum family~\cite{berg2008dagum} and cubic splines.\newline
 
-The powered-exponential correlation function with $1\le\gamma\le2$ and 
-Matern correlation function with $\nu\in\{1/2,3/2,5/2,\infty\}$ are
-implemented in the Surfpack Kriging model.  The powered-exponential 
-correlation function can be specified with \verb1powered_exponential1 keyword
-followed a real number between 1 and 2 (inclusive).  The Matern correlation 
-function can be specified with the \verb1matern1 keyword followed by 
-0.5 or 1.5 or 2.5 or \verb1infinity1.  For Gradient Enhanced Kriging only
-the Gaussian, Matern 3/2, and Matern 5/2 correlation functions can be used.
-In tests, the Gaussian correlation function was often the most accurate (for
-both Kriging and Gradient Enhanced Kriging) and as such it is the default in
-Surfpack.  Its infinite smoothness or differentiability is beneficial  
-for leveraging sparse data (which is the typical case).\newline
+Surfpack supports the powered-exponential correlation function with
+$1\le\gamma\le2$ and Matern correlation function with
+$\nu\in\{1/2,3/2,5/2,\infty\}$.  The powered-exponential correlation
+function can be specified with \verb1powered_exponential1 keyword
+followed a real number between 1 and 2 (inclusive).  The Matern
+correlation function can be specified with the \verb1matern1 keyword
+followed by 0.5 or 1.5 or 2.5 or \verb1infinity1.  For
+gradient-enhanced Kriging, only the Gaussian, Matern 3/2, and Matern
+5/2 correlation functions may be used.  In empirical studies, the
+Gaussian correlation function was often the most accurate (for both
+Kriging and gradient-enhanced Kriging) and as such it is Surfpack's
+default.  Its infinite smoothness or differentiability is beneficial
+for leveraging sparse data (which is the most typical case).\newline
 
 For the Gaussian correlation function, the correlation parameters, 
 $\underline{\theta}$, are related to the correlation lengths, 
@@ -521,20 +516,22 @@ $\underline{L}$, by
 \begin{equation}
 \theta_k=\frac{1}{2\ L_k^2}.
 \end{equation}
-Here, the correlation lengths, $\underline{L}$, are analogous to 
-standard deviations in the Gaussian or normal distribution and often 
-have physical meaning. For the powered-exponential correlation function
+Here, the correlation lengths, $\underline{L}$, are analogous to
+standard deviations in the Gaussian or normal distribution and often
+have physical meaning. Similarly, for the powered-exponential
+correlation function
 \begin{equation}
-\theta_k=\frac{1}{\gamma\ L_k^\gamma}.
+\theta_k=\frac{1}{\gamma\ L_k^\gamma},
 \end{equation}
-For the Matern function
+and for the Matern function
 \begin{equation}
 \theta_k=\frac{\sqrt{2\ \nu}}{L_k}.
 \end{equation}
-The set of correlation lengths used to construct the Surfpack Kriging Model 
-can be directly specified by using \verb1optimization_method1 = \verb1none1 
-and the keyword \verb1correlation_lengths1 followed a list of $M$ correlation 
-lengths, where $M$ is the number of dimensions.\newline
+When the user has knowledge or intuition of reasonable correlation
+lengths to build the Kriging model, they can be directly specified by
+setting \verb1optimization_method1 = \verb1none1 and the keyword
+\verb1correlation_lengths1 followed a list of $M$ correlation lengths,
+where $M$ is the number of dimensions.\newline
 
 The adjusted (by data) mean of the emulator is a best linear unbiased 
 estimator of the unknown true function,
@@ -553,28 +550,30 @@ of the emulator will interpolate the data that the Kriging model was
 built from as long as its correlation matrix, $\underline{\underline{R}}$, 
 is numerically non-singular.\newline
 
-Ill-conditioning of $\underline{\underline{R}}$ and other matrices
-is recognized as a significant challenge for Kriging. Davis and 
-Morris \cite{davis1997six} gave a thorough review of six factors 
+Ill-conditioning of $\underline{\underline{R}}$ and other matrices is
+widely recognized as a significant challenge for Kriging. Davis and
+Morris~\cite{davis1997six} gave a thorough review of six factors
 affecting the condition number of matrices associated with Kriging
-(from the perspective of semivariograms rather than correlation 
-functions).  They concluded that 
-``Perhaps the best advice we can give is to be mindful of the 
-condition number when building and solving kriging systems.''
-In the context of estimating the optimal $\underline{\theta}$,
-Martin \cite{martin2009computational} stated that Kriging's
-``three most prevalent issues are (1) ill-conditioned correlation 
-matrices,(2) multiple local optimum, and (3) long ridges of near 
-optimal values.'' Martin used constrained optimization to 
+(from the perspective of semivariograms rather than correlation
+functions).  They concluded that ``Perhaps the best advice we can give
+is to be mindful of the condition number when building and solving
+Kriging systems.''  In the context of estimating the optimal
+$\underline{\theta}$, Martin~\cite{martin2009computational} stated
+that Kriging's ``three most prevalent issues are (1) ill-conditioned
+correlation matrices, (2) multiple local optima, and (3) long ridges
+of near-optimal values.'' Martin used constrained optimization to
 address ill-conditioning of $\underline{\underline{R}}$.
-Rennen \cite{rennen2009subset} advocated that ill-conditioning
-be handled by building Kriging models from a uniform subset of 
-available sample points.  That option has been available in
-DAKOTA's ``Gaussian process'' model since version 4.1 
-\cite{eldred2007dakota}.\newline
+Rennen~\cite{rennen2009subset} advocated that ill-conditioning be
+handled by building Kriging models from a uniform subset of available
+sample points.  This last mitigation approach has been available in
+DAKOTA's ``Gaussian process'' model since version
+4.1~\cite{eldred2007dakota}.\newline
 
+% BMA: I don't understand the comment about GEK here.  Perhaps move to
+% later in the paragraph?  If any of these approaches aren't supported
+% in Surfpack, note that fact.
 Adding a nugget, $\eta$, to the diagonal entries of 
-$\underline{\underline{R}}$ (the generalization to Gradient Enhanced
+$\underline{\underline{R}}$ (the generalization to gradient-enhanced
 Kriging used in Surfpack, which does not have all ones on its diagonal, 
 is to multiply diagonal elements by $1+\eta$) is a popular approach 
 for both accounting for measurement error in the data and alleviating 
@@ -624,19 +623,18 @@ where the maximum likelihood estimate of the unadjusted variance is
 \hat{\sigma}^2=\frac{\underline{\epsilon}^T\underline{\underline{R}}^{-1}\underline{\epsilon}}{N-N_{\beta}}.
 \end{displaymath}
 
-There are at least two types of numerical approaches for choosing 
-$\underline{\theta}$.  One of
-these is to use Bayesian techniques such as Markov Chain Monte Carlo to
-obtain a distribution represented by an ensemble of vectors 
-$\underline{\theta}$.  In this case, evaluating the emulator's mean involves
-taking a weighted average of Equation \ref{Eq:KrigMean} over the ensemble 
-of $\underline{\theta}$ vectors.\newline
+There are at least two types of numerical approaches for choosing
+$\underline{\theta}$.  One of these is to use Bayesian techniques such
+as Markov chain Monte Carlo (MCMC) to obtain a distribution
+represented by an ensemble of vectors $\underline{\theta}$.  In this
+case, evaluating the emulator's mean involves taking a weighted
+average of Equation \ref{Eq:KrigMean} over the ensemble of
+$\underline{\theta}$ vectors.\newline
 
-The other, more common, approach to 
-constructing a Kriging model involves using optimization to find the 
-set of correlation parameters $\underline{\theta}$ that maximizes the 
+Another more common estimation approach uses optimization to find the
+set of correlation parameters $\underline{\theta}$ that maximizes the
 likelihood of the model given the data.  It is equivalent, and more
-convenient to maximize the natural logarithm of the likelihood, which 
+convenient to maximize the natural logarithm of the likelihood, which
 assuming a vague prior is,
 \begin{eqnarray*}
 \log\left({\rm lik}\left(\underline{\theta}\right)\right)&=&-\frac{1}{2}\Bigg(\left(N-N_{\beta}\right)\left(\frac{\hat{\sigma}^2}{\sigma^2}+\log\left(\sigma^2\right)+\log(2\pi)\right)+...\\
@@ -648,37 +646,40 @@ function
 \begin{displaymath}
 {\rm obj}\left(\underline{\theta}\right)=\log\left(\hat{\sigma}^2\right)+\frac{\log\left(\det\left(\underline{\underline{R}}\right)\right)+\log\left(\det\left(\underline{\underline{G}}\ \underline{\underline{R}}^{-1}\underline{\underline{G}}^T\right)\right)}{N-N_{\beta}}.
 \end{displaymath}
-Because of the division by $N-N_{\beta}$, this ``per-equation'' objective 
-function is mostly independent of the number of sample points, $N$.  It is 
-therefore useful for comparing the (estimated) ``goodness'' of Kriging 
-models that have different numbers of sample points, this will be important
-later.\newline
+Because of the division by $N-N_{\beta}$, this ``per-equation''
+objective function is mostly independent of the number of sample
+points, $N$.  It is therefore useful for comparing the (estimated)
+``goodness'' of Kriging models that have different numbers of sample
+points; this will be important later.\newline
+% BMA: Do you ever refer to this later?
 
-In the Surfpack Kriging model, the domain of correlation length space over
-which the objective function is optimized is $d/4 \le L_k \le 8d$ where
-$d$ is the average distance between points; $d=N^{-1/M}$ when the input space
-has be normalized to a unit hypercube or unit hyper-rectangle (centered at 
-zero).  Here $M$ is the number of input variables.  In Surfpack this 
-normalization is always done because it make the definition of $d$ simple 
-and significantly improves the conditioning of 
-$\left(\underline{\underline{G}}\ \underline{\underline{R}}^{-1} \underline{\underline{G}}^T\right)$. 
-The user can use the \verb1lower_bounds1 and \verb1upper_bounds1 keywords
-(each of these keywords is followed by a list of $M$ real numbers) to specify
-the size of the input space.  If bounds are not specified, then the minimum 
-and maximum values of the coordinates of build data points in each dimension 
-are used. The \verb1dimension_groups1 keyword can be used to specify $M$ 
-integers to indicate which group each input belongs to, if this is done
-then the distance aspect ratios within each group is preserved when the build 
-data is scaled, i.e. the scaled inputs space will be a unit hyper-rectangle 
-rather than a unit hypercube.  By default each dimension is considered to have 
-its own group.\newline
+In the Surfpack Kriging model, the domain of correlation length space
+over which the objective function is optimized is $d/4 \le L_k \le 8d$
+where $d$ is the average distance between points; $d=N^{-1/M}$ when
+the input space has be normalized to a unit hypercube or unit
+hyper-rectangle (centered at zero).  Here again $M$ is the number of
+input variables.  In Surfpack this normalization is always done
+because it make the definition of $d$ simple and significantly
+improves the conditioning of $\left(\underline{\underline{G}}\
+  \underline{\underline{R}}^{-1} \underline{\underline{G}}^T\right)$.
+The user can use the \verb1lower_bounds1 and \verb1upper_bounds1
+keywords (each of these keywords is followed by a list of $M$ real
+numbers) to specify the size of the input space.  If bounds are not
+specified, then the minimum and maximum values of the coordinates of
+build data points in each dimension are used. The
+\verb1dimension_groups1 keyword can be used to specify $M$ integers to
+indicate which group each input belongs to, if this is done then the
+distance aspect ratios within each group is preserved when the build
+data is scaled, i.e. the scaled inputs space will be a unit
+hyper-rectangle rather than a unit hypercube.  By default each
+dimension is considered to have its own group.\newline
 
 The options for \verb1optimization_method1 available in the Surfpack Kriging
 model are 
 \begin{itemize}
 \item \verb1global1 optimization using the DIRECT (DIvision of RECTangles) 
       algorithm (this is the default),
-\item \verb1local1 gradient based optimization using the CONMIN (CONstrained
+\item \verb1local1 gradient-based optimization using the CONMIN (CONstrained
       MINimization) optimizer, (one or multiple starting locations can be used,
       by default a single starting location, the center of the search region
       in $\log_2\left(L\right)$ space, is used you can also specify a starting
@@ -694,12 +695,13 @@ model are
       $\log_2\left(L\right)$ space or the set of correlation lengths specified
       using the \verb1correlation_lengths1 keyword.
 \end{itemize}
-The optimization used to determine $\underline{\theta}$ is performed under the
-constraint that $\underline{\underline{R}}$ is not ill conditioned, 
-specifically that $2^{-40}<{\rm rcond}\left(\underline{\underline{R}}\right)$. 
-As indicated above, the keywords \verb1nugget1 and \verb1find_nugget1 can be 
-used to avoid ill-conditioning and enable a larger set of $\underline{\theta}$ 
-to be considered during the optimization process.\newline
+The optimization used to determine $\underline{\theta}$ is performed
+under the constraint that $\underline{\underline{R}}$ is not
+ill-conditioned; specifically that $2^{-40}<{\rm
+  rcond}\left(\underline{\underline{R}}\right)$.  As indicated above,
+the keywords \verb1nugget1 and \verb1find_nugget1 can be used to avoid
+ill-conditioning and enable a larger set of $\underline{\theta}$ to be
+considered during the optimization process.\newline
 
 Ill-conditioning of $\underline{\underline{R}}$ can also be addressed by a
 using pivoted Cholesky decomposition of $\underline{\underline{R}}$ to rank
@@ -715,13 +717,11 @@ retained points associated with the optimal $\underline{\theta}$ is therefore
 Surfpack Kriging model when neither the \verb1nugget1 nor \verb1find_nugget1 
 keywords are specified.\newline
 
-Because the Kriging $\underline{\underline{R}}$ matrix has all ones on its
-diagonal, the first point listed (index zero) will always be retained when
-pivoted Cholesky is used to select an optimal subset of points from which
-to build the Kriging Model.  The user can directly specify which point to
-use/retain as the ``anchor point'' via the \verb1anchor_index1 keyword 
-followed by a integer that is greater than or equal to zero and less than 
-$N$.
+Because the Kriging $\underline{\underline{R}}$ matrix has unit
+diagonal, the first point (row) will always be retained by the pivoted
+Cholesky algorithm.  The user can alternately specify rentention of a
+different ``anchor point'' via the \verb1anchor_index1 keyword
+followed by a integer $0 \leq a < N.$
 
 \subsection{Artificial Neural Network}\label{models:surf:ann}
 
@@ -1508,3 +1508,9 @@ performance for large data sets.
 \bibliography{surfpack_users_manual}
 \end{document}
  
+
+% LocalWords:  Kriging Surfpack Giunta geostatistics GEK 1derivative order1 spd
+% LocalWords:  Sandia executables covariance unadjusted 1order1 nonnegative 1D
+% LocalWords:  1reduced polynomial1 Matern differentiable Gneiting et 1powered
+% LocalWords:  exponential1 1matern1 1infinity1 differentiability 1optimization
+% LocalWords:  method1 1none1 1correlation lengths1 semivariograms
