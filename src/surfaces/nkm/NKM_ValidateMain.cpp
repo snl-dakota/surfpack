@@ -158,6 +158,7 @@ int valgrind_test(int itest){
   std::string sdbuildfilename;
   std::string sdevalfilename="grad_validate2d_10.spd";
   std::map< std::string, std::string> km_params;  
+  km_params["order"]="4";
   //km_params["matern"]="2.5";
   if(itest<6) {
     sdbuildfilename="grad_validate2d_10.spd";
@@ -1557,6 +1558,8 @@ void nightly_test()
 	    << std::endl;
   { //the { is for scope we don't want km500, iout, error_stats, or the boost 
     //serialization variablesto exist afterwards
+    //km_params["order"]="3";
+
     std::cout << "Running Kriging \"all defaults\" (no specified settings) "
 	      << "test on 2D Rosenbrock with 500 points" << std::endl;
     int iout=0; //Rosenbrock
@@ -1617,6 +1620,9 @@ void nightly_test()
   } //end of default settings Kriging test
   { //the { is for scope we don't want der_order, oss, km100, iout, error_stats,
     //d1error_stats or the boost serialization variables to exist afterwards
+    //km_params["order"]="3";
+
+
     std::cout << "Running Gradient Enhanced Kriging (GEK) \"all defaults\" "
 	      << "(no specified settings\nother than derivative_order) test "
 	      << "on 2D Rosenbrock with 100 points" << std::endl;
@@ -1756,6 +1762,8 @@ void nightly_test()
     km_params["upper_bounds"]="2.0 2.0";
     //loop over test functions
     for(int iout=0; iout<3; ++iout) {
+      //km_params["order"]="3";
+
       sd2d10.setIOut(iout);
       sd2d100.setIOut(iout);
       sd2d500.setIOut(iout);

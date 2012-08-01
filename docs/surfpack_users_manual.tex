@@ -337,12 +337,20 @@ The polynomial regression model can take a single parameter: an integer \texttt{
 
 
 \subsection{Kriging Interpolation }\label{models:surf:kriging}
-
 The Kriging model in Surfpack version 1.0 was that of Giunta and
 Watson~\cite{giunta}, with reference to~\cite{romero}
 and~\cite{koehler}. However, the Kriging model has been re-implemented
 with numerous additional options for Surfpack 1.1.\newline
 
+\subsubsection{Notational Conventions}
+The notational conventions used in this section on Kriging are that vectors
+are indicated by single underlines, matrices are indicated by double underlines,
+capital letters are associated with data used to build the model, and lower 
+case letters are used for arbitrary points (e.g. where the emulator
+is to be evaluated).  The standard convention is that each row of a sample 
+design matrix contains a point. 
+
+\subsubsection{Introduction}
 The set of interpolation techniques known as Kriging, also referred to
 as Gaussian processes, were originally developed in the geostatistics
 and spatial statistics communities to produce maps of underground
@@ -401,6 +409,7 @@ and $\Delta^2$ is the variance of the measurement error.  In this work,
 the term ``nugget'' refers to the ratio 
 $\eta=\frac{\Delta^2}{\sigma^2}$.\newline
 
+\subsubsection{Trend Function}
 By convention, the terms simple Kriging, ordinary Kriging, and
 universal Kriging are used to indicate the three most common choices
 for the trend function.  In simple Kriging, the trend is treated as a
@@ -439,17 +448,25 @@ correlation matrix, $\underline{\underline{R}}$
 \end{displaymath}
 Here $\underline{\underline{G}}$ is a $N_\beta$ by $N$ matrix that 
 contains the evaluation of the least 
-squares basis functions at all points in $\underline{\underline{X}}$, 
+squares basis functions at all points in the sample design matrix, 
+$\underline{\underline{X}}$, 
 such that $G_{l,i}=g_l\left(\underline{X_i}\right)$.  
-The notation conventions used in this section on Kriging are that vectors
-are indicated by single underlines, matrices are indicated by double underlines,
-capital letters are associated with data used to build the model, and lower 
-case letters are used for arbitrary points (e.g. where the emulator
-is to be evaluated).  The real, symmetric, positive-definite correlation 
-matrix, $\underline{\underline{R}}$, of the error model contains evaluations 
+If $\underline{\underline{G}}\ \underline{\underline{R}}^{-1}\underline{\underline{G}}^T$ 
+is singular or if the number of basis functions in the requested trend is 
+greater than half of the number of equations in $\underline{\underline{R}}$ 
+then a pivoted Cholesky factorization of 
+$\underline{\underline{G}}\ \underline{\underline{R}}^{-1}\underline{\underline{G}}^T$ 
+will be perform to select the retainable subset of basis functions with the 
+maximum one norm condition number.  This protects against a singular 
+$\underline{\underline{G}}\ \underline{\underline{R}}^{-1}\underline{\underline{G}}^T$ 
+matrix, but if too high a trend order is specified it will ``steal'' the most 
+useful information for the Gaussian Process error model and result in a Kriging
+model with relatively poor prediction quality.
+\subsubsection{Correlation Functions and Lengths}
+The real, symmetric, positive-definite correlation matrix, 
+$\underline{\underline{R}}$, of the error model contains evaluations 
 of the correlation function, $r$, at all pairwise combination of points 
-(rows) in the sample design, $\underline{\underline{X}}$.  The standard 
-convention is that each row of a sample design matrix contains a point.
+(rows) in the sample design, $\underline{\underline{X}}$. 
 \begin{displaymath}
 R_{i,j}=R_{j,i}=r\left(\underline{X_i},\underline{X_j}\right)=r\left(\underline{X_j},\underline{X_i}\right)
 \end{displaymath}
@@ -472,8 +489,8 @@ families of correlation functions:
       where $0<\nu$, $0<\theta_k$, and $\mathcal{K}_\nu(\cdot)$ is the 
       modified Bessel function of order $\nu$. The Matern function is 
       commonly implemented with $\nu$ restricted to $\nu=i+\frac{1}{2}$, 
-      where $i$ is a non negative because these values of $\nu$ result 
-      in greatly simplified formulas.  For example, Matern with 
+      where $i$ is a non negative integer because these values of $\nu$ 
+      result in greatly simplified formulas.  For example, Matern with 
       $\nu=\frac{1}{2}$
       is the exponential correlation function.  Matern with $\nu=\infty$
       is the squared-exponential or ``Gaussian'' correlation function.
@@ -533,22 +550,8 @@ setting \verb1optimization_method1 = \verb1none1 and the keyword
 \verb1correlation_lengths1 followed a list of $M$ correlation lengths,
 where $M$ is the number of dimensions.\newline
 
-The adjusted (by data) mean of the emulator is a best linear unbiased 
-estimator of the unknown true function,
-\begin{equation}
-\hat{y}={\rm E}\left(\hat{f}\left(\underline{x}\right)|\underline{f}\left(\underline{\underline{X}}\right)\right)=\underline{g}\left(\underline{x}\right)^T\underline{\hat{\beta}}+\underline{r}\left(\underline{x}\right)^T\ \underline{\underline{R}}^{-1}\underline{\epsilon}.
-\label{Eq:KrigMean}
-\end{equation}
-Here, $\underline{\epsilon}=\left(\underline{Y}-\underline{\underline{G}}^T\underline{\hat{\beta}}\right)$ 
-is the known vector of differences between the true outputs and trend 
-function at all points in $\underline{\underline{X}}$ and the vector 
-$\underline{r}\left(\underline{x}\right)$ is defined such that
-$r_i\left(\underline{x}\right)=r\left(\underline{x},\underline{X_i}\right)$.  
-This adjustment can be interpreted as the projection of prior belief 
-(the least squares fit) into the span of the data. The adjusted mean 
-of the emulator will interpolate the data that the Kriging model was 
-built from as long as its correlation matrix, $\underline{\underline{R}}$, 
-is numerically non-singular.\newline
+\subsubsection{Methods of Handling Ill-Conditioned $\underline{\underline{R}}$ Matrices}
+
 
 Ill-conditioning of $\underline{\underline{R}}$ and other matrices is
 widely recognized as a significant challenge for Kriging. Davis and
@@ -587,8 +590,8 @@ choosing a nugget include:
       by a non negative real number can be used to directly specify 
       $\eta$ for the Surfpack Kriging model.
 \item Iteratively adding a successively larger nugget until 
-      $\underline{\underline{R}}+\eta\underline{\underline{I}}$
-      is no longer ill-conditioned.
+      $\underline{\underline{R}}+\eta\underline{\underline{I}}$ is no
+      longer ill-conditioned. This approach is not supported in Surfpack.
 \item Exactly calculating the minimum nugget needed for a target
       condition number from $\underline{\underline{R}}$'s maximum
       $\lambda_{max}$ and minimum $\lambda_{min}$ eigenvalues.  Note, 
@@ -602,10 +605,30 @@ choosing a nugget include:
       which might be needed to alleviate ill conditioning.  This is the 
       what is added, as needed, when the \verb1find_nugget1 option of the 
       Surfpack Kriging model is added.
-\item Treating $\eta$ as another parameter to be selected by the
-      same process used to choose $\underline{\theta}$.  Two 
-      such approaches are discussed below.
+\item Treating $\eta$ as an independent parameter to be selected via
+      the same process used to choose $\underline{\theta}$, has elsewhere
+      been used to handle ill-conditioning but this option is not supported 
+      in Surfpack.  Two approaches for determining $\underline{\theta}$ are 
+      discussed below.  
 \end{itemize}
+
+\subsubsection{The Adjusted Mean and Variance}
+The adjusted (by data) mean of the emulator is a best linear unbiased 
+estimator of the unknown true function,
+\begin{equation}
+\hat{y}={\rm E}\left(\hat{f}\left(\underline{x}\right)|\underline{f}\left(\underline{\underline{X}}\right)\right)=\underline{g}\left(\underline{x}\right)^T\underline{\hat{\beta}}+\underline{r}\left(\underline{x}\right)^T\ \underline{\underline{R}}^{-1}\underline{\epsilon}.
+\label{Eq:KrigMean}
+\end{equation}
+Here, $\underline{\epsilon}=\left(\underline{Y}-\underline{\underline{G}}^T\underline{\hat{\beta}}\right)$ 
+is the known vector of differences between the true outputs and trend 
+function at all points in $\underline{\underline{X}}$ and the vector 
+$\underline{r}\left(\underline{x}\right)$ is defined such that
+$r_i\left(\underline{x}\right)=r\left(\underline{x},\underline{X_i}\right)$.  
+This adjustment can be interpreted as the projection of prior belief 
+(the least squares fit) into the span of the data. The adjusted mean 
+of the emulator will interpolate the data that the Kriging model was 
+built from as long as its correlation matrix, $\underline{\underline{R}}$, 
+is numerically non-singular.\newline
 
 The Kriging model's adjusted variance is commonly used as a spatially 
 varying measure of uncertainty.  Knowing where, and by how much, the 
@@ -623,6 +646,7 @@ where the maximum likelihood estimate of the unadjusted variance is
 \hat{\sigma}^2=\frac{\underline{\epsilon}^T\underline{\underline{R}}^{-1}\underline{\epsilon}}{N-N_{\beta}}.
 \end{displaymath}
 
+\subsubsection{Methods of Choosing {$\underline{\theta}$}}
 There are at least two types of numerical approaches for choosing
 $\underline{\theta}$.  One of these is to use Bayesian techniques such
 as Markov chain Monte Carlo (MCMC) to obtain a distribution
@@ -715,13 +739,57 @@ $\underline{\theta}$ considered during the optimization process.  The set of
 retained points associated with the optimal $\underline{\theta}$ is therefore 
 ``the best of the best'' possible subsets.  This is done by default in the
 Surfpack Kriging model when neither the \verb1nugget1 nor \verb1find_nugget1 
-keywords are specified.\newline
+keywords are specified. This approach uses the negative of the per-equation 
+log likelihood as the objective function to make a fair comparison between 
+different sizes of subsets.\newline
 
 Because the Kriging $\underline{\underline{R}}$ matrix has unit
 diagonal, the first point (row) will always be retained by the pivoted
 Cholesky algorithm.  The user can alternately specify rentention of a
 different ``anchor point'' via the \verb1anchor_index1 keyword
 followed by a integer $0 \leq a < N.$
+
+\subsubsection{Table Of Kriging Options}
+\begin{table}[h]
+\centering
+\begin{tabular}{|c|c|c|c|}
+\hline
+Keyword & Value & Default & Explanation \\
+\hline 
+\verb1derivative_order1 & $0 | 1$ & 0 & The maximum derivative order used to construct the emulator, 0=Kriging, 1=Gradient Enhanced Kriging (GEK)\\
+\hline
+\verb1anchor_index1 & $0 \le {\rm integer} < N$ & 0 & If pivoted Cholesky is being used to select a subset of points, this allows the user to specify which point is the anchor point, the anchor point is the only point that is guaranteed to be retained \\
+\hline
+\verb1lower_bounds1 & $M$ real numbers & minimum coordinate in each of the $M$ input dimensions & used to scale the inputs and thus affects the region of correlation length space that is searched during the maximum likelihood optimization, these can only be specified if the \verb1upper_bounds1 are also specified.\\
+\hline
+\verb1upper_bounds1 & $M$ real numbers & maximum coordinate in each of the $M$ input dimensions & used to scale the inputs and thus affects the region of correlation length space that is searched during the maximum likelihood optimization, these can only be specified if the \verb1lower_bounds1 are also specified.\\
+\hline
+\verb1dimension_groups1 & $M$ integers/group numbers & each of the $M$ dimension is scaled independently & if two or more input dimensions share the same group numbers then their aspect ratios will be preserved during the scaling, which will cause the input space to be scaled to a unit hyper-rectangle instead of a unit hypercube \\
+\hline
+\verb1optimization_method1 & $\verb1global1 | \verb1local1 | \verb1global_local1 | \verb1sampling1 | \verb1none1$ & \verb1global1 & the optimization method used to find the correlation lengths with the maximum per-equation likelihood \\
+\hline
+\verb1num_starts1 & $1\le{\rm integer}$ & 1 & the number of starting locations for local optimization \\
+\hline
+\verb1correlation_lengths1 & $M$ real numbers & center of the search region in $\log({\rm correlation\ length})$ space & allows the user to specify one set of correlation lengths used in the \verb1sampling1, \verb1local1, and \verb1none1 optimzation methods\\
+\hline
+\verb1max_trials1 & $1\le{\rm integer}$ & varies by optimization method & the maximum number of objective function evaluations per optimization, or per starting location in local optimization \\
+\hline
+\verb1order1 & $0\le{\rm integer}$ & & the maximum order of any term in the requested trend function, if order isn't specified the requested trend function defaults to a main effects (no cross terms) quadratic \\
+\hline
+\verb1reduced_polynomial1 & 1 & & if \verb1order1 is specified then the requested trend function will be a full (including cross terms) polynomial, if \verb1order1 and \verb1reduced_polynomial1 are both specified, the requested trend function will be a main effects polynomial \\
+\hline
+\verb1powered_exponential1 & $1.0\le{\rm real\ number}\le2.0$ & & this keyword allows to the user to choose a member of the powered exponential family of correlation functions, can not be used in combination with \verb1matern1, if no correlation family is specified the Gaussian correlation function is used\\
+\hline
+\verb1matern1 & $0.5 | 1.5 | 2.5 | \verb1infinity1$ & & this keyword allows to the user to choose a member of the matern family of correlation functions, can not be used in combination with \verb1powered_exponential1, if no correlation family is specified the Gaussian correlation function is used\\
+\hline
+\verb1find_nugget1 & 1 & & this command causes ill-conditioning to be handled by adding a small nugget on an as needed basis, it can not be used in combination with \verb1nugget1, if neither \verb1find_nugget1 nor \verb1nugget1 are specified ill conditioning of the correlation matrix is handled by having pivoted Cholesky select an optimal subset of points to retain (for pivoted Cholesky with GEK, some or all of the derivative equations may be dropped from the last retained point) \\
+\hline
+\verb1nugget1 & $0.0\le{\rm real\ number}$ & 0.0 & this causes all diagonal elements of the correlation matrix to be multiplied by $1+\eta$ during the maximum per-equation likelihood optimization, correlation matrices that are still ill-condtioned after the addition of the nugget are excluded from consideration \\
+\hline
+\end{tabular}
+\caption{Table of the options available for the Kriging Model}
+\end{table}
+
 
 \subsection{Artificial Neural Network}\label{models:surf:ann}
 

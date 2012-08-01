@@ -15,7 +15,7 @@ using std::ostringstream;
 
 
 //#define __KRIG_ERR_TEST__
-//#define __NKM_UNBIASED_LIKE__
+#define __NKM_UNBIASED_LIKE__
 
 
 
@@ -328,6 +328,7 @@ KrigingModel::KrigingModel(const SurfData& sd, const ParamMap& params)
   param_it = params.find("order");
   if (param_it != params.end() && param_it->second.size() > 0) {
     polyOrderRequested = std::atoi(param_it->second.c_str()); 
+    //ssstd::cerr << "polyOrderRequested=" << polyOrderRequested << std::endl;
     if(!(polyOrderRequested >= 0)) {
       std::cerr << "You can't use a trend function with a polynomial "
 		<< "order less than zero." << std::endl;
@@ -356,22 +357,15 @@ KrigingModel::KrigingModel(const SurfData& sd, const ParamMap& params)
       
   //cout << "ifReducedPoly=" << ifReducedPoly << "\n";
 
-  maxAllowedPolyOrder=0;
   if(ifReducedPoly) {
-    for(polyOrder=0; polyOrder<=polyOrderRequested; ++polyOrder) {
+    for(polyOrder=0; polyOrder<=polyOrderRequested; ++polyOrder)
       numTrend(polyOrder,0)=polyOrder*numVarsr+1;
-      if(numTrend(polyOrder,0)<numEqnAvail)
-	maxAllowedPolyOrder=polyOrder;
-    }
-    main_effects_poly_power(Poly, numVarsr, maxAllowedPolyOrder);
+    main_effects_poly_power(Poly, numVarsr, polyOrderRequested);
   }
   else{
-    for(polyOrder=0; polyOrder<=polyOrderRequested; ++polyOrder) {
+    for(polyOrder=0; polyOrder<=polyOrderRequested; ++polyOrder) 
       numTrend(polyOrder,0)=num_multi_dim_poly_coef(numVarsr, polyOrder);
-      if(numTrend(polyOrder,0)<numEqnAvail)
-	maxAllowedPolyOrder=polyOrder;
-    }
-    multi_dim_poly_power(Poly, numVarsr, maxAllowedPolyOrder);  
+    multi_dim_poly_power(Poly, numVarsr, polyOrderRequested);  
   }
   
 
@@ -406,7 +400,6 @@ KrigingModel::KrigingModel(const SurfData& sd, const ParamMap& params)
     else if(powExpCorrFuncPow==2.0)
       corrFunc=GAUSSIAN_CORR_FUNC;
   }
-
   
   //MATERN_CORR_FUNC
   maternCorrFuncNu=0.0; //only 0.5, 1.5, 2.5, and infinity will be allowed
@@ -527,8 +520,8 @@ KrigingModel::KrigingModel(const SurfData& sd, const ParamMap& params)
 
     Y.copy(Yall);
     
-    polyOrder=maxAllowedPolyOrder;    
-    nTrend=numTrend(maxAllowedPolyOrder,0);
+    //polyOrder=polyOrderRequested;    
+    nTrend=numTrend(polyOrderRequested,0);
     Gtran.newSize(numEqnAvail,nTrend);
     for(int itrend=0; itrend<nTrend; ++itrend)
       for(int i=0; i<numEqnAvail; ++i)
@@ -692,11 +685,34 @@ void KrigingModel::create()
   //printf("]\n");
   
   masterObjectiveAndConstraints(correlations, 1, 0);
-  Poly.resize(numVarsr,nTrend); //shrink Poly/reduce the number of trend
-  //functions if we need to;
-  if(outputLevel >= NORMAL_OUTPUT)
-    std::cout << model_summary_string();
 
+  //keep only the "optimal" subset of trend basis function in Poly that was 
+  //selected by the pivoted Cholesky factorization of G*R^-1*G^
+  if(nTrend<numTrend(polyOrderRequested,0)) {
+    //for this to work, the basis function indicices in iTrendKeep must
+    //be in monotonically increasing order
+
+    //we are guaranteed to keep the constant term of the trend function so
+    //start loop from 1 not zero
+    for(int itrend=1; itrend<nTrend; ++itrend) {
+      int isrc=iTrendKeep(itrend,0);
+      if(itrend<isrc)
+	for(int ixr=0; ixr<numVarsr; ++ixr)
+	   Poly(ixr,itrend)=Poly(ixr,isrc);
+    }
+  
+    //now reduce the size of Poly
+    Poly.resize(numVarsr,nTrend);
+  }
+
+  //determine the maximum total order of any term in the part of the 
+  //trend that was retained
+  polyOrder=Poly(0,nTrend-1);
+  for(int ixr=1; ixr<numVarsr; ++ixr) 
+    polyOrder+=Poly(ixr,nTrend-1);
+
+
+  
   //make a reordered copy of (the retained portion of) XR for evaluation speed
   XRreorder.newSize(numVarsr,numPointsKeep);
   for(int ipt=0; ipt<numPointsKeep; ++ipt) {
@@ -705,7 +721,9 @@ void KrigingModel::create()
       XRreorder(ixr,ipt)=XR(ixr,isrc);
   }
 
-
+  if(outputLevel >= NORMAL_OUTPUT)
+    std::cout << model_summary_string();
+  
   //variables whose values needed to be retained between sequential call to masterObjectiveAndConstraints for precompute and store strategy to work
   prevObjDerMode=prevConDerMode=0;
 
@@ -713,19 +731,21 @@ void KrigingModel::create()
   //these were made member variables (instead of local variables) to avoid
   //the cost of dynamic allocation and deallocation each cycle of the 
   //optimization of the correlation parameters
-  scaleRChol.clear();
-  sumAbsColR.clear();
-  oneNormR.clear();
-  lapackRcondR.clear();
-  rcondDblWork.clear(); 
-  rcondIntWork.clear();
+  scaleRChol.clear(); //matrix
+  sumAbsColR.clear(); //vector
+  oneNormR.clear(); //vector
+  lapackRcondR.clear(); //vector
+  rcondDblWork.clear();  //vector
+  rcondIntWork.clear(); //vector
   Yall.clear(); //vector
   Gall.clear(); //matrix
   Gtran.clear(); //matrix
+  iTrendKeep.clear(); //vector
   Z.clear(); //matrix
   Ztran_theta.clear(); //vector
   deltaXR.clear(); //matrix
   R.clear(); //matrix
+  G_Rinv_Gtran.clear(); //matrix
   G_Rinv_Gtran_Chol_Scale.clear(); //vector
   G_Rinv_Gtran_Chol_DblWork.clear(); //vector
   G_Rinv_Gtran_Chol_IntWork.clear(); //vector 
@@ -734,7 +754,6 @@ void KrigingModel::create()
   prevTheta.clear(); //vector 
   con.clear(); //vector
 }
-
 
 std::string KrigingModel::get_corr_func() const {
   std::ostringstream oss;
@@ -810,31 +829,54 @@ std::string KrigingModel::model_summary_string() const {
       << rcond_G_Rinv_Gtran << "; [if either rcond is less\n"
       << "than 2^-40 (approx 9.095*10^-13) then the matrix is ill-conditioned "
       << "and\nthat \"voids the warranty\" of the Kriging Model]; nugget=" 
-      << nug << "; the trend\nis a ";
+      << nug << ".  A ";
   if(polyOrder>1) {
     if(ifReducedPoly==true)
       oss << "reduced_";
     else oss <<"full ";
   }
-  oss << "polynomial of order=" << polyOrder 
-      << " (order " << polyOrderRequested << " was desired, order " 
-      << maxAllowedPolyOrder << " was allowable);\n"
-      << "the trend basis function coefficients (for scaled inputs and "
-      << "outputs)\nBeta= [" << betaHat(0,0);
-  for(int itrend=1; itrend<nTrend; ++itrend)
-    oss << "," << betaHat(itrend,0);
-  oss << "]^T\n";
-  oss << "------------------------------------\n";
+  oss << "polynomial\nof order " << polyOrderRequested << " (with "
+      << numTrend(polyOrderRequested,0) << " terms) was requested "
+      << "for the trend function; the build\ndata was ";
+  if(nTrend<numTrend(polyOrderRequested,0) )
+    oss << "NOT ";
+  oss << "sufficient to use the requested trend function; "
+      << "the highest total\npolynomial order of any term in the "
+      << "utlized trend function is " << polyOrder << ";\n"
+      << "for SCALED inputs and outputs the utilized trend function is\n"
+      << "betaHat^T*g(x)=";
+  int nterm_on_this_line=0;
+  for(int itrend=0; itrend<nTrend; ++itrend) {
+    ++nterm_on_this_line;
+    oss << betaHat(itrend,0);
+    for(int ixr=0; ixr<numVarsr; ++ixr)
+      if(Poly(ixr,itrend)>0) {
+	oss << "*x" << ixr;
+	if(Poly(ixr,itrend)>1)
+	  oss << "^" << Poly(ixr,itrend);
+      }
+    if(itrend<nTrend-1) {
+      oss << " ";
+      if(betaHat(itrend+1,0)>=0.0)
+	oss << "+ ";
+      if(nterm_on_this_line==3) {
+	oss << "...\n               ";
+	nterm_on_this_line=0;
+      }
+    }
+  }
+  oss << "\n------------------------------------\n";
   return (oss.str());  
 }
 
 void KrigingModel::preAllocateMaxMemory() {
   //this preallocates the maximum sizce of arrays whose size depends on how many equations were discarded by pivoted Cholesky and they could possibly be allocated to a different size than their maximum the first time they are allocated.
   
-  nTrend=numTrend(maxAllowedPolyOrder,0);
+  nTrend=numTrend(polyOrderRequested,0);
   Y.newSize(numEqnAvail,1);
   Gtran.newSize(numEqnAvail,nTrend);
   Rinv_Gtran.newSize(numEqnAvail,nTrend);
+  G_Rinv_Gtran.newSize(nTrend,nTrend);
   G_Rinv_Gtran_Chol.newSize(nTrend,nTrend);
   rhs.newSize(numEqnAvail,1);
   betaHat.newSize(nTrend,1);
@@ -842,10 +884,11 @@ void KrigingModel::preAllocateMaxMemory() {
   eps.newSize(numEqnAvail,1);
   iPtsKeep.newSize(numPoints,1);
   RChol.newSize(numEqnAvail,numEqnAvail);
-  if((buildDerOrder==1)&&(ifChooseNug==false)&&(ifPrescribedNug==false)) 
-    scaleRChol.newSize(numEqnAvail,2);
-  else
-    scaleRChol.newSize(numEqnAvail,1);
+  int nrows = nTrend;
+  if((ifChooseNug==false)&&(ifPrescribedNug==false)&&(numEqnAvail>nTrend)) 
+    nrows=numEqnAvail;
+  scaleRChol.newSize(nrows,3);
+  lapackRcondR.newSize(nrows,1);
 
   return;
 }
@@ -2347,7 +2390,7 @@ MtxDbl& KrigingModel::eval_gek_d2correlation_matrix_dxIdxJ(MtxDbl& d2r, const Mt
     assert(buildDerOrder==1);
   }
   int nptsxr=xr.getNCols(); //points at which we are evalutating the model
-  d2r.newSize(numPointsKeep,nptsxr);
+  d2r.newSize(numRowsR,nptsxr);
 
 #ifdef __KRIG_ERR_CHECK__
   assert((r.getNCols()==nptsxr)&&(r.getNRows()==numPointsKeep)&&
@@ -2376,7 +2419,7 @@ MtxDbl& KrigingModel::eval_gek_d2correlation_matrix_dxIdxJ(MtxDbl& d2r, const Mt
       // AND WE KNOW THAT Ider=Jder=k so we don't have to "if" to add the
       // the extra terms
       for(j=0; j<nptsxr; ++j) {
-	for(ipt=0, i=0; i<numWholePointsKeep; ++ipt, i+=2) {
+	for(ipt=0, i=0; ipt<numWholePointsKeep; ++ipt, i+=2) {
 	  deltax=xr(Jder,j)-XRreorder(Jder,ipt);
 	  d2r(i  ,j)=neg_two_thetaJ*(deltax*drI(i  ,j)+r(i  ,j));
 	  d2r(i+1,j)=neg_two_thetaJ*(deltax*drI(i+1,j)+r(i+1,j)-drI(i,j));
@@ -2395,12 +2438,18 @@ MtxDbl& KrigingModel::eval_gek_d2correlation_matrix_dxIdxJ(MtxDbl& d2r, const Mt
       // the extra term is -2*theta(J)*r (remember r is for GEK so
       // the k loop part of it contains derivatives of the Kriging
       // correlation function with respect to XR)
+      //      std::cout << "size(r)=[" << r.getNRows() << "," << r.getNCols() << "]\n"
+      //		<< "size(drI)=[" << drI.getNRows() << "," << drI.getNCols() << "\n"
+      //	<< "size(d2r)=[" << d2r.getNRows() << "," << d2r.getNCols() 
+      //	<< std::endl;
       for(j=0; j<nptsxr; ++j) {
-	for(ipt=0, i=0; i<numWholePointsKeep; ++ipt, i+=neqn_per_pt) {
+	for(ipt=0, i=0; ipt<numWholePointsKeep; ++ipt, i+=neqn_per_pt) {
 	  deltax=xr(Jder,j)-XRreorder(Jder,ipt);
-	  d2r(i,j)=neg_two_thetaJ*(deltax*drI(i,j)+r(i,j));
-	  for(k=0; k<numVarsr; ++k)
+	  d2r(i,j)=neg_two_thetaJ*(deltax*drI(i,j)+r(i,j));	  
+	  for(k=0; k<numVarsr; ++k) {
+	    //std::cout << "i=" << i << " j=" << j << " k=" << k << std::endl;
 	    d2r(i+1+k,j)=neg_two_thetaJ*(deltax*drI(i+1+k,j)+r(i+1+k,j));
+	  }
 	  d2r(i+1+Jder,j)-=neg_two_thetaJ*drI(i,j); //minus a negative is 
 	  //a positive is correct, this extra term is for Jder=k
 	}
@@ -2426,7 +2475,7 @@ MtxDbl& KrigingModel::eval_gek_d2correlation_matrix_dxIdxJ(MtxDbl& d2r, const Mt
       // k loop is 2nd derivative of the Kriging r, in dimensions 
       // independent of the one we're now taking the 1st derivative of)
       for(j=0; j<nptsxr; ++j) {
-	for(ipt=0, i=0; i<numWholePointsKeep; ++ipt, i+=neqn_per_pt) {
+	for(ipt=0, i=0; ipt<numWholePointsKeep; ++ipt, i+=neqn_per_pt) {
 	  deltax=xr(Jder,j)-XRreorder(Jder,ipt);
 	  d2r(i,j)=neg_two_thetaJ*deltax*drI(i,j);
 	  for(k=0; k<numVarsr; ++k) 
@@ -2488,7 +2537,7 @@ MtxDbl& KrigingModel::eval_gek_d2correlation_matrix_dxIdxJ(MtxDbl& d2r, const Mt
       double thetaJ_cubed=thetaJ_squared*thetaJ;
       double r_div_matern_coef;
       for(j=0; j<nptsxr; ++j) {
-	for(ipt=0, i=0; i<numWholePointsKeep; ++ipt, i+=2) {
+	for(ipt=0, i=0; ipt<numWholePointsKeep; ++ipt, i+=2) {
 	  deltax=xr(Jder,j)-XRreorder(Jder,ipt);
 	  thetaJ_abs_dx=thetaJ*std::fabs(deltax);
 	  r_div_matern_coef=r(i,j)/(1.0+thetaJ_abs_dx);
@@ -2514,7 +2563,7 @@ MtxDbl& KrigingModel::eval_gek_d2correlation_matrix_dxIdxJ(MtxDbl& d2r, const Mt
       double matern_coef;
       double d2_mult_r;
       for(j=0; j<nptsxr; ++j) {
-	for(ipt=0, i=0; i<numWholePointsKeep; ++ipt, i+=neqn_per_pt) {
+	for(ipt=0, i=0; ipt<numWholePointsKeep; ++ipt, i+=neqn_per_pt) {
 	  deltax=xr(Jder,j)-XRreorder(Jder,ipt);
 	  thetaJ_abs_dx=thetaJ*std::fabs(deltax);
 	  matern_coef=(1.0+thetaJ_abs_dx);
@@ -2561,7 +2610,7 @@ MtxDbl& KrigingModel::eval_gek_d2correlation_matrix_dxIdxJ(MtxDbl& d2r, const Mt
       double matern_coef;
       double d1_mult_r;
       for(j=0; j<nptsxr; ++j) {
-	for(ipt=0, i=0; i<numWholePointsKeep; ++ipt, i+=neqn_per_pt) {
+	for(ipt=0, i=0; ipt<numWholePointsKeep; ++ipt, i+=neqn_per_pt) {
 	  deltax=xr(Jder,j)-XRreorder(Jder,ipt);
 	  thetaJ_abs_dx=thetaJ*std::fabs(deltax);
 	  matern_coef=1.0+thetaJ_abs_dx;
@@ -2624,7 +2673,7 @@ MtxDbl& KrigingModel::eval_gek_d2correlation_matrix_dxIdxJ(MtxDbl& d2r, const Mt
       // GEK r = 3rd derivative of Kriging r, special treatment
       double r_thetaJ_squared_div_3_matern_coef;
       for(j=0; j<nptsxr; ++j) {
-	for(ipt=0, i=0; i<numWholePointsKeep; ++ipt, i+=2) {
+	for(ipt=0, i=0; ipt<numWholePointsKeep; ++ipt, i+=2) {
 	  deltax=xr(Jder,j)-XRreorder(Jder,ipt);
 	  thetaJ_abs_dx=thetaJ*std::fabs(deltax);
 	  r_thetaJ_squared_div_3_matern_coef=r(i,j)*thetaJ_squared/
@@ -2653,7 +2702,7 @@ MtxDbl& KrigingModel::eval_gek_d2correlation_matrix_dxIdxJ(MtxDbl& d2r, const Mt
       double neg_thetaJ_squared_div_3_matern_coef;
       double d2_mult_r;
       for(j=0; j<nptsxr; ++j) {
-	for(ipt=0, i=0; i<numWholePointsKeep; ++ipt, i+=neqn_per_pt) {
+	for(ipt=0, i=0; ipt<numWholePointsKeep; ++ipt, i+=neqn_per_pt) {
 	  deltax=xr(Jder,j)-XRreorder(Jder,ipt);
 	  thetaJ_abs_dx=thetaJ*std::fabs(deltax);
 	  neg_thetaJ_squared_div_3_matern_coef=-thetaJ_squared/
@@ -2706,7 +2755,7 @@ MtxDbl& KrigingModel::eval_gek_d2correlation_matrix_dxIdxJ(MtxDbl& d2r, const Mt
       double thetaJ_squared_div_3_matern_coef;
       double d1_mult_r;
       for(j=0; j<nptsxr; ++j) {
-	for(ipt=0, i=0; i<numWholePointsKeep; ++ipt, i+=neqn_per_pt) {
+	for(ipt=0, i=0; ipt<numWholePointsKeep; ++ipt, i+=neqn_per_pt) {
 	  deltax=xr(Jder,j)-XRreorder(Jder,ipt);
 	  thetaJ_abs_dx=thetaJ*std::fabs(deltax);
 	  thetaJ_squared_div_3_matern_coef=thetaJ_squared/
@@ -3471,8 +3520,11 @@ void KrigingModel::equationSelectingCholR(){
     assert(false);
   }
 
-  polyOrder=maxAllowedPolyOrder;
+  //polyOrder=polyOrderRequested;
+  nTrend=numTrend(polyOrderRequested,0);
+  Rinv_Gtran.newSize(numEqnAvail,nTrend);
   
+
   //printf("Entered equationSelectingCholR()\n");
   double min_allowed_rcond=1.0/maxCondNum;
   //printf("min_allowed_rcond=%g\n",min_allowed_rcond);
@@ -3512,7 +3564,7 @@ void KrigingModel::equationSelectingCholR(){
 
       Y.copy(Yall);
 
-      nTrend=numTrend(maxAllowedPolyOrder,0);
+      nTrend=numTrend(polyOrderRequested,0);
       Gtran.newSize(numPoints,nTrend);
       for(int itrend=0; itrend<nTrend; ++itrend) 
 	for(int ipt=0; ipt<numPoints; ++ipt)
@@ -3812,16 +3864,25 @@ void KrigingModel::equationSelectingCholR(){
     printf("\n\n");
   }
   */
-  polyOrder=maxAllowedPolyOrder; //redundant but for clarity
-  while((numRowsR<=numTrend(polyOrder,0))&&(polyOrder>0))
-    --polyOrder;
-  nTrend=numTrend(polyOrder,0);
+  
+  //polyOrder=polyOrderRequested; //redundant but for clarity
+
+  //the following while loop was commented out when adaptive selection of 
+  //the trend basis functions via pivote cholesky factorization of G*R^-1*G^T 
+  //was implemented
+  //while((numRowsR<=numTrend(polyOrder,0))&&(polyOrder>0))
+  //--polyOrder;
+
+  //nTrend=numTrend(polyOrder,0); //commented out because we now select a subset of Poly based using a Pivoted Cholesky factorization of G*R^-1*G^T which happens when trendSelectingPivotedCholesy is called by materObjectiveAndConstraints() (we no longer select SOLELY on polynomial order and number of points
+
+  nTrend=numTrend(polyOrderRequested,0);
+
   //printf("num_eqn_keep=%d numRowsR=%d polyOrder=%d nTrend=%d rcondR=%g lapackRcondR(num_eqn_keep-1,0)=%g\n",num_eqn_keep,numRowsR,polyOrder,nTrend,rcondR,lapackRcondR(num_eqn_keep-1,0));
 
   //we need to downsize Gtran now but we only need to downsize Poly at 
   //the end of create()
   Gtran.newSize(num_eqn_keep,nTrend); //newSize() because we don't care 
-  //about the current contents of Gtran
+ //about the current contents of Gtran
   
   Y.newSize(num_eqn_keep,1); //newSize() because we don't care about 
   //the current contents of Y
@@ -3989,6 +4050,243 @@ void KrigingModel::equationSelectingCholR(){
   return;
 }
 
+/** G_Rinv_Gtran must be filled with G*R^-1*G^T prior to calling 
+    void KrigingModel::trendSelectingPivotedCholesky() */
+void KrigingModel::trendSelectingPivotedCholesky(){ 
+
+  //nTrend=numTrend(polyOrderRequested,0);
+  iTrendKeep.newSize(nTrend,1);
+  double min_allowed_rcond=1.0/maxCondNum;
+  int num_trend_want=numTrend(polyOrderRequested,0);
+  
+  int max_trend_to_keep=numRowsR-1-2*numVarsr;
+  if(numRowsR/2<max_trend_to_keep)
+    max_trend_to_keep=numRowsR/2;
+  if(num_trend_want<max_trend_to_keep)
+    max_trend_to_keep=num_trend_want;
+  if(max_trend_to_keep<1)
+    max_trend_to_keep=1;
+
+  if(nTrend<=max_trend_to_keep) {
+    //do a LAPACK cholesky first 
+    G_Rinv_Gtran_Chol.copy(G_Rinv_Gtran);
+    int chol_info;
+    Chol_fact_workspace(G_Rinv_Gtran_Chol,G_Rinv_Gtran_Chol_Scale,
+			G_Rinv_Gtran_Chol_DblWork,G_Rinv_Gtran_Chol_IntWork,
+			chol_info,rcond_G_Rinv_Gtran);
+    if(min_allowed_rcond<rcond_G_Rinv_Gtran) {
+      //the LAPACK Cholesky was not ill-conditioned with the desired
+      //full set of trend basis functions so we'll use them all
+      for(int itrend=0; itrend<nTrend; ++itrend)
+	iTrendKeep(itrend,0)=itrend;
+      return;
+    }
+  }
+
+  // *****************************************************************
+  // if we got here we need to do a Pivoted Cholesky factorization of
+  // G*R^-1*G^T to select an optimal subset of trend basis functions
+  // *****************************************************************
+
+  // we have a slight problem, basically the one trend function that
+  // is guaranteed to be selected is the one that has the largest 
+  // diagonal element in G*R^-1*G^T, or if they are all the same it 
+  // will be the first one.  we want to guarantee that the constant
+  // basis function (polynomial of order 0) is retained so we need to
+  // equilibrate G_Rinv_Gtran so that it has all ones on the diagonal
+  // and therefore that the constant trend basis function will be 
+  // retained
+  
+  // I realize this has R in the name but I don't want to allocate another
+  // variable
+  scaleRChol.newSize(nTrend,3);   
+  for(int itrend=0; itrend<nTrend; ++itrend) {
+    scaleRChol(itrend,1)=std::sqrt(G_Rinv_Gtran(itrend,itrend));
+    scaleRChol(itrend,0)=1.0/scaleRChol(itrend,1);
+  }
+
+
+  for(int jtrend=0; jtrend<nTrend; ++jtrend) {
+    double tempdouble=scaleRChol(jtrend,0);
+    for(int itrend=0; itrend<nTrend; ++itrend) 
+      G_Rinv_Gtran(itrend,jtrend)*=scaleRChol(itrend,0)*tempdouble;
+    G_Rinv_Gtran(jtrend,jtrend)=1.0; //numerical round off error could
+    //kill our guarantee of keeping the constant trend basis function
+    //so we'll just assign the right correct answer which is 1.0
+  }
+
+  G_Rinv_Gtran_Chol.copy(G_Rinv_Gtran);
+
+  int ld_G_Rinv_Gtran_Chol=G_Rinv_Gtran_Chol.getNRowsAct();
+  int info=0;
+  char uplo='B'; //'B' means we have both halves of G*R^-1*G^T in 
+  //G_Rinv_Gtran_Chol so the FORTRAN doesn't have to copy one half to the
+  //other, having both halves makes the memory access faster (can always 
+  //go down columns)
+  int num_trend_keep=-max_trend_to_keep; //RANK<0 on input tells PIVOTCHOL_F77 
+  //that we only want to keep the first abs(RANK) entries so it can stop early
+  PIVOTCHOL_F77(&uplo, &nTrend, G_Rinv_Gtran_Chol.ptr(0,0), 
+		&ld_G_Rinv_Gtran_Chol, iTrendKeep.ptr(0,0), &num_trend_keep, 
+		&min_allowed_rcond, &info); 
+  
+  nTrend=num_trend_keep; //this is the maximum number of trend functions
+  //we could keep, we might not be able to keep this many
+
+  //FORTRAN indices start at 1 not zero so we have to convert to C++ indices
+  //which start at zero
+  for(int itrend=0; itrend<nTrend; ++itrend)
+    iTrendKeep(itrend,0)-=1;
+
+  // ************************************************************
+  // in this section I need to calculate the one norm for subsets
+  // of the first jtrend (reordered) rows/columns of the 
+  // equilibrated G*R^-1*G^T , for jtrend=1 to nTrend
+  // ************************************************************
+  
+  //I realize that this says R but I don't want to allocate another variable
+  oneNormR.newSize(nTrend,1);
+  //I realize that this says R but I don't want to allocate another variable
+  sumAbsColR.newSize(nTrend,1);
+  int jsrc=iTrendKeep(0,0);
+  for(int itrend=0; itrend<nTrend; ++itrend) 
+    sumAbsColR(itrend,0)=std::fabs(G_Rinv_Gtran(iTrendKeep(itrend,0),jsrc));
+  oneNormR(0,0)=sumAbsColR(0,0); //this is the one norm for the 1 by
+  //1 reordered G_Rinv_Gtran matrix
+    
+  double tempdouble;
+  for(int jtrend=1; jtrend<nTrend; ++jtrend) {
+    jsrc=iTrendKeep(jtrend,0);
+    for(int itrend=0; itrend<nTrend; ++itrend) 	
+      sumAbsColR(itrend,0)+=std::fabs(G_Rinv_Gtran(iTrendKeep(itrend,0),jsrc));
+    tempdouble=sumAbsColR(0,0);
+    for(int itrend=1; itrend<=jtrend; ++itrend) 
+      if(tempdouble<sumAbsColR(itrend,0))
+	tempdouble=sumAbsColR(itrend,0);
+    oneNormR(jtrend,0)=tempdouble; //this is the one norm for the 
+    //jtrend by jtrend reordered G_Rinv_Gtran matrix
+  }
+
+  ld_G_Rinv_Gtran_Chol=G_Rinv_Gtran_Chol.getNRowsAct(); //this probably hasn't changed
+  //but better safe than sorry
+  rcondDblWork.newSize(3*ld_G_Rinv_Gtran_Chol,1);
+  rcondIntWork.newSize(ld_G_Rinv_Gtran_Chol,1);
+  int icurr_lapack_rcond=nTrend-1;
+  uplo='L'; 
+  DPOCON_F77(&uplo,&nTrend,G_Rinv_Gtran_Chol.ptr(0,0),&ld_G_Rinv_Gtran_Chol,
+	     oneNormR.ptr(icurr_lapack_rcond,0),&rcond_G_Rinv_Gtran,
+	     rcondDblWork.ptr(0,0),rcondIntWork.ptr(0,0),&info);
+
+  //need to do a bisection search for the last trend function that we can keep
+  lapackRcondR(icurr_lapack_rcond,0)=rcond_G_Rinv_Gtran; //the maximum number
+  //of trend basis functions we can keep is icurr_lapack_rcond=nTrend-1
+  //and we know the rcond for that many equations
+  int iprev_lapack_rcond=0;
+  lapackRcondR(iprev_lapack_rcond,0)=1.0; //the constant trend funcation by
+  //itself is guaranteed to have condition # = 1.0
+
+  //note num_trend_keep is now nTrend
+  int inext_lapack_rcond=icurr_lapack_rcond; //the last available basis 
+  //function
+  if((rcond_G_Rinv_Gtran<=min_allowed_rcond)&&
+     (inext_lapack_rcond-iprev_lapack_rcond==1)) {
+    //at this point the previous lapack rcondR==1.0
+    rcond_G_Rinv_Gtran=1.0;
+    inext_lapack_rcond=iprev_lapack_rcond;
+    //printf("if1\n");
+  }
+  
+  //do the bisection search if necessary, at most ceil(log2()) more 
+  //calls to the LAPACK rcond function
+  int rcond_iter=0;
+  int max_rcond_iter=
+    std::ceil(std::log(static_cast<double>
+		       (inext_lapack_rcond-iprev_lapack_rcond))
+	      /std::log(2.0));
+  while((lapackRcondR(inext_lapack_rcond,0)<=min_allowed_rcond)&&
+        (inext_lapack_rcond>iprev_lapack_rcond)) {
+    //printf("inWhile\n");
+    ++rcond_iter;
+    icurr_lapack_rcond=(iprev_lapack_rcond+inext_lapack_rcond)/2;
+    num_trend_keep=icurr_lapack_rcond+1;
+
+    //the LAPACK rcond function
+    DPOCON_F77(&uplo,&num_trend_keep,G_Rinv_Gtran_Chol.ptr(0,0),
+	       &ld_G_Rinv_Gtran_Chol,oneNormR.ptr(icurr_lapack_rcond,0),
+	       &rcond_G_Rinv_Gtran,rcondDblWork.ptr(0,0),
+	       rcondIntWork.ptr(0,0),&info);
+    lapackRcondR(icurr_lapack_rcond,0)=rcond_G_Rinv_Gtran;
+    //printf("rcond_iter=%d icurr_lapack_rcondR=%d rcondR=%g\n",
+    //rcond_iter,icurr_lapack_rcondR,rcondR);
+
+    if(rcond_G_Rinv_Gtran<min_allowed_rcond)
+      inext_lapack_rcond=icurr_lapack_rcond;
+    else if(min_allowed_rcond<rcond_G_Rinv_Gtran)
+      iprev_lapack_rcond=icurr_lapack_rcond;
+    else if(min_allowed_rcond==rcond_G_Rinv_Gtran) {
+      //num_trend_keep=icurr_lapack_rcond+1;
+      break;
+    }
+    if((inext_lapack_rcond-iprev_lapack_rcond==1)||
+       (max_rcond_iter<rcond_iter)) {
+      num_trend_keep=iprev_lapack_rcond+1;
+      rcond_G_Rinv_Gtran=lapackRcondR(iprev_lapack_rcond,0);
+      break;
+    }
+  }
+  //printf(" pivoted_rcondR=%g numRowsR=%d\n",rcondR,num_eqn_keep);
+  
+  nTrend=num_trend_keep; //this is the maximum number of trend basis functions
+  //that we can keep
+
+  iTrendKeep.resize(nTrend,1);
+  //we don't want the basis functions in their optimal order we want them
+  //in their logical order, minus the ones we couldn't keep
+  iTrendKeep.sortRows();
+
+  //were going to copy the portion of the equilibrated G*R^-1*G^T matrix 
+  //that were keeping, in its logical order, into G_Rinv_Gtran_Chol and then
+  //do a LAPACK cholesky on it, and then undo the equilibration
+  G_Rinv_Gtran_Chol.newSize(nTrend,nTrend);
+  for(int jtrend=0; jtrend<nTrend; ++jtrend) {
+    int jsrc=iTrendKeep(jtrend,0);
+    scaleRChol(jtrend,2)=scaleRChol(jsrc,1);
+    for(int itrend=0; itrend<nTrend; ++itrend)
+      G_Rinv_Gtran_Chol(itrend,jtrend)=G_Rinv_Gtran(iTrendKeep(itrend,0),jsrc);
+  }
+
+  //do the LAPACK cholesky factorization
+  int chol_info;
+  Chol_fact_workspace(G_Rinv_Gtran_Chol,G_Rinv_Gtran_Chol_Scale,
+		      G_Rinv_Gtran_Chol_DblWork,G_Rinv_Gtran_Chol_IntWork,
+		      chol_info,rcond_G_Rinv_Gtran);
+  
+  //we still need to undo the equilbration because we copied the 
+  //equilibrated G*R^-1*G^T matrix into G_Rinv_Gtran_Chol before doing
+  //the cholesky factorization
+  for(int jtrend=0; jtrend<nTrend; ++jtrend) 
+    for(int itrend=jtrend; itrend<nTrend; ++itrend)
+      G_Rinv_Gtran_Chol(itrend,jtrend)*=scaleRChol(itrend,2);
+
+
+  
+  for(int itrend=1; itrend<nTrend; ++itrend) {
+    int isrc=iTrendKeep(itrend,0);
+    if(itrend<isrc)
+      for(int i=0; i<numRowsR; ++i) {
+	Gtran(i,itrend)=Gtran(i,isrc);
+	Rinv_Gtran(i,itrend)=Rinv_Gtran(i,isrc);
+      }
+  }
+  Gtran.resize(numRowsR,nTrend);
+  Rinv_Gtran.resize(numRowsR,nTrend);
+    
+  //and were done with the pivoted cholesky, but at the end of the optimization
+  //we will still need to discard the subset of Poly that was not selected by
+  //trendSelectingPivotedCholesky()
+  return;
+}
+
+
 
 
 
@@ -4070,9 +4368,28 @@ void KrigingModel::masterObjectiveAndConstraints(const MtxDbl& theta, int obj_de
       reorderCopyRtoRChol();
       Chol_fact_workspace(RChol,scaleRChol,rcondDblWork,rcondIntWork,
 			  chol_info,rcondR);
+      //Pivoted Cholesky o G*R^-1*G^T does not require pivoted Cholesky of R
+      //so the size of Gtran could have changed
+      nTrend=numTrend(polyOrderRequested,0);
+      if(Gtran.getNCols() < nTrend) {
+	Gtran.newSize(numEqnAvail,nTrend);
+	for(int itrend=0; itrend<nTrend; ++itrend)
+	  for(int i=0; i<numEqnAvail; ++i)
+	    Gtran(i,itrend)=Gall(itrend,i);
+      }
+
     } else if(ifChooseNug==true) {
       //the user wants us to select a small nugget to fix ill-conditioning of R
       nuggetSelectingCholR();
+      //Pivoted Cholesky o G*R^-1*G^T does not require pivoted Cholesky of R
+      //so the size of Gtran could have changed
+      nTrend=numTrend(polyOrderRequested,0);
+      if(Gtran.getNCols() < nTrend) {
+	Gtran.newSize(numEqnAvail,nTrend);
+	for(int itrend=0; itrend<nTrend; ++itrend)
+	  for(int i=0; i<numEqnAvail; ++i)
+	    Gtran(i,itrend)=Gall(itrend,i);
+      }      
     }else {
       //the user wants us to fix ill-conditioning of R by using Pivoted Cholesky
       //to select an optimal subset of points from which to build the Kriging
@@ -4080,9 +4397,10 @@ void KrigingModel::masterObjectiveAndConstraints(const MtxDbl& theta, int obj_de
       equationSelectingCholR();
     }
     double min_allowed_rcond=1.0/maxCondNum;
-    nTrend=numTrend(polyOrder,0);
-
-    if((rcondR<=min_allowed_rcond)||(numRowsR<=nTrend)) {
+    //nTrend=numTrend(polyOrder,0);
+    nTrend=numTrend(polyOrderRequested,0);
+      
+    if((rcondR<=min_allowed_rcond)) { //||(numRowsR<=nTrend)) {
       printf("singular correlation matrix rcondR=%g numRowsR=%d numTrend=%d numEqnAvail=%d\n",
 	     rcondR,numRowsR,nTrend,numEqnAvail);
       MtxDbl corr_len_temp(numVarsr,1);
@@ -4127,14 +4445,17 @@ void KrigingModel::masterObjectiveAndConstraints(const MtxDbl& theta, int obj_de
     //Do the generalized (by R^-1) least squares using min # of ops
     //printf("numPoints=%d numPointsKeep=%d numRowsR=%d nTrend=%d\n",
     //   numPoints,numPointsKeep,numRowsR,nTrend);
+
+
     Rinv_Gtran.newSize(numRowsR,nTrend); //precompute and store
     solve_after_Chol_fact(Rinv_Gtran,RChol,Gtran);
 
-    G_Rinv_Gtran_Chol.newSize(nTrend,nTrend);
-    matrix_mult(G_Rinv_Gtran_Chol,Gtran,Rinv_Gtran,0.0,1.0,'T','N');
+    G_Rinv_Gtran.newSize(nTrend,nTrend);
+    matrix_mult(G_Rinv_Gtran,Gtran,Rinv_Gtran,0.0,1.0,'T','N');
 
-    Chol_fact_workspace(G_Rinv_Gtran_Chol,G_Rinv_Gtran_Chol_Scale,G_Rinv_Gtran_Chol_DblWork,G_Rinv_Gtran_Chol_IntWork,chol_info,rcond_G_Rinv_Gtran);
-    if(rcond_G_Rinv_Gtran<min_allowed_rcond) {
+    trendSelectingPivotedCholesky();
+    //Chol_fact_workspace(G_Rinv_Gtran_Chol,G_Rinv_Gtran_Chol_Scale,G_Rinv_Gtran_Chol_DblWork,G_Rinv_Gtran_Chol_IntWork,chol_info,rcond_G_Rinv_Gtran);
+    if((rcond_G_Rinv_Gtran<min_allowed_rcond)||(numRowsR<=nTrend)) {
       //we could instead use pivoted cholesky to adaptively selected an optimal
       //subset of trend basis functions (i.e. it could be lower in some 
       //dimensions than in others or have quadratic but not linear in certain
@@ -4193,15 +4514,15 @@ void KrigingModel::masterObjectiveAndConstraints(const MtxDbl& theta, int obj_de
     //the unbiased estimate of unadjusted variance
     estVarianceMLE = dot_product(eps,rhs)/(numRowsR-nTrend); 
 
-    //the "per point" unbiased log(likelihood)
+    //the "per equationt" unbiased log(likelihood)
     likelihood = -0.5*(std::log(estVarianceMLE)+(log_determinant_R+log_determinant_G_Rinv_Gtran)/(numRowsR-nTrend)); 
 #else
-    //derived the "Koehler and Owen" way (assumes we know the trend function, and is therefore biased, but usally seems to work better for surrogate based optimization)
+    //derived the "Koehler and Owen" way (assumes we know the trend function, and is therefore biased
 
     //the estimate of unadjusted variance
     estVarianceMLE = dot_product(eps,rhs)/numRowsR; //the "Koehler and Owen" way
 
-    //the "per point" log(likelihood)
+    //the "per equation" log(likelihood)
     likelihood = -0.5*(std::log(estVarianceMLE)+log_determinant_R/numRowsR); 
 #endif
   
@@ -4209,8 +4530,8 @@ void KrigingModel::masterObjectiveAndConstraints(const MtxDbl& theta, int obj_de
     //printf("[estVarianceMLE=%g determinant_R=%g]",estVarianceMLE,determinant_R);
 
     //the objective function being MINIMIZED is the negative of the log 
-    //likelihood (on a per point basis so numbers will be comparable 
-    //regardless of how many points there are)
+    //likelihood (on a per equation basis so numbers will be comparable 
+    //regardless of how many equations there are)
     obj=-likelihood;  
     //printf("[obj=%g]",obj);
 

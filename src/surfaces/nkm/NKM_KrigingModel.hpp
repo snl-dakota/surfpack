@@ -165,8 +165,9 @@ private:
   // helper functions
   void preAllocateMaxMemory();
   void reorderCopyRtoRChol();
-  void equationSelectingCholR();
   void nuggetSelectingCholR();
+  void equationSelectingCholR();
+  void trendSelectingPivotedCholesky();
 
   /// this function calculates the objective function (negative log
   /// likelihood) and/or the constraint functions and/or their analytical
@@ -592,12 +593,6 @@ private:
       polynomial basis */
   int polyOrderRequested; 
   
-  /** maxAllowedPolyOrder will equal polyOrderRequested unless the user
-      didn't give us enough data, then it can be less than what they
-      requested, will remove this once we start using Pivoted Cholesky
-      to adaptively select an optimal subset of basis functions */
-  int maxAllowedPolyOrder;
-
   /** this is what was actually used, can be less than what the user asked for 
       if the correlation matrix was ill-conditioned and we had to drop points 
       to fix the ill-conditioning and had to drop trend order to make it less 
@@ -610,6 +605,11 @@ private:
 
   /// the number of terms in the trend function that was actually used 
   int nTrend; 
+
+  /** the indexes of the subset trend basis functions that a pivoted 
+      Cholesky factorization of G*R^-1*G^T selected for retention, these
+      indexes must be in "logical order" (monotonically increasing)*/
+  MtxInt iTrendKeep;
 
   /** the polynomial powers for individual dimensions in each (trend) "basis 
       function" (for now the only choice of polynomial basis functions are
@@ -743,6 +743,9 @@ private:
   /// keep around to evaluate adjusted variance
   MtxDbl Rinv_Gtran;
 
+  /// don't keep arround
+  MtxDbl G_Rinv_Gtran;
+
   /// keep around to evaluate adjusted variance
   MtxDbl G_Rinv_Gtran_Chol;
 
@@ -761,19 +764,18 @@ private:
   /// working memory G*R^-1*Y
   MtxDbl G_Rinv_Y;
 
-  //working memory eps=epsilon=Y-G^T*betaHat
+  /// working memory eps=epsilon=Y-G^T*betaHat
   MtxDbl eps;
 
-
-  /** rhs=Rinv*(Y-G^T*betaHat); The convention is that capital matrices 
-      are for the data the model is built from, lower case matrices are 
-      for arbitrary points to evaluate the model at */
+  /** rhs = right hand side, rhs=Rinv*(Y-G^T*betaHat); The convention is 
+      that capital matrices are for the data the model is built from, lower
+      case matrices are for arbitrary points to evaluate the model at */
   MtxDbl rhs; 
 
   /// need keep around to evaluate adjusted variance
   double estVarianceMLE;
 
-  /// the log(likelihood) of the Kriging Model
+  /// the per equation log(likelihood) of the Kriging Model
   double likelihood; 
 
   /// part of infrastructure to allow masterObjectivesAndConstraints to just "return" (have copied out) the answer if the same point is used in sequential calls
@@ -848,10 +850,10 @@ void nkm::KrigingModel::serialize(Archive & archive,
   //don't archive Gtran we need this during the construction of a model but not afterward
   archive & ifReducedPoly;
   archive & polyOrderRequested;
-  archive & maxAllowedPolyOrder; //will remove this once we've added the adaptive selection of a subset of basis functions
   archive & polyOrder;
   archive & numTrend;
   archive & nTrend;
+  //don't archive iTrendKeep, it's not needed because at the discarded terms in the trend basis function are removed from Poly at the end of create()
   archive & Poly;
   //don't archive flyPoly, it's work space needed to efficiently evaluate a polynomial basis "on the fly" (it's a member variable only to avoid constant allocation and deallocation)
   archive & betaHat;
@@ -871,6 +873,7 @@ void nkm::KrigingModel::serialize(Archive & archive,
   archive & rcondR;
   archive & rcond_G_Rinv_Gtran;
   archive & Rinv_Gtran;
+  //don't archive G_Rinv_Gtran, we need it during the construction of a model but not afterward
   archive & G_Rinv_Gtran_Chol;
   //don't archive G_Rinv_Gtran_Chol_Scale, we need it during the construction of a model but not afterward
   //don't archive G_Rinv_Gtran_Chol_DblWork, we need it during the construction of a model but not afterward
