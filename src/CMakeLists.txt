@@ -37,6 +37,7 @@ set(lib${local_library}_sources
 set(local_src_subdirs mars surfaces surfaces/nkm)
 
 # Aggregate all the sources into a single library for installation
+# BUT split the fortran out into its own library (necessary for native Windows)
 foreach(sd_it ${local_src_subdirs})
 
   add_subdirectory(${sd_it})
@@ -50,7 +51,12 @@ foreach(sd_it ${local_src_subdirs})
 
   # add the sources to the library's list and includes
   foreach ( src_file ${sd_sources} )
-    list ( APPEND lib${local_library}_sources "${sd_it}/${src_file}" )
+
+    if(${src_file} MATCHES "\\.f$" OR ${src_file} MATCHES "\\.f..$")
+      list ( APPEND lib${local_library}_sources_fortran "${sd_it}/${src_file}" )
+    else()
+      list ( APPEND lib${local_library}_sources "${sd_it}/${src_file}" )
+    endif()
   endforeach()
 
   include_directories(${CMAKE_CURRENT_SOURCE_DIR}/${sd_it})
@@ -66,7 +72,10 @@ endif()
 # WJB - ToDo: look into CMake template support features: SurfpackMatrix.tpl
 
 add_library(${local_library} ${lib${local_library}_sources})
+add_library(${local_library}_fortran ${lib${local_library}_sources_fortran})
+target_link_libraries(${local_library} ${local_library}_fortran)
 #target_link_libraries(surfpack_src mars teuchos conmin ${LAPACK_LIBRARIES})
 install(TARGETS ${local_library} EXPORT ${ExportTarget} DESTINATION lib)
+install(TARGETS ${local_library}_fortran EXPORT ${ExportTarget} DESTINATION lib)
 
 install(FILES SurfpackMatrix.h surfpack_system_headers.h DESTINATION include)
