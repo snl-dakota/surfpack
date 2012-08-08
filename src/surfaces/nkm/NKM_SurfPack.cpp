@@ -255,7 +255,7 @@ MtxInt& main_effects_poly_power(MtxInt& poly, int nvarsr, int ndeg) {
     return poly;
   }
   else if(ndeg==0) {
-    poly.newSize(1,nvarsr);
+    poly.newSize(nvarsr,1);
     poly.zero();
     return poly;
   }

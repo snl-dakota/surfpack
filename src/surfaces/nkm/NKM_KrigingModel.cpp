@@ -721,9 +721,12 @@ void KrigingModel::create()
       XRreorder(ixr,ipt)=XR(ixr,isrc);
   }
 
-  if(outputLevel >= NORMAL_OUTPUT)
+  if(outputLevel >= NORMAL_OUTPUT) {
     std::cout << model_summary_string();
-  
+    //std::cout << std::endl;
+  }
+
+
   //variables whose values needed to be retained between sequential call to masterObjectiveAndConstraints for precompute and store strategy to work
   prevObjDerMode=prevConDerMode=0;
 
@@ -4066,6 +4069,8 @@ void KrigingModel::trendSelectingPivotedCholesky(){
     max_trend_to_keep=num_trend_want;
   if(max_trend_to_keep<1)
     max_trend_to_keep=1;
+
+  //std::cout << "numRowrR=" << numRowsR << " nTrend=" << nTrend << " max_trend_to_keep=" << max_trend_to_keep << std::endl;
 
   if(nTrend<=max_trend_to_keep) {
     //do a LAPACK cholesky first 
