@@ -28,6 +28,12 @@ if(NOT DEFINED BLAS_LIBS OR NOT DEFINED LAPACK_LIBS)
 
 endif() 
 
+# Needed on MacOSX now that fortran code is split-out into separate library
+if(CMAKE_SYSTEM_NAME MATCHES Darwin)
+  set(CMAKE_SHARED_LIBRARY_CREATE_Fortran_FLAGS
+      "${CMAKE_SHARED_LIBRARY_CREATE_Fortran_FLAGS} -undefined dynamic_lookup")
+endif()
+
 option(SURFPACK_STANDALONE  "Create a standalone surfpack executable" OFF)
 if(SURFPACK_STANDALONE)
   # By default, require Boost serialization in stand-alone
