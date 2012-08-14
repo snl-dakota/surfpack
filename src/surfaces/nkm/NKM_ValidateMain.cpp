@@ -1728,7 +1728,7 @@ void nightly_test()
   num_corr_func_tests(1,0)=3; //GEK
 
   std::vector<std::string> test_corr_func_family(5), test_corr_func_param(5), 
-    model_name(2), output_name_2D(3), handle_ill_cond(2);
+    model_name(2), output_name_2D(3), handle_ill_cond(3);
   test_corr_func_family[0]="matern"; test_corr_func_param[0]="infinity";
   test_corr_func_family[1]="matern"; test_corr_func_param[1]="2.5";
   test_corr_func_family[2]="matern"; test_corr_func_param[2]="1.5";
@@ -1744,7 +1744,8 @@ void nightly_test()
   output_name_2D[2]="Herbie";
 
   handle_ill_cond[0]="via pivoted Cholesky";
-  handle_ill_cond[1]="by adding a nugget";
+  handle_ill_cond[1]="by adding a nugget found from rcond(R)";
+  handle_ill_cond[2]="by adding a nugget where rcond(R)==0.0 is assumed";
 
 
   km_params["order"] = "2";
@@ -1779,10 +1780,14 @@ void nightly_test()
 	
 	km_params[test_corr_func_family[icorrfunc]]=
 	  test_corr_func_param[icorrfunc];
-	for(int icond=0; icond<2; ++icond) {
+
+	for(int icond=0; icond<3; ++icond) {
 	  if(icond==1)
 	    km_params["find_nugget"]="1";
-	  
+	  else if(icond==2)
+	    km_params["find_nugget"]="0";
+
+
 	  
 	  nkm::MtxDbl error_stats(3,4); error_stats.zero();
 	  nkm::MtxDbl d1error_stats(2,4); d1error_stats.zero();
@@ -1897,7 +1902,7 @@ void nightly_test()
 
 
 	  //fprintf(fpout,"%12d, %19.6g, %20.6g, %17.6g, %18.6g\n",10,
-	  if(icond==1)
+	  if((icond==1)||(icond==2))
 	    km_params.erase("find_nugget");	  
 	}//icond for 2D: Pivoted Cholesky, add a nugget
 	
@@ -1918,10 +1923,13 @@ void nightly_test()
       
       km_params[test_corr_func_family[icorrfunc]]=
 	test_corr_func_param[icorrfunc];
-      for(int icond=0; icond<2; ++icond) {
+
+      for(int icond=0; icond<3; ++icond) {
 	if(icond==1)
 	  km_params["find_nugget"]="1";
-	
+	else if(icond==2)
+	  km_params["find_nugget"]="0";
+
 	nkm::MtxDbl error_stats(2,4); error_stats.zero();
 	nkm::KrigingModel km50( sdpav50 , km_params); 
 	std::cout << "****************************************************************************\n"
@@ -1978,8 +1986,10 @@ void nightly_test()
 		    << ", " << setw(18) << setprecision(7) << error_stats(1,3);
 	std::cout << std::endl;
 	
-	if(icond==1) //if use nugget then it doesn't use pivoted Cholesky
+	if((icond==1)||(icond==2)) {
+	  //if use nugget then it doesn't use pivoted Cholesky
 	  km_params.erase("find_nugget");	  
+	}
       } //icond for Paviani: pivoted Cholesky, add a nugget
       //can't specify both Matern and Powered Exponential or will get an error
       km_params.erase(test_corr_func_family[icorrfunc]);

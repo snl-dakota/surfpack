@@ -59,7 +59,7 @@ public:
   // Creating KrigingModels
 
   /// Default constructor
-  KrigingModel() : ifChooseNug(false), ifPrescribedNug(false), nug(0.0), XR(sdBuild.xr)
+  KrigingModel() : ifChooseNug(false), ifAssumeRcondZero(false), ifPrescribedNug(false), nug(0.0), XR(sdBuild.xr)
   { /* empty constructor */ };
   
   /// Standard KrigingModel constructor
@@ -486,6 +486,20 @@ private:
       user still has the option to prescribe a nugget the Nugget must be 
       a positive number */
   bool ifChooseNug; 
+  
+  /** iff ifChooseNug==true then ifAssumeRcondZero matters
+      * for normal operations (ifAssumeRcondZero==false) a LAPACK Cholesky 
+        factorization is performed, from that rcondR is calculated
+      * if ifAssumeRcondZero==true then we skip this first LAPACK Cholesky and 
+        assume rcondR=0.0 (to speed things up)
+      If rcondR says R is ill conditioned, then the minimum size nugget that 
+      is guaranteed to fix worst case ill-conditioning for the rcondR is 
+      chosen, that nugget is applied to the diagonal of R, and a "second" 
+      LAPACK Cholesky (this time of R with the nugget) is performed.
+      ifAssumeRcondZero==true is a way to speed things up by always adding 
+      a still very small nugget, it can be particulary useful for Gradient
+      Enhanced Kriging if you would like to add a nugget.*/
+  bool ifAssumeRcondZero;
 
   /** if ifPrescribedNug==true then the user has prescribed a nugget, 
       (think of the nugget a measurement noise term, it should be 

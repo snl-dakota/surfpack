@@ -460,10 +460,14 @@ KrigingModel::KrigingModel(const SurfData& sd, const ParamMap& params)
 
   ifChooseNug = false;
   //ifChooseNug = true;
+  ifAssumeRcondZero=false;
   param_it = params.find("find_nugget");
-  if (param_it != params.end() && param_it->second.size() > 0)
+  if (param_it != params.end() && param_it->second.size() > 0) {
     ifChooseNug = true; 
-
+    int zero_or_one = std::atoi(param_it->second.c_str());
+    if(zero_or_one==0) 
+      ifAssumeRcondZero=true;
+  }
   //ifChooseNug = true ; std::cout << "ifChooseNug=" << ifChooseNug << "\n";
 
   // fixed value for now
@@ -789,7 +793,6 @@ std::string KrigingModel::model_summary_string() const {
   scaler.unScaleXrDist(temp_out_corr_lengths);
   
   //printf("numPoints=%d numTrend=%d numPointsKeep=%d numWholePointsKeep=%d numExtraDerKeep=%d\n",numPoints,numTrend(polyOrder,0),numPointsKeep,numWholePointsKeep,numExtraDerKeep);
-
 
   std::ostringstream oss;
   oss << "--- Surfpack Kriging Diagnostics ---\n";
@@ -3443,32 +3446,39 @@ void KrigingModel::nuggetSelectingCholR(){
     assert(false);
   }
   numWholePointsKeep=numPointsKeep=numPoints;
-  //point order is the default point order
-  for(int ipt=0; ipt<numPointsKeep; ++ipt)
-    iPtsKeep(ipt,0)=ipt;
-  //but if GEK is used I still need to reorder from derivative submatrix 
-  //blocks to whole point order  
-  reorderCopyRtoRChol();  
 
-  //See the end of the KrigingModel constructor for why Y and Gtran are
-  //what we already need them to be.
-  //the maximumAllowedPolyOrder given the number of Points is already 
-  //selected, and Gtran is already what we need it to be
-
-  nug=0.0;  
   double min_allowed_rcond=1.0/maxCondNum;
   int ld_RChol=RChol.getNRowsAct();
-  int chol_info;
+  rcondDblWork.newSize(3*ld_RChol,1);
+  rcondIntWork.newSize(ld_RChol,1);
   scaleRChol.newSize(numEqnAvail,1); //scaling/equilibrating is only 
   //necessary if GEK is used (because Kriging already has all ones on 
   //the diagonal of R; GEK doesn't) but the generic Cholesky 
   //factorization won't know in advance whether it's needed or not
-  rcondDblWork.newSize(3*ld_RChol,1);
-  rcondIntWork.newSize(ld_RChol,1);
   //you can calculate rcond essentially "for free" if you do it at the 
   //same time as the Cholesky factorization
-  Chol_fact_workspace(RChol,scaleRChol,rcondDblWork,rcondIntWork,
-		      chol_info,rcondR);
+  int chol_info;
+
+  //point order is the default point order
+  for(int ipt=0; ipt<numPointsKeep; ++ipt)
+    iPtsKeep(ipt,0)=ipt;
+  if(ifAssumeRcondZero==true) 
+    rcondR=0.0;
+  else {
+    //but if GEK is used I still need to reorder from derivative submatrix 
+    //blocks to whole point order  
+    reorderCopyRtoRChol();  
+    
+    //See the end of the KrigingModel constructor for why Y and Gtran are
+    //what we already need them to be.
+    //the maximumAllowedPolyOrder given the number of Points is already 
+    //selected, and Gtran is already what we need it to be
+    
+    nug=0.0;  
+    Chol_fact_workspace(RChol,scaleRChol,rcondDblWork,rcondIntWork,
+			chol_info,rcondR);
+  }
+
   //this rcondR is for the equilibrated R/RChol (so pretend it has all
   //ones on the diagonal)
   if(rcondR<=min_allowed_rcond) {
