@@ -845,6 +845,7 @@ void nkm::KrigingModel::serialize(Archive & archive,
   archive & numConFunc;
   archive & maxCondNum;
   archive & ifChooseNug;
+  archive & ifAssumeRcondZero;
   archive & ifPrescribedNug;
   archive & nug;
   archive & iPtsKeep;
