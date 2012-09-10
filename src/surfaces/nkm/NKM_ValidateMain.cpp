@@ -507,19 +507,19 @@ int main(int argc, char* argv[])
     std::string optimization_method;
     { //{ is for scoping
       std::ostringstream oss;
-      oss << argv[3];
+      oss << argv[4];
       optimization_method = oss.str();
     }
     std::string corr_func_family;
     { //{ is for scoping
       std::ostringstream oss;
-      oss << argv[3];
+      oss << argv[5];
       corr_func_family = oss.str();
     }
     std::string corr_func_param;
     { //{ is for scoping
       std::ostringstream oss;
-      oss << argv[3];
+      oss << argv[6];
       corr_func_param = oss.str();
     }
     GPAIS_build_and_eval_mean_adjvar(Nvarsr, model_type, optimization_method,
