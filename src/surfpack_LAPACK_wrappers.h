@@ -162,7 +162,7 @@ void DGETRI_F77(const int* n, double* a, const int* lda, const int* ipiv,
 		double* work, const int* lwork, int* info);
 
 // solve A*X=B for X, where A={A || A^T} after A has been LU factorized (i.e., call dgetrf on the matrix first)
-void DGETRS_F77(char* transLU, const int* n, const int* nRHS, 
+void DGETRS_F77(const char* transLU, const int* n, const int* nRHS,
 		const double* LU, const int* ldLU , const int* ipiv, 
 		double* RHS, const int* ldRHS, int* info);
 
@@ -175,8 +175,9 @@ double DLANGE_F77(char *whichnorm, int *M, int *N, const double *A, int *LDA,
 		  double *work);
 
 //function to compute the condition number of a matrix
-void DGECON_F77(char *whichnorm, int *N, const double *ALU, int *LDA, double *anorm,
-		double *rcond, double *work, int *iwork, int *info);
+void DGECON_F77(const char *whichnorm, const int *N, const double *ALU,
+        const int *LDA, const double *anorm,
+        double *rcond, double *work, int *iwork, int *info);
 
 // Least-squares solution to linear system of equations
 void DGELS_F77(const char* trans, const int* nrows, const int* ncols,
