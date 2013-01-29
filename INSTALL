@@ -10,38 +10,35 @@ This document has been modified from the default INSTALL document for
 the GNU autotools.
 
 
-
-
-
--------------------------------------------------------------------------
 -------------------------------------------------------------------------
 READ THIS FIRST
-                  READ THIS FIRST
-                                    READ THIS FIRST
-                                                      READ THIS FIRST
--------------------------------------------------------------------------
 -------------------------------------------------------------------------
 
+Autotools builds of Surfpack are deprecated, except for maintainters
+of Surfpack's standalone interpreter.  Most users will want to use
+binary distributions or configure with CMake instead if compiling from
+source.  Helpful CMake options:
 
-NOTE:
-1. If you just want to use the pre-compiled version of Surfpack, you
-   don't perform any of the installation steps listed below.
+  BLAS_LIBS
+  LAPACK_LIBS
+  SURFPACK_STANDALONE: Enable compilation of surfpack executables (default off)
+  SURFPACK_HAVE_BOOST_SERIALIZATION: Enable model save/load
+  Surfpack_ENABLE_DEBUG: default off
+  Surfpack_NKM_Tests: Build the NKM test binaries (default off)
 
-2. If you do want to install Surfpack (i.e., compile the Surfpack source
-   code into an executable file), then keep reading.
+For additional CMake guidance, refer to the Dakota installation
+information at http://dakota.sandia.gov.
 
-
+ATTENTION: The following directions are for configuring with autotools
+to compile Surfpack from source.  This process is deprecated and these
+instructions are not maintained.
 
 -------------------------------------------------------------------------
--------------------------------------------------------------------------
 
 
 
-
-
-
-
-Basic Installation
+Basic Installation 
+(from source)
 =====================
 
 

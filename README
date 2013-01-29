@@ -11,14 +11,16 @@ Eric Cyr
 Shannon L. Brown
 Laura P. Swiler
 Michael S. Eldred
+Keith R. Dalbey
+Brian M. Adams
 
 Contact:
-Anthony A. Giunta
+Brian M. Adams
 Sandia National Laboratories
-P.O. Box 5800, Mail Stop 0828
-Albuquerque, NM 87185-0828
-Email: surfpack@scico.sandia.gov
-Web: http://endo.sandia.gov/Surfpack
+P.O. Box 5800, Mail Stop 1318
+Albuquerque, NM 87185-1318
+Email: surfpack-developers@development.sandia.gov
+Web: http://dakota.sandia.gov/packages/surfpack
 
 ------------------------------------------------------------------------------
 License:
@@ -53,7 +55,7 @@ a standalone program with a simple shell interface.
 Surfpack References:
 
 General Information on Surfpack
-Web: http://endo.sandia.gov/Surfpack
+Web: http://dakota.sandia.gov/packages/surfpack
 Surfpack User's Manual (available on the website)
 
 
@@ -62,8 +64,5 @@ Technical Documents:
 Giunta, A. A., Swiler, L. P., Brown, S. L., Eldred, M. S., Richards, M. D., 
 and Cyr, E. C., "The Surfpack Software Library for Surrogate Modeling of 
 Sparse Irregularly Spaced Multidimensional Data," (to appear) 11th AIAA/ISSMO
-Multidisciplinary Analysis and Optimization Conference, AIAA Paper 2006-XXXX,
+Multidisciplinary Analysis and Optimization Conference, AIAA Paper 2006-7049,
 Portsmouth, VA, 2006.
-
-
---end--
