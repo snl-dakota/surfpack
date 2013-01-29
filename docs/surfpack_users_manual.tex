@@ -16,14 +16,14 @@
 
 \title{Surfpack User's Manual \\ Version 1.1}
 
-\author{Keith R. Dalbey, Anthony A. Giunta$^1$, Mark D. Richards$^2$, Eric C. Cyr$^2$ \\Laura P. Swiler$^1$, Shane L. Brown$^1$, Michael S. Eldred$^1$}
+\author{Keith R. Dalbey$^1$, Anthony A. Giunta$^1$, Mark D. Richards$^2$, Eric C. Cyr$^1$ \\Laura P. Swiler$^1$, Shane L. Brown$^1$, Michael S. Eldred$^1$, Brian M. Adams$^1$}
 
 \maketitle
 
 
 \begin{center}
 $^1$Sandia National Laboratories*\\P.O. Box 5800, Mail Stop 1318\\Albuquerque, NM 87185-1318 USA \\
-Email: surfpack@scico.sandia.gov \\ Web: http://endo.sandia.gov/Surfpack
+Email: surfpack-developers@development.sandia.gov \\ Web: http://dakota.sandia.gov/packages/surfpack
 \end{center}
 
 \bigbreak
@@ -67,7 +67,20 @@ Surfpack's API includes a small set of commands, centered on the following gener
 
 
 \section{Installation}\label{sec:installation}
-Surfpack is being developed primarily under Linux and is targeted to all flavors of UNIX.  Platforms on which Surfpack has been successfully built include Linux, SunOS, IRIX, OSF, and AIX.  Surfpack does not currently build under Windows or Mac OS X; these may be supported in future releases.
+Surfpack is being developed primarily under Linux and is targeted to
+all flavors of UNIX.  Platforms on which Surfpack has been
+successfully built include Linux, SunOS, IRIX, OSF, AIX, Windows
+(Cygwin), and Mac OS X.  Native Visual C++ compilation is not
+currently supported.
+
+\subsection{Obtaining Surfpack}
+Surfpack source packages are distributed from
+\url{http://dakota.sandia.gov/packages/surfpack}.  It is also included
+in all Dakota distributions and can be obtained via anonymous
+Subversion checkout from
+\url{https://software.sandia.gov/svn/public/surfpack}.  Binary
+packages are no longer supported.
+
 \subsection{Requirements}
 \begin{itemize}
 \item {\bf C++}.  A majority of the source code for Surfpack is written in C++.  Surfpack makes frequent use of the standard C and C++ libraries, including the Standard Template Library.  The Kriging algorithm calls some FORTRAN code (pivoted Cholesky and some optimizers such as CONMIN).  
@@ -77,96 +90,36 @@ Surfpack is being developed primarily under Linux and is targeted to all flavors
 \end{itemize}
 \subsection{Options}
 \begin{itemize}
+\item {\bf Boost serialization}.  As of Version 1.1, Surfpack's model save/load facility requires the Boost serialization binary component.
 \item {\bf CPP Unit}.  A suite of unit tests is available on platforms where CPP Unit has been built.
 \item {\bf lex and yacc}. Surfpack may be used as a library or as a stand-alone program.  The stand-alone executable requires lex and yacc (a lexical analyzer generator and parser generator, respectively), which are normally distributed with Unix-like operating systems.  They are also freely available on the Internet.
 \end{itemize}
 
 \subsection{Standard build}
-The Surfpack build system uses the GNU autotools: \texttt{autoconf}, \texttt{automake}, and
-\texttt{libtool}.  The autotools do not need to be installed to build Surfpack, but they
-should be used by developers who wish to extend Surfpack.  To build Surfpack
-from source, first obtain the distribution tarball \texttt{surfpack-1.0.tar.gz.}  From
-the directory containing this file, execute the following commands:
-\begin{enumerate}
-\item \texttt{gunzip surfpack-1.0.tar.gz}
-\item \texttt{tar xf surfpack-1.0.tar}
-\item \texttt{cd surfpack-1.0}
-\item \texttt{./configure}
-\item \texttt{make}
-\item \texttt{make install}
-\end{enumerate}
-
-Users with access to Surfpack's SVN repository may checkout the source directly
-instead of downloading the gzipped distribution tar-file.  In this case, the
-user must manually run the GNU autotools to create the \texttt{configure} script and
-\texttt{Makefile.in} files.  The appropriate sequence of commands would be
-\begin{enumerate}
-\item \texttt{svn checkout Surfpack}
-\item \texttt{cd Surfpack}
-\item \texttt{autoreconf --install}
-\item \texttt{items} 4--6 \texttt{above}
-\end{enumerate}
-By default, the Surfpack library is installed in \texttt{/usr/local/lib}.  The stand-alone executable 
-\texttt{surfpack} is placed in \texttt{/usr/local/bin}.  Adding files to
-these directories generally requires super-user privileges.  To install Surfpack
-in another location, use the \texttt{--prefix} option to \texttt{configure}.  For example, the command
-
-\verbatimtabinput{Installation/configure_prefix.txt}
-would lead to the installation of the Surfpack library and executable as
-\texttt{/home/userid/lib/libsurfpack.a} and \texttt{/home/userid/bin/surfpack}
- respectively. If
-these files are not present at the conclusion of the build, see Section~\ref{sec:installtrouble} for
-installation troubleshooting tips.
-\subsection{Advanced options}\label{sec:advancedinstall}
-Most deviations from the standard build process involve special arguments to
-\texttt{configure}.
-\subsubsection{Specifying a Compiler}
-By default, \texttt{configure} will use the first available C++ compiler from the
-following list: \texttt{xlC, CC, cxx, c++, g++}.  To override this selection process, use
-the \texttt{CXX} option ({\em i.e.}, \texttt{./configure CXX=g++}).  Use the \texttt{F77} option to manually specify the FORTRAN 77 compiler.
-
-\subsubsection{Specifying Non-standard Locations for Libraries}
-Surfpack requires the presence of libraries for BLAS and LAPACK, as well as the
-standard C, C++, and FORTRAN 77 libraries.  Most compilers search for libraries
-based on the contents of certain shell environment variables ({\em e.g.}, \texttt{LIB\_PATH,
-LD\_LIBRARY\_PATH}).  Some libraries may be present on a particular system, but
-if the appropriate environment variables are not set correctly, they will not be
-found during the Surfpack build process.  If the names of the library path
-environment variables are known, the directories containing the libraries on
-which Surfpack depends should be added to the library search path.  Otherwise,
-additional directories may be added to the linker's search path by using
-\texttt{configure}'s \texttt{LD\_FLAGS} argument.  Directories in the search path should be
-prepended by \texttt{-L} and separated by spaces.  The entire list should be enclosed
-in quotation marks `` '': 
-\texttt{./configure LD\_FLAGS="-L/home/userid/lib -L/usr/pub/lib"}
+To compile Surfpack from source, extract the source, configure with
+CMake, and compile with your native make system, for example:
+\begin{verbatim}
+  tar xzf surfpack-1.1.tar.gz
+  cd surfpack-1.1
+  mkdir build && cd build
+  cmake -DCMAKE_INSTALL_PREFIX=/apps/surfpack -DCMAKE_BUILD_TYPE=Release ..
+  make -j 4
+  [make install]
+\end{verbatim}
 
 \subsection{Testing the Installation}
-Surfpack is distributed with its test suite.  The unit testing suite utilizes
-the CPP Unit libraries (\url{http://www.sourceforge.net/projects/cppunit}), which must be present if the tests are to be executed.  If the CPP Unit libraries are
-installed in a location that is not automatically searched by the compiler, the
-full path of the libraries should be specified as an argument to \texttt{configure}:
-\verbatimtabinput{Installation/configure_with_cppunit.txt}
-To run the test suite, type \texttt{make check} at the command line, after the
-successful execution of \texttt{make} or \texttt{make install}.  CPP Unit
-summarize the results of the tests.
-
-\subsection{Installation Troubleshooting}\label{sec:installtrouble}
-This section enumerates possible causes and solutions for build failures.
-\subsubsection{Configuration failures}
-If the \texttt{configure} terminates with an error, then appropriate makefiles
-have not been created and Surfpack cannot be built.  A failure during \texttt{ 
-configure} often means that some essential program or feature was not
-detected ({\em e.g.}, a C++ compiler). If \texttt{configure} fails to find features that are
-believed to be present on the system, check to make sure that these features are
-located in standard places or specify them explicitly as arguments to \texttt{configure}.
-See Section~\ref{sec:advancedinstall} for a list of commonly used arguments to \texttt{configure}.  If required
-packages are not present on the system, they can usually be downloaded for free
-from the Internet.  For example, BLAS and LAPACK are available from \texttt{netlib.org}.
-\subsubsection{Failure during \texttt{make install}}
-Errors during the execution of \texttt{make install} are usually a result of inadequate permissions. By default, the
-Surfpack library and executable are installed under \texttt{/usr/local}, which is usually
-writable only by the superuser.  To install Surfpack in an alternative
-directory, use the \texttt{--prefix} option to \texttt{configure}. 
+\textit{Installation testing is not currently supported.}  Surfpack is
+distributed with its test suite.  The unit testing suite utilizes the
+CPP Unit libraries
+(\url{http://www.sourceforge.net/projects/cppunit}), which must be
+present if the tests are to be executed.  If the CPP Unit libraries
+are installed in a location that is not automatically searched by the
+compiler, the full path of the libraries should be specified as an
+argument to \texttt{configure}:
+\verbatimtabinput{Installation/configure_with_cppunit.txt} To run the
+test suite, type \texttt{make check} at the command line, after the
+successful execution of \texttt{make} or \texttt{make install}.  CPP
+Unit summarize the results of the tests.
 
 \section{Getting Started}
 This chapter outlines the basic commands in the Surfpack API.  Normally, a script file
