@@ -5,6 +5,12 @@ using std::cout;
 using std::endl;
 using std::string;
 
+
+#ifdef SURFPACK_HAVE_BOOST_SERIALIZATION
+BOOST_CLASS_EXPORT(MovingLeastSquaresModel)
+#endif
+
+
 double weight(const VecDbl xi, const VecDbl x, unsigned continuity = 1, 
 	      double radius = 1.0)
 {

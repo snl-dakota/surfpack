@@ -99,8 +99,6 @@ void KrigingModel::serialize(Archive & archive,
   archive & boost::serialization::base_object<SurfpackModel>(*this);
   archive & nkmKrigingModel;
 }
-
-BOOST_CLASS_EXPORT(KrigingModel)
-
 #endif
+
 #endif

@@ -1,6 +1,10 @@
 #include "NKM_SurfMat.hpp" 
 
 
+// export for each template type for now (currently only double and int)
+BOOST_CLASS_EXPORT(nkm::SurfMat<double>)
+BOOST_CLASS_EXPORT(nkm::SurfMat<int>)
+
 
 namespace nkm {
 

@@ -8,6 +8,9 @@ using std::endl;
 using std::vector;
 using std::string;
 
+#ifdef SURFPACK_HAVE_BOOST_SERIALIZATION
+BOOST_CLASS_EXPORT_IMPLEMENT(SurfpackModel)
+#endif
 
 ///////////////////////////////////////////////////////////
 ///	Surfpack Model 

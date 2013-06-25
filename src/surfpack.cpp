@@ -21,6 +21,21 @@ using std::setw;
 using std::string;
 using std::vector;
 
+
+// BMA: Debugging KrigingModel serialization...
+// #include "KrigingModel.h"
+// #include <boost/archive/text_iarchive.hpp>
+// #include <boost/archive/text_oarchive.hpp>
+
+// template void KrigingModel::serialize<boost::archive::text_iarchive>(
+//     boost::archive::text_iarchive & ar, 
+//     const unsigned int file_version
+// );
+// template void KrigingModel::serialize<boost::archive::text_oarchive>(
+//     boost::archive::text_oarchive & ar, 
+//     const unsigned int file_version
+// );
+
 // _____________________________________________________________________________
 // Debugging Output Strategy 
 // _____________________________________________________________________________

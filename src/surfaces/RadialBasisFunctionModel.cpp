@@ -13,6 +13,12 @@ using std::min;
 using surfpack::shared_rng;
 using surfpack::fromVec;
 
+
+#ifdef SURFPACK_HAVE_BOOST_SERIALIZATION
+BOOST_CLASS_EXPORT(RadialBasisFunctionModel)
+#endif
+
+
 SurfPoint computeCentroid(const SurfData& sd)
 {
   assert(sd.size());

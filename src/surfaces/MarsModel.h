@@ -107,8 +107,6 @@ void MarsModel::serialize(Archive & archive, const unsigned int version)
   archive & interpolation;
 }
 
-BOOST_CLASS_EXPORT(MarsModel)
-
 #endif
 
 

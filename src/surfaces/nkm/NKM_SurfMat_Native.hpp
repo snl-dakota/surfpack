@@ -1499,9 +1499,6 @@ void nkm::SurfMat<T>::serialize(Archive & archive,
   archive & jtoi;
   archive & tol; 
 }
-// export for each template type for now (currently only double and int)
-BOOST_CLASS_EXPORT(nkm::SurfMat<double>)
-BOOST_CLASS_EXPORT(nkm::SurfMat<int>)
 #endif
 
 #endif // __SURFMAT_HPP__

@@ -175,7 +175,6 @@ void nkm::SurfPackModel::serialize(Archive & archive,
   archive & outputLevel;
 }
 BOOST_SERIALIZATION_ASSUME_ABSTRACT(nkm::SurfPackModel)
-BOOST_CLASS_EXPORT_IMPLEMENT(nkm::SurfPackModel)
 #endif
 
 #endif

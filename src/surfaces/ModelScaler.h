@@ -157,7 +157,6 @@ void ModelScaler::serialize(Archive & archive, const unsigned int version)
 }
 
 BOOST_SERIALIZATION_ASSUME_ABSTRACT(ModelScaler)
-BOOST_CLASS_EXPORT_IMPLEMENT(ModelScaler)
 
 
 template<class Archive> 
@@ -167,8 +166,6 @@ void NonScaler::serialize(Archive & archive, const unsigned int version)
   archive & boost::serialization::base_object<ModelScaler>(*this);
   // Nothing to serialize
 }
-
-BOOST_CLASS_EXPORT(NonScaler)
 
 
 template<class Archive> 
@@ -181,11 +178,7 @@ void NormalizingScaler::serialize(Archive & archive, const unsigned int version)
   archive & result;
 }
 
-BOOST_CLASS_EXPORT(NormalizingScaler)
-
 #endif
-
-
 
 #endif  // __MODEL_SCALER_H__
 

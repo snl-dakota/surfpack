@@ -9,6 +9,12 @@ using std::endl;
 using std::accumulate;
 using std::string;
 
+
+#ifdef SURFPACK_HAVE_BOOST_SERIALIZATION
+BOOST_CLASS_EXPORT(LinearRegressionModel)
+#endif
+
+
 double LRMBasisSet::eval(unsigned index, const VecDbl& x) const
 {
   assert(index < bases.size());

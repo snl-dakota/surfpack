@@ -4,6 +4,7 @@ set(nkm_sources
   NKM_Optimize.cpp
   NKM_SurfData.cpp
   NKM_SurfPack.cpp
+  NKM_SurfPackModel.cpp
   NKM_SurfMat.cpp
   NKM_PivotChol.f
 )

@@ -112,6 +112,7 @@ protected:
 
 
 #ifdef SURFPACK_HAVE_BOOST_SERIALIZATION
+
 template< class Archive >
 void DirectANNBasisSet::serialize(Archive & archive, 
 				  const unsigned int version)
@@ -128,9 +129,6 @@ void DirectANNModel::serialize(Archive & archive,
   archive & coeffs;
 }
 
-BOOST_CLASS_EXPORT(DirectANNModel)
 #endif
-
-
 
 #endif

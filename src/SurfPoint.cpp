@@ -21,6 +21,12 @@ using std::setw;
 using std::string;
 using std::vector;
 
+
+#ifdef SURFPACK_HAVE_BOOST_SERIALIZATION
+BOOST_CLASS_EXPORT(SurfPoint)
+#endif
+
+
 // ____________________________________________________________________________
 // Creation, Destruction, Initialization 
 // ____________________________________________________________________________

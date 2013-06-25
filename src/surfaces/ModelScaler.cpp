@@ -7,6 +7,14 @@ using std::endl;
 using std::vector;
 using std::string;
 
+
+#ifdef SURFPACK_HAVE_BOOST_SERIALIZATION
+BOOST_CLASS_EXPORT_IMPLEMENT(ModelScaler)
+BOOST_CLASS_EXPORT(NonScaler)
+BOOST_CLASS_EXPORT(NormalizingScaler)
+#endif
+
+
 const VecDbl& NonScaler::scale(const VecDbl& unscaled_x) const 
 { 
   return unscaled_x;

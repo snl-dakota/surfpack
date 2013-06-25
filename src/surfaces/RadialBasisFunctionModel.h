@@ -148,8 +148,6 @@ void RadialBasisFunctionModel::serialize(Archive & archive,
   archive & coeffs;
 }
 
-BOOST_CLASS_EXPORT(RadialBasisFunctionModel)
-
 #endif
 
 

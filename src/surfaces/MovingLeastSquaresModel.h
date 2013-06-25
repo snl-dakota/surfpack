@@ -88,7 +88,6 @@ void MovingLeastSquaresModel::serialize(Archive & archive,
   archive & continuity;
 }
 
-BOOST_CLASS_EXPORT(MovingLeastSquaresModel)
 #endif 
 
 #endif

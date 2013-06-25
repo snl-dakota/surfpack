@@ -58,7 +58,7 @@ endif()
 
 # Surfpack optionally uses Boost for serialization
 #??? set(Boost_USE_MULTITHREADED OFF)
-option(SURFPACK_HAVE_BOOST_SERIALIZATION "Use Boost serialization library" ON)
+option(SURFPACK_HAVE_BOOST_SERIALIZATION "Use Boost serialization library" OFF)
 if (SURFPACK_HAVE_BOOST_SERIALIZATION)
   if(Boost_DIR)
     message("in ${CMAKE_CURRENT_BINARY_DIR} Boost_DIR already set: ${Boost_DIR}")

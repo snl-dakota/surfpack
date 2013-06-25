@@ -3,6 +3,11 @@
 #include <iostream>
 #include <iomanip>
 
+#ifdef SURFPACK_HAVE_BOOST_SERIALIZATION
+BOOST_CLASS_EXPORT(nkm::SurfData) 
+BOOST_CLASS_EXPORT(nkm::SurfDataScaler) 
+#endif
+
 namespace nkm {
 
 using namespace std;
@@ -13,6 +18,7 @@ using std::ifstream;
 using std::ofstream;
 using std::ostream;
 using std::ostringstream;
+
 
 /***********************************************************************/
 /***********************************************************************/

@@ -150,7 +150,6 @@ void LinearRegressionModel::serialize(Archive & archive,
   archive & coeffs;
 }
 
-BOOST_CLASS_EXPORT(LinearRegressionModel)
 
 #endif
 

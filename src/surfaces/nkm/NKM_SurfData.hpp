@@ -699,7 +699,6 @@ void nkm::SurfData::serialize(Archive & archive,
   archive & y;
 
 }
-BOOST_CLASS_EXPORT(nkm::SurfData) 
 
 template<class Archive>
 void nkm::SurfDataScaler::serialize(Archive & archive, 
@@ -707,7 +706,6 @@ void nkm::SurfDataScaler::serialize(Archive & archive,
 {
   archive & mySd;
 }
-BOOST_CLASS_EXPORT(nkm::SurfDataScaler) 
 #endif
 
 #endif

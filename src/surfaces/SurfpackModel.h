@@ -168,7 +168,6 @@ void SurfpackModel::serialize(Archive & archive, const unsigned int version)
 }
 
 BOOST_SERIALIZATION_ASSUME_ABSTRACT(SurfpackModel)
-BOOST_CLASS_EXPORT_IMPLEMENT(SurfpackModel)
 
 #endif
 

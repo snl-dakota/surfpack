@@ -8,6 +8,10 @@ using std::cout;
 using std::endl;
 using std::string;
 
+#ifdef SURFPACK_HAVE_BOOST_SERIALIZATION
+BOOST_CLASS_EXPORT(DirectANNModel)
+#endif
+
 DirectANNBasisSet::DirectANNBasisSet(const MtxDbl& weights_in)
   : weights(weights_in)
 {

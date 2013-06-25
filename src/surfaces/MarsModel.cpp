@@ -28,6 +28,11 @@ using std::memcpy;
 using std::memset;
 
 
+#ifdef SURFPACK_HAVE_BOOST_SERIALIZATION
+BOOST_CLASS_EXPORT(MarsModel)
+#endif
+
+
 MarsModel::MarsModel(const unsigned dims, real* fm_in, int fmsize, int* im_in, 
   int imsize, int interp)
   : SurfpackModel(dims), fm(fmsize), im(imsize), interpolation(interp)

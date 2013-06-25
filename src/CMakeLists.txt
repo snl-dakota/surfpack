@@ -20,6 +20,7 @@ set(lib${local_library}_sources
    surfpack.cpp
    surfpack.h
    SurfpackMatrix.h
+   SurfpackMatrix.cpp
    surfpack_system_headers.h
    SurfpackInterface.h
    SurfpackInterface.cpp

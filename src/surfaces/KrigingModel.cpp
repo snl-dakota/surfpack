@@ -14,6 +14,11 @@ using std::vector;
 using std::string;
 
 
+#ifdef SURFPACK_HAVE_BOOST_SERIALIZATION
+BOOST_CLASS_EXPORT(KrigingModel)
+#endif
+
+
 void KrigingModel::
 surfdata_to_nkm_surfdata(const SurfData& sd, nkm::SurfData& nkm_sd)
 {

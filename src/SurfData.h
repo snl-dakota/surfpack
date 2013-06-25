@@ -379,7 +379,6 @@ void SurfData::serialize(Archive & archive,
   archive & fLabels;
   archive & orderedPoints;
 }
-BOOST_CLASS_EXPORT(SurfData)
 #endif
 
 

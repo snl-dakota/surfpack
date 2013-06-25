@@ -906,7 +906,6 @@ void nkm::KrigingModel::serialize(Archive & archive,
   archive & obj;
   //don't archive con, we need it during the construction of a model but not afterward
 }
-BOOST_CLASS_EXPORT(nkm::KrigingModel)
 #endif
 
 #endif

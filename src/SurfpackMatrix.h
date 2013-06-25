@@ -277,8 +277,6 @@ void SurfpackMatrix<T>::serialize(Archive & archive,
   archive & rawData;
 }
 
-// Seems required for each template type (currently double only)
-BOOST_CLASS_EXPORT(SurfpackMatrix<double>) 
 #endif
 
 typedef SurfpackMatrix<double> MtxDbl;

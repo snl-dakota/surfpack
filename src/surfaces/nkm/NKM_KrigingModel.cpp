@@ -6,6 +6,12 @@
 #include <iostream>
 #include <cfloat>
 
+
+#ifdef SURFPACK_HAVE_BOOST_SERIALIZATION
+BOOST_CLASS_EXPORT(nkm::KrigingModel)
+#endif
+
+
 namespace nkm {
 
 using std::cout;

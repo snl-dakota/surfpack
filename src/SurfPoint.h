@@ -259,7 +259,6 @@ void SurfPoint::serialize(Archive & archive,
   archive & fGradients;
   archive & fHessians;
 }
-BOOST_CLASS_EXPORT(SurfPoint)
 #endif
 
 #endif
