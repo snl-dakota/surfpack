@@ -43,13 +43,22 @@ if(SURFPACK_STANDALONE)
     set(SURFPACK_HAVE_BOOST_SERIALIZATION ON CACHE BOOL 
       "Use Boost serialization library")
   endif()
+endif()
+
+option(ENABLE_SPEC_MAINT "Enable Surfpack specification maintenance mode." OFF)
+if(ENABLE_SPEC_MAINT AND NOT UNIX)
+  message(FATAL_ERROR 
+    "Surfpack specification maintenance mode only available on UNIX platforms")
+endif()
+
+if(ENABLE_SPEC_MAINT)
   find_package(BISON)
   find_package(FLEX)
 endif()
 
 # Surfpack optionally uses Boost for serialization
 #??? set(Boost_USE_MULTITHREADED OFF)
-option(SURFPACK_HAVE_BOOST_SERIALIZATION "Use Boost serialization library" OFF)
+option(SURFPACK_HAVE_BOOST_SERIALIZATION "Use Boost serialization library" ON)
 if (SURFPACK_HAVE_BOOST_SERIALIZATION)
   if(Boost_DIR)
     message("in ${CMAKE_CURRENT_BINARY_DIR} Boost_DIR already set: ${Boost_DIR}")
