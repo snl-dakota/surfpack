@@ -1,10 +1,11 @@
 #include "NKM_SurfMat.hpp" 
 
 
+#ifdef SURFPACK_HAVE_BOOST_SERIALIZATION
 // export for each template type for now (currently only double and int)
 BOOST_CLASS_EXPORT(nkm::SurfMat<double>)
 BOOST_CLASS_EXPORT(nkm::SurfMat<int>)
-
+#endif
 
 namespace nkm {
 
