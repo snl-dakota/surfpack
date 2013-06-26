@@ -11,9 +11,9 @@ set(nkm_sources
 
 # Optionally build the ValidateMain binary
 if (Surfpack_NKM_Tests)
-  set(SURFPACK_LIBS "surfpack_interpreter;surfpack")
+  set(SURFPACK_LIBS "surfpack_interpreter;surfpack;surfpack_fortran")
   set(SURFPACK_TPL_LIBS "ncsuopt;conmin")
-  set(SURFPACK_SYSTEM_LIBS "${Boost_LIBRARIES};${LAPACK_LIBS}")
+  set(SURFPACK_SYSTEM_LIBS "${Boost_LIBRARIES};${LAPACK_LIBS};${BLAS_LIBS}")
 
   link_directories(${Surfpack_BINARY_DIR}/src/interpreter)
   add_executable(ValidateMain NKM_ValidateMain.cpp)
