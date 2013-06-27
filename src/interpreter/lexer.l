@@ -14,6 +14,14 @@
 
 /* This tells flex to read only one input file */
 %option noyywrap
+/* Don't include unistd.h for Windows portability */
+%{
+#ifdef _WIN32
+%}
+%option nounistd
+%{
+#endif
+%}
 
 %%
 CreateAxes |

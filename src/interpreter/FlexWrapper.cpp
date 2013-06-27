@@ -11,13 +11,13 @@
 // Symbols and functions that will be implemented through flex
 
 /// The Current token
-extern char* yytext;
+extern "C" char* yytext;
 
 /// The input stream for the lexer
-extern FILE* yyin;
+extern "C" FILE* yyin;
 
 /// The output stream for the lexer
-extern FILE* yyout;
+extern "C" FILE* yyout;
 
 /// The "next token" method-- gets called by bison-generated code
 extern "C" int yylex();

@@ -529,7 +529,13 @@ char *yytext;
 	#include "surfparse.h"
 	extern void appendToken(const char*);
 /* This tells flex to read only one input file */
-#line 533 "/home/briadam/dakota/trunk/packages/surfpack/src/interpreter/lexer.c"
+/* Don't include unistd.h for Windows portability */
+#line 19 "lexer.l"
+#ifdef _WIN32
+#define YY_NO_UNISTD_H 1
+#line 23 "lexer.l"
+#endif
+#line 539 "/home/briadam/dakota/trunk/packages/surfpack/src/interpreter/lexer.c"
 
 #define INITIAL 0
 
@@ -711,9 +717,9 @@ YY_DECL
 	register char *yy_cp, *yy_bp;
 	register int yy_act;
     
-#line 18 "lexer.l"
+#line 26 "lexer.l"
 
-#line 717 "/home/briadam/dakota/trunk/packages/surfpack/src/interpreter/lexer.c"
+#line 723 "/home/briadam/dakota/trunk/packages/surfpack/src/interpreter/lexer.c"
 
 	if ( !(yy_init) )
 		{
@@ -797,123 +803,123 @@ do_action:	/* This label is used only to access EOF actions. */
 			goto yy_find_action;
 
 case 1:
-#line 20 "lexer.l"
+#line 28 "lexer.l"
 case 2:
-#line 21 "lexer.l"
+#line 29 "lexer.l"
 case 3:
-#line 22 "lexer.l"
+#line 30 "lexer.l"
 case 4:
-#line 23 "lexer.l"
+#line 31 "lexer.l"
 case 5:
-#line 24 "lexer.l"
+#line 32 "lexer.l"
 case 6:
-#line 25 "lexer.l"
+#line 33 "lexer.l"
 case 7:
 YY_RULE_SETUP
-#line 25 "lexer.l"
+#line 33 "lexer.l"
 { appendToken(yytext); return STANDARD_COMMAND; }
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 26 "lexer.l"
+#line 34 "lexer.l"
 { appendToken(yytext); return IDENTIFIER; }
 	YY_BREAK
 case 9:
 /* rule 9 can match eol */
 YY_RULE_SETUP
-#line 27 "lexer.l"
+#line 35 "lexer.l"
 { appendToken(yytext); return STRING; }
 	YY_BREAK
 case 10:
 /* rule 10 can match eol */
 YY_RULE_SETUP
-#line 28 "lexer.l"
+#line 36 "lexer.l"
 {  }
 	YY_BREAK
 case 11:
 /* rule 11 can match eol */
 YY_RULE_SETUP
-#line 29 "lexer.l"
+#line 37 "lexer.l"
 { appendToken(yytext); return SHELL_COMMAND; } 
 	YY_BREAK
 case 12:
 /* rule 12 can match eol */
 YY_RULE_SETUP
-#line 30 "lexer.l"
+#line 38 "lexer.l"
 { appendToken(yytext); return SHELL_COMMAND; } 
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 31 "lexer.l"
+#line 39 "lexer.l"
 { appendToken(yytext); return INTEGER; }
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 32 "lexer.l"
+#line 40 "lexer.l"
 { appendToken(yytext); return REAL; }
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 33 "lexer.l"
+#line 41 "lexer.l"
 { appendToken(yytext); return '('; }
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 34 "lexer.l"
+#line 42 "lexer.l"
 { appendToken(yytext); return ')'; }
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 35 "lexer.l"
+#line 43 "lexer.l"
 { appendToken(yytext); return '{'; }
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 36 "lexer.l"
+#line 44 "lexer.l"
 { appendToken(yytext); return '}'; }
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 37 "lexer.l"
+#line 45 "lexer.l"
 { appendToken(yytext); return ','; }
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 38 "lexer.l"
+#line 46 "lexer.l"
 { appendToken(yytext); return '='; }
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 39 "lexer.l"
+#line 47 "lexer.l"
 { appendToken(yytext); return '['; }
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 40 "lexer.l"
+#line 48 "lexer.l"
 { appendToken(yytext); return ']'; }
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 41 "lexer.l"
+#line 49 "lexer.l"
 { appendToken(yytext); }
 	YY_BREAK
 case 24:
 /* rule 24 can match eol */
 YY_RULE_SETUP
-#line 42 "lexer.l"
+#line 50 "lexer.l"
 
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
-#line 43 "lexer.l"
+#line 51 "lexer.l"
 { appendToken(yytext); }
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
-#line 44 "lexer.l"
+#line 52 "lexer.l"
 ECHO;
 	YY_BREAK
-#line 917 "/home/briadam/dakota/trunk/packages/surfpack/src/interpreter/lexer.c"
+#line 923 "/home/briadam/dakota/trunk/packages/surfpack/src/interpreter/lexer.c"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -1911,4 +1917,4 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 44 "lexer.l"
+#line 52 "lexer.l"
