@@ -80,3 +80,10 @@ install(TARGETS ${local_library} EXPORT ${ExportTarget} DESTINATION lib)
 install(TARGETS ${local_library}_fortran EXPORT ${ExportTarget} DESTINATION lib)
 
 install(FILES SurfpackMatrix.h surfpack_system_headers.h DESTINATION include)
+
+
+# Surfpack C interface, compiled into separate library for now, though
+# no reason couldn't be directly in libsurfpack.
+add_library(surfpack_c_interface surfpack_c_interface.cpp)
+install(TARGETS surfpack_c_interface DESTINATION lib)
+install(FILES surfpack_c_interface.h DESTINATION include)
