@@ -2,10 +2,11 @@ cmake_minimum_required(VERSION 2.8)
 
 project("SurfpackCInterfaceDemo" C)
 
-set(Surfpack_INCLUDE_DIR "/apps/surfpack/trunk/include")
-set(Surfpack_LIBRARY_DIR "/apps/surfpack/trunk/lib")
-set(Boost_LIBRARY_DIR "/apps/boost/1.49/lib")
-set(LinAlg_LIBRARY_DIR "/usr/lib64")
+# Set these to the installed location of a surfpack distro to link against it
+#set(Surfpack_INCLUDE_DIR "/apps/surfpack/trunk/include")
+#set(Surfpack_LIBRARY_DIR "/apps/surfpack/trunk/lib")
+#set(Boost_LIBRARY_DIR "/apps/boost/1.49/lib")
+#set(LinAlg_LIBRARY_DIR "/usr/lib64")
 
 set(SURFPACK_LIBS "surfpack;surfpack_fortran")
 set(SURFPACK_TPL_LIBS "ncsuopt;conmin")

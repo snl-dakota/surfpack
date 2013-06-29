@@ -29,6 +29,7 @@ static SurfpackModel* surfpackCModel = NULL;
 extern "C" 
 int surfpack_load_model(const char * const model_filename)
 {
+#ifdef SURFPACK_HAVE_BOOST_SERIALIZATION
   bool success = true;
   try {
 
@@ -69,6 +70,11 @@ int surfpack_load_model(const char * const model_filename)
     std::cerr << "Error loading surfpack model! Unknown error." << std::endl;
     success = false;
   }
+#else
+  std::cerr << "surfpack load requires compilation with Boost serialization." 
+	    << std::endl;
+  bool success = false;
+#endif
 
   return (success ? 0 : 1);
 }
