@@ -2,6 +2,12 @@ cmake_minimum_required(VERSION 2.8)
 
 project("Surfpack" CXX C Fortran)
 
+
+# Autotools items not currently address in Surfpack's CMake:
+# * CPPUnit
+# * system_tests
+
+
 # Set the export name for install targets; parent packages likely want
 # to override this to the name of their target
 set(ExportTarget ${CMAKE_PROJECT_NAME}-targets CACHE STRING 
