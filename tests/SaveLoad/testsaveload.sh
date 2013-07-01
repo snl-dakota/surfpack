@@ -1,6 +1,6 @@
 #!/bin/sh
 
-SURFPACK=surfpack_exe
+SURFPACK=surfpack
 
 rm -f poly1.sps test_data_save.spd test_data_load.spd
 
