@@ -52,15 +52,66 @@ SurfData* SurfpackInterface::LoadData(const std::string& filename, unsigned n_pr
 
 SurfpackModel* SurfpackInterface::LoadModel(const std::string& filename)
 {
-  throw string("LoadModel is not currently supported");
-  return 0;
+  SurfpackModel* model = NULL;
+
+  // TODO: clean up where files get opened / closed
+#ifdef SURFPACK_HAVE_BOOST_SERIALIZATION
+
+  bool binary = surfpack::isBinaryModelFilename(filename);
+
+  std::ifstream model_ifstream(filename.c_str());
+  if (!model_ifstream.good())
+    throw "Failure opening model file for load."; 
+
+  if (binary) {
+    boost::archive::binary_iarchive input_archive(model_ifstream);
+    input_archive >> model; 
+    std::cout << "Model loaded from binary file '" << filename << "'." 
+	      << std::endl;
+  }
+  else {
+    boost::archive::text_iarchive input_archive(model_ifstream);
+    input_archive >> model; 
+    std::cout << "Model loaded from text file '" << filename << "'." 
+	      << std::endl;
+  }
+
+#else
+  throw string("surface load requires compilation with Boost serialization.");
+#endif
+
+  return model;
 }
 
 void SurfpackInterface::Save(const SurfpackModel* model, const std::string& filename)
 {
-  ///\todo Add Write Method to Models
-  //model->write(filename);
+  // TODO: consider where files are opened/managed
+#ifdef SURFPACK_HAVE_BOOST_SERIALIZATION
+  bool binary = surfpack::isBinaryModelFilename(filename);
+
+  std::ofstream model_ofstream(filename.c_str());  
+  if (!model_ofstream.good())
+    throw "Failure opening model file for save."; 
+
+  if (binary) {
+    boost::archive::binary_oarchive output_archive(model_ofstream);
+    output_archive << model;
+    std::cout << "Model saved to binary file '" << filename << "'." 
+	      << std::endl;
+  }
+  else {
+    boost::archive::text_oarchive output_archive(model_ofstream);
+    output_archive << model;
+    std::cout << "Model saved to text file '" << filename << "'." << std::endl;
+  }
+#else
+  throw 
+    string("surface save requires compilation with Boost serialization.");
+#endif
 }
+
+
+
 
 void SurfpackInterface::Save(const SurfData* data, const std::string& filename)
 {
@@ -132,4 +183,16 @@ unsigned response, unsigned n)
   return 0.0;
 }
 
+bool SurfpackInterface::HasFeature(const std::string& feature)
+{
+  if (feature == "model_save" || feature == "model_load") {
+#ifdef SURFPACK_HAVE_BOOST_SERIALIZATION
+    return true;
+#else
+    return false;
+#endif
+  }
+
+  return false;
+}
 

@@ -168,38 +168,10 @@ void SurfpackInterpreter::execLoadData(ParamMap& args)
 ///\todo Add support for LoadSurface in interpreter
 void SurfpackInterpreter::execLoadSurface(ParamMap& args)
 {
-  // TODO: clean up where files get opened / closed
-#ifdef SURFPACK_HAVE_BOOST_SERIALIZATION
-
   string name = asStr(args["name"]); 
   string filename = asStr(args["file"]); 
-
-  bool binary = surfpack::isBinaryModelFilename(filename);
-
-  std::ifstream model_ifstream(filename.c_str());
-  if (!model_ifstream.good())
-    throw "Failure opening model file for load."; 
-
-  SurfpackModel* model;
-  if (binary) {
-    boost::archive::binary_iarchive input_archive(model_ifstream);
-    input_archive >> model; 
-    std::cout << "Model loaded from binary file '" << filename << "'." 
-	      << std::endl;
-  }
-  else {
-    boost::archive::text_iarchive input_archive(model_ifstream);
-    input_archive >> model; 
-    std::cout << "Model loaded from text file '" << filename << "'." 
-	      << std::endl;
-  }
+  SurfpackModel* model = SurfpackInterface::LoadModel(filename);
   symbolTable.modelVars.insert(SurfpackModelSymbol(name, model));
-
-#else
-
-  throw string("surface load requires compilation with Boost serialization.");
-
-#endif
 }
 
 void SurfpackInterpreter::execSaveData(ParamMap& args)
@@ -208,36 +180,14 @@ void SurfpackInterpreter::execSaveData(ParamMap& args)
   string filename = asStr(args["file"]);
   SurfData* sd = symbolTable.lookupData(data_name);
   // Call SaveData 
-  SurfpackInterface::Save(sd,filename);
+  SurfpackInterface::Save(sd, filename);
 }
 
 
 void SurfpackInterpreter::execSaveSurface(const SurfpackModel* model, 
 					  const string& filename)
 {
-  // TODO: consider where files are opened/managed (probably interface)
-#ifdef SURFPACK_HAVE_BOOST_SERIALIZATION
-  bool binary = surfpack::isBinaryModelFilename(filename);
-
-  std::ofstream model_ofstream(filename.c_str());  
-  if (!model_ofstream.good())
-    throw "Failure opening model file for save."; 
-
-  if (binary) {
-    boost::archive::binary_oarchive output_archive(model_ofstream);
-    output_archive << model;
-    std::cout << "Model saved to binary file '" << filename << "'." 
-	      << std::endl;
-  }
-  else {
-    boost::archive::text_oarchive output_archive(model_ofstream);
-    output_archive << model;
-    std::cout << "Model saved to text file '" << filename << "'." << std::endl;
-  }
-#else
-  throw 
-    string("surface save requires compilation with Boost serialization.");
-#endif
+  SurfpackInterface::Save(model, filename);
 }
 
 

@@ -33,5 +33,8 @@ namespace SurfpackInterface
     const std::string& metric, unsigned response = 0, unsigned n = 0);
   double Fitness(const SurfpackModel*, const std::string& metric, 
     unsigned response = 0, unsigned n = 0);
+
+  /// whether the interface as compiled supports the passed feature name
+  bool HasFeature(const std::string& feature);
 };
 

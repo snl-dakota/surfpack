@@ -40,17 +40,6 @@ if(CMAKE_SYSTEM_NAME MATCHES Darwin)
       "${CMAKE_SHARED_LIBRARY_CREATE_Fortran_FLAGS} -undefined dynamic_lookup")
 endif()
 
-option(SURFPACK_STANDALONE  "Create a standalone surfpack executable" OFF)
-if(SURFPACK_STANDALONE)
-  # By default, require Boost serialization in stand-alone
-  if(NOT DEFINED SURFPACK_HAVE_BOOST_SERIALIZATION)
-    message(STATUS 
-      "SURFPACK_STANDALONE enabling SURFPACK_HAVE_BOOST_SERIALIZATION")
-    set(SURFPACK_HAVE_BOOST_SERIALIZATION ON CACHE BOOL 
-      "Use Boost serialization library")
-  endif()
-endif()
-
 option(ENABLE_SPEC_MAINT "Enable Surfpack specification maintenance mode." OFF)
 if(ENABLE_SPEC_MAINT AND NOT UNIX)
   message(FATAL_ERROR 
@@ -64,8 +53,8 @@ endif()
 
 # Surfpack optionally uses Boost for serialization
 #??? set(Boost_USE_MULTITHREADED OFF)
-option(SURFPACK_HAVE_BOOST_SERIALIZATION "Use Boost serialization library" OFF)
-if (SURFPACK_HAVE_BOOST_SERIALIZATION)
+option(HAVE_BOOST_SERIALIZATION "Use Boost serialization library" OFF)
+if (HAVE_BOOST_SERIALIZATION)
   if(Boost_DIR)
     message("in ${CMAKE_CURRENT_BINARY_DIR} Boost_DIR already set: ${Boost_DIR}")
     include_directories(${Boost_INCLUDE_DIR} ${Boost_INCLUDE_DIRS})
@@ -76,6 +65,12 @@ if (SURFPACK_HAVE_BOOST_SERIALIZATION)
     endif()
   endif(Boost_DIR)
   add_definitions("-DSURFPACK_HAVE_BOOST_SERIALIZATION")
+endif()
+
+option(SURFPACK_STANDALONE  "Create a standalone surfpack executable" ON)
+if(SURFPACK_STANDALONE AND NOT HAVE_BOOST_SERIALIZATION)
+  message(WARNING
+    "SURFPACK_STANDALONE is limited without HAVE_BOOST_SERIALIZATION")
 endif()
 
 add_definitions("-D__TESTING_MODE__=1")
@@ -99,3 +94,4 @@ add_subdirectory(src)
 if(SURFPACK_STANDALONE)
   add_subdirectory(interface)
 endif()
+#add_subdirectory(examples/CInterface)
