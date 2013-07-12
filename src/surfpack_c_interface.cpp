@@ -6,21 +6,12 @@
     For more information, see the README file in the top Surfpack directory.
     _______________________________________________________________________ */
 
-#include "surfpack.h"
 #include "surfpack_c_interface.h"
+#include "SurfpackInterface.h"
 #include "SurfpackModel.h"
 
-// Must include the headers of any models that might be loaded, or
-// they won't be registered with the serializer
-#include "DirectANNModel.h"
-#include "KrigingModel.h"
-#include "LinearRegressionModel.h"
-#include "MarsModel.h"
-#include "MovingLeastSquaresModel.h"
-#include "RadialBasisFunctionModel.h"
-
-/* Implementation of simplified C interface to Surfpack libraries */
-
+/* Implementation of simplified C interface to some Surfpack library
+   functions */
 
 /// one global instance of a SurfpackModel
 static SurfpackModel* surfpackCModel = NULL;
@@ -29,33 +20,9 @@ static SurfpackModel* surfpackCModel = NULL;
 extern "C" 
 int surfpack_load_model(const char * const model_filename)
 {
-#ifdef SURFPACK_HAVE_BOOST_SERIALIZATION
   bool success = true;
   try {
-
-    bool binary = surfpack::isBinaryModelFilename(model_filename);
-
-    std::ifstream model_ifstream(model_filename);
-    if (!model_ifstream.good())
-      throw "Failure opening model file for load."; 
-
-    if (binary) {
-      std::cout << "Loading model binary file '" << model_filename << "'." 
-		<< std::endl;
-      boost::archive::binary_iarchive input_archive(model_ifstream);
-      input_archive >> surfpackCModel; 
-      std::cout << "Model loaded from binary file '" << model_filename << "'." 
-		<< std::endl;
-    }
-    else {
-      std::cout << "Loading model text file '" << model_filename << "'." 
-		<< std::endl;
-      boost::archive::text_iarchive input_archive(model_ifstream);
-      input_archive >> surfpackCModel; 
-      std::cout << "Model loaded from text file '" << model_filename << "'." 
-		<< std::endl;
-    }
- 
+    surfpackCModel = SurfpackInterface::LoadModel(std::string(model_filename));
   }
   catch (const std::exception& e) {
     std::cerr << "Error loading surfpack model! Exception:\n" << e.what() 
@@ -63,19 +30,13 @@ int surfpack_load_model(const char * const model_filename)
     success = false;
   } 
   catch (const std::string& s) {
-    std::cerr << "Error loading model surfpack! String:\n" << s << std::endl;
+    std::cerr << "Error loading surfpack model! String:\n" << s << std::endl;
     success = false;
   }
   catch (...) {
     std::cerr << "Error loading surfpack model! Unknown error." << std::endl;
     success = false;
   }
-#else
-  std::cerr << "surfpack load requires compilation with Boost serialization." 
-	    << std::endl;
-  bool success = false;
-#endif
-
   return (success ? 0 : 1);
 }
 
@@ -94,4 +55,3 @@ void surfpack_free_model()
 {
   delete surfpackCModel;
 }
-

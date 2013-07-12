@@ -61,7 +61,7 @@ SurfpackModel* SurfpackInterface::LoadModel(const std::string& filename)
 
   std::ifstream model_ifstream(filename.c_str());
   if (!model_ifstream.good())
-    throw "Failure opening model file for load."; 
+    throw std::string("Failure opening model file for load."); 
 
   if (binary) {
     boost::archive::binary_iarchive input_archive(model_ifstream);
@@ -91,7 +91,7 @@ void SurfpackInterface::Save(const SurfpackModel* model, const std::string& file
 
   std::ofstream model_ofstream(filename.c_str());  
   if (!model_ofstream.good())
-    throw "Failure opening model file for save."; 
+    throw std::string("Failure opening model file for save."); 
 
   if (binary) {
     boost::archive::binary_oarchive output_archive(model_ofstream);

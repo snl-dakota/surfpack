@@ -6,11 +6,6 @@
     For more information, see the README file in the top Surfpack directory.
     _______________________________________________________________________ */
 
-#ifdef HAVE_CONFIG_H
-#include "surfpack_config.h"
-#endif
-#include "surfpack_system_headers.h"
-#include "surfpack.h"
 #include "SurfpackInterpreter.h"
 
 using std::vector;
