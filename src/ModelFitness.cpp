@@ -152,7 +152,7 @@ double CrossValidationFitness::operator()(const SurfpackModel& sm, const SurfDat
   // The data is divided into n partitions for cross validation.  When
   // n = 0, leave out about 20% of the data (5 partitions), but with a
   // lower bound of the data size (results in PRESS).
-  const unsigned default_paritions = 5;
+  const unsigned default_partitions = 5;
   unsigned n_final = num_partitions;
   if (n_final == 0)
     n_final = std::min(default_partitions, sd.size());
