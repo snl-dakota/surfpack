@@ -93,7 +93,8 @@ class CrossValidationFitness : public ModelFitness
 public:
   CrossValidationFitness(unsigned n_in);
   virtual double operator()(const SurfpackModel& sm, const SurfData& sd) const;
-  unsigned n;
+  /// number of partitions for cross-validation
+  unsigned num_partitions;
 };
 
 class PRESSFitness: public ModelFitness

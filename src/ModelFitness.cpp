@@ -142,13 +142,21 @@ VecDbl ModelFitness::getResiduals(const Residual& resid, const VecDbl& obs, cons
 }
 
 CrossValidationFitness::CrossValidationFitness(unsigned n_in)
-  : ModelFitness(), n(n_in)
+  : ModelFitness(), num_partitions(n_in)
 {
 
 }
 
 double CrossValidationFitness::operator()(const SurfpackModel& sm, const SurfData& sd) const
 {
+  // The data is divided into n partitions for cross validation.  When
+  // n = 0, leave out about 20% of the data (5 partitions), but with a
+  // lower bound of the data size (results in PRESS).
+  const unsigned default_paritions = 5;
+  unsigned n_final = num_partitions;
+  if (n_final == 0)
+    n_final = std::min(default_partitions, sd.size());
+
   /*if you want cross validation leaving m out then n=sd.size()/m
 
     low  = partition*my_data.size()/n
@@ -189,11 +197,11 @@ double CrossValidationFitness::operator()(const SurfpackModel& sm, const SurfDat
   for (unsigned i = 0; i < indices.size(); i++) indices[i] = i;
   random_shuffle(indices.begin(),indices.end(),shared_rng());
   VecDbl estimates(my_data.size());
-  for (unsigned partition = 0; partition < n; partition++) {
+  for (unsigned partition = 0; partition < n_final; partition++) {
     //cout << "part: " << partition << endl;
     SetUns excludedPoints;
-    unsigned low = surfpack::block_low(partition,n,my_data.size());
-    unsigned high = surfpack::block_high(partition,n,my_data.size());
+    unsigned low = surfpack::block_low(partition, n_final, my_data.size());
+    unsigned high = surfpack::block_high(partition, n_final, my_data.size());
     //cout << "low/high: " << low << " " << high << endl;
     for (unsigned k = low; k <= high; k++) excludedPoints.insert(indices[k]);
     my_data.setExcludedPoints(excludedPoints);
