@@ -14,50 +14,67 @@
 
 using std::cout;
 using std::endl;
-using std::ifstream;
-using std::ios;
-using std::istringstream;
 using std::max_element;
 using std::min_element;
 using std::random_shuffle;
-using std::ofstream;
-using std::ostream;
-using std::ostream_iterator;
-using std::ostringstream;
 using std::set;
 using std::string;
 using std::vector;
 using surfpack::shared_rng;
 
+
+// --------------------------
+// implementation of Residual
+// --------------------------
+
+Residual::Residual(DifferenceType dt_in) : dt(dt_in) 
+{ /* empty ctor */ }
+
+
+double Residual::operator()(double observed, double predicted) const
+{
+    switch(dt) {
+      case ABSOLUTE: return fabs(observed - predicted);
+      case SCALED: return fabs(observed - predicted)/fabs(observed);
+      case SQUARED: return (observed-predicted)*(observed-predicted);
+      default: assert(false);
+    }
+    assert(dt == ABSOLUTE || dt == SCALED || dt == SQUARED); 
+    return 0.0;
+}
+
+
+// ----------------------------
+// implementation of VecSummary
+// ----------------------------
+
+VecSummary::VecSummary(MetricType mt_in) 
+  : mt(mt_in) 
+{ /* empty ctor */ }
+
+
+double VecSummary::operator()(const VecDbl& resids) const
+{
+  switch (mt) {
+    case MT_SUM: return std::accumulate(resids.begin(),resids.end(),0.0);
+    case MT_MEAN: return surfpack::mean(resids);
+    case MT_ROOT_MEAN: return sqrt(surfpack::mean(resids));
+    case MT_MAXIMUM: 
+      VecDbl::const_iterator itr = max_element(resids.begin(),resids.end());
+      return *itr;
+    //default: throw string("Unknown vec summary");
+  }
+  return 0.0;
+}
+
+
+// ------------------------------
+// implementation of ModelFitness
+// ------------------------------
+
 double ModelFitness::operator()(const VecDbl& obs, const VecDbl& pred) const
 {
   throw string("Not implemented for abstract ModelFitness class");
-}
-
-StandardFitness::StandardFitness()
-: resid(Residual(SQUARED)), vecsumry(MT_MEAN)
-{
-
-}
-
-StandardFitness::StandardFitness(const Residual& resid_in, const VecSummary& vecsumry_in)
-: resid(resid_in), vecsumry(vecsumry_in)
-{
-
-}
-
-double StandardFitness::operator()(const VecDbl& obs, const VecDbl& pred) const
-{
-  VecDbl residuals = getResiduals(resid,obs,pred);
-  return vecsumry(residuals);
-}
-
-double StandardFitness::operator()(const SurfpackModel& sm, const SurfData& sd) const
-{
-  VecDbl predicted = sm(sd);
-  VecDbl observed = sd.getResponses();
-  VecDbl residuals = getResiduals(resid,observed,predicted);
-  return vecsumry(residuals);
 }
 
 ModelFitness* ModelFitness::Create(const std::string& metric, unsigned n)
@@ -94,44 +111,9 @@ ModelFitness* ModelFitness::Create(const std::string& metric, unsigned n)
   return new StandardFitness(Residual(SQUARED),VecSummary(MT_SUM));
 }
 
-Residual::Residual(DifferenceType dt_in) : dt(dt_in) 
-{
 
-}
-
-double Residual::operator()(double observed, double predicted) const
-{
-    switch(dt) {
-      case ABSOLUTE: return fabs(observed - predicted);
-      case SCALED: return fabs(observed - predicted)/fabs(observed);
-      case SQUARED: return (observed-predicted)*(observed-predicted);
-      default: assert(false);
-    }
-    assert(dt == ABSOLUTE || dt == SCALED || dt == SQUARED); 
-    return 0.0;
-}
-
-VecSummary::VecSummary(MetricType mt_in) 
-  : mt(mt_in) 
-{
-
-}
-
-double VecSummary::operator()(const VecDbl& resids) const
-{
-  switch (mt) {
-    case MT_SUM: return std::accumulate(resids.begin(),resids.end(),0.0);
-    case MT_MEAN: return surfpack::mean(resids);
-    case MT_ROOT_MEAN: return sqrt(surfpack::mean(resids));
-    case MT_MAXIMUM: 
-      VecDbl::const_iterator itr = max_element(resids.begin(),resids.end());
-      return *itr;
-    //default: throw string("Unknown vec summary");
-  }
-  return 0.0;
-}
-
-VecDbl ModelFitness::getResiduals(const Residual& resid, const VecDbl& obs, const VecDbl& pred)
+VecDbl ModelFitness::getResiduals(const Residual& resid, 
+				  const VecDbl& obs, const VecDbl& pred)
 {
   assert(obs.size() == pred.size());
   VecDbl result(obs.size());
@@ -141,21 +123,112 @@ VecDbl ModelFitness::getResiduals(const Residual& resid, const VecDbl& obs, cons
   return result;
 }
 
-CrossValidationFitness::CrossValidationFitness(unsigned n_in)
-  : ModelFitness(), num_partitions(n_in)
-{
 
+// ---------------------------------
+// implementation of StandardFitness
+// ---------------------------------
+
+StandardFitness::StandardFitness()
+: resid(Residual(SQUARED)), vecsumry(MT_MEAN)
+{ /* empty ctor */ }
+
+
+StandardFitness::StandardFitness(const Residual& resid_in, 
+				 const VecSummary& vecsumry_in)
+: resid(resid_in), vecsumry(vecsumry_in)
+{ /* empty ctor */ }
+
+
+double StandardFitness::operator()(const VecDbl& obs, const VecDbl& pred) const
+{
+  VecDbl residuals = getResiduals(resid,obs,pred);
+  return vecsumry(residuals);
 }
 
-double CrossValidationFitness::operator()(const SurfpackModel& sm, const SurfData& sd) const
+
+double StandardFitness::operator()(const SurfpackModel& sm, 
+				   const SurfData& sd) const
 {
-  // The data is divided into n partitions for cross validation.  When
-  // n = 0, leave out about 20% of the data (5 partitions), but with a
-  // lower bound of the data size (results in PRESS).
-  const unsigned default_partitions = 5;
+  VecDbl predicted = sm(sd);
+  VecDbl observed = sd.getResponses();
+  VecDbl residuals = getResiduals(resid,observed,predicted);
+  return vecsumry(residuals);
+}
+
+
+// ----------------------------------------
+// implementation of CrossValidationFitness
+// ----------------------------------------
+
+// BMA TODO: consider moving to root_mean_squared for default metric
+CrossValidationFitness::CrossValidationFitness()
+  : ModelFitness(), num_partitions(10), default_metric("mean_squared")
+{ /* empty ctor */ }
+
+
+// BMA TODO: consider moving to root_mean_squared for default metric
+CrossValidationFitness::CrossValidationFitness(unsigned n_in)
+  : ModelFitness(), num_partitions(n_in), default_metric("mean_squared")
+{ /* empty ctor */ }
+
+
+/** Historically CV used a single mean-squared fitness metric */
+double CrossValidationFitness::
+operator()(const SurfpackModel& sm, const SurfData& sd) const
+{
+  // get predictions (estimates) from the cross-validation core
+  VecDbl estimates;
+  leaveout_estimates(estimates, sm, sd);
+  //cout << "CV vals: " << surfpack::fromVec<double>(estimates) << endl;
+
+  // get the active response from SurfData
+  VecDbl responses = sd.getResponses();
+
+  return calc_one_metric(responses, estimates, default_metric);
+}
+
+
+/** Perform a single set of CV leave-out builds, but compute multiple metrics */
+void CrossValidationFitness::
+eval_metrics(VecDbl& metric_values, const SurfpackModel& sm, const SurfData& sd,
+	     const VecStr& metric_names) const
+{
+  // get predictions (estimates) from the cross-validation core
+  VecDbl estimates;
+  leaveout_estimates(estimates, sm, sd);
+
+  // get the active response from SurfData
+  VecDbl responses = sd.getResponses();
+
+  // now compute all the metrics requested
+  metric_values.clear();
+  metric_values.reserve(metric_names.size());
+  for (VecStr::const_iterator mi = metric_names.begin();
+       mi != metric_names.end(); ++ mi) {
+    metric_values.push_back(calc_one_metric(responses, estimates, *mi));
+  }
+}
+
+
+void CrossValidationFitness::
+leaveout_estimates(VecDbl& estimates, const SurfpackModel& sm,
+		   const SurfData& sd) const
+{
+  // The data is divided into n partitions for cross validation.  
   unsigned n_final = num_partitions;
-  if (n_final == 0)
-    n_final = std::min(default_partitions, sd.size());
+
+  // When n = 0, leave out about 10% of the data (n=10 partitions),
+  // but with a upper bound of the data size (results in PRESS).
+  const unsigned default_partitions = 10;
+  if (num_partitions == 0)
+    n_final = default_partitions;
+
+  // enforce a lower bound of 2 and upper bound of data size
+  const unsigned min_partitions = 2;
+  if (n_final > sd.size())
+    n_final = sd.size();
+  else if (n_final < min_partitions)
+    n_final = min_partitions;
 
   /*if you want cross validation leaving m out then n=sd.size()/m
 
@@ -196,7 +269,7 @@ double CrossValidationFitness::operator()(const SurfpackModel& sm, const SurfDat
   VecUns indices(my_data.size()); 
   for (unsigned i = 0; i < indices.size(); i++) indices[i] = i;
   random_shuffle(indices.begin(),indices.end(),shared_rng());
-  VecDbl estimates(my_data.size());
+  estimates.resize(my_data.size());
   for (unsigned partition = 0; partition < n_final; partition++) {
     //cout << "part: " << partition << endl;
     SetUns excludedPoints;
@@ -216,21 +289,33 @@ double CrossValidationFitness::operator()(const SurfpackModel& sm, const SurfDat
     delete model;
     delete factory;
   }
-  ModelFitness* mf = ModelFitness::Create("mean_squared");
-  VecDbl responses = sd.getResponses();
-  assert(responses.size() == estimates.size());
-  double fitness = (*mf)(estimates,responses);
-  //cout << "CV vals: " << surfpack::fromVec<double>(estimates) << endl;
+}
+
+
+double CrossValidationFitness::
+calc_one_metric(const VecDbl& observed, const VecDbl& predicted,
+		const string& metric_name) const
+{
+  assert(observed.size() == predicted.size());
+
+  ModelFitness* mf = ModelFitness::Create(metric_name);
+  double fitness = (*mf)(predicted, observed);
   delete mf;
+
   return fitness;
 }
 
+
+// ------------------------------
+// implementation of PRESSFitness
+// ------------------------------
+
 PRESSFitness::PRESSFitness()
-{
+{ /* empty ctor */ }
 
-}
 
-double PRESSFitness::operator()(const SurfpackModel& sm, const SurfData& sd) const
+double PRESSFitness::operator()(const SurfpackModel& sm, 
+				const SurfData& sd) const
 {
   // create a leave one out cross-validation fitness operator here
   // since the data size isn't available at construct time (number of
@@ -244,10 +329,14 @@ double PRESSFitness::operator()(const SurfpackModel& sm, const SurfData& sd) con
   return fitness;
 }
 
-R2Fitness::R2Fitness()
-{
 
-}
+// ---------------------------------
+// implementation of R2Fitness
+// ---------------------------------
+
+R2Fitness::R2Fitness()
+{ /* empty ctor */ }
+
 
 double R2Fitness::operator()(const SurfpackModel& sm, const SurfData& sd) const
 {
@@ -256,7 +345,9 @@ double R2Fitness::operator()(const SurfpackModel& sm, const SurfData& sd) const
   VecDbl observed = sd.getResponses();
   double obs_mean = surfpack::mean(observed);
   VecDbl vec_mean = VecDbl(observed.size(),obs_mean);
-  StandardFitness sum_squares = StandardFitness(Residual(SQUARED),VecSummary(MT_SUM));
+  StandardFitness sum_squares = 
+    StandardFitness(Residual(SQUARED),VecSummary(MT_SUM));
+
   return sum_squares(predicted,vec_mean)/sum_squares(observed,vec_mean);
 }
 

@@ -841,19 +841,44 @@ a constrained region over a few points.  It does not appear to be working
 as well globally, at least at this point in time.
 
 \section{Fitness Metrics}
-Surfpack provides several error metrics which can be used to assess the quality of a function approximation and to predict how well the model might generalize to unseen data.  All of these metrics require a set of data for which the true function values are known.  The error measures summarize the differences between the true response values and the approximating model's estimates at the same points.
+Surfpack provides several error metrics which can be used to assess
+the quality of a function approximation and to predict how well the
+model might generalize to unseen data.  All of these metrics require a
+set of data for which the true function values are known.  The error
+measures summarize the differences between the true response values
+and the approximating model's estimates at the same points.
 
-For a given data point $i$, the difference between the true (observed) response value $o_i$ and the model's prediction $p_i$ is the {\em residual}.  Since the residuals for known data points are often added together to produce a summary error measure, the absolute values of the residuals $|o_i - p_i|$ or squared residuals $(o_i - p_i)^2$ can be used to ensure that positive and negative residuals do not cancel each other out.  In applications where the response values in different regions of the parameter space vary by orders of magnitude, scaled residuals $|\frac{o_i - p_i}{o_i}|$ can also be useful.  Surfpack supports metrics which give the sum, arithmetic mean, or maximum of the absolute, squared, or scaled residuals.  The name of the error measure is given as the value of the \texttt{metric} argument in the \texttt{Fitness} command.  The metrics are named \texttt{sum\_squared, mean\_squared, max\_squared, mean\_abs, sum\_scaled}, etc.  The square root of the mean squared error (RMS) is also commonly used in many fields and is available in Surfpack as \texttt{root\_mean\_squared}.  
+For a given data point $i$, the difference between the true (observed)
+response value $o_i$ and the model's prediction $p_i$ is the {\em
+  residual}.  Since the residuals for known data points are often
+added together to produce a summary error measure, the absolute values
+of the residuals $|o_i - p_i|$ or squared residuals $(o_i - p_i)^2$
+can be used to ensure that positive and negative residuals do not
+cancel each other out.  In applications where the response values in
+different regions of the parameter space vary by orders of magnitude,
+scaled residuals $|\frac{o_i - p_i}{o_i}|$ can also be useful.
+Surfpack supports metrics which give the sum, arithmetic mean, or
+maximum of the absolute, squared, or scaled residuals.  The name of
+the error measure is given as the value of the \texttt{metric}
+argument in the \texttt{Fitness} command.  The metrics are named
+\texttt{sum\_squared, mean\_squared, max\_squared, mean\_abs,
+  sum\_scaled}, etc.  The square root of the mean squared error (RMS)
+is also commonly used in many fields and is available in Surfpack as
+\texttt{root\_mean\_squared}.
 
-The mean relative absolute error is calculated as
-\begin{equation}
-  mrae = \left| \frac{ \sum_{i=1}^{n}{\left(o_i - p_i\right)}}{n\sigma} \right|,
-\end{equation}
-where $\sigma$ is the standard deviation of the true response values.  This error measure scales the mean absolute error by the standard deviation of the response values to adjust for the natural range and variation of the data.  The name of this metric in Surfpack is \texttt{mrae}
+% The mean relative absolute error is calculated as
+% \begin{equation}
+%   mrae = \left| \frac{ \sum_{i=1}^{n}{\left(o_i - p_i\right)}}{n\sigma} \right|,
+% \end{equation}
+% where $\sigma$ is the standard deviation of the true response values.
+% This error measure scales the mean absolute error by the standard
+% deviation of the response values to adjust for the natural range and
+% variation of the data.  The name of this metric in Surfpack is
+% \texttt{mrae}
 
 The $R^2$ fitness metric was developed for use with polynomial regressions.  The formula is
 \begin{equation}
-  R^2 = \frac{\sum_{i=1}^{n}{\left(p_i - \bar{o}\right)}}{ \sum_{i=1}^{n}{\left(o_i - \bar{o}\right)}},
+  R^2 = \frac{\sum_{i=1}^{n}{\left(p_i - \bar{o}\right)^2}}{ \sum_{i=1}^{n}{\left(o_i - \bar{o}\right)^2}},
 \end{equation}
 where $n$ is the number of data points used to create the model, and $\bar{o}$ is the mean of the true response values.  The metric, named \texttt{rsquared} in Surfpack, quantifies the amount of variability in the data that is captured by the model.  The value of $R^2$ falls on in the interval $[0,1]$.  Values close to $1$ indicate that the model matches the data closely.
 

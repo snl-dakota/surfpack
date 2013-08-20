@@ -41,6 +41,38 @@ const int TESTDIMS = 2;
 const int GRIDSIZE = 50;
 CPPUNIT_TEST_SUITE_REGISTRATION( LinearRegressionModelTest );
 
+
+// BMA: These functions previously in ModelFitness.h, but not used there
+template< typename T>
+std::vector< T >& vecSubInPlace(std::vector< T >& sub, std::vector< T >& min)
+{
+  assert(sub.size() == min.size());
+  typedef typename std::vector< T >::iterator VecIt;
+  VecIt subIt, minIt;
+  for (subIt = sub.begin(), minIt = min.begin();
+	subIt != sub.end();
+	++subIt, ++minIt) {
+    *subIt -= *minIt;
+  }
+  return sub;
+}
+
+template< typename T>
+std::vector< T > vecSub(std::vector< T >& sub, std::vector< T >& min)
+{
+  assert(sub.size() == min.size());
+  std::vector< T > result(sub.size());
+  typedef typename std::vector< T >::iterator VecIt;
+  VecIt subIt, minIt, resIt;
+  for (subIt = sub.begin(), minIt = min.begin(), resIt = result.begin();
+	subIt != sub.end();
+	++subIt, ++minIt, ++resIt) {
+    *resIt = *subIt - *minIt;
+  }
+  return result;
+}
+
+
 void generateDerivPlot(const std::string& plotname, const std::string& datafilename, int x, int y1, int y2)
 {
 
