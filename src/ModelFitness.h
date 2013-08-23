@@ -165,6 +165,7 @@ class R2Fitness: public ModelFitness
 public:
   R2Fitness();
   virtual double operator()(const SurfpackModel& sm, const SurfData& sd) const;
+  virtual double operator()(const VecDbl& obs, const VecDbl& pred) const;
 };
 
 #endif

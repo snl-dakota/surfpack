@@ -72,7 +72,7 @@ VecDbl MarsModel::gradient(const VecDbl& x) const
 std::string MarsModel::asString() const
 {
   std::ostringstream os;
-  os << "Mars model";
+  os << "Mars model\n" ;
   return os.str();
 }
 

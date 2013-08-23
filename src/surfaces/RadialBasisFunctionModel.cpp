@@ -253,6 +253,7 @@ std::string RadialBasisFunction::asString() const
   copy(center.begin(),center.end(),std::ostream_iterator<double>(os," "));
   os << " radius: ";
   copy(radius.begin(),radius.end(),std::ostream_iterator<double>(os," "));
+  os << std::endl;
   return os.str();
 }
 

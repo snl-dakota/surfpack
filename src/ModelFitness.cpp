@@ -106,7 +106,7 @@ ModelFitness* ModelFitness::Create(const std::string& metric, unsigned n)
   } else if (metric == "rsquared") {
     return new R2Fitness();
   }
-  string msg = "Metric " + metric + " not supported";
+  string msg = "Metric '" + metric + "' not supported";
   throw msg; 
   return new StandardFitness(Residual(SQUARED),VecSummary(MT_SUM));
 }
@@ -204,9 +204,8 @@ eval_metrics(VecDbl& metric_values, const SurfpackModel& sm, const SurfData& sd,
   metric_values.clear();
   metric_values.reserve(metric_names.size());
   for (VecStr::const_iterator mi = metric_names.begin();
-       mi != metric_names.end(); ++ mi) {
+       mi != metric_names.end(); ++ mi)
     metric_values.push_back(calc_one_metric(responses, estimates, *mi));
-  }
 }
 
 
@@ -343,11 +342,17 @@ double R2Fitness::operator()(const SurfpackModel& sm, const SurfData& sd) const
 
   VecDbl predicted = sm(sd);
   VecDbl observed = sd.getResponses();
-  double obs_mean = surfpack::mean(observed);
-  VecDbl vec_mean = VecDbl(observed.size(),obs_mean);
+
+  return this->operator()(observed, predicted);
+}
+
+
+double R2Fitness::operator()(const VecDbl& obs, const VecDbl& pred) const
+{
+  double obs_mean = surfpack::mean(obs);
+  VecDbl vec_mean = VecDbl(obs.size(),obs_mean);
   StandardFitness sum_squares = 
     StandardFitness(Residual(SQUARED),VecSummary(MT_SUM));
 
-  return sum_squares(predicted,vec_mean)/sum_squares(observed,vec_mean);
+  return sum_squares(pred,vec_mean)/sum_squares(obs,vec_mean);
 }
-
