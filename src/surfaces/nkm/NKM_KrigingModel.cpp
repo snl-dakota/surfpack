@@ -20,7 +20,7 @@ using std::endl;
 using std::ostringstream;
 
 
-//#define __KRIG_ERR_TEST__
+//#define __KRIG_ERR_CHECK__
 #define __NKM_UNBIASED_LIKE__
 
 
@@ -495,7 +495,7 @@ KrigingModel::KrigingModel(const SurfData& sd, const ParamMap& params)
 		<< std::endl;
       assert(false);
     }
-    ifPrescribedNug==true;
+    ifPrescribedNug=true;
   }
 
   // *************************************************************
@@ -536,6 +536,23 @@ KrigingModel::KrigingModel(const SurfData& sd, const ParamMap& params)
     for(int itrend=0; itrend<nTrend; ++itrend)
       for(int i=0; i<numEqnAvail; ++i)
 	Gtran(i,itrend)=Gall(itrend,i);
+
+    if(buildDerOrder==0)
+      numExtraDerKeep=0;
+    else if(buildDerOrder==1)
+      numExtraDerKeep=numVarsr;
+    else{
+      std::cerr << "buildDerOrder=" << buildDerOrder 
+		<< " in void KrigingModel::nuggetSelectingCholR(); "
+		<< "for Kriging buildDerOrder must be 0; "
+		<< "for Gradient Enhanced Kriging buildDerOrder must be 1; "
+		<< "Higher order derivative enhanced Kriging "
+		<< "(e.g Hessian Enhanced Kriging) has not been implemented"
+		<< std::endl;
+      assert(false);
+    }
+    numPointsKeep=numPoints;
+    numRowsR=numEqnAvail;
   }
 
   gen_Z_matrix();  //initializes deltaXR and Z matrices (what the Z 
@@ -1390,7 +1407,11 @@ MtxDbl& KrigingModel::eval_kriging_correlation_matrix(MtxDbl& r, const MtxDbl& x
 
   int nptsxr=xr.getNCols(); //points at which we are evalutating the model
 #ifdef __KRIG_ERR_CHECK__
-  assert((xr.getNCols()==numVarsr)&&(0<nptsxr));
+  //  std::cerr<< "xr.getNRows()=" << xr.getNRows() 
+  //	   << " numVarsr=" << numVarsr
+  //	   << " nptsxr=" << nptsxr << std::endl;
+
+  assert((xr.getNRows()==numVarsr)&&(0<nptsxr));
 #endif
   r.newSize(numRowsR,nptsxr);
   int i; //row index of the Kriging r matrix (also reorderd XR point index)
@@ -4381,12 +4402,13 @@ void KrigingModel::masterObjectiveAndConstraints(const MtxDbl& theta, int obj_de
     //http://en.wikipedia.org/wiki/Determinant#Determinant_from_LU_decomposition
     //for how to efficiently compute the determinant from an LU factorization
 
-    int chol_info;
+    int chol_info=0;
     if(ifPrescribedNug==true) {
       //the user prescribed a nugget for us to use, e.g. for when there is
       //measurement error of known magnitude
       apply_nugget_build(); //modify R by a nugget in place
       reorderCopyRtoRChol();
+
       Chol_fact_workspace(RChol,scaleRChol,rcondDblWork,rcondIntWork,
 			  chol_info,rcondR);
       //Pivoted Cholesky o G*R^-1*G^T does not require pivoted Cholesky of R

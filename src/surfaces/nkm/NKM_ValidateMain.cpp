@@ -32,6 +32,13 @@ void GPAIS_build_and_eval_mean_adjvar(int Nvarsr,
 				      std::string& optimization_method,
 				      std::string& corr_func_family,
 				      std::string& corr_func_param);
+void generic_build_and_eval_mean_adjvar(int Nvarsr, 
+					std::string& model_type,
+					std::string& optimization_method,
+					std::string& corr_func_family,
+					std::string& corr_func_param,
+					std::string& handle_ill_cond1,
+					std::string& handle_ill_cond2);
 
 
 
@@ -524,6 +531,80 @@ int main(int argc, char* argv[])
     }
     GPAIS_build_and_eval_mean_adjvar(Nvarsr, model_type, optimization_method,
 				     corr_func_family, corr_func_param);
+  }
+  else if(testname=="generic"){
+    std::string handle_ill_cond1="pivot_chol";
+    std::string handle_ill_cond2="nothing";
+
+    //command line input is like this
+    //e.g. <executable_name> generic 6D GEK global matern infinity 
+    //e.g. <executable_name> generic 6D gek global powered_exponential 2 nugget 0.00000001
+    //
+    //e.g. <executable_name> generic 2D kriging local matern 0.5 find_nugget 0
+    //e.g. <executable_name> generic 2D Krig local powered_exponential 1 find_nugget 1
+    if((argc!=7)&&(argc!=9)) {
+      std::cerr << "some examples of generic commmand line input are:\n"
+		<< argv[0] << " generic 6D GEK global matern infinity\n"
+		<< argv[0] << " generic 6D gek global powered_exponential 2\n"
+		<< argv[0] << " generic 2D kriging local matern 0.5\n"
+		<< argv[0] << " generic 2D Krig local powered_exponential 1\n"
+		<< argv[0] << " generic 2D KM none matern 1.5\n"
+		<< argv[0] << " generic 2D krig none matern 1.5\n"
+		<< argv[0] << " generic 2D krig global powered_exponential 2 nugget 0.00000001\n"
+		<< argv[0] << " generic 2D krig global powered_exponential 2 find_nugget 0\n"
+		<< argv[0] << " generic 2D krig global powered_exponential 2 find_nugget 1\n"
+		<< "example 1 is equivalent to example 2\n"
+		<< "example 3 is equivalent to example 4\n"
+		<< "example 5 is equivalent to example 6\n" 
+		<< "examples 3 through 6 require a file named \"corrlen.txt\""
+		<< " to be present\n"
+		<< "files named \"buildfile.spd;\" and \"evalfile_in.spd\" "
+		<< "must always be present"
+		<< std::endl;
+      return 1;
+    }
+    int Nvarsr;
+    { //{ if for scoping
+      std::stringstream ss;
+      ss << argv[2];
+      ss >> Nvarsr; //this should take the integer before the "D"
+    }
+    std::string model_type;
+    { //{ is for scoping
+      std::ostringstream oss;
+      oss << argv[3];
+      model_type = oss.str();
+    }
+    std::string optimization_method;
+    { //{ is for scoping
+      std::ostringstream oss;
+      oss << argv[4];
+      optimization_method = oss.str();
+    }
+    std::string corr_func_family;
+    { //{ is for scoping
+      std::ostringstream oss;
+      oss << argv[5];
+      corr_func_family = oss.str();
+    }
+    std::string corr_func_param;
+    { //{ is for scoping
+      std::ostringstream oss;
+      oss << argv[6];
+      corr_func_param = oss.str();
+    }
+    if(argc==9) {
+      std::ostringstream oss1;
+      oss1 << argv[7];
+      handle_ill_cond1 = oss1.str();
+      std::ostringstream oss2;
+      oss2 << argv[8];
+      handle_ill_cond2 = oss2.str();
+    }
+
+    generic_build_and_eval_mean_adjvar(Nvarsr, model_type, optimization_method,
+				       corr_func_family, corr_func_param,
+				       handle_ill_cond1, handle_ill_cond2);
   }
   else{
     std::cerr << "unknown test name" << std::endl;
@@ -1451,6 +1532,66 @@ std::string mtxdbl_2_string(nkm::MtxDbl& md) {
     for(int i=0; i<md.getNElems(); ++i)
       oss << " " << md(i,j);
   return oss.str();
+}
+
+
+void generic_build_and_eval_mean_adjvar(int Nvarsr, 
+					std::string& model_type,
+					std::string& optimization_method,
+					std::string& corr_func_family,
+					std::string& corr_func_param,
+					std::string& handle_ill_cond1,
+					std::string& handle_ill_cond2) {
+  std::map< std::string, std::string> km_params;
+  km_params[corr_func_family]=corr_func_param;
+  km_params["optimization_method"]=optimization_method;
+  int der_order;
+  //make the model type uppercase
+  std::transform(model_type.begin(), model_type.end(), model_type.begin(), ::toupper);
+  if(model_type=="GEK") {    
+    km_params["derivative_order"]="1";
+    der_order=1;
+  }
+  else{
+    km_params["derivative_order"]="0";
+    der_order=0;
+  }
+
+  //km_params["order"] = "0"; //polynomial trend order = 0 is most robust which
+  //is good for pathelogical problems
+  
+  //pivot_chol flag isn't used so it will be ignored.
+  km_params[handle_ill_cond1]=handle_ill_cond2;
+    
+  if((optimization_method=="local")||
+     (optimization_method=="none")) {
+    //*local is local starting from a set of specified correlation lengths
+    //*none is use the specified set of correlation lengths without 
+    // optimization, i.e. to reproduce a model
+    std::ifstream infile("corrlen.txt",ios::in);
+    std::string corrlen_str;
+    getline(infile,corrlen_str);
+    km_params["correlation_lengths"]=corrlen_str;
+  }
+
+  string buildfile="buildfile.spd";
+  string evalfile_in ="evalfile_in.spd";
+  nkm::SurfData sdbuild(buildfile, Nvarsr, 0, 1, 0, der_order, 0);
+  nkm::SurfData sdeval(evalfile_in, Nvarsr, 0, 1, 0, 0, 0);  
+  int Neval=sdeval.getNPts();
+  nkm::KrigingModel km(sdbuild,km_params); km.create();
+  nkm::MtxDbl y(1,Neval);
+  nkm::MtxDbl vary(1,Neval);
+  km.evaluate(y,sdeval.xr);
+  km.eval_variance(vary,sdeval.xr);
+  FILE* fp=fopen("evalfile.out","w");
+  for(int ipt=0; ipt<Neval; ++ipt) {
+    for(int ivar=0; ivar<Nvarsr; ++ivar)
+      fprintf(fp,"%22.16g ",sdeval.xr(ivar,ipt));
+    fprintf(fp,"%22.16g %22.16g\n",y(0,ipt),vary(0,ipt));
+  }
+  fclose(fp);
+  return;
 }
 
 
