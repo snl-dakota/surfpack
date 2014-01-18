@@ -1,7 +1,6 @@
-if(NOT HAVE_CONMIN)
-  add_subdirectory(CONMIN)
-endif()
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}")
+include(ManageRelocatablePackage) 
 
-if(NOT HAVE_NCSUOPT)
-  add_subdirectory(NCSUOpt)
-endif()
+ManageRelocatablePackage(CONMIN CONMIN)
+
+ManageRelocatablePackage(NCSUOPT NCSUOpt)

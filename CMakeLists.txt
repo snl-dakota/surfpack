@@ -40,6 +40,17 @@ if(CMAKE_SYSTEM_NAME MATCHES Darwin)
       "${CMAKE_SHARED_LIBRARY_CREATE_Fortran_FLAGS} -undefined dynamic_lookup")
 endif()
 
+# Always need to be on, but Dakota might turn them off
+option(HAVE_CONMIN "Build the CONMIN package." ON)
+if (NOT HAVE_CONMIN)
+  message(SEND_ERROR "Surfpack requires HAVE_CONMIN:BOOL=ON")
+endif()
+option(HAVE_NCSUOPT "Build the NCSUOPT package." ON)
+if (NOT HAVE_NCSUOPT)
+  message(SEND_ERROR "Surfpack requires HAVE_NCSUOPT:BOOL=ON")
+endif()
+
+
 option(ENABLE_SPEC_MAINT "Enable Surfpack specification maintenance mode." OFF)
 if(ENABLE_SPEC_MAINT AND NOT UNIX)
   message(FATAL_ERROR 
