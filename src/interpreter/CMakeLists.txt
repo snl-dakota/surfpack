@@ -33,3 +33,5 @@ set(surfpack_interpreter_sources
 )
 
 add_library(surfpack_interpreter ${surfpack_interpreter_sources})
+install(TARGETS surfpack_interpreter EXPORT ${ExportTarget} DESTINATION lib)
+
