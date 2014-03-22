@@ -12,13 +12,13 @@
 #ifdef HAVE_CONFIG_H
 // Tolerate F77_FUNC macro redefinition warnings in the autotools build
 #define CONMIN_F77      F77_FUNC(conmin,CONMIN)
-#define NCSU_DIRECT_F77 F77_FUNC_(ncsu_direct,NCSU_DIRECT)
+#define NCSU_DIRECT_F77 F77_FUNC_(ncsuopt_direct,NCSUOPT_DIRECT)
 
 #else
 // Use the CMake generated fortran name mangling macros (eliminate warnings)
 #include "surf77_config.h"
 #define CONMIN_F77      SURF77_GLOBAL(conmin,CONMIN)
-#define NCSU_DIRECT_F77 SURF77_GLOBAL_(ncsu_direct,NCSU_DIRECT)
+#define NCSU_DIRECT_F77 SURF77_GLOBAL_(ncsuopt_direct,NCSUOPT_DIRECT)
 #endif
 
 extern "C" {
