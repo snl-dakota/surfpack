@@ -101,37 +101,37 @@ double SurfpackModel::goodnessOfFit(const string metricName, const SurfData& sur
     //predicted = surf_data.getPredictor();
     //getValue(surfData, observed, predicted);
     if (metricName == "min_abs" ) {
-      return genericMetric(observed,predicted,MT_MINIMUM,ABSOLUTE);
+      return genericMetric(observed,predicted,MT_MINIMUM,DT_ABSOLUTE);
     } else if (metricName == "max_abs") {
-      return genericMetric(observed,predicted,MT_MAXIMUM,ABSOLUTE);
+      return genericMetric(observed,predicted,MT_MAXIMUM,DT_ABSOLUTE);
     } else if (metricName == "sum_abs") {
-      return genericMetric(observed,predicted,MT_SUM,ABSOLUTE);
+      return genericMetric(observed,predicted,MT_SUM,DT_ABSOLUTE);
     } else if (metricName == "mean_abs") {
-      return genericMetric(observed,predicted,MT_MEAN,ABSOLUTE);
+      return genericMetric(observed,predicted,MT_MEAN,DT_ABSOLUTE);
     } else if (metricName == "max_relative") {
-      return genericMetric(observed,predicted,MT_RELATIVE_MAXIMUM,ABSOLUTE);
+      return genericMetric(observed,predicted,MT_RELATIVE_MAXIMUM,DT_ABSOLUTE);
     } else if (metricName == "mean_relative") {
-      return genericMetric(observed,predicted,MT_RELATIVE_AVERAGE,ABSOLUTE);
+      return genericMetric(observed,predicted,MT_RELATIVE_AVERAGE,DT_ABSOLUTE);
     } else if (metricName == "min_squared" ) {
-      return genericMetric(observed,predicted,MT_MINIMUM,SQUARED);
+      return genericMetric(observed,predicted,MT_MINIMUM,DT_SQUARED);
     } else if (metricName == "max_squared") {
-      return genericMetric(observed,predicted,MT_MAXIMUM,SQUARED);
+      return genericMetric(observed,predicted,MT_MAXIMUM,DT_SQUARED);
     } else if (metricName == "sum_squared") {
-      return genericMetric(observed,predicted,MT_SUM,SQUARED);
+      return genericMetric(observed,predicted,MT_SUM,DT_SQUARED);
     } else if (metricName == "mean_squared") {
-      return genericMetric(observed,predicted,MT_MEAN,SQUARED);
+      return genericMetric(observed,predicted,MT_MEAN,DT_SQUARED);
     } else if (metricName == "min_scaled" ) {
-      return genericMetric(observed,predicted,MT_MINIMUM,SCALED);
+      return genericMetric(observed,predicted,MT_MINIMUM,DT_SCALED);
     } else if (metricName == "max_scaled") {
-      return genericMetric(observed,predicted,MT_MAXIMUM,SCALED);
+      return genericMetric(observed,predicted,MT_MAXIMUM,DT_SCALED);
     } else if (metricName == "sum_scaled") {
-      return genericMetric(observed,predicted,MT_SUM,SCALED);
+      return genericMetric(observed,predicted,MT_SUM,DT_SCALED);
     } else if (metricName == "mean_scaled") {
-      return genericMetric(observed,predicted,MT_MEAN,SCALED);
+      return genericMetric(observed,predicted,MT_MEAN,DT_SCALED);
     //} else if (metricName == "root_mean_squared") {
     //  return rootMeanSquared(observed,predicted);
     //} else if (metricName == "l2norm") {
-    //  return sqrt(genericMetric(observed,predicted,MT_SUM,SQUARED));
+    //  return sqrt(genericMetric(observed,predicted,MT_SUM,DT_SQUARED));
     } else {
       throw string("No error metric of that type in this class");
     }

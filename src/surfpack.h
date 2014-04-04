@@ -18,9 +18,9 @@
 class SurfData;
 
 enum DifferenceType {
-  ABSOLUTE,
-  SQUARED,
-  SCALED
+  DT_ABSOLUTE,
+  DT_SQUARED,
+  DT_SCALED
 };
 
 enum MetricType {
@@ -32,7 +32,6 @@ enum MetricType {
   MT_MEAN,
   MT_ROOT_MEAN
 };
-
 
 namespace surfpack {
 
@@ -249,7 +248,7 @@ unsigned block_owner(unsigned j, unsigned p, unsigned n);
   /// Return absolute, squared, or relative differences of second and third
   /// parameters through the first parameter
   void differences(VecDbl& results, VecDbl& observed,
-    VecDbl& predicted, enum DifferenceType dp = ABSOLUTE);
+    VecDbl& predicted, enum DifferenceType dp = DT_ABSOLUTE);
   
   /// Return the euclidean distance between pt1 and pt2.  Throw an exception if
   /// the dimensionality of the two vectors does not match.

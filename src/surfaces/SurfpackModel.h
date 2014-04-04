@@ -51,9 +51,9 @@ public:
   /// Compute one of several goodness of fit metrics.  The observed parameter
   /// should be a list of observed (or true) function values; the vector of
   /// predicted values gives the corresponding estimates from this surface.
-  /// The dt parameter specifies the kind of residuals to compute.  ABSOLUTE
-  /// residuals are (observed - predicted), SQUARED residuals are the squares
-  /// of the absolute residuals.  SCALED residuals are the ABSOLUTE residuals
+  /// The dt parameter specifies the kind of residuals to compute.  DT_ABSOLUTE
+  /// residuals are (observed - predicted), DT_SQUARED residuals are the squares
+  /// of the absolute residuals.  DT_SCALED residuals are the ABSOLUTE residuals
   /// divided by the observed value.  Given the type of residuals, the client
   /// may request the min, max, sum, or mean of the set of residuals over all
   /// the given data points.  Two additional metrics are possible.  The

@@ -338,8 +338,8 @@ void surfpack::differences(vector<double>& results,
   for (unsigned i = 0; i < observed.size(); i++) {
     results[i] = fabs(observed[i] - predicted[i]);
     switch (dp) {
-      case SQUARED: results[i] *= results[i]; break;
-      case SCALED: results[i] /= fabs(observed[i]); break;
+      case DT_SQUARED: results[i] *= results[i]; break;
+      case DT_SCALED: results[i] /= fabs(observed[i]); break;
     }
   }
 }

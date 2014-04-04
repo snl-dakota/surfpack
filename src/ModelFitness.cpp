@@ -34,12 +34,12 @@ Residual::Residual(DifferenceType dt_in) : dt(dt_in)
 double Residual::operator()(double observed, double predicted) const
 {
     switch(dt) {
-      case ABSOLUTE: return fabs(observed - predicted);
-      case SCALED: return fabs(observed - predicted)/fabs(observed);
-      case SQUARED: return (observed-predicted)*(observed-predicted);
+      case DT_ABSOLUTE: return fabs(observed - predicted);
+      case DT_SCALED: return fabs(observed - predicted)/fabs(observed);
+      case DT_SQUARED: return (observed-predicted)*(observed-predicted);
       default: assert(false);
     }
-    assert(dt == ABSOLUTE || dt == SCALED || dt == SQUARED); 
+    assert(dt == DT_ABSOLUTE || dt == DT_SCALED || dt == DT_SQUARED); 
     return 0.0;
 }
 
@@ -80,25 +80,25 @@ double ModelFitness::operator()(const VecDbl& obs, const VecDbl& pred) const
 ModelFitness* ModelFitness::Create(const std::string& metric, unsigned n)
 {
   if (metric == "sum_squared") {
-    return new StandardFitness(Residual(SQUARED),VecSummary(MT_SUM));
+    return new StandardFitness(Residual(DT_SQUARED),VecSummary(MT_SUM));
   } else if (metric == "mean_squared") {
-    return new StandardFitness(Residual(SQUARED),VecSummary(MT_MEAN));
+    return new StandardFitness(Residual(DT_SQUARED),VecSummary(MT_MEAN));
   } else if (metric == "root_mean_squared") {
-    return new StandardFitness(Residual(SQUARED),VecSummary(MT_ROOT_MEAN));
+    return new StandardFitness(Residual(DT_SQUARED),VecSummary(MT_ROOT_MEAN));
   } else if (metric == "max_squared") {
-    return new StandardFitness(Residual(SQUARED),VecSummary(MT_MAXIMUM));
+    return new StandardFitness(Residual(DT_SQUARED),VecSummary(MT_MAXIMUM));
   } else if (metric == "sum_scaled") {
-    return new StandardFitness(Residual(SCALED),VecSummary(MT_SUM));
+    return new StandardFitness(Residual(DT_SCALED),VecSummary(MT_SUM));
   } else if (metric == "mean_scaled") {
-    return new StandardFitness(Residual(SCALED),VecSummary(MT_MEAN));
+    return new StandardFitness(Residual(DT_SCALED),VecSummary(MT_MEAN));
   } else if (metric == "max_scaled") {
-    return new StandardFitness(Residual(SCALED),VecSummary(MT_MAXIMUM));
+    return new StandardFitness(Residual(DT_SCALED),VecSummary(MT_MAXIMUM));
   } else if (metric == "sum_abs") {
-    return new StandardFitness(Residual(ABSOLUTE),VecSummary(MT_SUM));
+    return new StandardFitness(Residual(DT_ABSOLUTE),VecSummary(MT_SUM));
   } else if (metric == "mean_abs") {
-    return new StandardFitness(Residual(ABSOLUTE),VecSummary(MT_MEAN));
+    return new StandardFitness(Residual(DT_ABSOLUTE),VecSummary(MT_MEAN));
   } else if (metric == "max_abs") {
-    return new StandardFitness(Residual(ABSOLUTE),VecSummary(MT_MAXIMUM));
+    return new StandardFitness(Residual(DT_ABSOLUTE),VecSummary(MT_MAXIMUM));
   } else if (metric == "press") {
     return new PRESSFitness();
   } else if (metric == "cv") {
@@ -108,7 +108,7 @@ ModelFitness* ModelFitness::Create(const std::string& metric, unsigned n)
   }
   string msg = "Metric '" + metric + "' not supported";
   throw msg; 
-  return new StandardFitness(Residual(SQUARED),VecSummary(MT_SUM));
+  return new StandardFitness(Residual(DT_SQUARED),VecSummary(MT_SUM));
 }
 
 
@@ -129,7 +129,7 @@ VecDbl ModelFitness::getResiduals(const Residual& resid,
 // ---------------------------------
 
 StandardFitness::StandardFitness()
-: resid(Residual(SQUARED)), vecsumry(MT_MEAN)
+: resid(Residual(DT_SQUARED)), vecsumry(MT_MEAN)
 { /* empty ctor */ }
 
 
@@ -283,7 +283,7 @@ leaveout_estimates(VecDbl& estimates, const SurfpackModel& sm,
     my_data.setExcludedPoints(SetUns());
     for (unsigned k = low; k <= high; k++) {
       estimates[indices[k]] = (*model)(my_data(indices[k]));
-      //cout << "k: " << estimates[k] << endl;
+      //cout << "for k = " << k << ": " << estimates[indices[k]] << endl;
     }
     delete model;
     delete factory;
@@ -352,7 +352,7 @@ double R2Fitness::operator()(const VecDbl& obs, const VecDbl& pred) const
   double obs_mean = surfpack::mean(obs);
   VecDbl vec_mean = VecDbl(obs.size(),obs_mean);
   StandardFitness sum_squares = 
-    StandardFitness(Residual(SQUARED),VecSummary(MT_SUM));
+    StandardFitness(Residual(DT_SQUARED),VecSummary(MT_SUM));
 
   return sum_squares(pred,vec_mean)/sum_squares(obs,vec_mean);
 }
