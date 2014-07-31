@@ -56,10 +56,9 @@ SurfpackModel* SurfpackInterface::LoadModel(const std::string& filename)
 
   // TODO: clean up where files get opened / closed
 #ifdef SURFPACK_HAVE_BOOST_SERIALIZATION
-
   bool binary = surfpack::isBinaryModelFilename(filename);
-
-  std::ifstream model_ifstream(filename.c_str());
+  
+  std::ifstream model_ifstream(filename.c_str(), (binary ? std::ios::in|std::ios::binary : std::ios::in));
   if (!model_ifstream.good())
     throw std::string("Failure opening model file for load."); 
 
@@ -89,7 +88,7 @@ void SurfpackInterface::Save(const SurfpackModel* model, const std::string& file
 #ifdef SURFPACK_HAVE_BOOST_SERIALIZATION
   bool binary = surfpack::isBinaryModelFilename(filename);
 
-  std::ofstream model_ofstream(filename.c_str());  
+  std::ofstream model_ofstream(filename.c_str(), (binary ? std::ios::out|std::ios::binary : std::ios::out));  
   if (!model_ofstream.good())
     throw std::string("Failure opening model file for save."); 
 
