@@ -3,6 +3,7 @@
 #include "SurfData.h"
 #include "surfpack.h"
 #include "ModelScaler.h"
+#include "least_squares_omp.h"
 
 using std::cout;
 using std::endl;
@@ -110,13 +111,13 @@ std::string DirectANNModel::asString() const
 ///////////////////////////////////////////////////////////
 
 DirectANNModelFactory::DirectANNModelFactory()
-  : SurfpackModelFactory(), nodes(0), range(2.0), samples(1)
+  : SurfpackModelFactory(), userNodes(0), range(2.0), samples(1)
 {
 
 }
 
 DirectANNModelFactory::DirectANNModelFactory(const ParamMap& args)
-  : SurfpackModelFactory(args), nodes(0), range(2.0), samples(1)
+  : SurfpackModelFactory(args), userNodes(0), range(2.0), samples(1)
 {
 
 }
@@ -126,15 +127,23 @@ void DirectANNModelFactory::config()
   SurfpackModelFactory::config();
   string strarg;
   strarg = params["nodes"];
-  if (strarg != "") nodes = std::atoi(strarg.c_str()); 
+  if (strarg != "") userNodes = std::atoi(strarg.c_str()); 
   strarg = params["range"];
   if (strarg != "") range = std::atof(strarg.c_str()); 
   strarg = params["samples"];
   if (strarg != "") samples = std::atoi(strarg.c_str()); 
+  strarg = params["seed"];
+  if (strarg != "") randomSeed = std::atoi(strarg.c_str()); 
 }
 
 
 typedef std::pair<double,VecDbl> KMPair;
+
+/** Create ANN model.  If nodes is specified by the caller, the exact
+    number will be used, with a cap of ssd.size() - 1 (number training
+    data).  If not specified, build will proceed with
+    min(ssd.size()-1, 100), with orthogonal matching pursuit to select
+    the optimal basis and coefficients. */
 SurfpackModel* DirectANNModelFactory::Create(const SurfData& sd)
 {
   // Scale the data (in hopes of improving numerical properties)
@@ -143,12 +152,23 @@ SurfpackModel* DirectANNModelFactory::Create(const SurfData& sd)
   ModelScaler* ms = NormalizingScaler::Create(sd, norm_factor);
   ScaledSurfData ssd(*ms,sd);
 
-  // Fix the number of nodes
-  const unsigned maxnodes = 100;
+  // Adjust the number of nodes to avoid underdetermining, though
+  // could allow and prune bases
   assert(ssd.size());
   assert(ssd.xSize());
-  if (!nodes) nodes = ssd.size() - 1;
-  if (nodes > maxnodes) nodes = maxnodes;
+  bool want_omp = false;  // whether to attempt to use OMP for LSQ solve
+  unsigned nodes = ssd.size()-1;
+  if (userNodes) {
+    nodes = std::min(userNodes, ssd.size()-1);
+    want_omp = false;
+  }
+  else {
+    // no user spec, use ssd.size()-1 up to maxnodes and try to use OMP
+    const unsigned maxnodes = 100;
+    nodes = std::min(ssd.size()-1, maxnodes);
+    want_omp = true;
+  }
+
 
   // Randomly generate weights for the first layer
   MtxDbl random_weights = randomMatrix(nodes,ssd.xSize()+1);
@@ -169,7 +189,13 @@ SurfpackModel* DirectANNModelFactory::Create(const SurfData& sd)
   VecDbl x;
   //cout << "Ready to solve" << endl;
   //cout << "ssd size: " << ssd.size() << " nodes: " << nodes << " rows: " << A.getNRows() << "  cols: " << A.getNCols() << endl;
-  surfpack::linearSystemLeastSquares(A,x,b);
+
+  if (want_omp)
+    surfpack::leastSquaresOMP(A, b, randomSeed, x); // falls back if OMP n/a
+  else
+    surfpack::linearSystemLeastSquares(A, x, b);
+  //surfpack::truncatedSVD(A,x,b);
+
   //cout << "Solved" << endl;
   SurfpackModel* model = new DirectANNModel(bs,x);
   model->scaler(ms);

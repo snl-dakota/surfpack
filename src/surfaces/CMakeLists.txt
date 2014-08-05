@@ -16,5 +16,7 @@ set(surfaces_sources
    SurfpackModel.h
    ModelScaler.cpp
    ModelScaler.h
+   least_squares_omp.cpp
+   least_squares_omp.h
 )
 

@@ -12,20 +12,36 @@
 #include "surfpack_system_headers.h"
 #include "SurfpackModel.h"
 
+
+/// The basis set is the first layer in the neural network.  It
+/// applies random weights and bias to the (previously scaled) inputs
+/// and a tanh activation function.  gamma(x) = tanh( A0 x + theta0 )
 class DirectANNBasisSet
 {
 public:
+  /// random weights and bias [ A0 | theta0 ] for input layer
   MtxDbl weights;
+
   /// default constructor used when reading from archive file
   DirectANNBasisSet() { /* empty ctor */ }
+
+  /// standard constructor accepting weights [ A0 | theta0 ] to apply
+  /// to the input layer
   DirectANNBasisSet(const MtxDbl& weights_in);
+  
+  /// evaluate the index-th basis function at the point x
   double eval(unsigned index, const VecDbl& x) const;
+
+  /// evaluate the index-th basis function derivative at the point x
   double deriv(unsigned index, const VecDbl& x, const VecUns& vars) const;
+
+  /// compute the contribution due to the index-th basis function at the point x
   double nodeSum(unsigned index, const VecDbl& x) const;
+
+  /// write the basis set as a string
   std::string asString() const;
 
 private:
-
 
 #ifdef SURFPACK_HAVE_BOOST_SERIALIZATION
   // allow serializers access to private serialize function
@@ -37,6 +53,10 @@ private:
 
 };
 
+/** The model consists of a basis set together with coefficients
+    (typically estimated from data via least squares) and a tanh
+    activation function.  The final model is 
+    tanh( A1 tanh( A0 x + theta0 ) + theta1 ) */
 class DirectANNModel : public SurfpackModel
 {
 
@@ -51,9 +71,15 @@ protected:
   /// default constructor used when reading from archive file
   DirectANNModel() { /* empty ctor */ }
 
+  /// evaluate the model at the point x
   virtual double evaluate(const VecDbl& x) const;
+
+  /// basis set mapping the input layer to the hidden layer
   DirectANNBasisSet bs;
+
+  /// coefficients and bias [ A1 | theta1 ] for hidden layer
   VecDbl coeffs;
+
 
 private:
 
@@ -80,13 +106,17 @@ friend class DirectANNModelTest;
 ///   Direct ANN Model Factory	
 ///////////////////////////////////////////////////////////
 
+
+/** Factory to generate neural network models.  If user requests a
+    specific number of nodes, use that number, up to a maximum of
+    data.size()-1.  If no specific request, use data.size()-1, with a
+    cap at 100 and use OMP to downselect. */
 class DirectANNModelFactory : public SurfpackModelFactory 
 {
 
 public:
   DirectANNModelFactory();
   DirectANNModelFactory(const ParamMap& args);
-  MtxDbl randomMatrix(unsigned nrows, unsigned ncols);
 
 protected:
 
@@ -96,12 +126,20 @@ protected:
   /// set member data prior to build; appeals to SurfpackModel::config()
   virtual void config();
 
-  unsigned nodes;
+  /// generate a random matrix over (-range/2, range/2)
+  MtxDbl randomMatrix(unsigned nrows, unsigned ncols);
+
+  /// number of user-requested hidden layer nodes
+  unsigned userNodes;
+  /// range of the random coefficients for inner layer (default 2.0 --> (-1, 1))
   double range;
+  /// unused
   unsigned samples;
+  /// random seed for cross validation-based basis selection
+  unsigned randomSeed;
 
 #ifdef SURFPACK_HAVE_BOOST_SERIALIZATION
-  // allow serializers access to private data
+  /// allow serializers access to private data
   friend class boost::serialization::access;
   /// serializer for derived class Model data
   template<class Archive> 
