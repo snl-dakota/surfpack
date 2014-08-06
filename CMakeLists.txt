@@ -34,6 +34,78 @@ if(NOT DEFINED BLAS_LIBS OR NOT DEFINED LAPACK_LIBS)
 
 endif() 
 
+
+# Surfpack optionally depends on Pecos / Teuchos for orthogonal
+# matching pursuit solver
+if (HAVE_PECOS)
+  add_definitions("-DHAVE_PECOS")
+  include_directories(${Pecos_BINARY_DIR} ${Pecos_SOURCE_DIR}/src) 
+
+  # Surfpack Teuchos management; 2 cases to consider, but support same
+  # 3 as OPT++ even though this feature can currently only be enabled
+  # running under Dakota.
+  # * Installed Trilinos
+  # * Teuchos provided elsewhere, e.g., DAKOTA
+  # * local Teuchos (separately checked out into teuchos/)
+
+  # when building inside Trilinos, the path to Teuchos will already be set
+  if (NOT BUILD_IN_TRILINOS)
+    # first probe for system-installed Trilinos
+    # this will respect Trilinos_DIR if already set
+    find_package(Trilinos QUIET)
+
+    if ( NOT Trilinos_DIR )
+
+      # if no one has configured a src Teuchos via Teuchos_DIR,
+      # see if a local one is available
+      if(Teuchos_DIR)
+	message( "in ${CMAKE_CURRENT_BINARY_DIR} Teuchos_DIR already set to ${Teuchos_DIR}" )
+      else()
+	# teuchos checked out under Surfpack
+	if( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/packages/teuchos/cmake/tribits )
+	  set( Teuchos_DIR ${CMAKE_CURRENT_BINARY_DIR}/packages/teuchos/packages/teuchos )
+	  set( Trilinos_ENABLE_Teuchos ON CACHE BOOL "Enable teuchos only" FORCE )
+          set( TPL_BLAS_LIBRARIES ${BLAS_LIBS} )
+          set( TPL_LAPACK_LIBRARIES ${LAPACK_LIBS} )
+	  add_subdirectory(teuchos)
+	elseif (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/teuchos)
+          # "Historical" directory hierarchy, before TriBITS
+	  set( Teuchos_DIR ${CMAKE_CURRENT_BINARY_DIR}/teuchos )
+	  message( "Setting Teuchos_DIR to ${Teuchos_DIR}" )
+	  add_subdirectory(teuchos)
+	  set(Teuchos_LIBRARY_DIRS "")
+	else()
+	  message(WARNING 
+	    "Surfpack requires teuchos when OMP enabled, but could not find local nor parent copy!")
+	endif()
+      endif() # Teuchos_DIR
+
+      if( EXISTS ${CMAKE_CURRENT_BINARY_DIR}/TrilinosConfig.cmake )
+	# Move the "TriBITS" config file to teuchos subdir (rather than the BuildRoot)
+	file(RENAME ${CMAKE_CURRENT_BINARY_DIR}/TrilinosConfig.cmake
+          ${CMAKE_CURRENT_BINARY_DIR}/teuchos/TrilinosConfig.cmake)
+
+	# Additional setting to prevent multiple targets with the same name
+	set(Trilinos_TARGETS_IMPORTED 1)
+      endif()
+
+      find_package( Teuchos NO_MODULE REQUIRED )
+      #message( STATUS "Teuchos_LIBRARIES for surfpack link: ${Teuchos_LIBRARIES}" )
+    else()
+      message( "Using system trilinos in ${Trilinos_DIR}" )
+    endif() # NOT Trilinos_DIR
+  endif() # NOT BUILD_IN_TRILINOS
+
+  include_directories(${Teuchos_INCLUDE_DIRS})
+  link_directories(${Teuchos_LIBRARY_DIRS})
+
+endif()
+
+# WJB - ToDo: introduce teuchos dependency when requested by team
+#include_directories(${Surfpack_BINARY_DIR}/packages/teuchos/src
+#                    ${Surfpack_SOURCE_DIR}/packages/teuchos/src)
+
+
 # Needed on MacOSX now that fortran code is split-out into separate library
 if(CMAKE_SYSTEM_NAME MATCHES Darwin)
   set(CMAKE_SHARED_LIBRARY_CREATE_Fortran_FLAGS

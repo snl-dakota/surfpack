@@ -2,16 +2,6 @@
 include_directories(${Surfpack_BINARY_DIR}
                     ${Surfpack_SOURCE_DIR}/src)
 
-if (HAVE_PECOS)
-  add_definitions("-DHAVE_PECOS")
-  include_directories(${Pecos_BINARY_DIR} ${Pecos_SOURCE_DIR}/src 
-    ${Teuchos_INCLUDE_DIRS})
-endif()
-
-# WJB - ToDo: introduce teuchos dependency when requested by team
-#include_directories(${Surfpack_BINARY_DIR}/packages/teuchos/src
-#                    ${Surfpack_SOURCE_DIR}/packages/teuchos/src)
-
 set(local_library surfpack)
 
 ## Top-level Surfpack library sources.
@@ -84,7 +74,6 @@ target_link_libraries(${local_library} ${local_library}_fortran)
 if (HAVE_PECOS)
   target_link_libraries(${local_library} pecos ${Pecos_LINK_LIBRARIES} 
     ${Teuchos_LIBRARIES} ${TEUCHOS_LIBRARY} ${LAPACK_LIBS} ${BLAS_LIBS})
-  link_directories(${Teuchos_LIBRARY_DIRS})
 endif()
 
 #target_link_libraries(surfpack_src mars teuchos conmin ${LAPACK_LIBRARIES})
