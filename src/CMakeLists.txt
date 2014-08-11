@@ -71,10 +71,10 @@ endif()
 add_library(${local_library} ${lib${local_library}_sources})
 add_library(${local_library}_fortran ${lib${local_library}_sources_fortran})
 target_link_libraries(${local_library} ${local_library}_fortran)
-if (HAVE_PECOS)
-  target_link_libraries(${local_library} pecos ${Pecos_LINK_LIBRARIES} 
-    ${Teuchos_LIBRARIES} ${TEUCHOS_LIBRARY} ${LAPACK_LIBS} ${BLAS_LIBS})
-endif()
+#if (HAVE_PECOS)
+#  target_link_libraries(${local_library} pecos ${Pecos_LINK_LIBRARIES} 
+#    ${Teuchos_LIBRARIES} ${TEUCHOS_LIBRARY} ${LAPACK_LIBS} ${BLAS_LIBS})
+#endif()
 
 #target_link_libraries(surfpack_src mars teuchos conmin ${LAPACK_LIBRARIES})
 install(TARGETS ${local_library} EXPORT ${ExportTarget} DESTINATION lib)

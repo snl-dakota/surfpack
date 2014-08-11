@@ -172,6 +172,25 @@ set(Surfpack_NKM_Tests OFF CACHE BOOL "Build the NKM test binaries?")
 #include(CTest)
 
 add_subdirectory(packages)
+
+# Define these libraries at top level so all targets use the same link order
+
+# Core Surfpack libs (linked 1st)
+set(SURFPACK_LIBS "surfpack;surfpack_fortran")
+
+# Surfpack packages/ libs (linked 2nd)
+set(SURFPACK_TPL_LIBS "ncsuopt;conmin")
+# Pecos and Teuchos are most commonly in the build tree
+if (HAVE_PECOS)
+  list(APPEND SURFPACK_TPL_LIBS pecos ${Pecos_LINK_LIBRARIES} 
+    ${Teuchos_LIBRARIES} ${TEUCHOS_LIBRARY})
+endif()
+
+# System libs (linked 3rd)
+# Shouldn't need ${FLEX_LIBRARIES} any more due to %noyywrap in lexer.l
+set(SURFPACK_SYSTEM_LIBS "${Boost_LIBRARIES};${LAPACK_LIBS};${BLAS_LIBS}")
+
+
 add_subdirectory(src)
 #add_subdirectory(tests)
 if(SURFPACK_STANDALONE)
