@@ -100,9 +100,37 @@ VecDbl DirectANNModel::gradient(const VecDbl& x) const
 std::string DirectANNModel::asString() const
 {
   std::ostringstream os;
-  os << "\nweights:\n" << bs.asString() << "coeffs: ";
-  copy(coeffs.begin(),coeffs.end(),std::ostream_iterator<double>(os," "));
-  os << "\n";
+  os << std::scientific << std::setprecision(16);
+
+  os << "\n-----";
+  os << "\nSurfpack neural network model";
+  os << "\nf(x) = tanh { A1 * tanh ( A0^T * x + theta0^T ) + theta1 }; where";
+  os << "\n\nA0 (inputs x nodes) =";
+
+  unsigned num_nodes = bs.weights.getNRows();
+  unsigned num_vars = bs.weights.getNCols() - 1;
+  for (unsigned i=0; i<num_vars; ++i) {
+    os << "\n";
+    for (unsigned n=0; n<num_nodes; ++n) {
+      os << std::setw(23) << bs.weights(n, i) << " ";
+    }
+  }
+
+  os << "\n\ntheta0 (1 x nodes) =\n";
+  for (unsigned n=0; n<num_nodes; ++n) {
+    os << std::setw(23) << bs.weights(n, num_vars) << " ";
+  }
+  
+  os << "\n\nA1 (1 x nodes) =\n";
+  for (unsigned n=0; n<num_nodes; ++n) {
+    os << std::setw(23) << coeffs[n] << " ";
+  }
+
+  os << "\n\ntheta1 (1 x 1) =\n";
+  os << std::setw(23) << coeffs.back();
+
+  os << "\n-----";
+
   return os.str();
 }
 
