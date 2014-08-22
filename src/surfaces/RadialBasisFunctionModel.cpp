@@ -297,9 +297,33 @@ VecDbl RadialBasisFunctionModel::gradient(const VecDbl& x) const
 std::string RadialBasisFunctionModel::asString() const
 {
   std::ostringstream os;
-  for (unsigned i = 0; i < rbfs.size(); i++) {
-    os << coeffs[i] << " * " << rbfs[i].asString() << "\n";
+  unsigned num_bases = rbfs.size();
+  unsigned num_vars = ndims;
+  os << "-----\n";
+  os << "Surfpack Radial Basis Function model\n";
+  os << "f(x) = w^T*phi(x) and phi_k(x) = exp{-r_k^T*(x-c_k).^2}; where\n\n";
+  os << "inputs = " << num_vars << "\n";
+  os << "bases = " << num_bases << "\n";
+ 
+  os << std::scientific << std::setprecision(16);
+  os << "\nw (1 x bases) =\n";
+  for(unsigned i=0; i < num_bases; i++) 
+    os << std::setw(23) << coeffs[i] << " ";
+  os << "\n\nr (bases x inputs) = \n";
+  for(unsigned i=0; i < num_bases; i++) {
+    for(unsigned j=0; j < num_vars; j++) {
+      os << std::setw(23) << rbfs[i].radius[j] << " ";
+    }
+    os << "\n";
   }
+  os << "\nc (bases x inputs) = \n";
+  for(unsigned i=0; i < num_bases; i++) {
+    for(unsigned j=0; j < num_vars; j++) {
+      os << std::setw(23) << rbfs[i].center[j] << " ";
+    }
+    os << "\n";
+  }
+  os << "\n-----\n";
   return os.str();
 }
 

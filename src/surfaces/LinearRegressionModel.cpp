@@ -113,9 +113,25 @@ VecDbl LinearRegressionModel::gradient(const VecDbl& x) const
 std::string LinearRegressionModel::asString() const
 {
   std::ostringstream os;
-  os << "\nbases:\n" << bs.asString() << "coeffs: ";
-  copy(coeffs.begin(),coeffs.end(),std::ostream_iterator<double>(os," "));
-  os << "\n";
+  unsigned num_bases = bs.size();
+  unsigned num_vars = ndims;
+  os << "-----\n";
+  os << "Surfpack polynomial model\n";
+  os << "f(x) = sum_k{c_k * prod_k[x(i) ^ p(k,i)]}; where\n";
+  os << "\ninputs = " << num_vars << "\n";
+  os << "bases = " << num_bases << "\n";
+  os << "\nc (1 x bases) =\n";
+  os << std::scientific << std::setprecision(16);
+  for(unsigned i=0; i<num_bases; ++i)
+    os << std::setw(23) << coeffs[i] << " ";
+  os << "\n\np (bases x inputs) = \n";
+  os << std::fixed << std::setprecision(0);
+  for(VecVecUns::const_iterator it = bs.bases.begin(); it != bs.bases.end(); ++it) {
+    for(unsigned i = 0; i < num_vars; i++)
+       os << std::setw(3) << std::count(it->begin(), it->end(), i) << " ";
+    os << "\n";
+  }
+  os << "-----\n";
   return os.str();
 }
 

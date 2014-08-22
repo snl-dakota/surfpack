@@ -100,15 +100,17 @@ VecDbl DirectANNModel::gradient(const VecDbl& x) const
 std::string DirectANNModel::asString() const
 {
   std::ostringstream os;
-  os << std::scientific << std::setprecision(16);
+  unsigned num_nodes = bs.weights.getNRows();
+  unsigned num_vars = bs.weights.getNCols() - 1;
 
   os << "\n-----";
   os << "\nSurfpack neural network model";
-  os << "\nf(x) = tanh { A1 * tanh ( A0^T * x + theta0^T ) + theta1 }; where";
-  os << "\n\nA0 (inputs x nodes) =";
+  os << "\nf(x) = tanh { A1 * tanh ( A0^T * x + theta0^T ) + theta1 }; where\n\n";
+  os << "inputs = " << num_vars << "\n";
+  os << "nodes = " << num_nodes << "\n"; 
+  os << "\nA0 (inputs x nodes) =";
 
-  unsigned num_nodes = bs.weights.getNRows();
-  unsigned num_vars = bs.weights.getNCols() - 1;
+  os << std::scientific << std::setprecision(16);
   for (unsigned i=0; i<num_vars; ++i) {
     os << "\n";
     for (unsigned n=0; n<num_nodes; ++n) {
