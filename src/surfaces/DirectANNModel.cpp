@@ -141,13 +141,13 @@ std::string DirectANNModel::asString() const
 ///////////////////////////////////////////////////////////
 
 DirectANNModelFactory::DirectANNModelFactory()
-  : SurfpackModelFactory(), userNodes(0), range(2.0), samples(1)
+  : SurfpackModelFactory(), maxNodes(0), range(2.0), samples(1)
 {
 
 }
 
 DirectANNModelFactory::DirectANNModelFactory(const ParamMap& args)
-  : SurfpackModelFactory(args), userNodes(0), range(2.0), samples(1)
+  : SurfpackModelFactory(args), maxNodes(0), range(2.0), samples(1)
 {
 
 }
@@ -157,7 +157,7 @@ void DirectANNModelFactory::config()
   SurfpackModelFactory::config();
   string strarg;
   strarg = params["nodes"];
-  if (strarg != "") userNodes = std::atoi(strarg.c_str()); 
+  if (strarg != "") maxNodes = std::atoi(strarg.c_str()); 
   strarg = params["range"];
   if (strarg != "") range = std::atof(strarg.c_str()); 
   strarg = params["samples"];
@@ -186,19 +186,15 @@ SurfpackModel* DirectANNModelFactory::Create(const SurfData& sd)
   // could allow and prune bases
   assert(ssd.size());
   assert(ssd.xSize());
-  bool want_omp = false;  // whether to attempt to use OMP for LSQ solve
-  unsigned nodes = ssd.size()-1;
-  if (userNodes) {
-    nodes = std::min(userNodes, ssd.size()-1);
-    want_omp = false;
-  }
-  else {
-    // no user spec, use ssd.size()-1 up to maxnodes and try to use OMP
+  bool want_omp = true;  // whether to attempt to use OMP for LSQ solve
+  // use user spec up to max possible, else use max possible nodes
+  unsigned nodes = (maxNodes > 0) ? std::min(maxNodes, ssd.size()-1) : 
+    ssd.size()-1; 
+  if (!want_omp) {
+    // old behavior limited to 100 nodes
     const unsigned maxnodes = 100;
-    nodes = std::min(ssd.size()-1, maxnodes);
-    want_omp = true;
+    nodes = std::min(nodes, maxnodes);
   }
-
 
   // Randomly generate weights for the first layer
   MtxDbl random_weights = randomMatrix(nodes,ssd.xSize()+1);

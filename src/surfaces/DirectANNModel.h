@@ -130,7 +130,7 @@ protected:
   MtxDbl randomMatrix(unsigned nrows, unsigned ncols);
 
   /// number of user-requested hidden layer nodes
-  unsigned userNodes;
+  unsigned maxNodes;
   /// range of the random coefficients for inner layer (default 2.0 --> (-1, 1))
   double range;
   /// unused
