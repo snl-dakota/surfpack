@@ -301,7 +301,7 @@ std::string RadialBasisFunctionModel::asString() const
   unsigned num_vars = ndims;
   os << "-----\n";
   os << "Surfpack Radial Basis Function model\n";
-  os << "f(x) = w^T*phi(x) and phi_k(x) = exp{-r_k^T*(x-c_k).^2}; where\n\n";
+  os << "f(x) = w*phi(x) and phi_k(x) = exp{-r_k*(x-c_k^T).^2}; where\n\n";
   os << "inputs = " << num_vars << "\n";
   os << "bases = " << num_bases << "\n";
  
