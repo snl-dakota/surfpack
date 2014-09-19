@@ -70,6 +70,35 @@ double NormalizingScaler::scaleResponse(double unscaled_response) const
   return (unscaled_response - descaler.offset) / descaler.scaleFactor;
 }
 
+
+VecDbl NormalizingScaler::getScalerOffsets() const
+{
+  VecDbl offsets(scalers.size());
+  for(unsigned i = 0; i < scalers.size(); i++) {
+    offsets[i] = scalers[i].offset;
+  }
+  return offsets;
+}
+
+VecDbl NormalizingScaler::getScalerScaleFactors() const
+{
+  VecDbl scaleFactors(scalers.size());
+  for(unsigned i = 0; i < scalers.size(); i++) {
+    scaleFactors[i] = scalers[i].scaleFactor;
+  }
+  return scaleFactors;
+}
+
+double NormalizingScaler::getDescalerOffset() const
+{
+  return descaler.offset;
+}
+
+double NormalizingScaler::getDescalerScaleFactor() const
+{
+  return descaler.scaleFactor;
+}
+
 ModelScaler* NormalizingScaler::Create(const SurfData& data)
 {
   vector<NormalizingScaler::Scaler> scalers(data.xSize());

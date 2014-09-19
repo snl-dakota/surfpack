@@ -102,25 +102,45 @@ std::string DirectANNModel::asString() const
   std::ostringstream os;
   unsigned num_nodes = bs.weights.getNRows();
   unsigned num_vars = bs.weights.getNCols() - 1;
+  // Variable scaling must be incorporated into bs.weights to 
+  // print out the correct A0 and theta0.
+  
+  // Get scale factors
+  VecDbl varB = dynamic_cast<NormalizingScaler *>(mScaler)->getScalerOffsets();
+  VecDbl varM = dynamic_cast<NormalizingScaler *>(mScaler)->getScalerScaleFactors();
+  double respB = dynamic_cast<NormalizingScaler *>(mScaler)->getDescalerOffset();
+  double respM = dynamic_cast<NormalizingScaler *>(mScaler)->getDescalerScaleFactor();
 
+  // Create a deep copy of bs.weights, chop off the last column using a 
+  // "feature" of its resize function, and divide its elements by m.
+  MtxDbl A0(bs.weights);
+  A0.resize(num_nodes,num_vars);
+  for(unsigned int i = 0; i < num_nodes; i++)
+    for(unsigned int j = 0; j < num_vars; j++)
+      A0(i,j) /= varM[j];
+    
   os << "\n-----";
   os << "\nSurfpack neural network model";
-  os << "\nf(x) = tanh { A1 * tanh ( A0^T * x + theta0^T ) + theta1 }; where\n\n";
+  os << "\nf(x) = m*tanh { A1 * tanh ( A0^T * x + theta0^T ) + theta1 } + b; where\n\n";
   os << "inputs = " << num_vars << "\n";
-  os << "nodes = " << num_nodes << "\n"; 
+  os << "nodes = " << num_nodes << "\n";
   os << "\nA0 (inputs x nodes) =";
 
   os << std::scientific << std::setprecision(16);
   for (unsigned i=0; i<num_vars; ++i) {
     os << "\n";
     for (unsigned n=0; n<num_nodes; ++n) {
-      os << std::setw(23) << bs.weights(n, i) << " ";
+      os << std::setw(23) << A0(n, i) << " ";
     }
   }
 
+  // Multiple A0 by varB before subtracting from theta0
+  VecDbl A0MB;
+  surfpack::matrixVectorMult(A0MB, A0, varB);
+  
   os << "\n\ntheta0 (1 x nodes) =\n";
   for (unsigned n=0; n<num_nodes; ++n) {
-    os << std::setw(23) << bs.weights(n, num_vars) << " ";
+    os << std::setw(23) << bs.weights(n, num_vars) - A0MB[n] << " ";
   }
   
   os << "\n\nA1 (1 x nodes) =\n";
@@ -130,6 +150,12 @@ std::string DirectANNModel::asString() const
 
   os << "\n\ntheta1 (1 x 1) =\n";
   os << std::setw(23) << coeffs.back();
+
+  os << "\n\nm (1x1) =\n";
+  os << std::setw(23) << respM;
+
+  os << "\n\nb (1x1) =\n";
+  os << std::setw(23) << respB;
 
   os << "\n-----";
 

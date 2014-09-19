@@ -82,6 +82,10 @@ public:
   virtual double descale(double scaled_response) const;
   virtual double scaleResponse(double unscaled_response) const ;
   virtual std::string asString();
+  virtual VecDbl getScalerOffsets() const;
+  virtual VecDbl getScalerScaleFactors() const;
+  virtual double getDescalerOffset() const;
+  virtual double getDescalerScaleFactor() const;
   NormalizingScaler(const std::vector<Scaler>& s, const Scaler& d) 
     : scalers(s), descaler(d), result(s.size()) {}
   ~NormalizingScaler() {}
@@ -90,7 +94,7 @@ public:
   // constructor to normalize each var/resp to [ -norm_factor, norm_factor ]
   static ModelScaler* Create(const SurfData& data, double norm_factor);
   virtual ModelScaler* clone() const;
-
+  
 protected:
 
   std::vector<Scaler> scalers;
