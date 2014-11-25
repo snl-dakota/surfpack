@@ -13,44 +13,86 @@ namespace nkm {
   //    assert((data.size()>=NRowsAct*NColsAct)&&(NRowsAct>=NRows)&&(NColsAct>=NCols));
 
 
-/************************************************************************/
-/************************************************************************/
-/************************************************************************/
-/**************** The SurfMat Class template Starts Here ****************/
-/************************************************************************/
-/************************************************************************/
-/************************************************************************/
-
+/**
+ * The SurfMat Class template
+ */
 template<typename T>
 class SurfMat
 {
 public:
-  //default constructor, does not allocate memory
+  /**
+   * Default constructor, does not allocate memory
+   */
   SurfMat() {
-    tol  =static_cast<T>(0);  //of type T, so one type conversion every construction
+    tol  =static_cast<T>(0);  /**< of type T, so one type conversion every construction */
     NRowsAct=NColsAct=NRows=NCols=0;
     return;
   };
   
-  //typical matrix constructor, defaults to 1 column (a vector) if the number of columns is not specified
+  /*
+   * Typical matrix constructor, defaults to 1 column (a vector)
+   * if the number of columns is not specified
+   *
+   * @param nrows_in
+   *            the number of rows
+   * @param ncols_in
+   *            the number of columns
+   */
   SurfMat(int nrows_in, int ncols_in);
   
-  //copy constructor, make a deep copy
+  /**
+   * Copy constructor, makes a deep copy
+   *
+   * @param other
+   *            object to copy from
+   */
   SurfMat(const SurfMat<T>& other);
   
-  //copy from vector constructor
+  /**
+   * Copy from vector constructor
+   *
+   * @param vecT
+   *            Vector to copy from
+   * @param nrows_in
+   *            number of rows to copy from vector
+   * @param ncols_in
+   *            number of columns
+   */
   SurfMat(const std::vector<T> &vecT, int nrows_in=-99999, int ncols_in=1);
 
-  //destructor 
+  /**
+   * Destructor
+   */
   ~SurfMat() {
     clear();
     return;
   };
   
-  //deallocate memory
+  /**
+   * Deallocates memory
+   */
   void clear();
   
-  //change this matrix to a matrix with nrows_new apparent rows and ncols_new apparent columns, it does not attempt to preserve values in memory which, if a change is needed, makes it faster than reshape2 or resize2: if the matrices actual number of rows and actual number of columns it will just change the apparent number of rows and apparent number of columns without actually changing the memory foot print unless the user forces memory reallocation by specifying if_force=true.  Normally, this function won't do anything if you request a new size the same as the current size. The user can force the memory footprint of this matrix to shrink to exactly the requested ammount by specifying if_force=true
+  /**
+   * Change this matrix to a matrix with nrows_new apparent rows and ncols_new apparent columns.
+   *
+   * It does not attempt to preserve values in memory which,
+   * if a change is needed, makes it faster than reshape2 or resize2:
+   * if the matrices actual number of rows and actual number of columns it will
+   * just change the apparent number of rows and apparent number of columns without
+   * actually changing the memory foot print unless the user forces memory reallocation
+   * by specifying if_force=true.  Normally, this function won't do anything if
+   * you request a new size the same as the current size. The user can force the
+   * memory footprint of this matrix to shrink to exactly the requested amount by
+   * specifying if_force=true
+   *
+   * @param nrows_new
+   *        the number of rows to change to
+   * @param ncols_new
+   *        the number of columns to change to
+   * @param if_force
+   *        forces memory footprint to shrink if true
+   */
   inline void newSize(int nrows_new, int ncols_new, bool if_force=false){
     if((NRows!=nrows_new)||(NCols!=ncols_new)||
        ((if_force==true)&&((nrows_new!=NRowsAct)||(ncols_new!=NColsAct)))) {      
@@ -67,7 +109,18 @@ public:
 #endif
     return;};
 
-  //enlarge or shrink the matrix while keeping contigous in memory elements contiguous in memory: this function doesn't do anything if you request a new size the same as the current size
+  /**
+   * Enlarge or shrink the matrix while keeping contiguous in memory elements contiguous in memory
+   *
+   * This function doesn't do anything if you request a new size the same as the current size
+   *
+   * @param nrows_new
+   *        the number of rows to change to
+   * @param ncols_new
+   *        the number of columns to change to
+   * @param if_force
+   *        forces memory footprint to shrink if true
+   */
   inline void reshape(int nrows_new, int ncols_new, bool if_force=false){
     if((NRows!=nrows_new)||(NCols!=ncols_new)||
        ((if_force==true)&&((nrows_new!=NRowsAct)||(ncols_new!=NColsAct)))) {
@@ -82,7 +135,21 @@ public:
 #endif
   return;};
 
-  //enlarge or shrink the matrix while adding zeros after the last row and/or last column and/or chopping off the rows and/or columns after the newly requested last row and/or column: this function doesn't do anything if you request a new size the same as the current size
+  /**
+   * Enlarge or shrink the matrix while adding zeros
+   *
+   * Enlarge or shrink the matrix while adding zeros after the last row and/or last column
+   * and/or chopping off the rows and/or columns after the newly requested last row
+   * and/or column: this function doesn't do anything if you request a new size the same
+   * as the current size.
+   *
+   * @param nrows_new
+   *            the number of rows to change to
+   * @param ncols_new
+   *            the number of columns to change to
+   * @param if_force
+   *            forces memory footprint to shrink if true
+   */
   inline void resize(int nrows_new, int ncols_new, bool if_force=false){
     if((NRows!=nrows_new)||(NCols!=ncols_new)||
        ((if_force==true)&&((nrows_new!=NRowsAct)||(ncols_new!=NColsAct)))) {
@@ -100,11 +167,17 @@ public:
     return;
   };
   
-  ///set all of the matrix's elements to zero
+  /**
+   * Set all of the matrix's elements to zero
+   */
   //void zero(){int nelems=getNElems(); for(int k=0; k<nelems; k++) data[k]=0; return;};
-  inline void zero(){int nelems=getNElems(); for(int k=0; k<nelems; k++) data[k]=0; return;};
+  inline void zero(){int nelems=getNElemsAct(); for(int k=0; k<nelems; k++) data[k]=0; return;};
 
-  ///set all of the matrix's elements to zero, except for the diagonal (i=j) which is set to 1, works for rectangular matrices
+  /**
+   * Set all of the matrix's elements to zero, except for the diagonal (i=j) which is set to 1
+   *
+   * @note Works for rectangular matrices
+   */
   inline void identity(){
     zero(); 
     int n=(NRows<NCols)?NRows:NCols; 
@@ -113,35 +186,93 @@ public:
     return;
   }
   
-  ///make a deep copy
+  /**
+   * Make a deep copy
+   *
+   * @param other
+   *        object to copy
+   * @param if_force
+   *        forces memory footprint to shrink if true
+   *
+   * @return new object that's a copy of the matrix
+   */
   SurfMat<T>& copy(const SurfMat<T>& other, bool if_force=false);
 
 
-  // Assignment operator.  Performs deep copy.
+  /**
+   *  Assignment operator.  Performs deep copy.
+   *
+   *  @return new object that's a copy
+   */
   inline SurfMat<T>& operator=(const SurfMat<T>& other){return (copy(other));};
 
-  //return the actual number of rows
+  /**
+   * Get the actual number of rows
+   *
+   * @return the actual number of rows
+   */
   inline int getNRowsAct() const {return NRowsAct;};
   
-  //return the apparent number of rows
+  /**
+   * Get the apparent number of rows
+   *
+   * @return the apparent number of rows
+   */
   inline int getNRows() const {return NRows;};
 
-  //return the actual number of columns
+  /**
+   * Get the actual number of columns
+   *
+   * @return the actual number of columns
+   */
   inline int getNColsAct() const {return NColsAct;};
   
-  //return the apparent number of columns
+  /**
+   * Get the apparent number of columns
+   *
+   * @return the apparent number of columns
+   */
   inline int getNCols() const {return NCols;};
   
-  //return the actual number of elements
+  /**
+   * Get the actual number of elements
+   *
+   * @return the actual number of elements
+   */
   inline int getNElemsAct() const {return (data.size());};
 
-  //return the apparent number of elements
+  /**
+   * Get the apparent number of elements
+   *
+   * @return the apparent number of elements
+   */
   inline int getNElems() const {return (NRows*NCols);};
 
+  /**
+   * Get the equality tolerance
+   *
+   * @return the equality tolerance
+   */
   inline const T getTol() const {return tol;};
+
+  /**
+   * Set the equality tolerance
+   *
+   * @param tol_in
+   *            the equality tolerance
+   */
   inline void putTol(T tol_in){tol=tol_in; return;};
   
-  //matrix style retrieve of a single element from the matrix by value
+  /**
+   * Matrix style retrieval operator of a single element from the matrix by value
+   *
+   * @param i
+   *        row of the element
+   * @param j
+   *        column of the element
+   *
+   * @return the matrix value
+   */
   inline const T& operator()(int i, int j) const {
 #ifdef __SURFMAT_ERR_CHECK__
     if(!((data.size()>=NRowsAct*NColsAct)&&(NRowsAct>=NRows)&&(NColsAct>=NCols))){
@@ -160,7 +291,16 @@ public:
     return const_cast<T&> (data[jtoi[j]+i]);};
 
   
-  //matrix style retrieve of a single element from the matrix by reference
+  /**
+   * Matrix style retrieval operator of a single element from the matrix by reference
+   *
+   * @param i
+   *        row of the element
+   * @param j
+   *        column of the element
+   *
+   * @return reference to the value
+   */
 #ifndef  __SURFMAT_ERR_CHECK__
   inline T& operator()(int i, int j) {
 #else
@@ -199,7 +339,16 @@ public:
   };
   */
 
-  //matrix style retrieve of pointer to element, for passing to BLAS & LAPACK convenience
+  /**
+   * Matrix style retrieve of pointer to element, for passing to BLAS & LAPACK convenience
+   *
+   * @param i
+   *        row of the element
+   * @param j
+   *        column of the element
+   *
+   * @return pointer to matrix element
+   */
   inline T* ptr(int i, int j){
 #ifdef __SURFMAT_ERR_CHECK__
     assert((data.size()>=NRowsAct*NColsAct)&&(NRowsAct>=NRows)&&(NColsAct>=NCols)&&(jtoi.size()>=NColsAct));
@@ -207,6 +356,17 @@ public:
 #endif
     return &(data[jtoi[j]+i]);
   };
+
+  /**
+   * Matrix style retrieve of pointer to element, for passing to BLAS & LAPACK convenience
+   *
+   * @param i
+   *        row of the element
+   * @param j
+   *        column of the element
+   *
+   * @return pointer to matrix element
+   */
 
   inline const T* ptr(int i, int j) const {
 #ifdef __SURFMAT_ERR_CHECK__
@@ -216,25 +376,71 @@ public:
     return &(data[jtoi[j]+i]);
   };
 
-  ///returns the smallest value contained in this matrix, wraps T& minElem(T& val ,int& loc)
+  /**
+   * Get the smallest value contained in this matrix, wraps T& minElem(T& val ,int& loc)
+   *
+   * @return the smallest value in the matrix
+   */
   inline T minElem() const;
   
-  ///returns the location of the smallest value contained in this matrix, if there is a tie it returns the location of the first one encountered, wraps T& minElem(T& val ,int& loc)
+  /**
+   * Gets the location of the smallest value contained in this matrix.
+   *
+   * If there is a tie it returns the location of the first one encountered,
+   * wraps T& minElem(T& val ,int& loc)
+   *
+   * @return location of the smallest value
+   */
   inline int iMinElem() const;
   
-  ///returns the smallest value contained in this matrix and its location in loc, if there is a tie it records the location of the first smallest value encountered
+  /**
+   * Get the smallest value contained in this matrix and its location in loc.
+   *
+   * If there is a tie it records the location of the first smallest value encountered
+   *
+   * @param val
+   *        smallest value
+   * @param loc
+   *        smallest value location
+   */
   inline void minElem(T& val, int& loc) const;
   
-  ///returns the largest value contained in this matrix, wraps T& maxElem(T& val ,int& loc)
+  /**
+   * Gets the largest value contained in this matrix, wraps T& maxElem(T& val ,int& loc)
+   *
+   * @return largets value
+   */
   inline T maxElem() const;
   
-  ///returns the location of the largest value contained in this matrix, if there is a tie it returns the location of the first one encountered, wraps T& maxElem(T& val ,int& loc)
+  /**
+   * Gets the location of the largest value contained in this matrix
+   *
+   * If there is a tie it returns the location of the first one encountered, wraps T& maxElem(T& val ,int& loc)
+   *
+   * @return location of the largest value
+   */
   inline int iMaxElem() const;
 
-  ///returns the largest value contained in this matrix and its location in loc, if there is a tie it records the location of the first largest value encountered
+  /**
+   * Get the largest value contained in this matrix and its location in loc.
+   *
+   * If there is a tie it records the location of the first largest value encountered
+   *
+   * @param val
+   *        largest value
+   * @param loc
+   *        largest value location
+   */
   inline void maxElem(T& val, int& loc) const;
   
-  ///returns the smallest and largest values contained in this matrix
+  /**
+   * Get the smallest and largest values contained in this matrix
+   *
+   * @param smallest
+   *            smallest value
+   * @param largest
+   *            largest value
+   */
   inline void minMaxElem(T& smallest, T& largest) const {
     int nelem=NRows*NCols;
 #ifdef __SURFMAT_ERR_CHECK__
@@ -250,7 +456,17 @@ public:
     return;
   };
   
-  ///replace the values in row "irow" of this matrix with the values stored in vecT_row; this function will NOT expand the size of this matrix if you specify a row index larger than NRows-1.
+  /**
+   * replace the values in row "irow" of this matrix with the values stored in vecT_row
+   *
+   * This method will NOT expand the size of this matrix if you specify a row index larger
+   * than NRows-1.
+   *
+   * @param vecT_row
+   *        the vector to use
+   * @param irow
+   *        the row to replace
+   */
   inline void putRows(const std::vector<T>& vecT_row, int irow) {
 #ifdef __SURFMAT_ERR_CHECK__
     assert((data.size()>=NRowsAct*NColsAct)&&(NRowsAct>=NRows)&&(NColsAct>=NCols)&&(jtoi.size()>=NColsAct));
@@ -261,7 +477,16 @@ public:
     return;    
   };
 
-  ///replace the values in row "irow" of this matrix with the entries listed in string s; it returns 0 if the string and row have the same number of entries and 1 otherwise
+  /**
+   * Replace the values in row "irow" of this matrix with the entries listed in string s
+   *
+   * @param s
+   *        the string to use
+   * @param irow
+   *        the row to replace
+   *
+   * @return 0 if the string and row have the same number of entries and 1 otherwise
+   */
   inline int putRows(const std::string& s, int irow) {
 #ifdef __SURFMAT_ERR_CHECK__
     assert((data.size()>=NRowsAct*NColsAct)&&(NRowsAct>=NRows)&&(NColsAct>=NCols)&&(jtoi.size()>=NColsAct));
@@ -281,7 +506,17 @@ public:
     return(!((j==NCols)&&(is.eof())));
   };    
 
-  ///replace the values in row "irow" of this matrix with the values stored in "row"; this function will NOT expand the size of this matrix if you specify a row index larger than NRows-1.
+  /**
+   *  Replace the values in row "irow" of this matrix with the values stored in "row"
+   *
+   *  This method will NOT expand the size of this matrix if you specify a row index
+   *  larger than NRows-1.
+   *
+   *  @param row
+   *        the row to use
+   *  @param irow
+   *        the row to replace
+   */
   inline void putRows(const SurfMat<T>& row, int irow) {
 #ifdef __SURFMAT_ERR_CHECK__
     assert((data.size()>=NRowsAct*NColsAct)&&(NRowsAct>=NRows)&&(NColsAct>=NCols)&&(jtoi.size()>=NColsAct));
@@ -293,7 +528,17 @@ public:
     return;    
   };
   
-  ///replace the values in multiple rows (which rows they are is specified in irows) of this matrix with the values stored in "rows"; this function will NOT expand the size of this matrix if you specify a row index larger than NRows-1.
+  /**
+   *  Replace the values in multiple rows of this matrix with the values stored in "rows"
+   *
+   *  This method will NOT expand the size of this matrix if you specify a row index
+   *  larger than NRows-1.
+   *
+   *  @param rows
+   *        the rows to use
+   *  @param irows
+   *        the rows to replace
+   */
   inline void putRows(const SurfMat<T>& rows, SurfMat<int> irows) {
     int nrows_put=irows.getNRows();
 #ifdef __SURFMAT_ERR_CHECK__
@@ -308,7 +553,16 @@ public:
     return;
   };
   
-  ///replace the values in column "jcol" of this matrix with the values stored in vector "vecT_col"; this function will NOT expand the size of this matrix if you specify a column index larger than NCols-1.
+  /**
+   * Replace the values in column "jcol" of this matrix with the values stored in vector "vecT_col"
+   *
+   * This method will NOT expand the size of this matrix if you specify a column index larger than NCols-1.
+   *
+   * @param vectT_col
+   *        vector to use
+   * @param jcol
+   *        column to replace
+   */
   inline void putCols(const std::vector<T>& vecT_col, int jcol) {
 #ifdef __SURFMAT_ERR_CHECK__
     assert((data.size()>=NRowsAct*NColsAct)&&(NRowsAct>=NRows)&&(NColsAct>=NCols)&&(jtoi.size()>=NColsAct));
@@ -319,7 +573,18 @@ public:
     return;
   };
 
-  ///replace the values in column "jcol" of this matrix with the entries listed in string s; it returns 0 if the string and column have the same number of entries and 1 otherwise this function will NOT expand the size of this matrix if you specify a column index larger than NCols-1.
+  /**
+   * Replace the values in column "jcol" of this matrix with the entries listed in string s
+   *
+   * This method will NOT expand the size of this matrix if you specify a column index larger than NCols-1.
+   *
+   * @param s
+   *        string to use
+   * @param jcol
+   *        column to replace
+   *
+   * @return 0 if the string and column have the same number of entries and 1 otherwise
+   */
   inline int putCols(const std::string& s, int jcol) {
 #ifdef __SURFMAT_ERR_CHECK__
     assert((data.size()>=NRowsAct*NColsAct)&&(NRowsAct>=NRows)&&(NColsAct>=NCols)&&(jtoi.size()>=NColsAct));
@@ -335,7 +600,17 @@ public:
     return(!((i==NRows)&&(is.eof()))); 
   };
 
-  ///replace the values in column "jcol" of this matrix with the values stored in "col"; this function will NOT expand the size of this matrix if you specify a column index larger than NCols-1.
+  /**
+   * Replace the values in column "jcol" of this matrix with the values stored in "col"
+   *
+   * This function will NOT expand the size of this matrix if you specify a column index
+   * larger than NCols-1.
+
+   * @param col
+   *        column to use
+   * @param jcol
+   *        column to replace
+   */
   inline void putCols(const SurfMat<T>& col, int jcol) {
 #ifdef __SURFMAT_ERR_CHECK__
     assert((data.size()>=NRowsAct*NColsAct)&&(NRowsAct>=NRows)&&(NColsAct>=NCols)&&(jtoi.size()>=NColsAct));
@@ -354,7 +629,17 @@ public:
     return;
   };
 
-  ///replace the values in multiple columns (which columns they are is specified in jcols) of this matrix with the values stored in "cols"; this function will NOT expand the size of this matrix if you specify a column index larger than NCols-1.
+  /**
+   * Replace the values in multiple columns of this matrix with the values stored in "cols"
+   *
+   * This function will NOT expand the size of this matrix if you specify a column index
+   * larger than NCols-1.
+   *
+   * @param cols
+   *        column(s) to use
+   * @param jcol
+   *        column to replace
+   */
   inline void putCols(const SurfMat<T>& cols, SurfMat<int> jcols) {
     int ncols_put=jcols.getNRows();
 #ifdef __SURFMAT_ERR_CHECK__
@@ -386,7 +671,18 @@ public:
     return;
   };
   
-  ///get one row (index stored in irow) of this matrix and return as a "row vector" 
+  /**
+   * Get one row (index stored in irow) of this matrix and return as a "row vector"
+   *
+   * @param result
+   *        the resulting row vector
+   * @param irow
+   *        the row index to get
+   * @param if_force
+   *        forces memory footprint to shrink if true
+   * @return
+   *        the resulting row vector
+   */
   inline SurfMat<T>& getRows(SurfMat<T>& result, int irow, bool if_force=false) const {
 #ifdef __SURFMAT_ERR_CHECK__
     assert((data.size()>=NRowsAct*NColsAct)&&(NRowsAct>=NRows)&&(NColsAct>=NCols)&&(jtoi.size()>=NColsAct));
@@ -402,7 +698,18 @@ public:
     return result;
   };
   
-  ///get multiple rows (indices stored in matrix irows) of this matrix and return as a new matrix
+  /**
+   * Get multiple rows (indices stored in matrix irows) of this matrix and return as a new matrix
+   *
+   * @param result
+   *        the resulting matrix
+   * @param irows
+   *        the row(s) to get
+   * @param if_force
+   *        forces memory footprint to shrink if true
+   * @return
+   *        the resulting matrix
+   */
   inline SurfMat<T>& getRows(SurfMat<T>& result, SurfMat<int>& irows, bool if_force=false) const {
 #ifdef __SURFMAT_ERR_CHECK__
     assert((irows.getNCols()==1)&&
@@ -420,7 +727,18 @@ public:
     return result;
   };
   
-  ///get one column (index stored in jcol) of this matrix and return as a vector
+  /**
+   * Get one column (index stored in jcol) of this matrix and return as a vector
+   *
+   * @param result
+   *        the resulting vector
+   * @param jcol
+   *        the column to get
+   * @param if_force
+   *        forces memory footprint to shrink if true
+   * @return
+   *        the resulting vector
+   */
   inline SurfMat<T>& getCols(SurfMat<T>& result, int jcol, bool if_force=false) const {
 #ifdef __SURFMAT_ERR_CHECK__
     assert((data.size()>=NRowsAct*NColsAct)&&(NRowsAct>=NRows)&&(NColsAct>=NCols)&&(jtoi.size()>=NColsAct));
@@ -432,7 +750,18 @@ public:
     return result;
   };
   
-  ///get multiple columns (indices stored in matrix jcols) of this matrix and return as a new matrix
+  /**
+   * Get multiple columns (indices stored in matrix jcols) of this matrix and return as a new matrix
+   *
+   * @param result
+   *        the resulting matrix
+   * @param jcols
+   *        the column(s) to get
+   * @param if_force
+   *        forces memory footprint to shrink if true
+   * @return
+   *        the resulting column
+   */
   inline SurfMat<T>& getCols(SurfMat<T>& result, SurfMat<int>& jcols, bool if_force=false) const {
 #ifdef __SURFMAT_ERR_CHECK__
     assert((jcols.getNCols()==1)&&
@@ -450,25 +779,85 @@ public:
     return result;
   };
   
-  ///returns a copy of the matrix excluding 1 row whose index is stored in irow, this isn't an inline because you will need to copy all but 1 row
+  /**
+   * Gets a copy of the matrix excluding one row whose index is stored in irow
+   *
+   * @param result
+   *        the resulting matrix
+   * @param irow
+   *        the row index to exclude
+   * @param if_force
+   *        forces memory footprint to shrink if true
+   * @return the resulting matrix
+   */
   SurfMat<T>& excludeRows(SurfMat<T>& result, int irow, bool if_force=false);
-  
+
+  /**
+   * Gets a copy of the matrix that excludes all the rows whose index is stored in irows
+   *
+   * @param result
+   *        the resulting matrix
+   * @param irows
+   *        the row index(es) to exclude
+   * @param if_force
+   *        forces memory footprint to shrink if true
+   * @return the resulting matrix
+   */
   ///returns a copy of the matrix that excludes all rows whose indices are stored in the matrix irows, this isn't an inline because for the typical use you will need to copy most of the matrix
   SurfMat<T>& excludeRows(SurfMat<T>& result, SurfMat<int>& irows, bool if_force=false);
   
-  ///returns a copy of the matrix excluding 1 column whose index is stored in jcol, this isn't an inline because you will need to copy all but 1 column
+  /**
+   * Gets a copy of the matrix excluding one column whose index is stored in jcol
+   *
+   * @param result
+   *        the resulting matrix
+   * @param jcol
+   *        the column index to exclude
+   * @param if_force
+   *        forces memory footprint to shrink if true
+   * @return the resulting matrix
+   */
   SurfMat<T>& excludeCols(SurfMat<T>& result, int jcol, bool if_force=false);
   
-  ///return a copy of the matrix that excludes all columns whose indices are stored in the matrix jcols, this isn't an inline because for the typical use case you will need to copy most of the matrix
+  /**
+   * Gets a copy of the matrix that excludes all the columns whose index is stored in jcols
+   *
+   * @param result
+   *        the resulting matrix
+   * @param jcols
+   *        the column index(es) to exclude
+   * @param if_force
+   *        forces memory footprint to shrink if true
+   * @return the resulting matrix
+   */
   SurfMat<T>& excludeCols(SurfMat<T>& result, SurfMat<int>& jcols, bool if_force=false);
   
-  ///used in the generic matrix quicksort; returns -1 if a-b<-tol, 0 if -tol<=a-b<=tol, +1 if tol<a-b
+  /**
+   * Compare 2 elements
+   *
+   * Used in the generic matrix quicksort
+   *
+   * @param ia
+   *        index of first element to compare
+   * @param ib
+   *        index of 2nd element to compare
+   * @return -1 if a-b<-tol, 0 if -tol<=a-b<=tol, +1 if tol<a-b
+   */
   inline int compareElemAElemB(int ia, int ib) {
     T diff=data[ia]-data[ib];
     return(-(diff<-tol)+(tol<diff));
   }
   
-  ///used in the generic matrix quicksort; swap the ia-th and ib-th elements of the "vector"
+  /**
+   * Swap the ia-th and ib-th elements of the "vector"
+   *
+   * Used in the generic matrix quicksort
+   *
+   * @param ia
+   *        index of first element to swap
+   * @param ib
+   *        index of 2nd element to swap
+   */
   inline void swapElems(int ia, int ib) {
     T swap=data[ia];
     data[ia]=data[ib];
@@ -476,18 +865,54 @@ public:
     return;
   };
   
-  ///ascending sort the elements of the matrix as if it were a vector, could easily add an integer argument (+1 or -1) that indicates whether you want to sort into ascending or descending order, would need to add a field to the matrix though
+  /**
+   * Ascending sort the elements of the matrix as if it were a vector
+   *
+   * @todo Could easily add an integer argument (+1 or -1) that indicates whether you
+   *       want to sort into ascending or descending order, would need to add a field
+   *       to the matrix though
+   */
   inline void sortElems() {
     qsortElems(0,getNElems()-1);
     return;
   };
   
 
+  /**
+   * Quicksort elements of the matrix
+   *
+   * @param istart
+   *        index of element to start at
+   * @param istop
+   *        index of element to stop at
+   */
   void qsortElems(int istart, int istop);
+
+  /**
+   * Quicksort rows of the matrix
+   *
+   * @param istart
+   *        index of row to start at
+   * @param istop
+   *        index of row to stop at
+   */
   void qsortRows(int istart, int istop);
+
+  /**
+   * Quicksort columns of the matrix
+   *
+   * @param istart
+   *        index of column to start at
+   * @param istop
+   *        index of column to stop at
+   */
   void qsortCols(int istart, int istop);
 
-  ///performs an ascending unique sort of the elements, eliminates duplicates, and reshapes it into a (shruken, if appropriate) vector
+  /**
+   * Performs an ascending unique sort of the elements.
+   *
+   * Eliminates duplicates, and reshapes it into a (shruken, if appropriate) vector
+   */
   inline void uniqueElems() {
     int nelems=getNElems();
     reshape(nelems,1); //make sure the data we are about to quick sort is contiguous
@@ -510,7 +935,22 @@ public:
     return;
   };
   
-  ///used in the generic matrix quicksort; compares 2 rows (a and b) starting with column 0; it returns -1 if a-b<-tol, or +1 if tol<a-b, if -tol<=a-b<=tol it moves onto column 1, then 2 and so on, iff every column of the 2 rows are equal then it returns 0, could add a column order field to the matrix to add the capability to change the order in which the rows are sorted and whether or not you wanted to do an ascending or descending sort
+  /**
+   * Compares 2 rows (a and b) starting with column 0
+   *
+   * Used in the generic matrix quicksort.
+   *
+   * @todo Could add a column order field to the matrix to add the capability to change
+   *       the order in which the rows are sorted and whether or not you wanted to do an ascending
+   *       or descending sort
+   * @param irowa
+   *        index of first row to compare
+   * @param irowb
+   *        index of 2nd row to compare
+   * @return -1 if a-b<-tol, or +1 if tol<a-b; if -tol<=a-b<=tol it moves onto
+   *         column 1, then 2 and so on, if every column of the 2 rows are equal
+   *         then it returns 0.
+   */
   inline int compareRowARowB(int irowa, int irowb) {
     T diff;
     int j=0;
@@ -521,7 +961,16 @@ public:
     return (-(diff<-tol)+(tol<diff));  //could multiply outermost () by +1/-1 for ascending/descending
   };
   
-  ///used in the generic matrix quicksort; swap rows a and b of the matrix
+  /**
+   * Swap rows a and b of the matrix
+   *
+   * used in the generic matrix quicksort
+   *
+   * @param irowa
+   *        index of first row to swap
+   * @param irowb
+   *        index of 2nd row to swap
+   */
   inline void swapRows(int irowa, int irowb) {
     T Tswap;
     for(int j=0; j<NCols; j++) {
@@ -532,34 +981,60 @@ public:
     return;
   };
   
-  ///ascending sort the rows of the matrix (comparing from left to right), you could easily add a MtxInt argument with 2 rows the first indicating order of columns being compared, the second being +1 or -1 to indicate to sort that row into ascending or descending order, would need to add a field to the matrix though
+  /**
+   * Ascending sort the rows of the matrix (comparing from left to right)
+   *
+   * @todo You could easily add a MtxInt argument with 2 rows the first indicating order
+   *       of columns being compared, the second being +1 or -1 to indicate to sort that
+   *       row into ascending or descending order, would need to add a field to the matrix
+   *       though
+   */
   inline void sortRows() {
     qsortRows(0,NRows-1);
     return;
   };
   
-  ///performs an ascending sort of the rows, eliminates duplicates, and shrinks the matrix if it is appropriate to do so
+  /**
+   * Performs an ascending sort of the rows
+   *
+   * Eliminates duplicates, and shrinks the matrix if it is appropriate to do so
+   */
   inline void uniqueRows() {
     if(NRows>1) {
       sortRows();
-      int i,k;
-      for(i=1, k=2; k<NRows; ++k) 
-	if(k!=i)
-	  if(compareRowARowB(k,i)) {
-	    //only copy in the next row that's different from our "current marker" rather than move all rows one row earlier
-	    if(compareRowARowB(i,i-1))
-	      ++i; //make i the index of the row after the one we are keeping
-	    if(k!=i)
-	      for(int j=0; j<NCols; ++j)
-		data[jtoi[j]+i]=data[jtoi[j]+k];
-	    ++i; //make i the index of the row after the one we are keeping
-	  }   
+      int i,k,j;
+      for(i=1; i<NRows; ++i)
+	{
+	  if(compareRowARowB(i,i-1) == 0)
+	    break;
+	}
+      for(k=i+1; k<NRows; ++k) 
+	if(compareRowARowB(k,i)) {
+	  //only copy in the next row that's different from our "current marker" rather than move all rows one row earlier
+	  for(j=0; j<NCols; ++j)
+	    data[jtoi[j]+i]=data[jtoi[j]+k];
+	  ++i; //make i the index of the row after the one we are keeping
+	}   
       resize(i,NCols); //i is the index of the rows after the last one we are keeping, i.e. the number of rows that we are keeping, this is just record keeping of the number of unique rows, it won't actually change the size of memory.
     }
     return;
   };
   
-  ///used in the generic matrix quicksort; compares 2 columns starting with row 0; it returns -1  if a-b<-tol, or +1 if tol<a-b, if -tol<=a-b<=tol it moves onto the next row, iff every row of the 2 columns have -tol<=a-b<=tol then it returns 0, could add a row order field to the matrix to add the capability to change the order in which the columns are sorted and whether or not you wanted to do an ascending or descending sort
+  /**
+   * Compares 2 columns starting with row 0
+   *
+   * Used in the generic matrix quicksort
+   *
+   * @todo could add a row order field to the matrix to add the capability to change the
+   *       order in which the columns are sorted and whether or not you wanted to do an
+   *       ascending or descending sort
+   * @param jcola
+   *        index of first column to compare
+   * @param jcolb
+   *        index of 2nd column to compare
+   * @return -1 if a-b<-tol, or +1 if tol<a-b, if -tol<=a-b<=tol it moves onto the next row
+   *          if every row of the 2 columns have -tol<=a-b<=tol then it returns 0
+   */
   inline int compareColAColB(int jcola, int jcolb) {
     T diff;
     int i=0;
@@ -570,7 +1045,16 @@ public:
     return (-(diff<-tol)+(tol<diff));
   };
 
-  ///used in the generic matrix quicksort; swap columns a and b of the matrix
+  /**
+   * Swap columns a and b of the matrix
+   *
+   * Used in the generic matrix quicksort
+   *
+   * @param jcola
+   *        index of first column to swap
+   * @param jcolb
+   *        index of 2nd column to swap
+   */
   inline void swapCols(int jcola, int jcolb) {
     T Tswap;
     for(int i=0; i<NRows; i++) {
@@ -581,52 +1065,115 @@ public:
     return;
   };
   
-  ///ascending sort the coluns of the matrix (comparing from row zero onward), you could easily add a MtxInt argument with 2 columns the first indicating order of columns being compared (some rows can be omitted if you don't want to include them as sorting criteria), the second column being +1 or -1 to indicate to sort that row into ascending or descending order, would need to add a field to the matrix though
+  /**
+   * Ascending sort the columns of the matrix (comparing from row zero onward)
+   *
+   * @todo You could easily add a MtxInt argument with 2 columns the first indicating
+   *       order of columns being compared (some rows can be omitted if you don't want
+   *       to include them as sorting criteria), the second column being +1 or -1 to
+   *       indicate to sort that row into ascending or descending order, would need to
+   *       add a field to the matrix though
+   */
   inline void sortCols() {
     qsortCols(0,NCols-1);
     return;
   };
   
-  ///performs an ascending sort of the columns, eliminates duplicates, and shrinks the matrix if it is appropriate to do so
+  /**
+   * Performs an ascending sort of the columns
+   *
+   * Eliminates duplicates, and shrinks the matrix if it is appropriate to do so
+   */
   inline void uniqueCols() {
     if(NCols>1) {
       sortCols();
-      int i,j,k;
-      for(j=1, k=2; k<NCols; ++k) 
-	if(k!=j)
-	  if(compareColAColB(k,j)) {
-	    //only copy in the next coll that's different from our "current marker" rather than move all rows one row earlier
-	    if(compareColAColB(j,j-1))
-	      ++j; //make i the index of the row after the one we are keeping
-	    if(j!=k)
-	      for(int i=0; i<NRows; ++i)
-		data[jtoi[j]+i]=data[jtoi[k]+i];
-	    ++j; //make i the index of the row after the one we are keeping
-	  }   
+      int i,j,k,j2i,k2i;
+      for(j=1; j<NCols; ++j)
+	{
+	  if(compareColAColB(j,j-1) == 0)
+	    {
+	      break;
+	    }
+	}
+      j2i = jtoi[j];
+      for(k=j+1; k<NCols; ++k) 
+	if(compareColAColB(k,j-1)) {
+	  //only copy in the next coll that's different from our "current marker" rather than move all rows one row earlier
+	  k2i = jtoi[k];
+	  for(int i=0; i<NRows; ++i)
+	    {
+	      
+	      data[j2i+i]=data[k2i+i];
+	    }
+	  ++j; //make i the index of the row after the one we are keeping
+	  j2i = jtoi[j];
+	}   
+
       reshape(NRows,j); //not an error, want contiguous memory chopping, reshape will call reshape2, resize would call resize2 which would call reshape2  
     }
     return;
   };
 
 private:
-  ///newSize2 should not be called by anything except newSize
+
+  /**
+   * Enlarge or shrink the matrix without preserving it's contents
+   *
+   * This is here for speed (resize2 and reshape2 are slower because they involve copying data,
+   * inherently done by realloc when it can't grab extra space at the end of the array)
+   *
+   * newSize2 should not be called by anything except newSize
+   *
+   * @param nrows_new
+   *            the number of rows to change to
+   * @param ncols_new
+   *            the number of columns to change to
+   * @param if_force
+   *            forces memory footprint to shrink if true
+   */
   void newSize2(int nrows_new, int ncols_new, bool if_force=false);
-  //reshape2 should not be called by anything but reshape and resize2
+
+  /**
+   * Enlarge or shrink the matrix while keeping contigous in memory elements contiguous in memory
+   *
+   * Reshape2() should not be called by anything but reshape() and resize2()
+   *
+   * @param nrows_new
+   *        the number of rows to change to
+   * @param ncols_new
+   *        the number of columns to change to
+   * @param if_force
+   *        forces memory footprint to shrink if true
+   */
   void reshape2(int nrows_new, int ncols_new, bool if_force=false);
-  //resize2 should not be called by anything but resize
+
+  /**
+   * Enlarge or shrink the matrix while keeping contigous in memory elements contiguous in memory
+   *
+   * Resize2 should not be called by anything but resize
+   *
+   */
   void resize2(int nrows_new, int ncols_new, bool if_force=false);
-  int NRowsAct; //number of allocated rows, passed to LAPACK as LDA
-  int NColsAct; //number of allocated columns
-  int NRows; //number of used rows, passed to LAPACK as the number of rows
-  int NCols; //number of used columns
+  int NRowsAct; /**< number of allocated rows, passed to LAPACK as LDA */
+  int NColsAct; /**< number of allocated columns */
+  int NRows; /**< number of used rows, passed to LAPACK as the number of rows */
+  int NCols; /**< number of used columns */
   std::vector<T>  data;
   std::vector<int> jtoi;
-  T   tol; //an inequaltiy tolerance for equality checking should be 0 for integers, WARNING TO WHOEVER FINISHES IMPLEMENTING THIS, you will have to decide what to do with tol when you clear(), newsize(), reshape(), or resize() the matrix, you will likely need to modify the contructors
+
+  /**< An inequaltiy tolerance for equality checking. Should be 0 for integers
+   *
+   * @todo WARNING TO WHOEVER FINISHES IMPLEMENTING THIS, you will have to decide what to do with tol
+   *       when you clear(), newsize(), reshape(), or resize() the matrix, you will likely need to modify
+   *       the contructors
+   */
+  T   tol;
+
   
   //this shouldn't be necessary but do it for good measure
   friend void mtxqsort(int istart, int istop,
-		       int (* compare_a_b)(int ia, int ib),
-		       void (* swap_a_b)(int ia, int ib));
+                       int (* compare_a_b)(int ia, int ib),
+                       void (* swap_a_b)(int ia, int ib));
 
 #ifdef SURFPACK_HAVE_BOOST_SERIALIZATION
   // allow serializers access to private data
