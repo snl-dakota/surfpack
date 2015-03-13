@@ -24,7 +24,16 @@ surfdata_to_nkm_surfdata(const SurfData& sd, nkm::SurfData& nkm_sd)
 {
   unsigned num_points = sd.size();
   unsigned x_size = sd.xSize();
-  unsigned f_size = sd.fSize();
+  // BMA: NKM allows the data to have multiple responses, but the
+  // Surfpack architecture (and NKM) assumes the model is built over a
+  // single active response index.  Here, we only map in the data for
+  // a single response instead of using the nkm::SurfData::setIOut()
+  // feature, to avoid duplicating the response data for every model.
+  // We leave the general loops provided by KRD until future
+  // improvements.
+  unsigned f_active = sd.getDefaultIndex();
+  unsigned f_size = 1;
+  //  unsigned f_size = sd.fSize();
 
   nkm::MtxDbl XR(x_size,num_points), Y(f_size, num_points);
   std::vector<std::vector<nkm::MtxDbl> > derY(f_size);
@@ -58,7 +67,7 @@ surfdata_to_nkm_surfdata(const SurfData& sd, nkm::SurfData& nkm_sd)
     for (unsigned x_index=0; x_index<x_size; ++x_index)
       XR(x_index,point_index) = x[x_index];
     for (unsigned f_index=0; f_index<f_size; ++f_index) 
-      Y(f_index,point_index) = point.F(f_index);
+      Y(f_index,point_index) = point.F(f_active);
 
 
     // given NKM ordering of derY, probably need to loop differently
@@ -69,7 +78,7 @@ surfdata_to_nkm_surfdata(const SurfData& sd, nkm::SurfData& nkm_sd)
     if (point.fGradientsSize() > 0) {
       for (unsigned f_index=0; f_index < f_size; ++f_index) {
 	assert(der_order(f_index,0)>=1);  //could change this to a throw
-	const vector<double>& sd_gradient = point.fGradient(f_index);
+	const vector<double>& sd_gradient = point.fGradient(f_active);
 	//cout << "Surfpack gradient for point " << point_index << ", function "
 	//     << f_index << ": [ ";
 	for (unsigned x_index=0; x_index < x_size; ++x_index) {
@@ -91,7 +100,7 @@ surfdata_to_nkm_surfdata(const SurfData& sd, nkm::SurfData& nkm_sd)
       for (unsigned f_index=0; f_index<f_size; ++f_index) {
 	assert(der_order(f_index,0)>=2);  //could change this to a throw
 
-	const SurfpackMatrix<double>& sd_hessian = point.fHessian(f_index);
+	const SurfpackMatrix<double>& sd_hessian = point.fHessian(f_active);
 	//cout << "Surfpack Hessian for point " << point_index << ", function "
 	//     << f_index << " is:\n";
 	unsigned der_index=0;
@@ -121,7 +130,10 @@ surfdata_to_nkm_surfdata(const SurfData& sd, nkm::SurfData& nkm_sd)
   const SurfPoint& constraint_point = sd.getConstraintPoint();
 
   nkm_sd = nkm::SurfData(XR, Y, der_order, derY);
-  
+
+  // Could use this, but instead opting to not copy needless columns
+  // of data into each model...
+  //  nkm_sd.setIOut(f_active_index);
 }
 
 
