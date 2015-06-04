@@ -3395,6 +3395,9 @@ c     k=tb(3,m)+.1                                                       2680
       b(l)=r                                                             2818
       do 1 j=1,2                                                         2819
       i=nk+j                                                             2820
+c     BMA, 20150604: I believe m <= nk in the calling code, yet this 
+c                    indexes nk+1, nk+2 here, yielding out of bounds;
+c                    don't see any easy fix.
       t=d(k,i)                                                           2821
       d(k,i)=d(l,i)                                                      2822
       d(l,i)=t                                                           2823
@@ -3619,6 +3622,9 @@ c     ip=tb(4,ip)+.1                                                     3033
       k=k+1                                                              3037
       go to 5                                                            3038
     6 x(l1,k)=tb(3,ip)                                                   3039
+c     BMA, 20150604: index 2 of x is out of bounds in some cases; clear
+c                    as x(nt,l) above, however x is a subset of another
+c                    array; don't see any easy fix.
       x(l1,l+k)=sign(1.0,t)                                              3040
 c     ip=tb(4,ip)+.1                                                     3041
       ip=int(tb(4,ip)+.1)                                               SLB06
