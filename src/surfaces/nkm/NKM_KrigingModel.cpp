@@ -895,6 +895,75 @@ std::string KrigingModel::model_summary_string() const {
     }
   }
   oss << "\n------------------------------------\n";
+
+
+#if 0
+  // experimental output for algebraic model form
+  oss << "-----\n";
+
+  // overall form
+  oss << "Gaussian Process model: f(x) = h(xs) + r(xs)^T m; where\n";
+
+  unsigned num_bases = nTrend;
+  unsigned num_vars = numVarsr;
+  oss << "inputs = " << num_vars << "\n";
+  oss << "bases = " << num_bases << "\n";
+  // only numPointsKeep build points are retained in the approximation
+  oss << "build = " << numPointsKeep << "\n";
+
+  // x scaling; KRD encodes more info in the scales, so this could be wrong
+  MtxDbl unscalexr;
+  scaler.getUnscaleXr(unscalexr);
+  oss << "\nxs = (x - shift) ./ mult; where\n";
+  oss << "\nshift (1 x inputs) = \n";
+  oss << std::scientific << std::setprecision(16);
+  for(int ixr = 0; ixr < num_vars; ++ixr)
+    oss << std::setw(23) << unscalexr(ixr,1) << " ";
+  oss << "\n\nmult (1 x inputs) = \n";
+  for(int ixr = 0; ixr < num_vars; ++ixr)
+    oss << std::setw(23) << unscalexr(ixr,0) << " ";
+
+  // trend; using same form as polynomial model 
+  // (there's a typo in the prod_k, I think)
+  oss << "\n\nh(x) = sum_k{c_k * prod_k[x(i) ^ p(k,i)]}; where\n";
+  oss << "\nc (1 x bases) =\n";
+  oss << std::scientific << std::setprecision(16);
+  for (int itrend = 0; itrend < num_bases; ++itrend)
+    oss << std::setw(23) << betaHat(itrend,0) << " ";
+  oss << "\n\np (bases x inputs) = \n";
+  oss << std::fixed << std::setprecision(0);
+  for (int itrend = 0; itrend < num_bases; ++itrend) {
+    for(int ixr = 0; ixr < num_vars; ++ixr)
+      oss << std::setw(3) << Poly(ixr, itrend) << " ";
+    oss << "\n";
+
+  }
+
+  // correlation
+  // r(x), j-th element
+  oss << "\nr(x) (build x 1); where\n";
+  oss << "r(x;j) = exp{ -sum_i[ corr(i) * ( x(i) - xbuild(i,j) )^2 ] }\n";
+  // correlation parameters (not lengths):
+  oss << "\ncorr (inputs x 1) = \n";
+  oss << std::scientific << std::setprecision(16);
+  for(int ixr = 0; ixr < num_vars; ++ixr)
+    oss << std::setw(23) << correlations(ixr,0) << " ";
+  // training data x values:
+  oss << "\n\nxbuild (inputs x build) = \n";
+  for(int ixr = 0; ixr < num_vars; ++ixr) {
+    for (int ibld = 0; ibld < numPointsKeep; ++ibld)
+      oss << std::setw(23) << XRreorder(ixr, ibld) << " ";
+    oss << "\n";
+  }
+  // m = rhs = Rinv*(Y-G^T*betaHat)
+  oss << "\nm (build x 1) = \n";
+  for (int ibld = 0; ibld < numPointsKeep; ++ibld)
+    oss << std::setw(23) << rhs(ibld, 0) << " ";
+  oss << "\n";
+
+  oss << "-----\n";
+#endif
+
   return (oss.str());  
 }
 

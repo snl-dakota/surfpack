@@ -653,6 +653,12 @@ private:
   inline double scaleFactorVarY(int iy=-99999) const {return (mySd->scaleFactorVarY(iy));};
   inline double unScaleFactorVarY(int iy=-99999) const {return (mySd->unScaleFactorVarY(iy));};
 
+  // BMA: this violates the encapsulation Keith was going for.
+  // Hopefully temporary.
+  inline MtxDbl& getUnscaleXr(MtxDbl& unscale) const { 
+    return (mySd->getUnscaleXr(unscale)); 
+  } 
+
   friend class SurfPackModel;
   friend class KrigingModel;
   friend class GradKrigingModel;
