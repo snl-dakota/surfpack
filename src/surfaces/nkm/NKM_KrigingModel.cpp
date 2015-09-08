@@ -897,12 +897,17 @@ std::string KrigingModel::model_summary_string() const {
   oss << "\n------------------------------------\n";
 
 
-#if 0
+  return (oss.str());  
+}
+
+std::string KrigingModel::asString() const {
+ 
+  std::ostringstream oss;
   // experimental output for algebraic model form
-  oss << "-----\n";
+  oss << "------------------------------------\n";
 
   // overall form
-  oss << "Gaussian Process model: f(x) = h(xs) + r(xs)^T m; where\n";
+  oss << "Gaussian Process model: f(x) = Ymult*h(xs) + Ymult*r(xs)^T m + Yshift; where\n";
 
   unsigned num_bases = nTrend;
   unsigned num_vars = numVarsr;
@@ -914,15 +919,23 @@ std::string KrigingModel::model_summary_string() const {
   // x scaling; KRD encodes more info in the scales, so this could be wrong
   MtxDbl unscalexr;
   scaler.getUnscaleXr(unscalexr);
-  oss << "\nxs = (x - shift) ./ mult; where\n";
-  oss << "\nshift (1 x inputs) = \n";
+  oss << "\nxs = (x - Xshift) ./ Xmult; where\n";
+  oss << "\nXshift (1 x inputs) = \n";
   oss << std::scientific << std::setprecision(16);
   for(int ixr = 0; ixr < num_vars; ++ixr)
     oss << std::setw(23) << unscalexr(ixr,1) << " ";
-  oss << "\n\nmult (1 x inputs) = \n";
+  oss << "\n\nXmult (1 x inputs) = \n";
   for(int ixr = 0; ixr < num_vars; ++ixr)
     oss << std::setw(23) << unscalexr(ixr,0) << " ";
-
+  
+  // Also must unscale the result
+  MtxDbl unscaley;
+  scaler.getUnscaleY(unscaley);
+  oss << "\n\nYshift (1 x 1) = \n";
+  oss << std::scientific << std::setprecision(16);
+  oss << std::setw(23) << unscaley(0,1);
+  oss << "\n\nYmult (1 x 1) = \n";
+  oss << std::setw(23) << unscaley(0,0);
   // trend; using same form as polynomial model 
   // (there's a typo in the prod_k, I think)
   oss << "\n\nh(x) = sum_k{c_k * prod_k[x(i) ^ p(k,i)]}; where\n";
@@ -944,7 +957,7 @@ std::string KrigingModel::model_summary_string() const {
   oss << "\nr(x) (build x 1); where\n";
   oss << "r(x;j) = exp{ -sum_i[ corr(i) * ( x(i) - xbuild(i,j) )^2 ] }\n";
   // correlation parameters (not lengths):
-  oss << "\ncorr (inputs x 1) = \n";
+  oss << "\ncorr (1 x inputs) = \n";
   oss << std::scientific << std::setprecision(16);
   for(int ixr = 0; ixr < num_vars; ++ixr)
     oss << std::setw(23) << correlations(ixr,0) << " ";
@@ -958,14 +971,13 @@ std::string KrigingModel::model_summary_string() const {
   // m = rhs = Rinv*(Y-G^T*betaHat)
   oss << "\nm (build x 1) = \n";
   for (int ibld = 0; ibld < numPointsKeep; ++ibld)
-    oss << std::setw(23) << rhs(ibld, 0) << " ";
+    oss << std::setw(23) << rhs(ibld, 0) << "\n";
   oss << "\n";
-
-  oss << "-----\n";
-#endif
+  oss << "------------------------------------\n";
 
   return (oss.str());  
 }
+
 
 void KrigingModel::preAllocateMaxMemory() {
   //this preallocates the maximum sizce of arrays whose size depends on how many equations were discarded by pivoted Cholesky and they could possibly be allocated to a different size than their maximum the first time they are allocated.

@@ -657,6 +657,9 @@ private:
   // Hopefully temporary.
   inline MtxDbl& getUnscaleXr(MtxDbl& unscale) const { 
     return (mySd->getUnscaleXr(unscale)); 
+  }
+  inline MtxDbl& getUnscaleY(MtxDbl& unscale) const { 
+    return (mySd->getUnscaleY(unscale)); 
   } 
 
   friend class SurfPackModel;

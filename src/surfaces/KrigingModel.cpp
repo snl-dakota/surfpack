@@ -246,7 +246,7 @@ MtxDbl KrigingModel::hessian(const VecDbl& x) const
 std::string KrigingModel::asString() const
 {
 
-  return (nkmKrigingModel->model_summary_string());
+  return (nkmKrigingModel->asString());
   // TODO: be able to write NKM_KrigingModel as a string
   //assert(false);
 

@@ -51,6 +51,9 @@ public:
 
   std::string model_summary_string() const;
 
+  // Return a string containing the model in "algebraic" format
+  std::string asString() const;
+
   // BMA TODO: can we redesign so these need not be public?
   void set_conmin_parameters(OptimizationProblem& opt) const;
 
