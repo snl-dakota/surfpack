@@ -27,6 +27,10 @@ class RadialBasisFunction
 
 public:
 
+  /// default constructor used when reading from archive file; for factory 
+  /// pattern, woud prefer private, but we are compromising due to
+  /// Boost.Serialization requirements
+  RadialBasisFunction() { /* empty ctor */}
   RadialBasisFunction(const VecDbl& center_in, const VecDbl& radius_in);
   RadialBasisFunction(const std::string& center_in, const std::string& radius_in);
   double operator()(const VecDbl& x) const;
@@ -39,9 +43,6 @@ public:
   VecDbl radius;
 
 private:
-
-  /// default constructor used when reading from archive file 
-  RadialBasisFunction() { /* empty ctor */}
 
 #ifdef SURFPACK_HAVE_BOOST_SERIALIZATION
     // allow serializers access to private data
