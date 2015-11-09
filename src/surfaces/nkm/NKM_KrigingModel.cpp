@@ -83,7 +83,7 @@ KrigingModel::KrigingModel(const SurfData& sd, const ParamMap& params)
 	      << "For Gradient Enhanced Kriging (GEK) you must use "
 	      << "derivative_order=1.\nHigher order derivative "
 	      << "enhanced Kriging (e.g. Hessian Enhanced Kriging)\n"
-	      << "has not been implemented." << std::cerr;
+	      << "has not been implemented." << std::endl;
     assert(false);
   }
 
