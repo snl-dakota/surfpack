@@ -908,29 +908,33 @@ public:
    */
   void qsortCols(int istart, int istop);
 
-  /**
+/**
    * Performs an ascending unique sort of the elements.
    *
-   * Eliminates duplicates, and reshapes it into a (shruken, if appropriate) vector
+   * Eliminates duplicates, and reshapes it into a (shrunken, if
+   * appropriate) vector
    */
   inline void uniqueElems() {
     int nelems=getNElems();
-    reshape(nelems,1); //make sure the data we are about to quick sort is contiguous
+    reshape(nelems,1); // make sure the data we are about to quick
+		       // sort is contiguous
     if(nelems>1) {
-      sortElems();    
-      int i,k;
-      for(i=1, k=2; k<nelems; ++k) 
-	if(data[k]!=data[i]) {
-	  //only copy in the next element that's different from our "current marker" rather than move all elements one element earlier
-	  if(data[i]!=data[i-1]) 
-	    ++i; //make i the index of the element after the one we are keeping
-	  data[i]=data[k];
-	  ++i; //make i the index of the element after the one we are keeping
-	}
-      //if data is unique run into a problem with the last element because k==i makes data[i]==data[k] the second to last time through k increases i doesn't so last element can get left off so we need to fix this
-      if((i<nelems)&&(data[i-1]<data[i]))
-	++i;
-      reshape(i,1); //i is the index of the element after the last one we are keeping, i.e. the number of elements that we are keeping, this is just record keeping of the number of unique elements, it won't actually change the size of memory.
+      sortElems();
+      int i=0;
+      for(int k=1; k<nelems; ++k) {
+	if(data[i]!=data[k]) {
+	  ++i;
+	  if(i<k) data[i]=data[k];
+	}              
+      }                            
+      ++i;
+      if(i<nelems) {
+	// i is the index of the element after the last one we are
+	// keeping, i.e. the number of elements that we are keeping,
+	// this is just record keeping of the number of unique
+	// elements, it won't actually change the size of memory.
+	reshape(i,1); 
+      }
     }
     return;
   };
