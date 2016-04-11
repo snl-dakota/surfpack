@@ -45,7 +45,7 @@ extern "C"
 double surfpack_eval_model(const double * const eval_pt, unsigned int num_vars)
 {
   // evaluate the surfpack model, using a std::vector
-  std::vector<double> eval_vec(&eval_pt[0], &eval_pt[num_vars-1]);
+  std::vector<double> eval_vec(eval_pt, eval_pt + num_vars);
   return surfpackCModel->operator()(eval_vec);
 }
 
