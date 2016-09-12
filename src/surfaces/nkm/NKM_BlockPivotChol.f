@@ -1,5 +1,5 @@
-      SUBROUTINE BLOCKPIVOTCHOL( UPLO, N, A, LDA, BLCKSZ, PIV, RANK, 
-     $     DWORK, TOL, INFO )
+      SUBROUTINE NKM_BLOCKPIVOTCHOL( UPLO, N, A, LDA, BLCKSZ, PIV, RANK,
+     $     DWORK, TOL, INFO ) BIND(C)
       IMPLICIT NONE
 C     
 C     Keith Dalbey, Sandia National Laboratories, June, 2011 some 

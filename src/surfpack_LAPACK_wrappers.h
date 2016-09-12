@@ -25,8 +25,13 @@
 /***************************************************************************/
 
 #ifdef HAVE_CONFIG_H
-#define PIVOTCHOL_F77 F77_FUNC(pivotchol,PIVOTCHOL)
-#define BLOCKPIVOTCHOL_F77 F77_FUNC(blockpivotchol,BLOCKPIVOTCHOL)
+
+// BMA (2016): Changed to use Fortran 2003 ISO C bindings.
+// The Fortran symbol will be lowercase with same name as if in C
+//#define NKM_PIVOTCHOL_F77 F77_FUNC(nkm_pivotchol,NKM_PIVOTCHOL)
+//#define NKM_BLOCKPIVOTCHOL_F77 F77_FUNC(nkm_blockpivotchol,NKM_BLOCKPIVOTCHOL)
+#define NKM_PIVOTCHOL_F77 nkm_pivotchol
+#define NKM_BLOCKPIVOTCHOL_F77 nkm_blockpivotchol
 
 
 #define DGETRF_F77 F77_FUNC(dgetrf,DGETRF)
@@ -53,8 +58,13 @@
 //
 #else
 // Use the CMake generated fortran name mangling macros (eliminate warnings)
-#define PIVOTCHOL_F77 SURF77_GLOBAL(pivotchol,PIVOTCHOL)
-#define BLOCKPIVOTCHOL_F77 SURF77_GLOBAL(blockpivotchol,BLOCKPIVOTCHOL)
+
+// BMA (2016): Changed to use Fortran 2003 ISO C bindings.
+// The Fortran symbol will be lowercase with same name as if in C
+//#define NKM_PIVOTCHOL_F77 SURF77_GLOBAL(nkm_pivotchol,NKM_PIVOTCHOL)
+//#define NKM_BLOCKPIVOTCHOL_F77 SURF77_GLOBAL(nkm_blockpivotchol,NKM_BLOCKPIVOTCHOL)
+#define NKM_PIVOTCHOL_F77 nkm_pivotchol
+#define NKM_BLOCKPIVOTCHOL_F77 nkm_blockpivotchol
 
 
 #define DGETRF_F77 SURF77_GLOBAL(dgetrf,DGETRF) 
@@ -88,9 +98,9 @@
 extern "C" { // prevent C++ name mangling
 
 //wrapper for KRD's implementation of the pivoting cholesky algorithm of: C. Lucas, "LAPACK-style Codes for LEvel2 and 3 Pivoted Cholesky Factorizations", Numerical Analysis Report No. 442, February 2004, from the Manchester Center for Computational Mathematics, I downloaded it from http://www.maths.manchester.ac.uk/~nareports/narep442.pdf, I think that Lucas's lev3pchol.f was ALWAYS defaulting to his lev2pchol.f, but this implementation was between 5% and 10% faster than Lucas's for the test problem (a 5500x5500 R matrix paviani 10D, 500 pts)
-void PIVOTCHOL_F77(const char* uplo, const int* n, double* A, const int* lda,
+void NKM_PIVOTCHOL_F77(const char* uplo, const int* n, double* A, const int* lda,
 		   int* piv, int* rank, const double* tol, int* info);
-void BLOCKPIVOTCHOL_F77(const char* uplo, const int* n, double* A, 
+void NKM_BLOCKPIVOTCHOL_F77(const char* uplo, const int* n, double* A,
 			const int* lda, const int *blocksize, int* piv, 
 			int* rank, double *dwork, const double* tol, 
 			int* info);

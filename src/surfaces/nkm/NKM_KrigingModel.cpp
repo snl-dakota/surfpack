@@ -3735,7 +3735,7 @@ void KrigingModel::equationSelectingCholR(){
   //fortran doesn't have to copy one half to the other, having both 
   //halves makes the memory access faster (can always go down columns)
   numPointsKeep=numPoints;
-  PIVOTCHOL_F77(&uplo, &numPoints, RChol.ptr(0,0), &ld_RChol,
+  NKM_PIVOTCHOL_F77(&uplo, &numPoints, RChol.ptr(0,0), &ld_RChol,
     		iPtsKeep.ptr(0,0), &numPointsKeep, &min_allowed_rcond, 
 		&info); 
 
@@ -4248,7 +4248,7 @@ void KrigingModel::trendSelectingPivotedCholesky(){
   //go down columns)
   int num_trend_keep=-max_trend_to_keep; //RANK<0 on input tells PIVOTCHOL_F77 
   //that we only want to keep the first abs(RANK) entries so it can stop early
-  PIVOTCHOL_F77(&uplo, &nTrend, G_Rinv_Gtran_Chol.ptr(0,0), 
+  NKM_PIVOTCHOL_F77(&uplo, &nTrend, G_Rinv_Gtran_Chol.ptr(0,0),
 		&ld_G_Rinv_Gtran_Chol, iTrendKeep.ptr(0,0), &num_trend_keep, 
 		&min_allowed_rcond, &info); 
   

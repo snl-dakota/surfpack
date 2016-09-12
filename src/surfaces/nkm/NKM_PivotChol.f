@@ -1,4 +1,5 @@
-      SUBROUTINE PIVOTCHOL( UPLO, N, A, LDA, PIV, RANK, TOL, INFO )
+      SUBROUTINE NKM_PIVOTCHOL( UPLO, N, A, LDA, PIV, RANK, TOL, INFO )
+     1           BIND(C)
       IMPLICIT NONE
 C     
 C     Keith Dalbey, Sandia National Laboratories, June, 2011 some 
