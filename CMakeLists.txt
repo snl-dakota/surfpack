@@ -123,13 +123,14 @@ if (NOT HAVE_NCSUOPT)
 endif()
 
 
-option(ENABLE_SPEC_MAINT "Enable Surfpack specification maintenance mode." OFF)
-if(ENABLE_SPEC_MAINT AND NOT UNIX)
+option(SURFPACK_ENABLE_SPEC_MAINT 
+  "Enable Surfpack specification maintenance mode." OFF)
+if(SURFPACK_ENABLE_SPEC_MAINT AND NOT UNIX)
   message(FATAL_ERROR 
     "Surfpack specification maintenance mode only available on UNIX platforms")
 endif()
 
-if(ENABLE_SPEC_MAINT)
+if(SURFPACK_ENABLE_SPEC_MAINT)
   find_package(BISON)
   find_package(FLEX)
 endif()
