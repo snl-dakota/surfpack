@@ -718,7 +718,7 @@ direct_objective_eval(int *n, double c[], double l[], double u[], int point[],
 
     if (*start == 1)
       for (int i=0; i<nx; i++)
-	curr_vars(1,0) = (c[i]+u[i])*l[i];
+	curr_vars(i,0) = (c[i]+u[i])*l[i];
     else {
       for (int i=0; i<nx; i++) {
 	// c[pos+i*maxfunc] = c(pos,i) in Fortran.
