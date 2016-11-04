@@ -86,23 +86,23 @@ SurfpackModel* MarsModelFactory::Create(const SurfData& sd)
 {
   this->add("ndims",surfpack::toString(sd.xSize()));
   this->config();
-  delete [] xMatrix;
-  delete [] fm;
-  delete [] im;
+  //delete [] xMatrix;
+  //delete [] fm;
+  //delete [] im;
   int nmcv = 0;
   int ntcv = 0;
   //int max_bases = 15;
   //int max_interactions = 2;
   n = static_cast<int>(sd.size());
   np = static_cast<int>(sd.xSize());
-  xMatrix = new real[n*np];
+  real* xMatrix = new real[n*np];
   real* y = new real[n];
   real* w = new real[n];
   int* lx = new int[np];
   int fmsize = 3+max_bases*(5*max_interactions+nmcv+6)+2*np+ntcv;
   int imsize = 21+max_bases*(3*max_interactions+8);
-  fm = new real[fmsize];
-  im = new int[imsize];
+  real* fm = new real[fmsize];
+  int* im = new int[imsize];
   real* sp = new real[2*(n*(max(max_bases+1,2)+3)+
 			 max(3*n+5*max_bases+np,max(2*np,4*n)))+
 		      2*np+4*max_bases];
@@ -145,26 +145,35 @@ SurfpackModel* MarsModelFactory::Create(const SurfData& sd)
   //printIntMatrix(lx,np,1,cout);
   MARS_F77(n,np,xMatrix,y,w,max_bases,max_interactions,lx,fm,im,sp,dp,mm);
   SurfpackModel* model = new MarsModel(ndims,fm,fmsize,im,imsize,interpolation);
-  delete [] y;
-  delete [] w;
-  delete [] lx;
-  delete [] sp;
-  delete [] dp;
+
   delete [] mm;
+  delete [] dp;
+  delete [] sp;
+  // BMA 20161104: xMatrix, fm, and im used to be member variables and
+  // weren't being deleted, but aren't needed after model construction
+  // as they are copied into MarsModel vecs.  Delete to avoid memory
+  // leak.
+  delete [] im; //im = NULL;
+  delete [] fm; //fm = NULL;
+  delete [] lx;
+  delete [] w;
+  delete [] y;
+  delete [] xMatrix; //xMatrix = NULL;
+
   assert(model);
   return model;
 }
 
 MarsModelFactory::MarsModelFactory()
   : SurfpackModelFactory(),
-  xMatrix(0), fm(0), im(0), max_interactions(2), max_bases(25)
+  max_interactions(2), max_bases(25)
 {
 
 }
 
 MarsModelFactory::MarsModelFactory(const ParamMap& args)
   : SurfpackModelFactory(args),
-  xMatrix(0), fm(0), im(0), max_interactions(2), max_bases(25)
+  max_interactions(2), max_bases(25)
 {
 
 }

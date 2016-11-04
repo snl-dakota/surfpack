@@ -78,9 +78,11 @@ protected:
   /// set member data prior to build; appeals to SurfpackModel::config()
   virtual void config();
 
-  real* xMatrix;
-  real* fm;
-  int* im;
+  // BMA 20161107: These could persist as class data, but changed to
+  // realloc to avoid potential memory leaks
+  /* real* xMatrix; */
+  /* real* fm; */
+  /* int* im; */
   int n;
   int np;
   int max_bases; 
