@@ -97,7 +97,7 @@ double LinearRegressionModel::evaluate(const VecDbl& x) const
 VecDbl LinearRegressionModel::gradient(const VecDbl& x) const
 {
   assert(!x.empty());
-  cout << "IN gradient x[0] = " << x[0] << endl;
+  //cout << "IN gradient x[0] = " << x[0] << endl;
   assert(coeffs.size() == bs.bases.size());
   VecUns diff_var(1,0); // variable with which to differentiate
   VecDbl result(x.size(),0.0);
