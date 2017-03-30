@@ -110,7 +110,6 @@ double LinearRegressionModel::variance(const VecDbl& x) const
   // matmult = x_new'inv(Xbasis'Xbasis)x_new
   double matmult = surfpack::dot_product(xnew, x_tmp2); 
   double var = meanSquaredError*(1+matmult);
-  std::cout << "mse = " << meanSquaredError << std::endl;
   return var;
 }
 
