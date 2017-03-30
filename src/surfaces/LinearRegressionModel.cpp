@@ -3,6 +3,7 @@
 #include "LinearRegressionModel.h"
 #include "SurfData.h"
 #include "ModelScaler.h"
+#include "SurfpackInterface.h"
 
 using std::cout;
 using std::endl;
@@ -57,7 +58,7 @@ double LRMBasisSet::deriv(unsigned index, const VecDbl& x, const VecUns& vars) c
   //cout << " Val: " << coeff*term << endl;
   return coeff*term;
 }
-  
+
 std::string LRMBasisSet::asString() const
 {
   std::ostringstream os;
@@ -74,10 +75,9 @@ void LRMBasisSet::add(const std::string& s_basis)
   bases.push_back(surfpack::toVec<unsigned>(s_basis));
 }
 
-
 LinearRegressionModel::LinearRegressionModel(const unsigned dims, 
-  const LRMBasisSet& bs_in, const VecDbl& coeffs_in)
-  : SurfpackModel(dims), bs(bs_in), coeffs(coeffs_in)
+  const LRMBasisSet& bs_in, const VecDbl& coeffs_in, const MtxDbl& Xtmp)
+  : SurfpackModel(dims), bs(bs_in), coeffs(coeffs_in), Xbasis(Xtmp)
 {
   assert(bs.bases.size() == coeffs.size());
 }
@@ -92,6 +92,26 @@ double LinearRegressionModel::evaluate(const VecDbl& x) const
   }
   //cout << "LinearRegression: times called: " << ++times_called << endl;
   return sum;
+}
+
+double LinearRegressionModel::variance(const VecDbl& x) const
+{
+  VecDbl xnew(bs.size());
+  //for (unsigned i = 0; i < x.size(); i++)  //assuming x is scalar
+  for (unsigned j = 0; j < bs.size(); j++) 
+    xnew[j] = bs.eval(j,x);
+
+  // var = MSE(1 + x_new'inv(Xbasis'Xbasis)x_new)
+  VecDbl x_tmp(xnew);
+  VecDbl x_tmp1 = surfpack::inverseAfterQRFact(Xbasis, x_tmp, 'U', 'T'); 
+  		  //inv(Xbasis')*x_new
+  VecDbl x_tmp2 = surfpack::inverseAfterQRFact(Xbasis, x_tmp1, 'U', 'N'); 
+                  //inv(Xbasis)*tmp1
+  // matmult = x_new'inv(Xbasis'Xbasis)x_new
+  double matmult = surfpack::dot_product(xnew, x_tmp2); 
+  double var = meanSquaredError*(1+matmult);
+  std::cout << "mse = " << meanSquaredError << std::endl;
+  return var;
 }
 
 VecDbl LinearRegressionModel::gradient(const VecDbl& x) const
@@ -140,9 +160,10 @@ std::string LinearRegressionModel::asString() const
 ///	Polynomial (LinearRegression) Model Factory
 ///////////////////////////////////////////////////////////
 
-VecDbl LinearRegressionModelFactory::lrmSolve(const LRMBasisSet& bs, const ScaledSurfData& ssd)
+VecDbl LinearRegressionModelFactory::lrmSolve(const LRMBasisSet& bs, const ScaledSurfData& ssd, MtxDbl& A)
 {
-  MtxDbl A(ssd.size(),bs.size(),true);
+  //MtxDbl A(ssd.size(),bs.size(),true);
+  A.resize(ssd.size(),bs.size());
   for (unsigned i = 0; i < ssd.size(); i++) {
     for (unsigned j = 0; j < bs.size(); j++) {
       A(i,j) = bs.eval(j,ssd(i));
@@ -186,7 +207,6 @@ LRMBasisSet LinearRegressionModelFactory::CreateLRM(unsigned order,
   return bs;
 } 
 
-
 SurfpackModel* LinearRegressionModelFactory::Create(const SurfData& sd)
 {
   // historically the constraintPoint was not scaled and equality
@@ -202,10 +222,27 @@ SurfpackModel* LinearRegressionModelFactory::Create(const SurfData& sd)
   LRMBasisSet bs = CreateLRM(order,sd.xSize());
   //cout << bs.asString() << endl;
   //cout << "sd size: " << sd.size() << " bs size: " << bs.size() <<  endl;
-  VecDbl coeffs = lrmSolve(bs,ssd);
+  MtxDbl Xtmp;
+  VecDbl coeffs = lrmSolve(bs,ssd, Xtmp);
   //copy(coeffs.begin(),coeffs.end(),std::ostream_iterator<double>(cout,"|"));
   //cout << "\n";
-  SurfpackModel* lrm = new LinearRegressionModel(sd.xSize(),bs,coeffs);
+  SurfpackModel* lrm = new LinearRegressionModel(sd.xSize(),bs,coeffs,Xtmp);
+
+  // compute mean squared error
+  const string metric = "mean_squared";
+  SurfData* sd1;
+  sd1 = (SurfData*) &sd;
+  double fitness = SurfpackInterface::Fitness(lrm, sd1, metric);
+  lrm->modelFitness(fitness);
+  /*
+  int n = 0;
+  ModelFitness* mf = ModelFitness::Create(metric,n);
+  double mse = (*mf)(*lrm,sd);
+  fitness = mse;
+  cout << "fitness = " << fitness << endl;
+  delete mf;
+  */
+  
   lrm->scaler(ms);
   delete ms;
   return lrm;

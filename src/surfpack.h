@@ -279,6 +279,10 @@ unsigned block_owner(unsigned j, unsigned p, unsigned n);
   /// Calls dgetri to compute matrix inverse, after prior call to dgetrf
   MtxDbl& inverseAfterLUFact(MtxDbl& matrix, std::vector<int>& ipvt);
 
+  // Solves triangular system of the form Ax=b
+  VecDbl inverseAfterQRFact(const MtxDbl& matrix, VecDbl vector, 
+    char uplo, char trans = 'N');
+
   /// Note: These matrix functions would not fit easily in SurfpackMatrix.h
   /// because the fortran math functions are not templated
   /// matrix-vector mutltiplication

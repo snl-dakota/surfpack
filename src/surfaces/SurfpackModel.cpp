@@ -81,6 +81,11 @@ MtxDbl SurfpackModel::hessian(const VecDbl& x) const
   throw std::string("This model does not currently support hessians");
 }
 
+void SurfpackModel::modelFitness(const double& fitness)
+{
+  meanSquaredError = fitness;
+}
+
 double SurfpackModel::goodnessOfFit(const string metricName, const SurfData& surf_data) 
 {
   // need to put error message if surfData not populated

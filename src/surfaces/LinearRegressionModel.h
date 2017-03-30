@@ -45,9 +45,11 @@ public:
 
   /// standard constructor from a basis set
   LinearRegressionModel(const unsigned dims, const LRMBasisSet& bs_in, 
-			const VecDbl& coeffs_in);
+			const VecDbl& coeffs_in, const MtxDbl& Xtmp);
   virtual VecDbl gradient(const VecDbl& x) const;
   virtual std::string asString() const;
+  virtual double variance(const VecDbl& x) const;
+  MtxDbl Xbasis;
 
 protected:
 
@@ -101,7 +103,7 @@ public:
   virtual unsigned recommendedNumPoints();
   /// LRM does allow constraints
   virtual bool supports_constraints();
-  VecDbl lrmSolve(const LRMBasisSet& bs, const ScaledSurfData& ssd);
+  VecDbl lrmSolve(const LRMBasisSet& bs, const ScaledSurfData& ssd, MtxDbl& A);
   static LRMBasisSet CreateLRM(unsigned order, unsigned dims);
 
 protected:

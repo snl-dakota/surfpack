@@ -34,6 +34,8 @@ public:
   virtual VecDbl gradient(const VecDbl& x) const;
   virtual MtxDbl hessian(const VecDbl& x) const;
   virtual std::string asString() const = 0;
+  void modelFitness(const double& fitness);
+  double meanSquaredError;
   /// return the value of some error metric
   double goodnessOfFit(const std::string MetricName, const SurfData& data); 
   ///double goodnessOfFit(const std::string MetricName); 

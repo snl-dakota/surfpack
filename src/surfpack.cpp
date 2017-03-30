@@ -522,6 +522,23 @@ MtxDbl& surfpack::inverseAfterLUFact(MtxDbl& matrix, vector<int>& ipvt)
   return matrix;
 }
 
+VecDbl surfpack::inverseAfterQRFact(const MtxDbl& matrix, VecDbl vector, 
+  char uplo, char trans)
+{
+  // uplo = whether upper (U) triangular or lower (L) triangular
+  // trans: N = no transpose, T = transpose
+  char diag = 'N';
+  int n_cols = static_cast<int>(matrix.getNCols());
+  //NRHS = number of solves (assuming vector)
+  int nrhs = 1;
+  int lda = static_cast<int>(matrix.getNRows());
+  int ldb = static_cast<int>(vector.size());
+  int info = 0; 
+  DTRTRS_F77(&uplo,&trans,&diag,&n_cols,&nrhs,&matrix(0,0),&lda,&vector[0],
+      	     &ldb,&info);
+  return vector;
+}
+
 VecDbl& surfpack::matrixVectorMult(VecDbl& result,
   MtxDbl& matrix, VecDbl& the_vector, char trans)
 {

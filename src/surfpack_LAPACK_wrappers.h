@@ -54,6 +54,7 @@
 #define DSYTRF_F77 F77_FUNC(dsytrf,DSYTRF)
 #define DSYTRI_F77 F77_FUNC(dsytri,DSYTRI)
 #define DSYTRS_F77 F77_FUNC(dsytrs,DSYTRS)
+#define DTRTRS_F77 F77_FUNC(dtrtrs,DTRTRS)
 #define DSYCON_F77 F77_FUNC(dsycon,DSYCON)
 //
 #else
@@ -88,6 +89,7 @@
 #define DSYTRI_F77 SURF77_GLOBAL(dsytri,DSYTRI)
 #define DSYTRS_F77 SURF77_GLOBAL(dsytrs,DSYTRS)
 #define DSYCON_F77 SURF77_GLOBAL(dsycon,DSYCON)
+#define DTRTRS_F77 SURF77_GLOBAL(dtrtrs,DTRTRS)
 //
 #endif
 
@@ -204,6 +206,11 @@ void DGGLSE_F77(const int* m, const int* n, const int* p, double* A,
 void DSYEV_F77(const char* jobz, const char* uplo, const int* N, 
 	       double *A_EIGVECT, const int* lda, double* eigval, 
 	       double* work, const int* lwork, int* info);
+
+// Computes the solution to AX=B when A is triangular
+void DTRTRS_F77(const char* uplo, const char* trans, const char* diag,
+    		const int* ncols, const int* nrhs, const double* A, 
+		const int* lda, double* B, const int* ldb, int* info);
 
 } // extern "C" (prevent C++ name mangling)
 
