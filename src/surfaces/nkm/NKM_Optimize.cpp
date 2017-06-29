@@ -623,8 +623,11 @@ optimize_with_direct(double& final_val)
   double* ddata = NULL;
   char*   cdata = NULL;
 
+  int max_eval = directData.maxFunctionEvals;
+  int max_iter = directData.maxIterations;
+
   NCSU_DIRECT_F77(direct_objective_eval, bestVars.ptr(0,0), num_cv, eps,
-		  directData.maxFunctionEvals, directData.maxIterations, fmin, 
+		  max_eval, max_iter, fmin, 
 		  lowerBounds.ptr(0,0), upperBounds.ptr(0,0), algmethod, ierror, 
 		  logfile, directData.solutionTarget, fglper, volper, sigmaper,
 		  idata, isize, ddata, dsize, cdata, csize, quiet_flag);
