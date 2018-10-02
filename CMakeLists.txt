@@ -39,7 +39,8 @@ endif()
 # matching pursuit solver
 if (HAVE_PECOS)
   add_definitions("-DHAVE_PECOS")
-  include_directories(${Pecos_BINARY_DIR} ${Pecos_SOURCE_DIR}/src) 
+  include_directories(${Pecos_BINARY_DIR} ${Pecos_SOURCE_DIR}/util/src
+    ${Pecos_SOURCE_DIR}/src)
 
   # Surfpack Teuchos management; 2 cases to consider, but support same
   # 3 as OPT++ even though this feature can currently only be enabled

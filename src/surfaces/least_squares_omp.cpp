@@ -10,7 +10,7 @@
 #ifdef HAVE_PECOS
 #include "pecos_data_types.hpp"  // for basic scalar and matrix data types
 #include "CrossValidation.hpp"   // for ValidationIterator
-#include "LinearSolver.hpp"      // for CompressedSensingOptions/Tool
+#include "LinearSolverPecosSrc.hpp"  // for CompressedSensingOptions/Tool
 #endif
 
 namespace surfpack {
@@ -49,6 +49,11 @@ void leastSquaresOMP(MtxDbl& A_in, VecDbl& b_in, int random_seed, VecDbl& x_out)
     // TODO: NaN / Inf
     // cv_iterator.set_fault_data( faultInfo,
     // 			      surrData.failed_response_data() );
+
+    // OptionsList and CrossValidationSolver
+    // regression_opts = OptionsList(opts_dict)
+    //  solver = regression_solver_factory(regression_opts)
+    // std::shared_ptr<LinearSystemSolver> regression_solver_factory(OptionsList &opts);
 
     Pecos::CompressedSensingOptions CSOpts;
     CSOpts.solver = Pecos::ORTHOG_MATCH_PURSUIT;
