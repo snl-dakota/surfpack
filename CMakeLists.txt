@@ -188,8 +188,7 @@ set(SURFPACK_LIBS "surfpack;surfpack_fortran")
 set(SURFPACK_TPL_LIBS "ncsuopt;conmin")
 # Pecos and Teuchos are most commonly in the build tree
 if (HAVE_PECOS)
-  list(APPEND SURFPACK_TPL_LIBS pecos ${Pecos_LINK_LIBRARIES} 
-    ${Teuchos_LIBRARIES} ${TEUCHOS_LIBRARY})
+  list(APPEND SURFPACK_TPL_LIBS ${Pecos_LINK_LIBRARIES} ${Teuchos_LIBRARIES})
 endif()
 
 # System libs (linked 3rd)
