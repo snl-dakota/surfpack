@@ -15,25 +15,31 @@ set(ExportTarget ${CMAKE_PROJECT_NAME}-targets CACHE STRING
 
 include(FortranCInterface)
 
-# first check for a system blas and lapack
+# TODO: Update to use CMake BLAS/LAPACK probes and properly use their output
 if(NOT DEFINED BLAS_LIBS OR NOT DEFINED LAPACK_LIBS)
-
-  if(NOT DEFINED BLAS_LIBS)
-    find_library(BLAS_LIBS blas)
-  endif()
-  if(NOT DEFINED LAPACK_LIBS)
-    find_library(LAPACK_LIBS lapack)
-  endif()
-  if(NOT BLAS_LIBS OR NOT LAPACK_LIBS)
-    # if not a system blas and lapack, then look for a cmake built LAPACK
-    # with find_package
+  # Historically on MSVC, tried to use CMake config file approach first.
+  # Could probably just use the Unix logic below instead...
+  if(MSVC)
     find_package(LAPACK REQUIRED NO_MODULE)
     set(BLAS_LIBS blas)
     set(LAPACK_LIBS lapack)
+  else()
+    # first check for a system blas and lapack
+    if(NOT DEFINED BLAS_LIBS)
+      find_library(BLAS_LIBS blas)
+    endif()
+    if(NOT DEFINED LAPACK_LIBS)
+      find_library(LAPACK_LIBS lapack)
+    endif()
+    if(NOT BLAS_LIBS OR NOT LAPACK_LIBS)
+      # if not a system blas and lapack, then look for a cmake built LAPACK
+      # with find_package
+      find_package(LAPACK REQUIRED NO_MODULE)
+      set(BLAS_LIBS blas)
+      set(LAPACK_LIBS lapack)
+    endif()
   endif()
-
 endif() 
-
 
 # Surfpack optionally depends on Pecos / Teuchos for orthogonal
 # matching pursuit solver
