@@ -117,6 +117,8 @@ public:
   /// Partial parameter list constructor
   SurfpackModelFactory(const ParamMap& args);
 
+  virtual ~SurfpackModelFactory() { /* empty dtor */ }
+
   /// Build a model from the provided SurfData
   virtual SurfpackModel* Build(const SurfData& sd);
 

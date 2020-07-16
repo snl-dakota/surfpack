@@ -63,6 +63,8 @@ class ModelFitness
 {
 public:
 
+  virtual ~ModelFitness() { /* empty dtor */ }
+
   virtual double operator()(const SurfpackModel& sm, 
 			    const SurfData& sd) const = 0;
 

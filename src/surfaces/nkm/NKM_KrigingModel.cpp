@@ -4103,7 +4103,7 @@ void KrigingModel::equationSelectingCholR(){
     if(numPointsKeep==numWholePointsKeep) {
       //perhaps a better name would be numLastDerKeep... this is the number
       //of derivatives retained for the last point.
-      numExtraDerKeep==numVarsr;
+      numExtraDerKeep=numVarsr;
     } else
       numExtraDerKeep=num_eqn_keep-(1+numWholePointsKeep*(1+numVarsr));
     

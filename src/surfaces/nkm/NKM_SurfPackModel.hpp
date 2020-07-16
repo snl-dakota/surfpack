@@ -32,6 +32,8 @@ public:
 
   SurfPackModel(const SurfData& sd,int iout_keep) : sdBuild(sd,iout_keep), scaler(sdBuild), outputLevel(NORMAL_OUTPUT) {};
 
+  virtual ~SurfPackModel() { /* empty dtor */ }
+
   virtual void create() {
     std::cerr << "the create() function has not been implemented for this model type" << std::endl;
     return;
