@@ -5,7 +5,11 @@ project("SurfpackCInterfaceDemo" C)
 # Set these to the installed location of a surfpack distro to link against it
 #set(Surfpack_INCLUDE_DIR "/apps/surfpack/trunk/include")
 #set(Surfpack_LIBRARY_DIR "/apps/surfpack/trunk/lib")
+
+# This is example is a demo for linking against pre-built Surfpack, so
+# doesn't use Boost imported targets or conditionals.
 #set(Boost_LIBRARY_DIR "/apps/boost/1.49/lib")
+
 #set(LinAlg_LIBRARY_DIR "/usr/lib64")
 
 set(SURFPACK_LIBS "surfpack;surfpack_fortran")

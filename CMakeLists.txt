@@ -155,16 +155,7 @@ endif()
 #??? set(Boost_USE_MULTITHREADED OFF)
 option(HAVE_BOOST_SERIALIZATION "Use Boost serialization library" ON)
 if (HAVE_BOOST_SERIALIZATION)
-  if(Boost_DIR)
-    message("in ${CMAKE_CURRENT_BINARY_DIR} Boost_DIR already set: ${Boost_DIR}")
-    include_directories(${Boost_INCLUDE_DIR} ${Boost_INCLUDE_DIRS})
-  else()
-    find_package(Boost 1.44 REQUIRED COMPONENTS serialization)
-    if(Boost_FOUND)
-      include_directories(${Boost_INCLUDE_DIR} ${Boost_INCLUDE_DIRS})
-    endif()
-  endif(Boost_DIR)
-  add_definitions("-DSURFPACK_HAVE_BOOST_SERIALIZATION")
+  find_package(Boost 1.58 REQUIRED COMPONENTS serialization)
 endif()
 
 option(SURFPACK_STANDALONE  "Create a standalone surfpack executable" ON)
@@ -204,7 +195,7 @@ endif()
 
 # System libs (linked 3rd)
 # Shouldn't need ${FLEX_LIBRARIES} any more due to %noyywrap in lexer.l
-set(SURFPACK_SYSTEM_LIBS "${Boost_LIBRARIES};${LAPACK_LIBS};${BLAS_LIBS}")
+set(SURFPACK_SYSTEM_LIBS "${LAPACK_LIBS};${BLAS_LIBS}")
 
 
 add_subdirectory(src)
