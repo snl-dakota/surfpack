@@ -72,6 +72,9 @@ public:
   const ParamMap& parameters() const { return args; }
   void parameters(const ParamMap& args) { this->args = args;}
 
+  const VecStr& input_labels() const { return inputLabels; }
+  void input_labels(const VecStr& labels) { this->inputLabels = labels; }
+
 protected:
 
   /// default constructor used when reading from archive file 
@@ -82,6 +85,8 @@ protected:
 
   /// number of input (x) variables
   unsigned ndims;
+  /// input (x) variable labels, possibly empty
+  VecStr inputLabels;
   /// model configuration parameters
   ParamMap args;
   /// data scaler for this model
@@ -168,6 +173,7 @@ void SurfpackModel::serialize(Archive & archive, const unsigned int version)
 {
   archive & args;
   archive & ndims;
+  archive & inputLabels;
   archive & mScaler;
 }
 
