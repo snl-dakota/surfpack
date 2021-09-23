@@ -791,7 +791,7 @@ c     write(it,14) s,t                                                    221
       end                                                                 260
       subroutine plotc (n,p,x,nk,kp,kv,lp,lv,tc,cm,ngc,ngs,icx,nc,crv,ns  261
      1,srf,sp,mm)                                                         262
-      integer p,kp(5,*),kv(2,*),lp(3,*),lv(*),mm(*)                       263
+      integer p,kp(5,*),kv(2,*),lp(3,*),lv(*),mm(*),jv(2)                 263
       real x(n,p),tb(5,nk),tc(*),cm(*),crv(ngc,2,*),srf(ngs,ngs,*),sp(*)  264
      1,zl(2),zu(2)                                                        265
       data big,it /1.e30,6/                                               266
@@ -842,13 +842,13 @@ c     write(it,'('' x('',i3,'') ='',70i1/80i1)') j,(mm(l),l=1,ncx)        304
       ko=lp(2,k+k4)                                                       309
       if(l .ne. 1) go to 17                                               310
       j=0                                                                 311
-      jv=lv(ko)                                                           312
+      jv(1)=lv(ko)                                                        312
       do 9 m=k,nf                                                         313
       l1=lp(1,m+k4)                                                       314
       if(l1.eq.1) go to 9                                                 315
       l2=lp(2,m+k4)-1                                                     316
       do 8 i=1,l1                                                         317
-      if(jv.eq.lv(l2+i)) j=1                                              318
+      if(jv(1).eq.lv(l2+i)) j=1                                           318
     8 continue                                                            319
       if(j.eq.1) go to 10                                                 320
     9 continue                                                            321
@@ -857,7 +857,7 @@ c     write(it,'('' x('',i3,'') ='',70i1/80i1)') j,(mm(l),l=1,ncx)        304
       zl(1)=big                                                           324
       zu(1)=-big                                                          325
       do 11 i=1,n                                                         326
-      r=x(i,jv)                                                           327
+      r=x(i,jv(1))                                                        327
       zl(1)=amin1(zl(1),r)                                                328
       zu(1)=amax1(zu(1),r)                                                329
    11 continue                                                            330
@@ -969,8 +969,8 @@ c     if(it.gt.0) write(it,37) nc,ns                                      426
    40 format('   srf',i3,':  x(',i2,'), x(',i2,').  max =',g12.4)         434
       end                                                                 435
       subroutine ctprt1 (m,nk,kp,kv,tb,cm,tc,sc,js)                       436
-      integer kp(5,*),kv(2,*),js(*)                                       437
-      real cm(*),tc(*),sc(*)                                              438
+      integer kp(5,*),kv(2,*),js(*),jv(2),lv(2)                           437
+      real cm(*),tc(*),sc(*),tb(5,*)                                      438
       data big,it /9.9e30,6/                                              439
       if(it.le.0) return                                                  440
       nc=ncat(kp)                                                         441
@@ -991,7 +991,9 @@ c     write(it,'('' (piecewise-cubic fit):'')')                           450
       xx=-big                                                             455
       nl=int(cm(2*j+1)+.1)-int(cm(2*j)+.1)+1                              456
       do 3 i=1,nl                                                         457
-      sc(i)=cvlv(m,1,j,i,nk,kp,kv,tb,cm,tc)                               458
+      jv(1)=j
+      lv(1)=i
+      sc(i)=cvlv(m,1,jv,lv,nk,kp,kv,tb,cm,tc)                             458
       xm=amin1(xm,sc(i))                                                  459
       xx=amax1(xx,sc(i))                                                  460
     3 continue                                                            461
@@ -1030,16 +1032,22 @@ c     write(it,37) 78                                                     483
       n2=int(cm(2*j2+1)+.1)-int(cm(2*j2)+.1)+1                            492
       k=0                                                                 493
       do 10 i=1,n1                                                        494
-      s1=cvlv(m,1,j1,i,nk,kp,kv,tb,cm,tc)                                 495
+      jv(1)=j1
+      lv(1)=i
+      s1=cvlv(m,1,jv,lv,nk,kp,kv,tb,cm,tc)                                495
       js(2*nv+1)=i                                                        496
       do 9 j=1,n2                                                         497
       js(2*nv+2)=j                                                        498
       k=k+1                                                               499
-      sc(k)=s1+cvlv(m,2,js(2*jj-1),js(2*nv+1),nk,kp,kv,tb,cm,tc)          500
+      jv(1:2)=js(2*jj-1:2*jj)
+      lv(1:2)=js(2*nv+1:2*nv+2)
+      sc(k)=s1+cvlv(m,2,jv,lv,nk,kp,kv,tb,cm,tc)                          500
     9 continue                                                            501
    10 continue                                                            502
       do 12 j=1,n2                                                        503
-      s1=cvlv(m,1,j2,j,nk,kp,kv,tb,cm,tc)                                 504
+      jv(1)=j2
+      lv(1)=j
+      s1=cvlv(m,1,jv,lv,nk,kp,kv,tb,cm,tc)                                504
       do 11 i=1,n1                                                        505
       k=j+n2*(i-1)                                                        506
       sc(k)=sc(k)+s1                                                      507
@@ -4682,7 +4690,7 @@ c     ip=tbn(4,ip)+.1                                                    4041
       end                                                                4050
       subroutine qslice (p,nk,tb,cm,td,kp,kv,lp,lv,tc,r,sc,js)           4051
       integer p,kp(5,*),kv(2,*),lp(3,*),lv(*),js(*)                      4052
-      real tb(5,nk),cm(*),td(2,*),tc(*),r(p,2),sc(2,p)                   4053
+      real tb(5,nk),cm(*),td(2,*),tc(*),r(p,2),sc(2,p),duma(10)          4053
       do 1 j=1,p                                                         4054
       sc(1,j)=r(j,2)                                                     4055
       sc(2,j)=sc(1,j)+r(j,1)                                             4056
@@ -4740,8 +4748,8 @@ c     ip=tbn(4,ip)+.1                                                    4041
       nt=lp(3,l1)                                                        4108
       laa=laa+5*l*nt                                                     4109
       do 11 jp=1,nt                                                      4110
-      call gtrm(2,jp,l,nt,lv(lp(2,l1)),dum,dum,nk,tb,tc(la),sc(1,nv+1),d 4111
-     1um)                                                                4112
+      call gtrm(2,jp,l,nt,lv(lp(2,l1)),dum,duma,nk,tb,tc(la),sc(1,nv+1), 4111
+     1duma)                                                              4112
       m=match(nv+l,sc,nk,tb,cm,r,0)                                      4113
       tc(jp+laa)=td(1,m)                                                 4114
    11 continue                                                           4115
@@ -4924,7 +4932,7 @@ c     ix=tb(3,m)+.1                                                      4137
      1sc,db,d,mm,wt,cv)                                                  4290
       integer p,mm(n,*),lx(p)                                            4291
       real x(n,p),y(n),w(n),xm(p),xs(p),tb(5,nk),cm(*),sc(*),wt(n,2),cv( 4292
-     1nk,4)                                                              4293
+     1nk,4),r(1)                                                         4293
       double precision db(n,*),d(nk,*)                                   4294
       data eps,big,dfs,cvm,im /1.e-6,9.9e30,2*0.0,0/                     4295
 c     if(it.gt.0) write(it,'(/,'' sample reuse to estimate df:'')')      4296
@@ -4945,7 +4953,7 @@ c    1ervations.'',/)') nd                                               4306
       do 4 i=1,n                                                         4311
       call rnms(r,1)                                                     4312
 c     k=(n-i+1)*r+i                                                      4313
-      k=int((n-i+1)*r+i)                                                SLB06
+      k=int((n-i+1)*r(1)+i)                                              SLB06
       t=wt(i,2)                                                          4314
       wt(i,2)=wt(k,2)                                                    4315
       wt(k,2)=t                                                          4316
@@ -4990,10 +4998,10 @@ c     k=wt(i,2)+.1                                                       4344
       am1=yv1                                                            4353
       if(m.gt.1) am1=sc(m+3)                                             4354
       if(am1/yv1 .le. eps) go to 11                                      4355
-      r=sqrt(am/am1)                                                     4356
+      r(1)=sqrt(am/am1)                                                  4356
       go to 12                                                           4357
-   11 r=1.0                                                              4358
-   12 cv(m,1)=cv(m,1)+((wn1-1.0)*(1.0-r)/(m-r*(m-1))-1.0)/sc(1)          4359
+   11 r(1)=1.0                                                           4358
+   12 cv(m,1)=cv(m,1)+((wn1-1.0)*(1.0-r(1))/(m-r(1)*(m-1))-1.0)/sc(1)    4359
    13 continue                                                           4360
    14 continue                                                           4361
       do 15 m=1,nk                                                       4362
@@ -5468,7 +5476,7 @@ c  15 ipo=tb(4,ipo)+.1                                                   4781
       end                                                                4801
       subroutine miss (n,p,x,lx,xm,flg,pn,xn,lxn,xs,xp)                  4802
       integer p,pn,lx(*),lxn(*)                                          4803
-      real x(n,*),xm(*),xn(n,*),xs(*),xp(*)                              4804
+      real x(n,*),xm(*),xn(n,*),xs(*),xp(*),rone(1)                      4804
       double precision s                                                 4805
       pn=p                                                               4806
       xp(1)=p                                                            4807
@@ -5501,7 +5509,8 @@ c  15 ipo=tb(4,ipo)+.1                                                   4781
       lxn(pn)=-1                                                         4834
       xs(pn)=1.0                                                         4835
       xp(j+1)=pn                                                         4836
-      call nest(n,j,pn,1,1.0)                                            4837
+      rone=1.0
+      call nest(n,j,pn,1,rone)                                           4837
       if(lx(j).gt.0) ss=s                                                4838
       xp(j+p+1)=ss                                                       4839
       do 6 i=1,n                                                         4840
@@ -5516,7 +5525,7 @@ c  15 ipo=tb(4,ipo)+.1                                                   4781
       subroutine mkmiss (n,p,x,y,w,xm,pm,nnx,nn,xnn,yn,wn,sc)            4849
       parameter(nlist=500)                                               4850
       integer p,m(nlist)                                                 4851
-      real pm(p),xm(p),x(n,p),y(n),w(n),xnn(*),yn(*),wn(*),sc(p,*)       4852
+      real pm(p),xm(p),x(n,p),y(n),w(n),xnn(*),yn(*),wn(*),sc(p,*),r(1)  4852
       data tol /0.001/                                                   4853
       if(p .le. nlist) go to 1                                           4854
 c     write(6,'('' increase parameter nlist in subroutine mkmiss to '',i 4855
@@ -5552,7 +5561,7 @@ c     in=fin+0.5                                                         4875
     8 do 11 k=1,in                                                       4884
       call rnms(r,1)                                                     4885
 c     i=nn*r+1.0                                                         4886
-      i=int(nn*r+1.0)                                                   SLB06
+      i=int(nn*r(1)+1.0)                                                 SLB06
       nnk=nn+k                                                           4887
       do 9 j=1,p                                                         4888
       sc(j,nnk)=sc(j,i)                                                  4889
