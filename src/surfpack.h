@@ -11,8 +11,9 @@
 
 #include "surfpack_system_headers.h"
 
-#include "MersenneTwister.h"
 #include "SurfpackMatrix.h"
+
+#include <random>
 
 //class AbstractSurfDataIterator;
 class SurfData;
@@ -67,11 +68,13 @@ class MyRandomNumberGenerator : std::unary_function<int,int>
 {
 public:
   MyRandomNumberGenerator() {}
-  MTRand mtrand;
-  // operator for std::random_shuffle; int in [0, n-1]
+  std::mt19937 mtrand;
+
+  // return int in [0, n-1]
   int operator()(int n)
   {
-    return mtrand.randInt(n-1);
+    std::uniform_int_distribution<> unifInt(0, n-1);
+    return unifInt(mtrand);
   }
   void seed(int seeder)
   {
@@ -80,17 +83,24 @@ public:
   /// double in [0,1]
   double rand()
   {
-    return mtrand.rand();
+    // This is imperfect per 
+    // https://en.cppreference.com/w/cpp/numeric/random/uniform_real_distribution
+    // But likely doesn't matter for these use cases
+    std::uniform_real_distribution<> unifReal
+      (0.0, std::nextafter(1.0, std::numeric_limits<double>::max()));
+    return unifReal(mtrand);
   }
   /// double in [0,1)
   double randExc()
   {
-    return mtrand.randExc();
+    std::uniform_real_distribution<> unifReal(0.0, 1.0);
+    return unifReal(mtrand);
   }
   /// int in [0,n]
   int randInt(int n)
   {
-    return mtrand.randInt(n);
+    std::uniform_int_distribution<> unifInt(0, n);
+    return unifInt(mtrand);
   }
 
 };

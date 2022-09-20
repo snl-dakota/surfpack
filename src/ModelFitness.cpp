@@ -16,7 +16,6 @@ using std::cout;
 using std::endl;
 using std::max_element;
 using std::min_element;
-using std::random_shuffle;
 using std::set;
 using std::string;
 using std::vector;
@@ -267,7 +266,7 @@ leaveout_estimates(VecDbl& estimates, const SurfpackModel& sm,
 
   VecUns indices(my_data.size()); 
   for (unsigned i = 0; i < indices.size(); i++) indices[i] = i;
-  random_shuffle(indices.begin(),indices.end(),shared_rng());
+  std::shuffle(indices.begin(),indices.end(),shared_rng().mtrand);
   estimates.resize(my_data.size());
   for (unsigned partition = 0; partition < n_final; partition++) {
     //cout << "part: " << partition << endl;

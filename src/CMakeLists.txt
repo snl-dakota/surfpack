@@ -8,7 +8,6 @@ set(local_library surfpack)
 set(lib${local_library}_sources
    AxesBounds.cpp
    AxesBounds.h
-   MersenneTwister.h
    ModelFactory.cpp
    ModelFactory.h
    SurfData.cpp
