@@ -156,6 +156,8 @@ endif()
 option(HAVE_BOOST_SERIALIZATION "Use Boost serialization library" ON)
 if (HAVE_BOOST_SERIALIZATION)
   find_package(Boost 1.58 REQUIRED COMPONENTS serialization)
+else()
+  find_package(Boost 1.58 REQUIRED)
 endif()
 
 option(SURFPACK_STANDALONE  "Create a standalone surfpack executable" ON)
