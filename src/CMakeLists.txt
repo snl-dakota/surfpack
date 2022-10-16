@@ -92,5 +92,6 @@ install(FILES SurfpackMatrix.h surfpack_system_headers.h DESTINATION include)
 # Surfpack C interface, compiled into separate library for now, though
 # no reason couldn't be directly in libsurfpack.
 add_library(surfpack_c_interface surfpack_c_interface.cpp)
+target_link_libraries(surfpack_c_interface PRIVATE Boost::boost)
 install(TARGETS surfpack_c_interface DESTINATION lib)
 install(FILES surfpack_c_interface.h DESTINATION include)
