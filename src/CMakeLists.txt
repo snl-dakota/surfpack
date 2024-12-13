@@ -72,6 +72,7 @@ add_library(${local_library}_fortran ${lib${local_library}_sources_fortran})
 target_link_libraries(${local_library} ${local_library}_fortran)
 
 target_link_libraries(${local_library} Boost::boost)
+target_link_libraries(${local_library} Teuchos::all_libs)
 if(HAVE_BOOST_SERIALIZATION)
   target_compile_definitions(${local_library} PUBLIC
     SURFPACK_HAVE_BOOST_SERIALIZATION)

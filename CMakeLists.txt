@@ -96,17 +96,12 @@ if (HAVE_PECOS)
 	#	  "Surfpack is the top-level package; don't write Trilinos config files")
 
 	message(STATUS "Surfpack setting Teuchos_DIR to ${Teuchos_DIR}")
-	add_subdirectory(packages/trilinos)
+	add_subdirectory(packages/external/trilinos)
 
       else()
 	message(WARNING
 	  "Surfpack requires teuchos, but could not find local nor parent copy!")
       endif() # Teuchos_DIR
-
-      # Additional setting to prevent multiple targets with the same name
-      set(Trilinos_TARGETS_IMPORTED 1)
-
-      find_package( Teuchos NO_MODULE REQUIRED )
 
     endif() # Trilinos_DIR
 
