@@ -74,7 +74,11 @@ const DbgStream& dbg(int level_in);
 // Mersenne Twister Random Number Generator 
 // _____________________________________________________________________________
                                                                                 
-class MyRandomNumberGenerator : std::unary_function<int,int>
+class MyRandomNumberGenerator
+// std::unary_function was deprecated in C++11 and removed in C++17
+#if __cplusplus < 201703L 
+: std::unary_function<int,int>
+#endif
 {
 public:
   MyRandomNumberGenerator() {}
