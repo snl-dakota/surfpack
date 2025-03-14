@@ -711,7 +711,7 @@ void KrigingModel::create()
   //printf(", %12.6g",correlations(ixr,0));
   //printf("]\n");
   
-  masterObjectiveAndConstraints(correlations, 1, 0);
+  coreObjectiveAndConstraints(correlations, 1, 0);
 
   //keep only the "optimal" subset of trend basis function in Poly that was 
   //selected by the pivoted Cholesky factorization of G*R^-1*G^
@@ -754,7 +754,7 @@ void KrigingModel::create()
   }
 
 
-  //variables whose values needed to be retained between sequential call to masterObjectiveAndConstraints for precompute and store strategy to work
+  //variables whose values needed to be retained between sequential call to coreObjectiveAndConstraints for precompute and store strategy to work
   prevObjDerMode=prevConDerMode=0;
 
   //deallocate matrices we no longer need after emulator has been created
@@ -4420,7 +4420,7 @@ void KrigingModel::trendSelectingPivotedCholesky(){
     only to COPY OUT results from member variables so the state is not 
     changed
 */
-void KrigingModel::masterObjectiveAndConstraints(const MtxDbl& theta, int obj_der_mode, int con_der_mode)
+void KrigingModel::coreObjectiveAndConstraints(const MtxDbl& theta, int obj_der_mode, int con_der_mode)
 {
   // if(obj_der_mode=1) (1=2^0=> 0th derivative) calculate objective function
   // if(con_der_mode=1) (1=2^0=> 0th derivative) calculate the constraint 
