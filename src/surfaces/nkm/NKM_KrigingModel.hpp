@@ -105,7 +105,7 @@ public:
       corr_len(i,0)=std::exp(nat_log_corr_len(i,0));
     correlations.newSize(numTheta,1);
     get_theta_from_corr_len(correlations,corr_len);
-    masterObjectiveAndConstraints(correlations, 1, 0);
+    coreObjectiveAndConstraints(correlations, 1, 0);
     //printf("[objective]");
     return obj;
   };
@@ -124,9 +124,9 @@ public:
     //MtxDbl theta(1,numTheta);
     for(int i=0; i<numTheta; ++i)
       correlations(i,0)=0.5*std::exp(-2.0*nat_log_corr_len(i,0));
-    //printf("about to enter masterObjectiveAndConstraints\n"); fflush(stdout);
-    masterObjectiveAndConstraints(correlations, 1, 1);
-    //printf("left masterObjectiveAndConstraints\n"); fflush(stdout);
+    //printf("about to enter coreObjectiveAndConstraints\n"); fflush(stdout);
+    coreObjectiveAndConstraints(correlations, 1, 1);
+    //printf("left coreObjectiveAndConstraints\n"); fflush(stdout);
     obj_out=obj;
     for(int i=0; i<numConFunc; i++){
       //printf("i=%d ",i); fflush(stdout);
@@ -181,8 +181,8 @@ private:
   /// output, instead member variables must be copied out by wrapper functions.
   /// The objective and contraint derivative modes are bit flags, i.e. 
   /// each is the sum of 2^(all orders of derivative you want). KRD 2010.05.13
-  void masterObjectiveAndConstraints(const MtxDbl& theta, int obj_der_mode, 
-				     int con_der_mode);
+  void coreObjectiveAndConstraints(const MtxDbl& theta, int obj_der_mode, 
+				   int con_der_mode);
 
   //void set_conmin_parameters(OptimizationProblem& opt) const;
 
@@ -795,19 +795,19 @@ private:
   /// the per equation log(likelihood) of the Kriging Model
   double likelihood; 
 
-  /// part of infrastructure to allow masterObjectivesAndConstraints to just "return" (have copied out) the answer if the same point is used in sequential calls
+  /// part of infrastructure to allow coreObjectivesAndConstraints to just "return" (have copied out) the answer if the same point is used in sequential calls
   int prevObjDerMode;
 
-  /// part of infrastructure to allow masterObjectivesAndConstraints to just "return" (have copied out) the answer if the same point is used in sequential calls
+  /// part of infrastructure to allow coreObjectivesAndConstraints to just "return" (have copied out) the answer if the same point is used in sequential calls
   int prevConDerMode;
 
-  /// part of infrastructure to allow masterObjectivesAndConstraints to just "return" (have copied out) the answer if the same point is used in sequential calls
+  /// part of infrastructure to allow coreObjectivesAndConstraints to just "return" (have copied out) the answer if the same point is used in sequential calls
   MtxDbl prevTheta; //(numTheta,1)
 
-  /// part of infrastructure to allow masterObjectivesAndConstraints to just "return" (have copied out) the answer if the same point is used in sequential calls
+  /// part of infrastructure to allow coreObjectivesAndConstraints to just "return" (have copied out) the answer if the same point is used in sequential calls
   int maxObjDerMode;
 
-  /// part of infrastructure to allow masterObjectivesAndConstraints to just "return" (have copied out) the answer if the same point is used in sequential calls
+  /// part of infrastructure to allow coreObjectivesAndConstraints to just "return" (have copied out) the answer if the same point is used in sequential calls
   int maxConDerMode;
 
   /// the objective function for the optimization of correlation lengths, it's the negative "per equation" log likelihood function
